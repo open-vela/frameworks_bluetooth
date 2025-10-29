@@ -53,6 +53,10 @@
 #define BT_KVDB_BTBOND "persist.bluetooth.btbonded."
 #define BT_KVDB_BLEBOND "persist.bluetooth.blebonded."
 #define BT_KVDB_BLEWHITELIST "persist.bluetooth.whitelist."
+#define BT_KEY_PBAP_PCE_BLACKLIST "persist.bluetooth.pceBlacklist."
+
+#define PROPERTY_PSEUDO_VALUE "0"
+
 
 typedef struct {
     void* key;
@@ -563,6 +567,80 @@ int bt_storage_load_le_bonded_device(load_storage_callback_t cb)
 
     storage_get_key(BT_KVDB_BLEBOND, (void*)prop_value, sizeof(remote_device_le_properties_t), (void*)cb);
     free(prop_value);
+
+    return 0;
+}
+
+bt_status_t bt_storage_save_pbap_pce_blacklist_item(bt_address_t* remote)
+{
+    char* prop_name;
+    int ret;
+
+    prop_name = (char*)malloc(PROP_NAME_MAX);
+    if (!prop_name) {
+        BT_LOGE("property_name malloc failed!");
+        return -ENOMEM;
+    }
+
+    GEN_PROP_KEY(prop_name, BT_KEY_PBAP_PCE_BLACKLIST, remote, PROP_NAME_MAX);
+
+    ret = storage_set_key(prop_name, &PROPERTY_PSEUDO_VALUE, sizeof(PROPERTY_PSEUDO_VALUE));
+
+    if (ret < 0)
+        BT_LOGE("save blacklist failed!");
+
+    free(prop_name);
+    return ret;
+}
+
+bt_status_t bt_storage_delete_pbap_pce_blacklist_item(bt_address_t* remote)
+{
+    char* prop_name;
+    bt_status_t status;
+
+    prop_name = (char*)malloc(PROP_NAME_MAX);
+    if (!prop_name) {
+        BT_LOGE("property_name malloc failed!");
+        return BT_STATUS_NOMEM;
+    }
+
+    GEN_PROP_KEY(prop_name, BT_KEY_PBAP_PCE_BLACKLIST, remote, PROP_NAME_MAX);
+
+    property_delete(prop_name);
+
+    free(prop_name);
+    service_loop_work(NULL, storage_commit, NULL);
+
+    return ret;
+}
+
+static void load_blacklist(const char* name, const char* value, void* cb)
+{
+    load_pbap_pce_blacklist_item_t callback = (load_pbap_pce_blacklist_item_t)cb;
+    bt_address_t remote;
+    int status;
+
+    if (strncmp(name, BT_KEY_PBAP_PCE_BLACKLIST, sizeof(BT_KEY_PBAP_PCE_BLACKLIST) - 1) != 0)
+        return;
+
+    bt_addr_str2ba(name + sizeof(BT_KEY_PBAP_PCE_BLACKLIST) - 1, &remote);
+    status = callback(&remote);
+    assert(status == BT_STATUS_SUCCESS);
+}
+
+bt_status_t bt_storage_load_pbap_pce_blacklist(load_pbap_pce_blacklist_item_t cb)
+{
+    uint16_t items;
+    bt_property_value_t* prop_value;
+    uint32_t total_length;
+    int ret;
+
+    items = 0;
+    ret = property_list(load_blacklist, cb);
+    if (ret < 0) {
+        BT_LOGE("property_list failed!");
+        return ret;
+    }
 
     return 0;
 }

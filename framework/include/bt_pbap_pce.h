@@ -122,4 +122,30 @@ bt_status_t BTSYMBOLS(bt_pbap_pce_get_contact_by_name)(bt_instance_t* ins, bt_ad
  */
 bt_status_t BTSYMBOLS(bt_pbap_pce_get_contact_by_number)(bt_instance_t* ins, bt_address_t* addr, char* number);
 
+/**
+ * @brief set an BT address to blacklist
+ *
+ * @param[in] addr  The BT address is added to the blacklist
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negative errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_pbap_pce_add_to_blacklist)(bt_instance_t* ins, bt_address_t* addr);
+
+/**
+ * @brief remove an BT address to blacklist.
+ *
+ * @param[in] addr  The BT address that is removed from the blacklist
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negative errno value on failure.
+ */
+
+bt_status_t BTSYMBOLS(bt_pbap_pce_remove_from_blacklist)(bt_instance_t* ins, bt_address_t* addr);
+
+/**
+ * @brief check if an BT address is in blacklist
+ *
+ * @param[in] query_addr  The BT address to check.
+ * @return true - address in blacklist.
+ * @return false - address not in blacklist.
+ */
+bool BTSYMBOLS(bt_pbap_pce_is_in_blacklist)(bt_instance_t* ins, bt_address_t* addr);
+
 #endif /* __BT_PBAP_PCE_H__ */

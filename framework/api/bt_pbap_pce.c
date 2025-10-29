@@ -70,3 +70,24 @@ bt_status_t BTSYMBOLS(bt_pbap_pce_get_contact_by_number)(bt_instance_t* ins, bt_
 
     return profile->get_contact_by_number(addr, number);
 }
+
+bt_status_t BTSYMBOLS(bt_pbap_pce_add_to_blacklist)(bt_instance_t* ins, bt_address_t* addr)
+{
+    pbap_pce_interface_t* profile = get_profile_service();
+
+    return profile->add_to_blacklist(addr);
+}
+
+bt_status_t BTSYMBOLS(bt_pbap_pce_remove_from_blacklist)(bt_instance_t* ins, bt_address_t* addr)
+{
+    pbap_pce_interface_t* profile = get_profile_service();
+
+    return profile->remove_from_blacklist(addr);
+}
+
+bool BTSYMBOLS(bt_pbap_pce_is_in_blacklist)(bt_instance_t* ins, bt_address_t* addr)
+{
+    pbap_pce_interface_t* profile = get_profile_service();
+
+    return profile->is_in_blacklist(addr);
+}

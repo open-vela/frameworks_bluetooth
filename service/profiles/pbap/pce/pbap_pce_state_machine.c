@@ -572,25 +572,3 @@ pbap_pce_state_t pce_state_machine_get_state(pce_state_machine_t* sm)
 
     return cur_state->state_value;
 }
-
-const char* pce_state_machine_current_state(pce_state_machine_t* sm)
-{
-    return hsm_get_current_state_name(&sm->sm);
-}
-
-profile_connection_state_t pce_state_machine_get_connection_state(pce_state_machine_t* sm)
-{
-    pbap_pce_state_t state = pce_state_machine_get_state(sm);
-
-    if (state == PBAP_PCE_STATE_DISCONNECTED) {
-        return PROFILE_STATE_DISCONNECTED;
-    } else if (state == PBAP_PCE_STATE_CONNECTING) {
-        return PROFILE_STATE_CONNECTING;
-    } else if (state == PBAP_PCE_STATE_CONNECTED) {
-        return PROFILE_STATE_CONNECTED;
-    } else if (state == PBAP_PCE_STATE_DISCONNECTING) {
-        return PROFILE_STATE_DISCONNECTING;
-    }
-
-    return PROFILE_STATE_DISCONNECTED;
-}

@@ -37,8 +37,7 @@ pce_state_machine_t* pce_state_machine_new(void* context, bt_address_t* bd_addr)
 void pce_state_machine_destory(pce_state_machine_t* pce_sm);
 void pce_state_machine_handle_event(pce_state_machine_t* sm, pbap_pce_msg_t* pce_event);
 pbap_pce_state_t pce_state_machine_get_state(pce_state_machine_t* sm);
-const char* pce_state_machine_current_state(pce_state_machine_t* sm);
-profile_connection_state_t pce_state_machine_get_connection_state(pce_state_machine_t* sm);
+
 bt_status_t do_in_pbap_pce_service(bt_address_t* addr, pbap_pce_event_t event, void* ext_data);
 
 #endif

@@ -173,6 +173,30 @@ static bt_status_t pce_get_contact_by_number(bt_address_t* addr, char* number)
     return pce_get_contact(addr, PCE_GET_CONTACT_BY_NUMBER, number);
 }
 
+static bt_status_t pce_add_to_blacklist(bt_address_t* set_addr)
+{
+    if (set_addr == NULL)
+        return BT_STATUS_PARM_INVALID;
+
+    return pbap_pce_add_to_blacklist(set_addr);
+}
+
+static bt_status_t pce_remove_from_blacklist(bt_address_t* remove_addr)
+{
+    if (remove_addr == NULL)
+        return BT_STATUS_PARM_INVALID;
+
+    return pbap_pce_remove_from_blacklist(remove_addr);
+}
+
+static bool pce_is_in_blacklist(bt_address_t* query_addr)
+{
+    if (query_addr == NULL)
+        return BT_STATUS_PARM_INVALID;
+
+    return pbap_pce_is_in_blacklist(query_addr);
+}
+
 static const pbap_pce_interface_t pceInterface = {
     .size = sizeof(pceInterface),
     .register_callbacks = pce_register_callbacks,
@@ -181,9 +205,9 @@ static const pbap_pce_interface_t pceInterface = {
     .disconnect = pce_disconnect,
     .get_contact_by_number = pce_get_contact_by_number,
     .get_contact_by_name = pce_get_contact_by_name,
-    .add_to_blacklist = NULL,
-    .remove_from_blacklist = NULL,
-    .is_in_blacklist = NULL,
+    .add_to_blacklist = pce_add_to_blacklist,
+    .remove_from_blacklist = pce_remove_from_blacklist,
+    .is_in_blacklist = pce_is_in_blacklist,
 };
 
 void notify_pce_connection_state_changed(bt_address_t* addr, profile_connection_state_t state)

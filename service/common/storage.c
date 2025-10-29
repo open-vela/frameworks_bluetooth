@@ -36,6 +36,7 @@
 #define BT_KEY_BLEBOND "BleBonded"
 #define BT_KEY_BLEWHITELIST "WhiteList"
 #define BT_KEY_BLERESOLVINGLIST "ResolvingList"
+#define BT_KEY_PBAP_PCE_BLACKLIST "PbapPceBlacklist"
 
 typedef struct {
     uint16_t items;
@@ -182,6 +183,116 @@ void bt_storage_load_le_device_info(void)
 
 void bt_storage_load_irk_info(void)
 {
+}
+
+bt_status_t bt_storage_save_pbap_pce_blacklist_item(bt_address_t* remote)
+{
+    uint16_t len;
+    int ret;
+    key_header_t* value = NULL;
+    key_header_t* new_value;
+
+    if (storage_get_key(BT_KEY_PBAP_PCE_BLACKLIST, (void**)&value, &len, NULL) == 0) {
+        new_value = zalloc(sizeof(key_header_t) + value->key_length + sizeof(*remote));
+        if (new_value == NULL)
+            return BT_STATUS_NOMEM;
+
+        new_value->items = value->items;
+        memcpy(new_value->key_value, value->key_value, value->key_length);
+        new_value->key_length = value->key_length;
+    } else {
+        new_value = zalloc(sizeof(key_header_t) + sizeof(*remote));
+        if (new_value == NULL)
+            return BT_STATUS_NOMEM;
+    }
+
+    memcpy(new_value->key_value + new_value->key_length, remote, sizeof(*remote));
+    new_value->key_length += sizeof(*remote);
+    new_value->items++;
+
+    ret = storage_set_key(BT_KEY_PBAP_PCE_BLACKLIST, new_value, sizeof(key_header_t) + new_value->key_length);
+    if (ret != 0) {
+        BT_LOGE("storage_set_key fail, ret: %d", ret);
+        free(new_value);
+    }
+
+    free(value);
+
+    return BT_STATUS_SUCCESS;
+}
+
+bt_status_t bt_storage_delete_pbap_pce_blacklist_item(bt_address_t* remote)
+{
+    int ret, i;
+    key_header_t* value;
+    key_header_t* new_value;
+    uint16_t len;
+    bt_address_t* retomes;
+
+    ret = storage_get_key(BT_KEY_PBAP_PCE_BLACKLIST, (void**)&value, &len, NULL);
+    if (ret != 0) {
+        BT_LOGD("%s not found, ret: %d", BT_KEY_PBAP_PCE_BLACKLIST, ret);
+        return BT_STATUS_SUCCESS;
+    }
+
+    retomes = (bt_address_t*)value->key_value;
+    for (i = 0; i < value->items; i++) {
+        if (memcmp(retomes + i, remote, sizeof(*remote)) == 0) {
+            break;
+        }
+    }
+
+    if (i == value->items) {
+        BT_LOGD("remote device not found in blacklist");
+        goto out;
+    }
+
+    new_value = malloc(sizeof(key_header_t) + value->key_length - sizeof(*remote));
+    if (new_value == NULL)
+        return BT_STATUS_NOMEM;
+
+    memcpy(new_value->key_value, value->key_value, i * sizeof(*remote));
+    memcpy(new_value->key_value + i * sizeof(*remote), value->key_value + (i + 1) * sizeof(*remote),
+        (value->items - i - 1) * sizeof(*remote));
+    new_value->key_length = value->key_length - sizeof(*remote);
+    new_value->items = value->items - 1;
+    ret = storage_set_key(BT_KEY_PBAP_PCE_BLACKLIST, new_value,
+        sizeof(key_header_t) + new_value->key_length);
+
+    if (ret != 0) {
+        BT_LOGE("storage_set_key fail, ret: %d", ret);
+        free(new_value);
+    }
+
+out:
+    free(value);
+    return BT_STATUS_SUCCESS;
+}
+
+bt_status_t bt_storage_load_pbap_pce_blacklist(load_pbap_pce_blacklist_item_t cb)
+{
+    int i;
+    uint16_t len;
+    int ret = BT_STATUS_SUCCESS;
+    key_header_t* value;
+    bt_address_t* retomes;
+
+    ret = storage_get_key(BT_KEY_PBAP_PCE_BLACKLIST, (void**)&value, &len, NULL);
+    if (ret != 0) {
+        BT_LOGD("%s not found, ret: %d", BT_KEY_PBAP_PCE_BLACKLIST, ret);
+        return BT_STATUS_SUCCESS;
+    }
+
+    retomes = (bt_address_t*)value->key_value;
+    for (i = 0; i < value->items; i++) {
+        ret = cb(retomes + i);
+        if (ret != BT_STATUS_SUCCESS)
+            break;
+    }
+
+    free(value);
+
+    return ret;
 }
 
 int bt_storage_init(void)

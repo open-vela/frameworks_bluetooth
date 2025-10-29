@@ -19,6 +19,7 @@
 #include "bluetooth_define.h"
 
 typedef void (*load_storage_callback_t)(void* data, uint16_t length, uint16_t items);
+typedef bt_status_t (*load_pbap_pce_blacklist_item_t)(bt_address_t* addr);
 
 int bt_storage_init(void);
 int bt_storage_cleanup(void);
@@ -31,5 +32,8 @@ int bt_storage_save_le_bonded_device(remote_device_le_properties_t* remote, uint
 int bt_storage_load_bonded_device(load_storage_callback_t cb);
 int bt_storage_load_whitelist_device(load_storage_callback_t cb);
 int bt_storage_load_le_bonded_device(load_storage_callback_t cb);
+bt_status_t bt_storage_save_pbap_pce_blacklist_item(bt_address_t* remote);
+bt_status_t bt_storage_delete_pbap_pce_blacklist_item(bt_address_t* remote);
+bt_status_t bt_storage_load_pbap_pce_blacklist(load_pbap_pce_blacklist_item_t cb);
 
 #endif /* _BT_STORAGE_H__ */

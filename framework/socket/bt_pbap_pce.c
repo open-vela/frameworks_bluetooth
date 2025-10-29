@@ -115,3 +115,42 @@ bt_status_t bt_pbap_pce_get_contact_by_number(bt_instance_t* ins, bt_address_t* 
 
     return packet.pbap_pce_r.status;
 }
+
+bt_status_t bt_pbap_pce_add_to_blacklist(bt_instance_t* ins, bt_address_t* addr)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    memcpy(&packet.pbap_pce_pl._bt_pbap_pce_add_to_blacklist.addr, addr, sizeof(bt_address_t));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_PBAP_PCE_ADD_TO_BLACKLIST);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.pbap_pce_r.status;
+}
+
+bt_status_t bt_pbap_pce_remove_from_blacklist(bt_instance_t* ins, bt_address_t* addr)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    memcpy(&packet.pbap_pce_pl._bt_pbap_pce_remove_from_blacklist.addr, addr, sizeof(bt_address_t));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_PBAP_PCE_REMOVE_FROM_BLACKLIST);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.pbap_pce_r.status;
+}
+
+bool bt_pbap_pce_is_in_blacklist(bt_instance_t* ins, bt_address_t* addr)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    memcpy(&packet.pbap_pce_pl._bt_pbap_pce_is_in_blacklist.addr, addr, sizeof(bt_address_t));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_PBAP_PCE_IS_IN_BLACKLIST);
+    if (status != BT_STATUS_SUCCESS)
+        return false;
+
+    return packet.pbap_pce_r.value_bool;
+}

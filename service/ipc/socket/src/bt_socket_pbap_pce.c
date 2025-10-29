@@ -148,6 +148,18 @@ void bt_socket_server_pbap_pce_process(service_poll_t* poll, int fd, bt_instance
             &packet->pbap_pce_pl._bt_pbap_pce_get_contact_by_number.addr,
             packet->pbap_pce_pl._bt_pbap_pce_get_contact_by_number.number);
         break;
+    case PBAP_PCE_SUBCODE_ADD_TO_BLACKLIST:
+        packet->pbap_pce_r.status = BTSYMBOLS(bt_pbap_pce_add_to_blacklist)(ins,
+            &packet->pbap_pce_pl._bt_pbap_pce_add_to_blacklist.addr);
+        break;
+    case PBAP_PCE_SUBCODE_REMOVE_FROM_BLACKLIST:
+        packet->pbap_pce_r.status = BTSYMBOLS(bt_pbap_pce_remove_from_blacklist)(ins,
+            &packet->pbap_pce_pl._bt_pbap_pce_remove_from_blacklist.addr);
+        break;
+    case PBAP_PCE_SUBCODE_IS_IN_BLACKLIST:
+        packet->pbap_pce_r.value_bool = BTSYMBOLS(bt_pbap_pce_is_in_blacklist)(ins,
+            &packet->pbap_pce_pl._bt_pbap_pce_is_in_blacklist.addr);
+        break;
     default:
         break;
     }
