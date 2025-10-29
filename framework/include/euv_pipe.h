@@ -26,10 +26,18 @@ typedef enum {
     EUV_PIPE_TYPE_CLIENT_RPMSG,
 } euv_pipe_mode_t;
 
+typedef enum {
+    EUV_ALL_PIPE_CLOSED = 0,
+    EUV_CLIENT_PIPE_OPENED = 1 << 0,
+    EUV_LOCAL_SERVER_PIPE_OPENED = 1 << 1,
+    EUV_RPMSG_SERVER_PIPE_OPENED = 1 << 2,
+} euv_pipe_status_t;
+
 typedef struct euv_pipe {
     uv_pipe_t cli_pipe;
     uv_pipe_t srv_pipe[2];
     euv_pipe_mode_t mode;
+    euv_pipe_status_t status;
     void* data;
 } euv_pipe_t;
 

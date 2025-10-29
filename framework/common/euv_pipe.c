@@ -58,6 +58,10 @@ static void euv_pipe_listen_callback(uv_stream_t* stream, int status)
 
     handle = stream->data;
     creq = handle->data;
+    if (!creq) {
+        BT_LOGE("%s, creq null", __func__);
+        return;
+    }
 
     err = uv_pipe_init(stream->loop, &handle->cli_pipe, 0);
     if (err != 0) {
@@ -65,6 +69,7 @@ static void euv_pipe_listen_callback(uv_stream_t* stream, int status)
         return;
     }
 
+    handle->status |= EUV_CLIENT_PIPE_OPENED; // mark client pipe opened
     err = uv_accept(stream, (uv_stream_t*)&handle->cli_pipe);
     if (err != 0) {
         BT_LOGE("%s, srv_pipe accept failed: %s", __func__, uv_strerror(err));
@@ -74,6 +79,10 @@ static void euv_pipe_listen_callback(uv_stream_t* stream, int status)
     if (creq->connect_cb) {
         creq->connect_cb(handle, status, creq->data);
     }
+
+    // only one pipe can be accepted, release creq
+    handle->data = NULL; // unrefer creq
+    free(creq);
 }
 
 static void euv_local_listen_callback(uv_stream_t* stream, int status)
@@ -117,17 +126,22 @@ static void euv_close_callback(uv_handle_t* hdl)
         return;
     }
 
-    /* when client disconnects, it free handle directly
-     */
-    if (!handle->data) {
-        free(handle);
-        return;
+    if (hdl == (uv_handle_t*)&handle->cli_pipe) {
+        handle->status &= ~EUV_CLIENT_PIPE_OPENED; // mark client pipe closed
+    } else if (hdl == (uv_handle_t*)&handle->srv_pipe[EUV_PIPE_TYPE_SERVER_LOCAL]) {
+        handle->status &= ~EUV_LOCAL_SERVER_PIPE_OPENED; // mark local server pipe closed
     }
+#ifdef CONFIG_NET_RPMSG
+    else if (hdl == (uv_handle_t*)&handle->srv_pipe[EUV_PIPE_TYPE_SERVER_RPMSG]) {
+        handle->status &= ~EUV_RPMSG_SERVER_PIPE_OPENED; // mark rpmsg server pipe closed
+    }
+#endif
 
-    /* when server connected, it free euv_connect first, then free handle after disconnected
-     */
-    free(handle->data);
-    handle->data = NULL;
+    if (handle->status == EUV_ALL_PIPE_CLOSED) {
+        // all pipe closed, free handle
+        BT_LOGD("%s, free handle 0x%p", __func__, handle);
+        free(handle);
+    }
 }
 
 static void euv_alloc_callback(uv_handle_t* handle, size_t size, uv_buf_t* buf)
@@ -292,12 +306,14 @@ euv_pipe_t* euv_pipe_connect(uv_loop_t* loop, const char* server_path, euv_conne
         return NULL;
     }
 
+    handle->status = EUV_ALL_PIPE_CLOSED;
     err = uv_pipe_init(loop, &handle->cli_pipe, 0);
     if (err != 0) {
         BT_LOGE("%s, srv_pipe init failed: %s", __func__, uv_strerror(err));
         goto err_out;
     }
 
+    handle->status |= EUV_CLIENT_PIPE_OPENED; // mark client pipe opened
     creq = zalloc(sizeof(euv_connect_t));
     if (!creq) {
         BT_LOGE("%s, zalloc failed", __func__);
@@ -315,6 +331,8 @@ euv_pipe_t* euv_pipe_connect(uv_loop_t* loop, const char* server_path, euv_conne
 #else
     uv_pipe_connect(&creq->req, &handle->cli_pipe, server_path, euv_connect_callback); // not using bluetoothd
 #endif
+
+    BT_LOGD("%s, handle 0x%p", __func__, handle);
 
     return handle;
 
@@ -341,12 +359,14 @@ euv_pipe_t* euv_rpmsg_pipe_connect(uv_loop_t* loop, const char* server_path, con
         return NULL;
     }
 
+    handle->status = EUV_ALL_PIPE_CLOSED;
     err = uv_pipe_init(loop, &handle->cli_pipe, 0);
     if (err != 0) {
         BT_LOGE("%s, srv_pipe init failed: %s", __func__, uv_strerror(err));
         goto err_out;
     }
 
+    handle->status |= EUV_CLIENT_PIPE_OPENED; // mark client pipe opened
     creq = zalloc(sizeof(euv_connect_t));
     if (!creq) {
         BT_LOGE("%s, zalloc failed", __func__);
@@ -358,6 +378,8 @@ euv_pipe_t* euv_rpmsg_pipe_connect(uv_loop_t* loop, const char* server_path, con
     creq->req.data = handle;
 
     uv_pipe_rpmsg_connect(&creq->req, &handle->cli_pipe, server_path, cpu_name, euv_connect_callback);
+    BT_LOGD("%s, handle 0x%p", __func__, handle);
+
     return handle;
 
 err_out:
@@ -385,6 +407,7 @@ euv_pipe_t* euv_pipe_open(uv_loop_t* loop, const char* server_path, euv_connect_
     }
 
     handle->mode = EUV_PIPE_TYPE_UNKNOWN;
+    handle->status = EUV_ALL_PIPE_CLOSED;
 
     creq = (euv_connect_t*)zalloc(sizeof(euv_connect_t));
     if (!creq) {
@@ -402,6 +425,7 @@ euv_pipe_t* euv_pipe_open(uv_loop_t* loop, const char* server_path, euv_connect_
         goto errout_with_creq;
     }
 
+    handle->status |= EUV_LOCAL_SERVER_PIPE_OPENED; // mark local server pipe opened
     err = uv_fs_unlink(loop, &fs, server_path, NULL);
     if (err != 0 && err != UV_ENOENT) {
         BT_LOGE("%s, srv_pipe unlink failed: %s", __func__, uv_strerror(err));
@@ -430,6 +454,7 @@ euv_pipe_t* euv_pipe_open(uv_loop_t* loop, const char* server_path, euv_connect_
         goto errout_with_creq;
     }
 
+    handle->status |= EUV_RPMSG_SERVER_PIPE_OPENED; // mark rpmsg server pipe opened
     err = uv_pipe_rpmsg_bind(&handle->srv_pipe[EUV_PIPE_TYPE_SERVER_RPMSG], server_path, "");
     if (err != 0) {
         BT_LOGE("%s, rpmsg srv_pipe bind failed: %s", __func__, uv_strerror(err));
@@ -443,6 +468,8 @@ euv_pipe_t* euv_pipe_open(uv_loop_t* loop, const char* server_path, euv_connect_
         goto errout_with_creq;
     }
 #endif
+
+    BT_LOGD("%s, handle 0x%p", __func__, handle);
 
     return handle;
 
@@ -464,7 +491,7 @@ void euv_pipe_close(euv_pipe_t* handle)
         BT_LOGE("%s, unkown mode", __func__);
         handle->srv_pipe[EUV_PIPE_TYPE_SERVER_LOCAL].data = handle;
         uv_close((uv_handle_t*)&handle->srv_pipe[EUV_PIPE_TYPE_SERVER_LOCAL], euv_close_callback);
-        handle->srv_pipe[EUV_PIPE_TYPE_SERVER_RPMSG].data = NULL;
+        handle->srv_pipe[EUV_PIPE_TYPE_SERVER_RPMSG].data = handle;
         uv_close((uv_handle_t*)&handle->srv_pipe[EUV_PIPE_TYPE_SERVER_RPMSG], euv_close_callback);
         return;
     }
@@ -522,7 +549,7 @@ void euv_pipe_close2(euv_pipe_t* handle)
         return;
     }
 
-    handle->srv_pipe[mode].data = NULL;
+    handle->srv_pipe[mode].data = handle;
     uv_close((uv_handle_t*)&handle->srv_pipe[mode], euv_close_callback);
 }
 #endif
