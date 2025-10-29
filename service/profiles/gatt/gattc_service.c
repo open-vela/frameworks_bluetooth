@@ -402,7 +402,6 @@ static bt_status_t if_gattc_shutdown(profile_on_shutdown_t cb)
     bt_sal_gatt_client_disable();
 #endif
     cb(PROFILE_GATTC, true);
-    cb(PROFILE_GATTC, true);
 
     return BT_STATUS_SUCCESS;
 }
