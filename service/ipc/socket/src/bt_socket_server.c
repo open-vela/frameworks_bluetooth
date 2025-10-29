@@ -42,6 +42,7 @@
 #include <sys/un.h>
 #endif
 
+#include "bt_ipc_code.h"
 #include "adapter_internel.h"
 #include "bluetooth.h"
 #include "bt_adapter.h"
@@ -161,6 +162,8 @@ static int bt_socket_server_receive(service_poll_t* poll, int fd, void* userdata
         BT_LOGE("%s, bt socket recv ret: %d error: %d", __func__, ret, errno);
         return -1;
     }
+
+    BT_LOGD("%s, bt socket recv code: %s", __func__, bt_ipc_code_to_string(packet->code));
 
     ins->offset += ret;
     if (ins->offset < sizeof(*packet))

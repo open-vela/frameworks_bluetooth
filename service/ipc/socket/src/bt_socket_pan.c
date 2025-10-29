@@ -98,6 +98,28 @@ static pan_callbacks_t g_pan_socket_cbs = {
  * Public Functions
  ****************************************************************************/
 
+const char* bt_pan_ipc_code_to_string(uint32_t code)
+{
+    switch (code) {
+    CASE_RETURN_STR(BT_PAN_MESSAGE_START);
+    CASE_RETURN_STR(BT_PAN_REGISTER_CALLBACKS);
+    CASE_RETURN_STR(BT_PAN_UNREGISTER_CALLBACKS);
+    CASE_RETURN_STR(BT_PAN_CONNECT);
+    CASE_RETURN_STR(BT_PAN_DISCONNECT);
+    CASE_RETURN_STR(BT_PAN_MESSAGE_END);
+    CASE_RETURN_STR(BT_PAN_CALLBACK_START);
+    CASE_RETURN_STR(BT_PAN_NETIF_STATE_CB);
+    CASE_RETURN_STR(BT_PAN_CONNECTION_STATE_CB);
+    CASE_RETURN_STR(BT_PAN_CALLBACK_END);
+    CASE_RETURN_STR(BT_IPC_CODE_COMMAND_PAN_BEGIN);
+    CASE_RETURN_STR(BT_IPC_CODE_COMMAND_PAN_END);
+    CASE_RETURN_STR(BT_IPC_CODE_CALLBACK_PAN_BEGIN);
+    CASE_RETURN_STR(BT_IPC_CODE_CALLBACK_PAN_END);
+    default:
+        return NULL;
+    }
+}
+
 void bt_socket_server_pan_process(service_poll_t* poll, int fd, bt_instance_t* ins, bt_message_packet_t* packet)
 {
     switch (packet->code) {

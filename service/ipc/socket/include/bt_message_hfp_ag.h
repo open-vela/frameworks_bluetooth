@@ -65,6 +65,7 @@ BT_HFP_AG_MESSAGE_START,
 
 #include "bt_hfp_ag.h"
 #include "bt_ipc_code.h"
+#include "bt_utils.h"
 
 #define BT_IPC_CODE_COMMAND_HFP_AG_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_HFP_AG, 0)
 // TODO: Add new BT IPC Code sequentially
@@ -73,6 +74,8 @@ BT_HFP_AG_MESSAGE_START,
 #define BT_IPC_CODE_CALLBACK_HFP_AG_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_HFP_AG, 0)
 // TODO: Add new BT IPC Code sequentially
 #define BT_IPC_CODE_CALLBACK_HFP_AG_END BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_HFP_AG, BT_IPC_CODE_SUBCODE_MAX_NUM)
+
+    const char* bt_hfp_ag_ipc_code_to_string(uint32_t code);
 
     typedef union {
         uint8_t status; /* bt_status_t */

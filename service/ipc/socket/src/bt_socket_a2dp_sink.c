@@ -31,6 +31,7 @@
 
 #include "bt_internal.h"
 
+#include "bt_debug.h"
 #include "a2dp_sink_service.h"
 #include "adapter_internel.h"
 #include "bluetooth.h"
@@ -102,6 +103,33 @@ const static a2dp_sink_callbacks_t g_a2dp_sink_cbs = {
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
+
+const char* bt_a2dp_sink_ipc_code_to_string(uint32_t code)
+    {
+        switch (code) {
+        CASE_RETURN_STR(BT_A2DP_SINK_MESSAGE_START);
+        CASE_RETURN_STR(BT_A2DP_SINK_REGISTER_CALLBACKS);
+        CASE_RETURN_STR(BT_A2DP_SINK_UNREGISTER_CALLBACKS);
+        CASE_RETURN_STR(BT_A2DP_SINK_IS_CONNECTED);
+        CASE_RETURN_STR(BT_A2DP_SINK_IS_PLAYING);
+        CASE_RETURN_STR(BT_A2DP_SINK_GET_CONNECTION_STATE);
+        CASE_RETURN_STR(BT_A2DP_SINK_CONNECT);
+        CASE_RETURN_STR(BT_A2DP_SINK_DISCONNECT);
+        CASE_RETURN_STR(BT_A2DP_SINK_SET_ACTIVE_DEVICE);
+        CASE_RETURN_STR(BT_A2DP_SINK_MESSAGE_END);
+        CASE_RETURN_STR(BT_A2DP_SINK_CALLBACK_START);
+        CASE_RETURN_STR(BT_A2DP_SINK_CONNECTION_STATE_CHANGE);
+        CASE_RETURN_STR(BT_A2DP_SINK_AUDIO_STATE_CHANGE);
+        CASE_RETURN_STR(BT_A2DP_SINK_CONFIG_CHANGE);
+        CASE_RETURN_STR(BT_A2DP_SINK_CALLBACK_END);
+        CASE_RETURN_STR(BT_IPC_CODE_COMMAND_A2DP_SINK_BEGIN);
+        CASE_RETURN_STR(BT_IPC_CODE_COMMAND_A2DP_SINK_END);
+        CASE_RETURN_STR(BT_IPC_CODE_CALLBACK_A2DP_SINK_BEGIN);
+        CASE_RETURN_STR(BT_IPC_CODE_CALLBACK_A2DP_SINK_END);
+        default:
+            return NULL;
+        }
+    }
 
 void bt_socket_server_a2dp_sink_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet)

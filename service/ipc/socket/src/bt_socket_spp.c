@@ -107,6 +107,30 @@ static spp_callbacks_t g_spp_socket_cb = {
  * Public Functions
  ****************************************************************************/
 
+const char* bt_spp_ipc_code_to_string(uint32_t code)
+{
+    switch (code) {
+    CASE_RETURN_STR(BT_SPP_MESSAGE_START);
+    CASE_RETURN_STR(BT_SPP_REGISTER_APP);
+    CASE_RETURN_STR(BT_SPP_UNREGISTER_APP);
+    CASE_RETURN_STR(BT_SPP_SERVER_START);
+    CASE_RETURN_STR(BT_SPP_SERVER_STOP);
+    CASE_RETURN_STR(BT_SPP_CONNECT);
+    CASE_RETURN_STR(BT_SPP_DISCONNECT);
+    CASE_RETURN_STR(BT_SPP_MESSAGE_END);
+    CASE_RETURN_STR(BT_SPP_CALLBACK_START);
+    CASE_RETURN_STR(BT_SPP_PROXY_STATE_CB);
+    CASE_RETURN_STR(BT_SPP_CONNECTION_STATE_CB);
+    CASE_RETURN_STR(BT_SPP_CALLBACK_END);
+    CASE_RETURN_STR(BT_IPC_CODE_COMMAND_SPP_BEGIN);
+    CASE_RETURN_STR(BT_IPC_CODE_COMMAND_SPP_END);
+    CASE_RETURN_STR(BT_IPC_CODE_CALLBACK_SPP_BEGIN);
+    CASE_RETURN_STR(BT_IPC_CODE_CALLBACK_SPP_END);
+    default:
+        return NULL;
+    }
+}
+
 void bt_socket_server_spp_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet)
 {

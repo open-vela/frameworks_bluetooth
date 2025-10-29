@@ -32,6 +32,7 @@ BT_LOG_MESSAGE_START,
 #define _BT_MESSAGE_LOG_H__
 
 #include "bt_ipc_code.h"
+#include "bt_utils.h"
 
 #define BT_IPC_CODE_COMMAND_LOG_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_LOG, 0)
 // TODO: Add new BT IPC Code sequentially
@@ -40,6 +41,8 @@ BT_LOG_MESSAGE_START,
 #define BT_IPC_CODE_CALLBACK_LOG_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_LOG, 0)
 // TODO: Add new BT IPC Code sequentially
 #define BT_IPC_CODE_CALLBACK_LOG_END BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_LOG, BT_IPC_CODE_SUBCODE_MAX_NUM)
+
+    const char* bt_log_ipc_code_to_string(uint32_t code);
 
     typedef union {
     struct {

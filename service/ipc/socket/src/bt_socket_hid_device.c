@@ -165,6 +165,39 @@ static void parse_and_copy_sdp(char* sdp_data, hid_device_sdp_settings_t* sdp_se
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
+
+const char* bt_hid_device_ipc_code_to_string(uint32_t code)
+{
+    switch (code) {
+    CASE_RETURN_STR(BT_HID_DEVICE_MESSAGE_START);
+    CASE_RETURN_STR(BT_HID_DEVICE_REGISTER_CALLBACK);
+    CASE_RETURN_STR(BT_HID_DEVICE_UNREGISTER_CALLBACK);
+    CASE_RETURN_STR(BT_HID_DEVICE_REGISTER_APP);
+    CASE_RETURN_STR(BT_HID_DEVICE_UNREGISTER_APP);
+    CASE_RETURN_STR(BT_HID_DEVICE_CONNECT);
+    CASE_RETURN_STR(BT_HID_DEVICE_DISCONNECT);
+    CASE_RETURN_STR(BT_HID_DEVICE_SEND_REPORT);
+    CASE_RETURN_STR(BT_HID_DEVICE_RESPONSE_REPORT);
+    CASE_RETURN_STR(BT_HID_DEVICE_REPORT_ERROR);
+    CASE_RETURN_STR(BT_HID_DEVICE_VIRTUAL_UNPLUG);
+    CASE_RETURN_STR(BT_HID_DEVICE_MESSAGE_END);
+    CASE_RETURN_STR(BT_HID_DEVICE_CALLBACK_START);
+    CASE_RETURN_STR(BT_HID_DEVICE_APP_STATE);
+    CASE_RETURN_STR(BT_HID_DEVICE_CONNECTION_STATE);
+    CASE_RETURN_STR(BT_HID_DEVICE_ON_GET_REPORT);
+    CASE_RETURN_STR(BT_HID_DEVICE_ON_SET_REPORT);
+    CASE_RETURN_STR(BT_HID_DEVICE_ON_RECEIVE_REPORT);
+    CASE_RETURN_STR(BT_HID_DEVICE_ON_VIRTUAL_UNPLUG);
+    CASE_RETURN_STR(BT_HID_DEVICE_CALLBACK_END);
+    CASE_RETURN_STR(BT_IPC_CODE_COMMAND_HID_DEV_BEGIN);
+    CASE_RETURN_STR(BT_IPC_CODE_COMMAND_HID_DEV_END);
+    CASE_RETURN_STR(BT_IPC_CODE_CALLBACK_HID_DEV_BEGIN);
+    CASE_RETURN_STR(BT_IPC_CODE_CALLBACK_HID_DEV_END);
+    default:
+        return NULL;
+    }
+}
+
 void bt_socket_server_hid_device_process(service_poll_t* poll, int fd,
     bt_instance_t* ins, bt_message_packet_t* packet)
 {

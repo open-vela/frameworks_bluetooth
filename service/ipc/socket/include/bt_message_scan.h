@@ -43,6 +43,7 @@ BT_SCAN_MESSAGE_START,
 #include "bluetooth.h"
 #include "bt_le_scan.h"
 #include "bt_ipc_code.h"
+#include "bt_utils.h"
 
     enum {
         BLE_SCAN_SUBCODE_START = 0,
@@ -63,6 +64,8 @@ BT_SCAN_MESSAGE_START,
 #define MAX_LEGACY_SCAN_RESULTS_LENGTH 31
 #define MAX_EXT_SCAN_RESULTS_LENGTH 256
 #define SCAN_FLUSH_INTERVAL_MS 150
+
+    const char* bt_scan_ipc_code_to_string(uint32_t code);
 
     typedef union {
         uint8_t status; /* bt_status_t */

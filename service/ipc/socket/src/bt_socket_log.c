@@ -55,6 +55,26 @@
  * Public Functions
  ****************************************************************************/
 
+const char* bt_log_ipc_code_to_string(uint32_t code)
+{
+    switch (code) {
+    CASE_RETURN_STR(BT_LOG_MESSAGE_START);
+    CASE_RETURN_STR(BT_LOG_ENABLE);
+    CASE_RETURN_STR(BT_LOG_DISABLE);
+    CASE_RETURN_STR(BT_LOG_SET_FILTER);
+    CASE_RETURN_STR(BT_LOG_REMOVE_FILTER);
+    CASE_RETURN_STR(BT_LOG_MESSAGE_END);
+    CASE_RETURN_STR(BT_LOG_CALLBACK_START);
+    CASE_RETURN_STR(BT_LOG_CALLBACK_END);
+    CASE_RETURN_STR(BT_IPC_CODE_COMMAND_LOG_BEGIN);
+    CASE_RETURN_STR(BT_IPC_CODE_COMMAND_LOG_END);
+    CASE_RETURN_STR(BT_IPC_CODE_CALLBACK_LOG_BEGIN);
+    CASE_RETURN_STR(BT_IPC_CODE_CALLBACK_LOG_END);
+    default:
+        return NULL;
+    }
+}
+
 void bt_socket_server_log_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet)
 {

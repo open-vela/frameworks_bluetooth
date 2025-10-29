@@ -46,6 +46,7 @@ BT_A2DP_SOURCE_MESSAGE_START,
 
 #include "bt_a2dp_source.h"
 #include "bt_ipc_code.h"
+#include "bt_utils.h"
 
 #define BT_IPC_CODE_COMMAND_A2DP_SRC_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_A2DP_SRC, 0)
 // TODO: Add new BT IPC Code sequentially
@@ -54,6 +55,8 @@ BT_A2DP_SOURCE_MESSAGE_START,
 #define BT_IPC_CODE_CALLBACK_A2DP_SRC_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_A2DP_SRC, 0)
 // TODO: Add new BT IPC Code sequentially
 #define BT_IPC_CODE_CALLBACK_A2DP_SRC_END BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_A2DP_SRC, BT_IPC_CODE_SUBCODE_MAX_NUM)
+
+    const char* bt_a2dp_source_ipc_code_to_string(uint32_t code);
 
     typedef union {
         uint8_t bbool; /* boolean */

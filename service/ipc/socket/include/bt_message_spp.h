@@ -42,6 +42,7 @@ BT_SPP_MESSAGE_START,
 
 #include "bluetooth.h"
 #include "bt_ipc_code.h"
+#include "bt_utils.h"
 
 #define BT_IPC_CODE_COMMAND_SPP_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_SPP, 0)
 // TODO: Add new BT IPC Code sequentially
@@ -50,6 +51,8 @@ BT_SPP_MESSAGE_START,
 #define BT_IPC_CODE_CALLBACK_SPP_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_SPP, 0)
 // TODO: Add new BT IPC Code sequentially
 #define BT_IPC_CODE_CALLBACK_SPP_END BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_SPP, BT_IPC_CODE_SUBCODE_MAX_NUM)
+
+    const char* bt_spp_ipc_code_to_string(uint32_t code);
 
     typedef union {
         uint8_t status; /* bt_status_t */

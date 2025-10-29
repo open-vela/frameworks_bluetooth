@@ -92,6 +92,28 @@ static advertiser_callback_t g_advertiser_socket_cb = {
  * Public Functions
  ****************************************************************************/
 
+const char* bt_advertiser_ipc_code_to_string(uint32_t code)
+{
+    switch (code) {
+    CASE_RETURN_STR(BT_ADVERTISER_MESSAGE_START);
+    CASE_RETURN_STR(BT_LE_START_ADVERTISING);
+    CASE_RETURN_STR(BT_LE_STOP_ADVERTISING);
+    CASE_RETURN_STR(BT_LE_STOP_ADVERTISING_ID);
+    CASE_RETURN_STR(BT_LE_ADVERTISING_IS_SUPPORT);
+    CASE_RETURN_STR(BT_ADVERTISER_MESSAGE_END);
+    CASE_RETURN_STR(BT_ADVERTISER_CALLBACK_START);
+    CASE_RETURN_STR(BT_LE_ON_ADVERTISER_START);
+    CASE_RETURN_STR(BT_LE_ON_ADVERTISER_STOPPED);
+    CASE_RETURN_STR(BT_ADVERTISER_CALLBACK_END);
+    CASE_RETURN_STR(BT_IPC_CODE_COMMAND_BLE_ADVERTISER_BEGIN);
+    CASE_RETURN_STR(BT_IPC_CODE_COMMAND_BLE_ADVERTISER_END);
+    CASE_RETURN_STR(BT_IPC_CODE_CALLBACK_BLE_ADVERTISER_BEGIN);
+    CASE_RETURN_STR(BT_IPC_CODE_CALLBACK_BLE_ADVERTISER_END);
+    default:
+        return NULL;
+    }
+}
+
 void bt_socket_server_advertiser_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet)
 {

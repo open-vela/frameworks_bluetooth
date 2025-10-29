@@ -50,6 +50,7 @@ BT_HID_DEVICE_MESSAGE_START,
 
 #include "bt_hid_device.h"
 #include "bt_ipc_code.h"
+#include "bt_utils.h"
 
 #define BT_IPC_CODE_COMMAND_HID_DEV_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_HID_DEV, 0)
 // TODO: Add new BT IPC Code sequentially
@@ -60,6 +61,8 @@ BT_HID_DEVICE_MESSAGE_START,
 #define BT_IPC_CODE_CALLBACK_HID_DEV_END BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_HID_DEV, BT_IPC_CODE_SUBCODE_MAX_NUM)
 
 #define MAX_BT_HID_DEVICE_REGISTER_APP_SDP 512
+
+    const char* bt_hid_device_ipc_code_to_string(uint32_t code);
 
     typedef union {
         uint8_t status; /* bt_status_t */

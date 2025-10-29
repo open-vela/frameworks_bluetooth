@@ -60,6 +60,28 @@
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
+
+const char* bt_manager_ipc_code_to_string(uint32_t code)
+{
+    switch (code) {
+    CASE_RETURN_STR(BT_MANAGER_MESSAGE_START);
+    CASE_RETURN_STR(BT_MANAGER_CREATE_INSTANCE);
+    CASE_RETURN_STR(BT_MANAGER_DELETE_INSTANCE);
+    CASE_RETURN_STR(BT_MANAGER_GET_INSTANCE);
+    CASE_RETURN_STR(BT_MANAGER_START_SERVICE);
+    CASE_RETURN_STR(BT_MANAGER_STOP_SERVICE);
+    CASE_RETURN_STR(BT_MANAGER_MESSAGE_END);
+    CASE_RETURN_STR(BT_MANAGER_CALLBACK_START);
+    CASE_RETURN_STR(BT_MANAGER_CALLBACK_END);
+    CASE_RETURN_STR(BT_IPC_CODE_COMMAND_MANAGER_BEGIN);
+    CASE_RETURN_STR(BT_IPC_CODE_COMMAND_MANAGER_END);
+    CASE_RETURN_STR(BT_IPC_CODE_CALLBACK_MANAGER_BEGIN);
+    CASE_RETURN_STR(BT_IPC_CODE_CALLBACK_MANAGER_END);
+    default:
+        return NULL;
+    }
+}
+
 #if defined(CONFIG_BLUETOOTH_SERVER) && defined(__NuttX__)
 void bt_socket_server_manager_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet)

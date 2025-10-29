@@ -63,6 +63,7 @@ BT_GATT_CLIENT_MESSAGE_START,
 
 #include "bt_gattc.h"
 #include "bt_ipc_code.h"
+#include "bt_utils.h"
 
 #define BT_IPC_CODE_COMMAND_GATTC_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_GATTC, 0)
 // TODO: Add new BT IPC Code sequentially
@@ -74,6 +75,8 @@ BT_GATT_CLIENT_MESSAGE_START,
 #define BT_IPC_CODE_CALLBACK_GATTC_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_GATTC, 0)
 // TODO: Add new BT IPC Code sequentially
 #define BT_IPC_CODE_CALLBACK_GATTC_END BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_GATTC, BT_IPC_CODE_SUBCODE_MAX_NUM)
+
+    const char* bt_gattc_ipc_code_to_string(uint32_t code);
 
     typedef struct {
         bt_instance_t* ins;

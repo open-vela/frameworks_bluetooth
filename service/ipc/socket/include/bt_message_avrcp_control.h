@@ -39,6 +39,7 @@ BT_AVRCP_CONTROL_MESSAGE_START,
 
 #include "bt_avrcp_control.h"
 #include "bt_ipc_code.h"
+#include "bt_utils.h"
 
 #define BT_IPC_CODE_COMMAND_AVRCP_CT_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_AVRCP_CT, 0)
 // TODO: Add new BT IPC Code sequentially
@@ -57,6 +58,8 @@ BT_AVRCP_CONTROL_MESSAGE_START,
 #define BT_IPC_CODE_CALLBACK_AVRCP_CT_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_AVRCP_CT, 0)
 // TODO: Add new BT IPC Code sequentially
 #define BT_IPC_CODE_CALLBACK_AVRCP_CT_END BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_AVRCP_CT, BT_IPC_CODE_SUBCODE_MAX_NUM)
+
+    const char* bt_avrcp_control_ipc_code_to_string(uint32_t code);
 
     typedef union {
         uint8_t status; /* bt_status_t */

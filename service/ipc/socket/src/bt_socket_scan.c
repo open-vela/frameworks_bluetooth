@@ -212,6 +212,31 @@ static scanner_callbacks_t g_scanner_socket_cb = {
  * Public Functions
  ****************************************************************************/
 
+const char* bt_scan_ipc_code_to_string(uint32_t code)
+{
+    switch (code) {
+    CASE_RETURN_STR(BT_SCAN_MESSAGE_START);
+    CASE_RETURN_STR(BT_LE_SCAN_START);
+    CASE_RETURN_STR(BT_LE_SCAN_START_SETTINGS);
+    CASE_RETURN_STR(BT_LE_SCAN_START_WITH_FILTERS);
+    CASE_RETURN_STR(BT_LE_SCAN_STOP);
+    CASE_RETURN_STR(BT_LE_SCAN_IS_SUPPORT);
+    CASE_RETURN_STR(BT_SCAN_MESSAGE_END);
+    CASE_RETURN_STR(BT_SCAN_CALLBACK_START);
+    CASE_RETURN_STR(BT_LE_ON_SCAN_RESULT);
+    CASE_RETURN_STR(BT_LE_ON_SCAN_START_STATUS);
+    CASE_RETURN_STR(BT_LE_ON_SCAN_STOPPED);
+    CASE_RETURN_STR(BT_SCAN_CALLBACK_END);
+    CASE_RETURN_STR(BT_IPC_CODE_COMMAND_BLE_SCAN_BEGIN);
+    CASE_RETURN_STR(BT_IPC_CODE_COMMAND_BLE_SCAN_END);
+    CASE_RETURN_STR(BT_IPC_CODE_CALLBACK_BLE_SCAN_BEGIN);
+    CASE_RETURN_STR(BT_LE_ON_BATCH_SCAN_RESULT);
+    CASE_RETURN_STR(BT_IPC_CODE_CALLBACK_BLE_SCAN_END);
+    default:
+        return NULL;
+    }
+}
+
 void bt_socket_server_scan_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet)
 {

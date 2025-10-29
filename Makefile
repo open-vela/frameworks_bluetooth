@@ -77,6 +77,7 @@ CSRCS += service/ipc/bluetooth_ipc.c
 CSRCS += framework/socket/bt_device.c
 CSRCS += framework/socket/bt_adapter.c
 CSRCS += framework/socket/bluetooth.c
+CSRCS += service/ipc/socket/src/bt_ipc_code.c
 CSRCS += service/ipc/socket/src/bt_socket.c
 CSRCS += service/ipc/socket/src/bt_socket_manager.c
 CSRCS += service/ipc/socket/src/bt_socket_client.c

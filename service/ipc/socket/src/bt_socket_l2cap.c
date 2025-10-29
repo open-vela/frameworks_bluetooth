@@ -92,6 +92,30 @@ const static l2cap_callbacks_t g_l2cap_socket_cbs = {
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
+
+const char* bt_l2cap_ipc_code_to_string(uint32_t code)
+{
+    switch (code) {
+    CASE_RETURN_STR(BT_L2CAP_MESSAGE_START);
+    CASE_RETURN_STR(BT_L2CAP_REGISTER_CALLBACKS);
+    CASE_RETURN_STR(BT_L2CAP_UNREGISTER_CALLBACKS);
+    CASE_RETURN_STR(BT_L2CAP_LISTEN);
+    CASE_RETURN_STR(BT_L2CAP_CONNECT);
+    CASE_RETURN_STR(BT_L2CAP_DISCONNECT);
+    CASE_RETURN_STR(BT_L2CAP_MESSAGE_END);
+    CASE_RETURN_STR(BT_L2CAP_CALLBACK_START);
+    CASE_RETURN_STR(BT_L2CAP_CONNECTED_CB);
+    CASE_RETURN_STR(BT_L2CAP_DISCONNECTED_CB);
+    CASE_RETURN_STR(BT_L2CAP_CALLBACK_END);
+    CASE_RETURN_STR(BT_IPC_CODE_COMMAND_L2CAP_BEGIN);
+    CASE_RETURN_STR(BT_IPC_CODE_COMMAND_L2CAP_END);
+    CASE_RETURN_STR(BT_IPC_CODE_CALLBACK_L2CAP_BEGIN);
+    CASE_RETURN_STR(BT_IPC_CODE_CALLBACK_L2CAP_END);
+    default:
+        return NULL;
+    }
+}
+
 void bt_socket_server_l2cap_process(service_poll_t* poll, int fd,
     bt_instance_t* ins, bt_message_packet_t* packet)
 {
