@@ -325,10 +325,23 @@ static void hci_poll_recv(service_poll_t* poll, int revent, void* userdata)
 
 static int h4_open(const struct device* dev, bt_hci_recv_t recv, void* hci_data)
 {
+    int ret;
     int fd;
     struct h4_data* h4;
+    char dev_name[32];
 
-    fd = open(CONFIG_BT_UART_ON_DEV_NAME, O_RDWR | O_BINARY | O_CLOEXEC);
+    if (dev->name == NULL) {
+        BT_LOGE("No device name");
+        return -EINVAL;
+    }
+
+    ret = snprintf(dev_name, sizeof(dev_name), "%s", dev->name);
+    if (ret < 0 || ret >= sizeof(dev_name)) {
+        BT_LOGE("dev_name:%s snprintf failed, ret %d, ", dev->name, ret);
+        return -EINVAL;
+    }
+
+    fd = open(dev_name, O_RDWR | O_BINARY | O_CLOEXEC);
     if (fd < 0) {
         BT_LOGE("H4: Failed to open %s: %d", CONFIG_BT_UART_ON_DEV_NAME, errno);
         return fd;
