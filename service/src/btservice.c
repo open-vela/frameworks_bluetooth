@@ -36,6 +36,9 @@
 #ifdef CONFIG_BLUETOOTH_SPP
 #include "spp_service.h"
 #endif
+#ifdef CONFIG_BLUETOOTH_PBAP_PCE
+#include "pbap_pce_service.h"
+#endif
 #ifdef CONFIG_BLUETOOTH_HID_DEVICE
 #include "hid_device_service.h"
 #endif
@@ -132,6 +135,10 @@ void bt_profile_init(void)
 
 #ifdef CONFIG_BLUETOOTH_SPP
     register_spp_service();
+#endif
+
+#ifdef CONFIG_BLUETOOTH_PBAP_PCE
+    register_pce_service();
 #endif
 
 #ifdef CONFIG_BLUETOOTH_HID_DEVICE
