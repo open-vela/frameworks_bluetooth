@@ -256,7 +256,7 @@ static int bt_socket_server_receive(service_poll_t* poll, int fd, void* userdata
         bt_socket_server_log_process(poll, fd, ins, packet);
 #endif
     } else {
-        BT_LOGE("%s, Unhandled message:%" PRIu32, __func__, packet->code);
+        BT_LOGE("%s, Unhandled message: %s", __func__, bt_ipc_code_to_string(packet->code));
         assert(0);
         return BT_STATUS_PARM_INVALID;
     }

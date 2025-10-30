@@ -47,6 +47,7 @@
 #include "bt_adapter.h"
 #include "bt_debug.h"
 #include "bt_dfx.h"
+#include "bt_ipc_code.h"
 #include "bt_message.h"
 #include "bt_socket.h"
 #include "callbacks_list.h"
@@ -145,7 +146,7 @@ static void bt_socket_client_callback_process(bt_instance_t* ins, bt_message_pac
         }
     }
 
-    BT_LOGE("%s, Unhandled message: %d", __func__, (int)packet->code);
+    BT_LOGE("%s, Unhandled message: %s", __func__, bt_ipc_code_to_string(packet->code));
 }
 
 static void bt_socket_client_msg_process(bt_client_msg_t* msg)

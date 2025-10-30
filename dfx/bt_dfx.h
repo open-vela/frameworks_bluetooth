@@ -24,6 +24,7 @@
 
 #include "bt_dfx_event.h"
 #include "bt_dfx_reason.h"
+#include "bt_ipc_code.h"
 
 // br
 #if defined(CONFIG_BLUETOOTH_DFX) && defined(CONFIG_BLUETOOTH_BREDR_SUPPORT)
@@ -255,9 +256,10 @@
 
 #define BT_DFX_IPC_ALLOC_ERROR(reason, packet_code)                                        \
     do {                                                                                   \
-        BT_LOGE("BT_DFX: btIpcAllocError: %s, packetCode: %" PRIu32, reason, packet_code); \
+        const char* __packet_code_str = bt_ipc_code_to_string(packet_code);                \
+        BT_LOGE("BT_DFX: btIpcAllocError: %s, packetCode: %s", reason, __packet_code_str); \
         BT_DFX_SEND_OTHERS_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_OTHERS, BT_DFXC_IPC_ALLOC),     \
-            "%s:%s,%s:%" PRIu32 "", "btIpcAllocError", reason, "packetCode", packet_code); \
+            "%s:%s,%s:%s", "btIpcAllocError", reason, "packetCode", __packet_code_str);    \
     } while (0)
 
 #define BT_DFX_DRIVER_ERROR(type, name, reason)                                          \
