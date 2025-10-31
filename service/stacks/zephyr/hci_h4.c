@@ -72,6 +72,8 @@ struct h4_data {
 static const struct device* bt_dev;
 static service_poll_t* hci_handle;
 
+static void hci_remove_recv(void* data);
+
 static void h4_data_dump(const char* tag, uint8_t type, uint8_t* data, uint32_t len)
 {
 #ifdef CONFIG_BT_HCI_H4_DEBUG
@@ -230,6 +232,7 @@ static void bt_sal_hci_transport_recv(void)
     len = read(h4->fd, frame + frame_size, sizeof(frame) - frame_size);
     if (len < 0) {
         BT_LOGE("Reading hci failed, errno %d", errno);
+        hci_remove_recv(NULL);
         close(h4->fd);
         h4->fd = -1;
         return;
@@ -296,10 +299,7 @@ int bt_sal_hci_transport_init(const bt_vhal_interface* vhal)
 
 void bt_sal_hci_transport_cleanup(void)
 {
-    struct h4_data* h4 = bt_dev->data;
-
-    close(h4->fd);
-    h4->fd = -1;
+    return;
 }
 
 static void hci_remove_recv(void* data)
@@ -364,6 +364,18 @@ static int h4_open(const struct device* dev, bt_hci_recv_t recv, void* hci_data)
     return 0;
 }
 
+static int h4_close(const struct device* dev)
+{
+    struct h4_data* h4 = dev->data;
+
+    do_in_service_loop_sync(hci_remove_recv, NULL);
+
+    close(h4->fd);
+    h4->fd = -1;
+
+    return 0;
+}
+
 static int h4_send(const struct device* dev, struct net_buf* buf)
 {
     int len;
@@ -403,6 +415,7 @@ static int h4_send(const struct device* dev, struct net_buf* buf)
 
 const struct bt_hci_driver_api h4_drv_api = {
     .open = h4_open,
+    .close = h4_close,
     .send = h4_send,
 };
 
