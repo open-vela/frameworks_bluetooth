@@ -414,7 +414,7 @@ if(CONFIG_BLUETOOTH)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/hfp_ag.c)
     endif()
 
-    if(ifeq ($(CONFIG_BLUETOOTH_LOG), y))
+    if(CONFIG_BLUETOOTH_LOG)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/log.c)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/bt_trace.c)
     endif()
