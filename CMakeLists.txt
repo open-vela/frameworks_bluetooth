@@ -163,6 +163,10 @@ if(CONFIG_BLUETOOTH)
       if(CONFIG_BLUETOOTH_GATT_SERVER)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_gatt_server_interface.c)
       endif()
+
+      if(CONFIG_BLUETOOTH_PBAP_PCE)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_pbap_pce_interface.c)
+      endif()
     endif()
 
     if(NOT CONFIG_BLUETOOTH_BLE_AUDIO)
@@ -256,6 +260,11 @@ if(CONFIG_BLUETOOTH)
 
     if(CONFIG_BLUETOOTH_SPP)
       file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/spp/*.c)
+      list(APPEND CSRCS ${APPEND_FILES})
+    endif()
+
+    if(CONFIG_BLUETOOTH_PBAP)
+      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/pbap/pce/*.c)
       list(APPEND CSRCS ${APPEND_FILES})
     endif()
 
@@ -421,6 +430,10 @@ if(CONFIG_BLUETOOTH)
 
     if(CONFIG_BLUETOOTH_SPP)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/spp.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_PBAP_PCE)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/pbap_pce.c)
     endif()
 
     if(CONFIG_BLUETOOTH_HID_DEVICE)

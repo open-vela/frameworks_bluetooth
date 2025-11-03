@@ -46,13 +46,13 @@ typedef enum {
 typedef void (*pce_msg_callback_t)(void* data);
 
 typedef struct {
-    bt_pce_get_contact_req_type_t req_type;
-    char req_data[0];
+    bt_pbap_search_property_t property;
+    char value[0];
 } pce_get_contact_req_t;
 
 typedef struct {
-    bt_pce_get_contact_req_type_t req_type;
-    char req_data[0];
+    bt_pbap_search_property_t property;
+    char value[0];
 } pce_pull_card_list_req_t;
 
 typedef struct {
@@ -76,8 +76,10 @@ typedef struct {
 pbap_pce_msg_t* pbap_pce_msg_new(pbap_pce_event_t event, bt_address_t* addr,
     void* data);
 void pbap_pce_msg_destroy(pbap_pce_msg_t* msg);
-pce_pull_card_list_req_t* create_pull_cl_req(bt_pce_get_contact_req_type_t req_type, void* pull_data);
-pce_get_contact_req_t* create_query_contact_req(bt_pce_get_contact_req_type_t type, void* req_data);
+pce_pull_card_list_req_t* create_pull_cl_req(bt_pbap_search_property_t property,
+    const void* pull_data);
+pce_get_contact_req_t* create_query_contact_req(bt_pbap_search_property_t property,
+    const void* value);
 pce_pull_card_req_t* create_pull_card_req(void* pull_data, uint64_t filter);
 
 #endif /* __PBAP_PCE_EVENT_H__ */

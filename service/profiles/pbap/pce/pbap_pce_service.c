@@ -1,5 +1,5 @@
 /****************************************************************************
- *  Copyright (C) 2025 Xiaomi Corporation
+ *  Copyright (C) 2023 Xiaomi Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -150,11 +150,12 @@ static bt_status_t pce_disconnect(bt_address_t* addr)
     return do_in_pbap_pce_service(addr, PCE_DISCONNECT_REQ, NULL);
 }
 
-static bt_status_t pce_get_contact(bt_address_t* addr, bt_pce_get_contact_req_type_t type, void* req_data)
+static bt_status_t pce_get_contact(bt_address_t* addr, bt_pbap_search_property_t property,
+    const void* value)
 {
     pce_get_contact_req_t* req;
 
-    req = create_query_contact_req(type, req_data);
+    req = create_query_contact_req(property, value);
     if (!req) {
         BT_LOGE("%s: make query contact failed", __func__);
         return BT_STATUS_NOMEM;
@@ -163,14 +164,14 @@ static bt_status_t pce_get_contact(bt_address_t* addr, bt_pce_get_contact_req_ty
     return do_in_pbap_pce_service(addr, PCE_CONNECT_REQ, req);
 }
 
-static bt_status_t pce_get_contact_by_name(bt_address_t* addr, char* name)
+static bt_status_t pce_get_contact_by_name(bt_address_t* addr, const char* name)
 {
-    return pce_get_contact(addr, PCE_GET_CONTACT_BY_NAME, name);
+    return pce_get_contact(addr, PBAP_SEARCH_PROPERTY_NAME, name);
 }
 
-static bt_status_t pce_get_contact_by_number(bt_address_t* addr, char* number)
+static bt_status_t pce_get_contact_by_number(bt_address_t* addr, const char* number)
 {
-    return pce_get_contact(addr, PCE_GET_CONTACT_BY_NUMBER, number);
+    return pce_get_contact(addr, PBAP_SEARCH_PROPERTY_NUMBER, number);
 }
 
 static bt_status_t pce_add_to_blacklist(bt_address_t* set_addr)
@@ -219,7 +220,8 @@ void notify_pce_connection_state_changed(bt_address_t* addr, profile_connection_
 void notify_get_contact_end(bt_address_t* addr, pce_get_contact_end_evt_t* evt)
 {
     BT_LOGD("addr: %s: status: %d", bt_addr_str(addr), evt->status);
-    PCE_CALLBACK_FOREACH(g_pce.callbacks, get_contact_end_cb, evt->status, evt->type, evt->req_data, evt->contact);
+    PCE_CALLBACK_FOREACH(g_pce.callbacks, contact_report_cb, evt->status, evt->property,
+        evt->value, evt->contact);
 }
 
 static void pce_service_event_process(void* data)
@@ -263,7 +265,7 @@ void pce_on_dir_changed(bt_address_t* addr, uint16_t status)
     BT_LOGD("dir changed, %s, addr: %s, status: %d", __func__, bt_addr_str(addr), status);
 }
 
-void pce_on_vcard_listing_data_received(bt_address_t* addr, char* obj, uint16_t len)
+void pce_on_vcard_listing_data_received(bt_address_t* addr, const char* obj, uint16_t len)
 {
     bt_status_t status;
     char* data = NULL;
@@ -302,7 +304,7 @@ void pce_on_vcard_listing_end(bt_address_t* addr, uint16_t status)
     }
 }
 
-void pce_on_vcard_data_received(bt_address_t* addr, char* obj, uint16_t len)
+void pce_on_vcard_data_received(bt_address_t* addr, const char* obj, uint16_t len)
 {
     int status;
     char* data = NULL;

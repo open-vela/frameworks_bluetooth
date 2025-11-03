@@ -1,5 +1,5 @@
 /****************************************************************************
- *  Copyright (C) 2025 Xiaomi Corporation
+ *  Copyright (C) 2022 Xiaomi Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,28 +88,96 @@ bt_status_t bt_pbap_pce_disconnect(bt_instance_t* ins, bt_address_t* addr)
     return packet.pbap_pce_r.status;
 }
 
-bt_status_t bt_pbap_pce_get_contact_by_name(bt_instance_t* ins, bt_address_t* addr, char* name)
+bt_status_t bt_pbap_pce_change_directory(bt_instance_t* ins, bt_address_t* addr, const char* dir)
 {
     bt_message_packet_t packet;
     bt_status_t status;
 
-    memcpy(&packet.pbap_pce_pl._bt_pbap_pce_get_contact_by_name.addr, addr, sizeof(bt_address_t));
-    strlcpy(packet.pbap_pce_pl._bt_pbap_pce_get_contact_by_name.name, name, BT_PBAP_PCE_PROPERTY_MAX_LEN);
-    status = bt_socket_client_sendrecv(ins, &packet, BT_PBAP_PCE_GET_CONTACT_BY_NAME);
+    if (strlen(dir) > PBAP_PKT_LEN_MAX)
+        return BT_STATUS_PARM_INVALID;
+
+    memcpy(&packet.pbap_pce_pl._bt_pbap_pce_change_dir.addr, addr, sizeof(bt_address_t));
+    strlcpy(packet.pbap_pce_pl._bt_pbap_pce_change_dir.dir, dir,
+        sizeof(packet.pbap_pce_pl._bt_pbap_pce_change_dir.dir));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_PBAP_PCE_CHANGE_DIRECTORY);
     if (status != BT_STATUS_SUCCESS)
         return status;
 
     return packet.pbap_pce_r.status;
 }
 
-bt_status_t bt_pbap_pce_get_contact_by_number(bt_instance_t* ins, bt_address_t* addr, char* number)
+bt_status_t bt_pbap_pce_pull_vcard_listing(bt_instance_t* ins, bt_address_t* addr,
+    bt_pbap_search_property_t property, const char* value)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    memcpy(&packet.pbap_pce_pl._bt_pbap_pce_pull_vcard_listing.addr, addr, sizeof(bt_address_t));
+    if (value) {
+        if (strlen(value) > PBAP_PKT_LEN_MAX)
+            return BT_STATUS_PARM_INVALID;
+
+        packet.pbap_pce_pl._bt_pbap_pce_pull_vcard_listing.property = property;
+        strlcpy(packet.pbap_pce_pl._bt_pbap_pce_pull_vcard_listing.value, value,
+            sizeof(packet.pbap_pce_pl._bt_pbap_pce_pull_vcard_listing.value));
+    } else {
+        packet.pbap_pce_pl._bt_pbap_pce_pull_vcard_listing.property = PCE_SEARCH_PROPERTY_NONE;
+        memset(packet.pbap_pce_pl._bt_pbap_pce_pull_vcard_listing.value, 0,
+            sizeof(packet.pbap_pce_pl._bt_pbap_pce_pull_vcard_listing.value));
+    }
+    status = bt_socket_client_sendrecv(ins, &packet, BT_PBAP_PCE_PULL_VCARD_LISTING);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.pbap_pce_r.status;
+}
+
+bt_status_t bt_pbap_pce_pull_vcard(bt_instance_t* ins, bt_address_t* addr, const char* object, uint64_t filter)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    if (!object)
+        return BT_STATUS_PARM_INVALID;
+
+    if (strlen(object) > PBAP_PKT_LEN_MAX)
+        return BT_STATUS_PARM_INVALID;
+
+    memcpy(&packet.pbap_pce_pl._bt_pbap_pce_pull_vcard.addr, addr, sizeof(bt_address_t));
+    strlcpy(packet.pbap_pce_pl._bt_pbap_pce_pull_vcard.object, object,
+        sizeof(packet.pbap_pce_pl._bt_pbap_pce_pull_vcard.object));
+    packet.pbap_pce_pl._bt_pbap_pce_pull_vcard.filter = filter;
+    status = bt_socket_client_sendrecv(ins, &packet, BT_PBAP_PCE_PULL_VCARD);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.pbap_pce_r.status;
+}
+
+bt_status_t bt_pbap_pce_get_contact_by_name(bt_instance_t* ins, bt_address_t* addr,
+    const char* name)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    memcpy(&packet.pbap_pce_pl._bt_pbap_pce_get_contact_by_name.addr, addr, sizeof(bt_address_t));
+    strlcpy(packet.pbap_pce_pl._bt_pbap_pce_get_contact_by_name.name, name, BT_PBAP_PCE_PROPERTY_MAX_LEN);
+    status = bt_socket_client_sendrecv(ins, &packet, BT_PBAP_PBAP_SEARCH_PROPERTY_NAME);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.pbap_pce_r.status;
+}
+
+bt_status_t bt_pbap_pce_get_contact_by_number(bt_instance_t* ins, bt_address_t* addr,
+    const char* number)
 {
     bt_message_packet_t packet;
     bt_status_t status;
 
     memcpy(&packet.pbap_pce_pl._bt_pbap_pce_get_contact_by_number.addr, addr, sizeof(bt_address_t));
     strlcpy(packet.pbap_pce_pl._bt_pbap_pce_get_contact_by_number.number, number, BT_PBAP_PCE_PROPERTY_MAX_LEN);
-    status = bt_socket_client_sendrecv(ins, &packet, BT_PBAP_PCE_GET_CONTACT_BY_NUMBER);
+    status = bt_socket_client_sendrecv(ins, &packet, BT_PBAP_PBAP_SEARCH_PROPERTY_NUMBER);
     if (status != BT_STATUS_SUCCESS)
         return status;
 

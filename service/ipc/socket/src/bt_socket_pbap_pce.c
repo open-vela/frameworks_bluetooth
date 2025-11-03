@@ -50,7 +50,7 @@
 
 #define CALLBACK_FOREACH(_list, _struct, _cback, ...) \
     BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
-#define CBLIST (ins->pbap_pce_callbacks)
+#define CBLIST (__async ? __async->pbap_pce_callbacks : ins->pbap_pce_callbacks)
 
 /****************************************************************************
  * Private Types
@@ -61,7 +61,8 @@
  ****************************************************************************/
 
 #if defined(CONFIG_BLUETOOTH_SERVER) && defined(__NuttX__)
-static void on_connection_state_changed_cb(void* cookie, bt_address_t* addr, profile_connection_state_t state)
+static void on_connection_state_changed_cb(void* cookie, bt_address_t* addr,
+    profile_connection_state_t state)
 {
     bt_message_packet_t packet;
     bt_instance_t* ins = cookie;
@@ -72,15 +73,93 @@ static void on_connection_state_changed_cb(void* cookie, bt_address_t* addr, pro
     bt_socket_server_send(ins, &packet, BT_PBAP_PCE_ON_CONNECTION_STATE_CHANGED);
 }
 
-static void get_contact_end_cb(void* cookie, bt_status_t status, bt_pce_get_contact_req_type_t req_type, char* req_data, bt_pce_contact_t* contact)
+static void on_dir_changed_cb(void* cookie, bt_address_t* addr, uint16_t status)
+{
+    bt_message_packet_t packet;
+    bt_instance_t* ins = cookie;
+
+    memcpy(&packet.pbap_pce_cb._on_dir_changed.addr, addr, sizeof(bt_address_t));
+    packet.pbap_pce_cb._on_dir_changed.status = status;
+
+    bt_socket_server_send(ins, &packet, BT_PBAP_PCE_ON_DIR_CHANGED);
+}
+
+static void on_vcard_listing_data_cb(void* cookie, bt_address_t* addr, uint16_t len,
+    const char* obj)
+{
+    bt_message_packet_t packet;
+    bt_instance_t* ins = cookie;
+    int segment, offset;
+
+    offset = 0;
+    memcpy(&packet.pbap_pce_cb._on_vcard_listing_data_received.addr, addr, sizeof(bt_address_t));
+    while (len) { /* Split vCard Listing objects into segments under PBAP_PKT_LEN_MAX bytes */
+        segment = MIN(len, PBAP_PKT_LEN_MAX);
+        memset(packet.pbap_pce_cb._on_vcard_listing_data_received.object, 0,
+            sizeof(packet.pbap_pce_cb._on_vcard_listing_data_received.object));
+        memcpy(packet.pbap_pce_cb._on_vcard_listing_data_received.object, obj + offset, segment);
+        packet.pbap_pce_cb._on_vcard_listing_data_received.len = segment;
+        bt_socket_server_send(ins, &packet, BT_PBAP_PCE_ON_VCARD_LISTING_DATA_RECEIVED);
+
+        offset += segment;
+        len -= segment;
+    }
+}
+
+static void on_vcard_listing_end_cb(void* cookie, bt_address_t* addr, uint16_t status)
+{
+    bt_message_packet_t packet;
+    bt_instance_t* ins = cookie;
+
+    memcpy(&packet.pbap_pce_cb._on_vcard_listing_end.addr, addr, sizeof(bt_address_t));
+    packet.pbap_pce_cb._on_vcard_listing_end.status = status;
+
+    bt_socket_server_send(ins, &packet, BT_PBAP_PCE_ON_VCARD_LISTING_END);
+}
+
+static void on_vcard_data_cb(void* cookie, bt_address_t* addr, uint16_t len, const char* obj)
+{
+    bt_message_packet_t packet;
+    bt_instance_t* ins = cookie;
+    int segment, offset;
+
+    offset = 0;
+    memcpy(&packet.pbap_pce_cb._on_vcard_data_received.addr, addr, sizeof(bt_address_t));
+    while (len) { /* Split vCard objects into segments under PBAP_PKT_LEN_MAX bytes */
+        segment = MIN(len, PBAP_PKT_LEN_MAX);
+        memset(packet.pbap_pce_cb._on_vcard_data_received.object, 0,
+            sizeof(packet.pbap_pce_cb._on_vcard_data_received.object));
+        memcpy(packet.pbap_pce_cb._on_vcard_data_received.object, obj + offset, segment);
+        packet.pbap_pce_cb._on_vcard_data_received.len = segment;
+        bt_socket_server_send(ins, &packet, BT_PBAP_PCE_ON_VCARD_DATA_RECEIVED);
+
+        offset += segment;
+        len -= segment;
+    }
+}
+
+static void on_vcard_end_cb(void* cookie, bt_address_t* addr, uint16_t status)
+{
+    bt_message_packet_t packet;
+    bt_instance_t* ins = cookie;
+
+    memcpy(&packet.pbap_pce_cb._on_vcard_end.addr, addr, sizeof(bt_address_t));
+    packet.pbap_pce_cb._on_vcard_end.status = status;
+
+    bt_socket_server_send(ins, &packet, BT_PBAP_PCE_ON_VCARD_END);
+}
+
+static void contact_report_cb(void* cookie, bt_status_t status, bt_pbap_search_property_t property,
+    const char* value, const bt_pce_contact_t* contact)
 {
     bt_message_packet_t packet;
     bt_instance_t* ins = cookie;
 
     packet.pbap_pce_cb._on_get_contact_end.status = status;
-    packet.pbap_pce_cb._on_get_contact_end.req_type = req_type;
+    packet.pbap_pce_cb._on_get_contact_end.property = property;
 
-    strlcpy(packet.pbap_pce_cb._on_get_contact_end.req_data, req_data, sizeof(packet.pbap_pce_cb._on_get_contact_end.req_data));
+    strlcpy(packet.pbap_pce_cb._on_get_contact_end.value, value,
+        sizeof(packet.pbap_pce_cb._on_get_contact_end.value));
     memcpy(&packet.pbap_pce_cb._on_get_contact_end.contact, contact, sizeof(bt_pce_contact_t));
 
     bt_socket_server_send(ins, &packet, BT_PBAP_PCE_ON_GET_CONTACT_END);
@@ -88,7 +167,12 @@ static void get_contact_end_cb(void* cookie, bt_status_t status, bt_pce_get_cont
 
 const static pbap_pce_callbacks_t g_pbap_pce_socket_cbs = {
     .connection_state_cb = on_connection_state_changed_cb,
-    .get_contact_end_cb = get_contact_end_cb,
+    .dir_changed_cb = on_dir_changed_cb,
+    .vcard_listing_data_cb = on_vcard_listing_data_cb,
+    .vcard_listing_end_cb = on_vcard_listing_end_cb,
+    .vcard_data_cb = on_vcard_data_cb,
+    .vcard_end_cb = on_vcard_end_cb,
+    .contact_report_cb = contact_report_cb,
 };
 
 /****************************************************************************
@@ -138,6 +222,23 @@ void bt_socket_server_pbap_pce_process(service_poll_t* poll, int fd, bt_instance
         packet->pbap_pce_r.status = BTSYMBOLS(bt_pbap_pce_disconnect)(ins,
             &packet->pbap_pce_pl._bt_pbap_pce_disconnect.addr);
         break;
+    case PBAP_PCE_SUBCODE_CHANGE_DIRECTORY:
+        packet->pbap_pce_r.status = BTSYMBOLS(bt_pbap_pce_change_directory)(ins,
+            &packet->pbap_pce_pl._bt_pbap_pce_change_dir.addr,
+            packet->pbap_pce_pl._bt_pbap_pce_change_dir.dir);
+        break;
+    case PBAP_PCE_SUBCODE_PULL_VCARD_LISTING:
+        packet->pbap_pce_r.status = BTSYMBOLS(bt_pbap_pce_pull_vcard_listing)(ins,
+            &packet->pbap_pce_pl._bt_pbap_pce_pull_vcard_listing.addr,
+            packet->pbap_pce_pl._bt_pbap_pce_pull_vcard_listing.property,
+            packet->pbap_pce_pl._bt_pbap_pce_pull_vcard_listing.value);
+        break;
+    case PBAP_PCE_SUBCODE_PULL_VCARD:
+        packet->pbap_pce_r.status = BTSYMBOLS(bt_pbap_pce_pull_vcard)(ins,
+            &packet->pbap_pce_pl._bt_pbap_pce_pull_vcard.addr,
+            packet->pbap_pce_pl._bt_pbap_pce_pull_vcard.object,
+            packet->pbap_pce_pl._bt_pbap_pce_pull_vcard.filter);
+        break;
     case PBAP_PCE_SUBCODE_GET_CONTACT_BY_NAME:
         packet->pbap_pce_r.status = BTSYMBOLS(bt_pbap_pce_get_contact_by_name)(ins,
             &packet->pbap_pce_pl._bt_pbap_pce_get_contact_by_name.addr,
@@ -181,12 +282,44 @@ int bt_socket_client_pbap_pce_callback(service_poll_t* poll, int fd, bt_instance
             &packet->pbap_pce_cb._on_connection_state_changed.addr,
             packet->pbap_pce_cb._on_connection_state_changed.state);
         break;
+    case PBAP_PCE_SUBCODE_ON_DIR_CHANGED:
+        CALLBACK_FOREACH(CBLIST, pbap_pce_callbacks_t,
+            dir_changed_cb,
+            &packet->pbap_pce_cb._on_dir_changed.addr,
+            packet->pbap_pce_cb._on_dir_changed.status);
+        break;
+    case PBAP_PCE_SUBCODE_ON_VCARD_LISTING_DATA_RECEIVED:
+        CALLBACK_FOREACH(CBLIST, pbap_pce_callbacks_t,
+            vcard_listing_data_cb,
+            &packet->pbap_pce_cb._on_vcard_listing_data_received.addr,
+            packet->pbap_pce_cb._on_vcard_listing_data_received.len,
+            packet->pbap_pce_cb._on_vcard_listing_data_received.object);
+        break;
+    case PBAP_PCE_SUBCODE_ON_VCARD_LISTING_END:
+        CALLBACK_FOREACH(CBLIST, pbap_pce_callbacks_t,
+            vcard_listing_end_cb,
+            &packet->pbap_pce_cb._on_vcard_listing_end.addr,
+            packet->pbap_pce_cb._on_vcard_listing_end.status);
+        break;
+    case PBAP_PCE_SUBCODE_ON_VCARD_DATA_RECEIVED:
+        CALLBACK_FOREACH(CBLIST, pbap_pce_callbacks_t,
+            vcard_data_cb,
+            &packet->pbap_pce_cb._on_vcard_data_received.addr,
+            packet->pbap_pce_cb._on_vcard_data_received.len,
+            packet->pbap_pce_cb._on_vcard_data_received.object);
+        break;
+    case PBAP_PCE_SUBCODE_ON_VCARD_END:
+        CALLBACK_FOREACH(CBLIST, pbap_pce_callbacks_t,
+            vcard_end_cb,
+            &packet->pbap_pce_cb._on_vcard_end.addr,
+            packet->pbap_pce_cb._on_vcard_end.status);
+        break;
     case PBAP_PCE_SUBCODE_ON_GET_CONTACT_END:
         CALLBACK_FOREACH(CBLIST, pbap_pce_callbacks_t,
-            get_contact_end_cb,
+            contact_report_cb,
             packet->pbap_pce_cb._on_get_contact_end.status,
-            packet->pbap_pce_cb._on_get_contact_end.req_type,
-            packet->pbap_pce_cb._on_get_contact_end.req_data,
+            packet->pbap_pce_cb._on_get_contact_end.property,
+            packet->pbap_pce_cb._on_get_contact_end.value,
             &packet->pbap_pce_cb._on_get_contact_end.contact);
         break;
     default:

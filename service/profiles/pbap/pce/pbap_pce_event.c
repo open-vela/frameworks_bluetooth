@@ -48,34 +48,38 @@ void pbap_pce_msg_destroy(pbap_pce_msg_t* msg)
     free(msg);
 }
 
-pce_pull_card_list_req_t* create_pull_cl_req(bt_pce_get_contact_req_type_t req_type, void* pull_data)
+pce_pull_card_list_req_t* create_pull_cl_req(bt_pbap_search_property_t property,
+    const void* pull_data)
 {
     pce_pull_card_list_req_t* new_req;
 
-    new_req = (pce_pull_card_list_req_t*)zalloc(sizeof(pce_pull_card_list_req_t) + BT_PBAP_PCE_PROPERTY_MAX_LEN);
+    new_req = (pce_pull_card_list_req_t*)zalloc(sizeof(pce_pull_card_list_req_t)
+        + BT_PBAP_PCE_PROPERTY_MAX_LEN);
 
     if (new_req == NULL)
         return NULL;
 
-    new_req->req_type = req_type;
+    new_req->property = property;
 
-    strlcpy(new_req->req_data, pull_data, BT_PBAP_PCE_PROPERTY_MAX_LEN);
+    strlcpy(new_req->value, pull_data, BT_PBAP_PCE_PROPERTY_MAX_LEN);
 
     return new_req;
 }
 
-pce_get_contact_req_t* create_query_contact_req(bt_pce_get_contact_req_type_t req_type, void* req_data)
+pce_get_contact_req_t* create_query_contact_req(bt_pbap_search_property_t property,
+    const void* value)
 {
     pce_get_contact_req_t* new_req;
 
-    new_req = (pce_get_contact_req_t*)zalloc(sizeof(pce_get_contact_req_t) + BT_PBAP_PCE_PROPERTY_MAX_LEN);
+    new_req = (pce_get_contact_req_t*)zalloc(sizeof(pce_get_contact_req_t)
+        + BT_PBAP_PCE_PROPERTY_MAX_LEN);
 
     if (new_req == NULL)
         return NULL;
 
-    new_req->req_type = req_type;
+    new_req->property = property;
 
-    strlcpy(new_req->req_data, req_data, BT_PBAP_PCE_PROPERTY_MAX_LEN);
+    strlcpy(new_req->value, value, BT_PBAP_PCE_PROPERTY_MAX_LEN);
 
     return new_req;
 }

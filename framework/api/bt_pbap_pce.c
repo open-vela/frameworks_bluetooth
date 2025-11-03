@@ -1,5 +1,5 @@
 /****************************************************************************
- *  Copyright (C) 2025 Xiaomi Corporation
+ *  Copyright (C) 2023 Xiaomi Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,14 +57,40 @@ bt_status_t BTSYMBOLS(bt_pbap_pce_disconnect)(bt_instance_t* ins, bt_address_t* 
     return profile->disconnect(addr);
 }
 
-bt_status_t BTSYMBOLS(bt_pbap_pce_get_contact_by_name)(bt_instance_t* ins, bt_address_t* addr, char* name)
+
+bt_status_t BTSYMBOLS(bt_pbap_pce_change_directory)(bt_instance_t* ins, bt_address_t* addr, const char* dir)
+{
+    pbap_pce_interface_t* profile = get_profile_service();
+
+    return profile->change_directory(addr, dir);
+}
+
+bt_status_t BTSYMBOLS(bt_pbap_pce_pull_vcard_listing)(bt_instance_t* ins, bt_address_t* addr,
+    bt_pbap_search_property_t property, const char* value)
+{
+    pbap_pce_interface_t* profile = get_profile_service();
+
+    return profile->pull_vcard_listing(addr, property, value);
+}
+
+bt_status_t BTSYMBOLS(bt_pbap_pce_pull_vcard)(bt_instance_t* ins, bt_address_t* addr,
+    const char* object, uint64_t filter)
+{
+    pbap_pce_interface_t* profile = get_profile_service();
+
+    return profile->pull_vcard(addr, object, filter);
+}
+
+bt_status_t BTSYMBOLS(bt_pbap_pce_get_contact_by_name)(bt_instance_t* ins, bt_address_t* addr,
+    const char* name)
 {
     pbap_pce_interface_t* profile = get_profile_service();
 
     return profile->get_contact_by_name(addr, name);
 }
 
-bt_status_t BTSYMBOLS(bt_pbap_pce_get_contact_by_number)(bt_instance_t* ins, bt_address_t* addr, char* number)
+bt_status_t BTSYMBOLS(bt_pbap_pce_get_contact_by_number)(bt_instance_t* ins, bt_address_t* addr,
+    const char* number)
 {
     pbap_pce_interface_t* profile = get_profile_service();
 

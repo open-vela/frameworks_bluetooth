@@ -62,6 +62,7 @@ typedef struct {
     callbacks_list_t* hfp_hf_callbacks;
     callbacks_list_t* panu_callbacks;
     callbacks_list_t* spp_callbacks;
+    callbacks_list_t* pbap_pce_callbacks;
     callbacks_list_t* hidd_callbacks;
     callbacks_list_t* l2cap_callbacks;
 

@@ -44,6 +44,9 @@ endif #CONFIG_BLUETOOTH_HFP_AG
 ifeq ($(CONFIG_BLUETOOTH_SPP), y)
 CSRCS += framework/api/bt_spp.c
 endif #CONFIG_BLUETOOTH_SPP
+ifeq ($(CONFIG_BLUETOOTH_PBAP_PCE), y)
+CSRCS += framework/api/bt_pbap_pce.c
+endif #CONFIG_BLUETOOTH_PBAP_PCE
 ifeq ($(CONFIG_BLUETOOTH_HID_DEVICE), y)
 CSRCS += framework/api/bt_hid_device.c
 endif #CONFIG_BLUETOOTH_HID_DEVICE
@@ -119,6 +122,11 @@ ifeq ($(CONFIG_BLUETOOTH_SPP), y)
 CSRCS += framework/socket/bt_spp.c
 CSRCS += service/ipc/socket/src/bt_socket_spp.c
 endif #CONFIG_BLUETOOTH_SPP
+
+ifeq ($(CONFIG_BLUETOOTH_PBAP_PCE), y)
+CSRCS += framework/socket/bt_pbap_pce.c
+CSRCS += service/ipc/socket/src/bt_socket_pbap_pce.c
+endif #CONFIG_BLUETOOTH_PBAP_PCE
 
 ifeq ($(CONFIG_BLUETOOTH_HID_DEVICE), y)
 CSRCS += framework/socket/bt_hid_device.c
@@ -245,6 +253,9 @@ endif #CONFIG_BLUETOOTH_GATT_CLIENT
 ifeq ($(CONFIG_BLUETOOTH_GATT_SERVER), y)
 	CSRCS += service/stacks/zephyr/sal_gatt_server_interface.c
 endif #CONFIG_BLUETOOTH_GATT_SERVER
+ifeq ($(CONFIG_BLUETOOTH_PBAP_PCE), y)
+	CSRCS += service/stacks/zephyr/sal_pbap_pce_interface.c
+endif #CONFIG_BLUETOOTH_PBAP_PCE
 endif #CONFIG_BLUETOOTH_STACK_LE_ZBLUE
 
 endif

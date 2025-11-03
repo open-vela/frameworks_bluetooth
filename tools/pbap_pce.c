@@ -74,16 +74,16 @@ static void pce_connection_state_cb(void* cookie, bt_address_t* bd_addr,
     PRINT("%s, addr: %s, state: %d", __func__, addr_str, state);
 }
 
-static void pce_get_contact_end_cb(void* cookie, bt_status_t status,
-    bt_pce_get_contact_req_type_t req_type, char* req_data, bt_pce_contact_t* contact)
+static void pce_contact_report_cb(void* cookie, bt_status_t status,
+    bt_pbap_search_property_t property, const char* value, const bt_pce_contact_t* contact)
 {
     PRINT("%s, status: %d", __func__, status);
-    switch (req_type) {
-    case PCE_GET_CONTACT_BY_NAME:
-        PRINT("search by name: %s", req_data);
+    switch (property) {
+    case PBAP_SEARCH_PROPERTY_NAME:
+        PRINT("search by name: %s", value);
         break;
-    case PCE_GET_CONTACT_BY_NUMBER:
-        PRINT("search by number: %s", req_data);
+    case PBAP_SEARCH_PROPERTY_NUMBER:
+        PRINT("search by number: %s", value);
         break;
     default:
         break;
@@ -223,8 +223,8 @@ static int dump_cmd(void* handle, int argc, char* argv[])
 
 static const pbap_pce_callbacks_t pce_test_cbs = {
     sizeof(pbap_pce_callbacks_t),
-    pce_connection_state_cb,
-    pce_get_contact_end_cb,
+    .connection_state_cb = pce_connection_state_cb,
+    .contact_report_cb = pce_contact_report_cb,
 };
 
 int pce_command_init(void* handle)

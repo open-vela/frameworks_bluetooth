@@ -243,7 +243,7 @@ static bt_status_t start_get_contact(pce_state_machine_t* pce_sm)
 
     req = (pce_get_contact_req_t*)bt_list_node(bt_list_head(pce_sm->pending_contact_query));
 
-    pull_cl_req = create_pull_cl_req(req->req_type, req->req_data);
+    pull_cl_req = create_pull_cl_req(req->property, req->value);
 
     if (pull_cl_req == NULL) {
         BT_LOGE("%s: create_pull_cl_req failed", __func__);
@@ -267,7 +267,7 @@ static bt_status_t handle_get_conntact_msg(pce_state_machine_t* pce_sm, pbap_pce
 
 static bt_status_t pce_pull_vcard_listing(bt_address_t* addr, pce_pull_card_list_req_t* req)
 {
-    return bt_sal_pbap_pce_pull_vcard_listing(addr, PBAP_SEARCH_PROPERTY_NAME, req->req_data);
+    return bt_sal_pbap_pce_pull_vcard_listing(addr, PBAP_SEARCH_PROPERTY_NAME, req->value);
 }
 
 static bt_status_t handle_pull_vcard_list_data_evt(pce_state_machine_t* pce_sm, char* data)
@@ -311,7 +311,7 @@ static bt_status_t handle_pull_vcard_list_end_evt(pce_state_machine_t* pce_sm, u
     node = bt_list_head(card_list);
     vcard_entry = (pce_vcard_entry_t*)bt_list_node(node);
 
-    pull_card_req = create_pull_card_req(vcard_entry->card_handle, PCE_PROPERTY_MASK_TEL | PCE_PROPERTY_MASK_FN | PCE_PROPERTY_MASK_N);
+    pull_card_req = create_pull_card_req(vcard_entry->card_handle, PBAP_PROPERTY_MASK_TEL | PBAP_PROPERTY_MASK_FN | PBAP_PROPERTY_MASK_N);
 
     if (pull_card_req == NULL) {
         BT_LOGE("%s: create_pull_card_req failed", __func__);
@@ -349,7 +349,7 @@ static bt_status_t pce_pull_vcard(bt_address_t* addr, pce_pull_card_req_t* req)
 
 static bt_status_t handle_pce_pull_vc_data(pce_state_machine_t* pce_sm, char* data)
 {
-    uint32_t original_len;
+    uint32_t original_len = 0;
     uint32_t new_len;
     char* new_data;
 
@@ -400,8 +400,8 @@ static bt_status_t handle_pce_pull_vcard_end(pce_state_machine_t* pce_sm, uint16
     }
 
     end_evt.status = BT_STATUS_SUCCESS;
-    end_evt.type = req->req_type;
-    end_evt.req_data = req->req_data;
+    end_evt.property = req->property;
+    end_evt.value = req->value;
     notify_get_contact_end(&pce_sm->addr, &end_evt);
 
     bt_list_remove_node(pce_sm->pending_contact_query, bt_list_head(pce_sm->pending_contact_query));
@@ -467,8 +467,8 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
     if (status != BT_STATUS_SUCCESS) {
         req = bt_list_node(bt_list_head(pce_sm->pending_contact_query));
         end_evt.status = status;
-        end_evt.type = req->req_type;
-        end_evt.req_data = req->req_data;
+        end_evt.property = req->property;
+        end_evt.value = req->value;
         notify_get_contact_end(&pce_sm->addr, &end_evt);
         cleanup_current_query(pce_sm);
 
