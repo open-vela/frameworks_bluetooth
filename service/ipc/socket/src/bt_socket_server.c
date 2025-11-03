@@ -167,87 +167,87 @@ static int bt_socket_server_receive(service_poll_t* poll, int fd, void* userdata
         ins->offset = 0;
 
     if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_MANAGER_MESSAGE_START, BT_MANAGER_MESSAGE_END)
-            || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_MANAGER_BEGIN, BT_IPC_CODE_COMMAND_MANAGER_END)) {
+        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_MANAGER_BEGIN, BT_IPC_CODE_COMMAND_MANAGER_END)) {
         bt_socket_server_manager_process(poll, fd, ins, packet);
     } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_ADAPTER_MESSAGE_START, BT_ADAPTER_MESSAGE_END)
-            || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_ADAPTER_BEGIN, BT_IPC_CODE_COMMAND_ADAPTER_END)) {
+        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_ADAPTER_BEGIN, BT_IPC_CODE_COMMAND_ADAPTER_END)) {
         bt_socket_server_adapter_process(poll, fd, ins, packet);
-    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_DEVICE_MESSAGE_START,BT_DEVICE_MESSAGE_END)
-            || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_DEVICE_BEGIN, BT_IPC_CODE_COMMAND_DEVICE_END)) {
+    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_DEVICE_MESSAGE_START, BT_DEVICE_MESSAGE_END)
+        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_DEVICE_BEGIN, BT_IPC_CODE_COMMAND_DEVICE_END)) {
         bt_socket_server_device_process(poll, fd, ins, packet);
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_A2DP_SOURCE_MESSAGE_START, BT_A2DP_SOURCE_MESSAGE_END)
-            || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_A2DP_SRC_BEGIN, BT_IPC_CODE_COMMAND_A2DP_SRC_END)) {
+        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_A2DP_SRC_BEGIN, BT_IPC_CODE_COMMAND_A2DP_SRC_END)) {
         bt_socket_server_a2dp_source_process(poll, fd, ins, packet);
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_A2DP_SINK_MESSAGE_START, BT_A2DP_SINK_MESSAGE_END)
-            || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_A2DP_SINK_BEGIN, BT_IPC_CODE_COMMAND_A2DP_SINK_END)) {
+        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_A2DP_SINK_BEGIN, BT_IPC_CODE_COMMAND_A2DP_SINK_END)) {
         bt_socket_server_a2dp_sink_process(poll, fd, ins, packet);
 #endif
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
     } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_AVRCP_TARGET_MESSAGE_START, BT_AVRCP_TARGET_MESSAGE_END)
-            || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_AVRCP_TG_BEGIN, BT_IPC_CODE_COMMAND_AVRCP_TG_END)) {
+        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_AVRCP_TG_BEGIN, BT_IPC_CODE_COMMAND_AVRCP_TG_END)) {
         bt_socket_server_avrcp_target_process(poll, fd, ins, packet);
 #endif
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
     } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_AVRCP_CONTROL_MESSAGE_START, BT_AVRCP_CONTROL_MESSAGE_END)
-            || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_AVRCP_CT_BEGIN, BT_IPC_CODE_COMMAND_AVRCP_CT_END)) {
+        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_AVRCP_CT_BEGIN, BT_IPC_CODE_COMMAND_AVRCP_CT_END)) {
         bt_socket_server_avrcp_control_process(poll, fd, ins, packet);
 #endif
 #ifdef CONFIG_BLUETOOTH_HFP_AG
-    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code,BT_HFP_AG_MESSAGE_START, BT_HFP_AG_MESSAGE_END)
-            || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_HFP_AG_BEGIN, BT_IPC_CODE_COMMAND_HFP_AG_END)) {
+    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_HFP_AG_MESSAGE_START, BT_HFP_AG_MESSAGE_END)
+        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_HFP_AG_BEGIN, BT_IPC_CODE_COMMAND_HFP_AG_END)) {
         bt_socket_server_hfp_ag_process(poll, fd, ins, packet);
 #endif
 #ifdef CONFIG_BLUETOOTH_HFP_HF
-    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_HFP_HF_MESSAGE_START,BT_HFP_HF_MESSAGE_END)
-            || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_HFP_HF_BEGIN, BT_IPC_CODE_COMMAND_HFP_HF_END)) {
+    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_HFP_HF_MESSAGE_START, BT_HFP_HF_MESSAGE_END)
+        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_HFP_HF_BEGIN, BT_IPC_CODE_COMMAND_HFP_HF_END)) {
         bt_socket_server_hfp_hf_process(poll, fd, ins, packet);
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
     } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_ADVERTISER_MESSAGE_START, BT_ADVERTISER_MESSAGE_END)
-            || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_BLE_ADVERTISER_BEGIN, BT_IPC_CODE_COMMAND_BLE_ADVERTISER_END)) {
+        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_BLE_ADVERTISER_BEGIN, BT_IPC_CODE_COMMAND_BLE_ADVERTISER_END)) {
         bt_socket_server_advertiser_process(poll, fd, ins, packet);
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
     } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_SCAN_MESSAGE_START, BT_SCAN_MESSAGE_END)
-            || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_BLE_SCAN_BEGIN, BT_IPC_CODE_COMMAND_BLE_SCAN_END)) {
+        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_BLE_SCAN_BEGIN, BT_IPC_CODE_COMMAND_BLE_SCAN_END)) {
         bt_socket_server_scan_process(poll, fd, ins, packet);
 #endif
 #ifdef CONFIG_BLUETOOTH_GATT_CLIENT
     } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_GATT_CLIENT_MESSAGE_START, BT_GATT_CLIENT_MESSAGE_END)
-            || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_GATTC_BEGIN, BT_IPC_CODE_COMMAND_GATTC_END)) {
+        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_GATTC_BEGIN, BT_IPC_CODE_COMMAND_GATTC_END)) {
         bt_socket_server_gattc_process(poll, fd, ins, packet);
 #endif
 #ifdef CONFIG_BLUETOOTH_GATT_SERVER
     } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_GATT_SERVER_MESSAGE_START, BT_GATT_SERVER_MESSAGE_END)
-            || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_GATTS_BEGIN, BT_IPC_CODE_COMMAND_GATTS_END)) {
+        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_GATTS_BEGIN, BT_IPC_CODE_COMMAND_GATTS_END)) {
         bt_socket_server_gatts_process(poll, fd, ins, packet);
 #endif
 #ifdef CONFIG_BLUETOOTH_SPP
     } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_SPP_MESSAGE_START, BT_SPP_MESSAGE_END)
-            || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_SPP_BEGIN, BT_IPC_CODE_COMMAND_SPP_END)) {
+        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_SPP_BEGIN, BT_IPC_CODE_COMMAND_SPP_END)) {
         bt_socket_server_spp_process(poll, fd, ins, packet);
 #endif
 #ifdef CONFIG_BLUETOOTH_PAN
     } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_PAN_MESSAGE_START, BT_PAN_MESSAGE_END)
-            || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_PAN_BEGIN, BT_IPC_CODE_COMMAND_PAN_END)) {
+        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_PAN_BEGIN, BT_IPC_CODE_COMMAND_PAN_END)) {
         bt_socket_server_pan_process(poll, fd, ins, packet);
 #endif
 #ifdef CONFIG_BLUETOOTH_HID_DEVICE
     } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_HID_DEVICE_MESSAGE_START, BT_HID_DEVICE_MESSAGE_END)
-            || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_HID_DEV_BEGIN, BT_IPC_CODE_COMMAND_HID_DEV_END)) {
+        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_HID_DEV_BEGIN, BT_IPC_CODE_COMMAND_HID_DEV_END)) {
         bt_socket_server_hid_device_process(poll, fd, ins, packet);
 #endif
 #ifdef CONFIG_BLUETOOTH_L2CAP
     } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_L2CAP_MESSAGE_START, BT_L2CAP_MESSAGE_END)
-            || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_L2CAP_BEGIN, BT_IPC_CODE_COMMAND_L2CAP_END)) {
+        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_L2CAP_BEGIN, BT_IPC_CODE_COMMAND_L2CAP_END)) {
         bt_socket_server_l2cap_process(poll, fd, ins, packet);
 #endif
 #ifdef CONFIG_BLUETOOTH_LOG
     } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_LOG_MESSAGE_START, BT_LOG_MESSAGE_END)
-            || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_LOG_BEGIN, BT_IPC_CODE_COMMAND_LOG_END)) {
+        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_LOG_BEGIN, BT_IPC_CODE_COMMAND_LOG_END)) {
         bt_socket_server_log_process(poll, fd, ins, packet);
 #endif
     } else {
