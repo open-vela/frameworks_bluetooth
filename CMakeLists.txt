@@ -585,7 +585,10 @@ if(CONFIG_BLUETOOTH)
 
     if(CONFIG_BLUETOOTH_LOG)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/log.c)
-        list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/bt_trace.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_DEBUG_TRACE)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/bt_trace.c)
     endif()
 
     if(CONFIG_BLUETOOTH_SPP)
