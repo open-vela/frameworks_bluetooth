@@ -188,7 +188,7 @@ ifeq ($(CONFIG_BLUETOOTH_DEBUG_MEMORY),y)
 CSRCS += debug/bt_memory.c
 endif
 
-ifeq ($(CONFIG_BLUETOOTH_LOG), y)
+ifeq ($(CONFIG_BLUETOOTH_DEBUG_TRACE), y)
 CSRCS += service/debug/bt_trace.c
 endif
 
