@@ -30,8 +30,6 @@
 #endif
 #include "sal_debug_interface.h"
 
-#include "hci_h4.h"
-
 #if defined(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET) || defined(CONFIG_BLUETOOTH_STACK_LE_BLUELET)
 #include "sal_adapter_interface.h"
 #endif
