@@ -30,8 +30,6 @@
 #endif
 #include "sal_debug_interface.h"
 
-#include "hci_h4.h"
-
 #define BT_INVALID_CONNECTION_HANDLE 0xFFFF
 
 typedef struct bt_stack_info {
