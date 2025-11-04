@@ -25,6 +25,7 @@
 
 #include "adapter_internel.h"
 #include "bluetooth_define.h"
+#include "hci_h4.h"
 #include "power_manager.h"
 #include "service_loop.h"
 
