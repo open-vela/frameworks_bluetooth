@@ -130,10 +130,10 @@ static void zblue_on_passkey_confirm(struct bt_conn* conn, unsigned int passkey)
 static void zblue_on_cancel(struct bt_conn* conn);
 static void zblue_on_pairing_confirm(struct bt_conn* conn);
 static void zblue_on_pincode_entry(struct bt_conn* conn, bool highsec);
+static void zblue_on_br_pairing_complete_ctkd(struct bt_conn* conn, bool is_link_key);
 static void zblue_on_link_key_notify(struct bt_conn* conn, uint8_t* key, uint8_t key_type);
-static void zblue_on_pairing_complete(struct bt_conn* conn, bool bonded);
-static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err reason);
-static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer);
+static void zblue_on_br_pairing_failed(struct bt_conn* conn, enum bt_security_err reason);
+static void zblue_on_br_bond_deleted(uint8_t id, const bt_addr_le_t* peer);
 static void zblue_register_callback(void);
 static void zblue_unregister_callback(void);
 
@@ -156,10 +156,10 @@ static struct bt_conn_cb g_conn_cbs = {
 };
 
 static struct bt_conn_auth_info_cb g_conn_auth_info_cbs = {
+    .pairing_complete_ctkd = zblue_on_br_pairing_complete_ctkd,
     .link_key_notify = zblue_on_link_key_notify,
-    .pairing_complete = zblue_on_pairing_complete,
-    .pairing_failed = zblue_on_pairing_failed,
-    .bond_deleted = zblue_on_bond_deleted,
+    .pairing_failed = zblue_on_br_pairing_failed,
+    .bond_deleted = zblue_on_br_bond_deleted,
 };
 
 static struct bt_conn_auth_cb g_conn_auth_cbs = {
@@ -384,6 +384,25 @@ static void zblue_on_pincode_entry(struct bt_conn* conn, bool highsec)
     adapter_on_pin_request(&addr, 0, true, NULL);
 }
 
+static void zblue_on_br_pairing_complete_ctkd(struct bt_conn* conn, bool is_link_key)
+{
+    bt_address_t addr;
+    const bt_addr_le_t* dst;
+
+    if (!is_link_key) {
+        return;
+    }
+
+    dst = bt_conn_get_dst(conn);
+    if (!dst) {
+        return;
+    }
+
+    memcpy(addr.addr, dst->a.val, sizeof(addr.addr));
+
+    adapter_on_bond_state_changed(&addr, BOND_STATE_BONDED, BT_TRANSPORT_BREDR, BT_STATUS_SUCCESS, true);
+}
+
 static void zblue_on_link_key_notify(struct bt_conn* conn, uint8_t* key, uint8_t key_type)
 {
     bt_address_t addr;
@@ -397,26 +416,7 @@ static void zblue_on_link_key_notify(struct bt_conn* conn, uint8_t* key, uint8_t
     adapter_on_bond_state_changed(&addr, BOND_STATE_BONDED, BT_TRANSPORT_BREDR, BT_STATUS_SUCCESS, false);
 }
 
-static void zblue_on_pairing_complete(struct bt_conn* conn, bool bonded)
-{
-    bt_address_t addr;
-    bond_state_t state;
-
-    if (!bt_conn_get_dst_br(conn)) {
-        return;
-    }
-
-    if (bonded) {
-        state = BOND_STATE_BONDED;
-        /* Start timer, waiting for linkkey notify */
-    } else {
-        state = BOND_STATE_NONE;
-        zblue_conn_get_addr(conn, &addr);
-        adapter_on_bond_state_changed(&addr, state, BT_TRANSPORT_BREDR, BT_STATUS_AUTH_FAILURE, false);
-    }
-}
-
-static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err reason)
+static void zblue_on_br_pairing_failed(struct bt_conn* conn, enum bt_security_err reason)
 {
     bt_address_t addr;
 
@@ -429,7 +429,7 @@ static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err r
     bt_conn_disconnect(conn, BT_HCI_ERR_AUTH_FAIL);
 }
 
-static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer)
+static void zblue_on_br_bond_deleted(uint8_t id, const bt_addr_le_t* peer)
 {
     bt_address_t addr;
 

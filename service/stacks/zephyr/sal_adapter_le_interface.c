@@ -76,6 +76,7 @@ extern void z_sys_init(void);
 static void zblue_on_connected(struct bt_conn* conn, uint8_t err);
 static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason);
 static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level, enum bt_security_err err);
+static void zblue_on_pairing_complete_ctkd(struct bt_conn* conn, bool is_link_key);
 static void zblue_on_pairing_complete(struct bt_conn* conn, bool bonded);
 static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err reason);
 static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer);
@@ -113,6 +114,7 @@ static struct bt_conn_cb g_conn_cbs = {
 };
 
 static struct bt_conn_auth_info_cb g_conn_auth_info_cbs = {
+    .pairing_complete_ctkd = zblue_on_pairing_complete_ctkd,
     .pairing_complete = zblue_on_pairing_complete,
     .pairing_failed = zblue_on_pairing_failed,
     .bond_deleted = zblue_on_bond_deleted,
@@ -456,6 +458,27 @@ static void zblue_on_phy_updated(struct bt_conn* conn, struct bt_conn_le_phy_inf
     }
 }
 #endif /*CONFIG_BT_USER_PHY_UPDATE*/
+
+static void zblue_on_pairing_complete_ctkd(struct bt_conn* conn, bool is_link_key)
+{
+    bt_address_t addr;
+    const bt_addr_t* dst;
+
+    if (is_link_key) {
+        return;
+    }
+
+    BT_LOGD("%s", __func__);
+
+    dst = bt_conn_get_dst_br(conn);
+    if (!dst) {
+        return;
+    }
+
+    memcpy(addr.addr, dst->val, sizeof(addr.addr));
+
+    adapter_on_bond_state_changed(&addr, BOND_STATE_BONDED, BT_TRANSPORT_BLE, BT_STATUS_SUCCESS, true);
+}
 
 static void zblue_on_pairing_complete(struct bt_conn* conn, bool bonded)
 {
