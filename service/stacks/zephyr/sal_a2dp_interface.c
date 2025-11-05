@@ -1176,6 +1176,8 @@ static void zblue_on_connected(struct bt_a2dp* a2dp, int err)
 
 static void bt_list_remove_a2dp_info(struct zblue_a2dp_info_t* a2dp_info)
 {
+    bool is_cleanup;
+
     if (bt_a2dp_conn == NULL) {
         BT_LOGE("%s, bt_a2dp_conn is null", __func__);
         return;
@@ -1187,15 +1189,15 @@ static void bt_list_remove_a2dp_info(struct zblue_a2dp_info_t* a2dp_info)
 
     assert(a2dp_info->state == 0);
 
-    if (a2dp_info->is_cleanup && (bt_list_length(bt_a2dp_conn) == 1)) {
-        BT_LOGI("cleanup done, free bt_a2dp_conn");
+    is_cleanup = a2dp_info->is_cleanup;
+    bt_list_remove(bt_a2dp_conn, a2dp_info);
+    BT_LOGI("a2dp disconnected, remove a2dp_info");
+
+    if (is_cleanup && (bt_list_length(bt_a2dp_conn) == 0)) {
         bt_list_free(bt_a2dp_conn);
         bt_a2dp_conn = NULL;
-        return;
+        BT_LOGI("free bt_a2dp_conn");
     }
-
-    BT_LOGI("a2dp disconnected, remove a2dp_info");
-    bt_list_remove(bt_a2dp_conn, a2dp_info);
 }
 
 static void zblue_on_disconnected(struct bt_a2dp* a2dp)
