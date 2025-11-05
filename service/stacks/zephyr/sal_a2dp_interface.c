@@ -60,9 +60,7 @@ struct zblue_a2dp_info_t {
     struct bt_conn* conn;
     struct bt_a2dp_stream stream;
     bt_address_t bd_addr;
-    uint8_t peer_endpoint_count;
-    struct bt_a2dp_codec_ie peer_sbc_capabilities[A2DP_PEER_ENDPOINT_MAX];
-    struct bt_a2dp_ep found_peer_endpoint[A2DP_PEER_ENDPOINT_MAX];
+    bt_list_t* peer_endpoint;
     a2dp_int_acp_t int_acp;
     uint8_t role;
     bool is_cleanup; // cleanup flag，if true, free bt_a2dp_conn
@@ -598,8 +596,27 @@ static struct bt_sdp_attribute a2dp_sink_attrs[] = {
 static struct bt_sdp_record a2dp_sink_rec = BT_SDP_RECORD(a2dp_sink_attrs);
 #endif /* CONFIG_BLUETOOTH_A2DP_SINK */
 
-static void a2dp_info_destory(void* data)
+static void a2dp_peer_endpoint_destroy(void* data)
 {
+    struct bt_a2dp_ep* peer_endpoint = (struct bt_a2dp_ep*)data;
+    if (!peer_endpoint)
+        return;
+
+    if (peer_endpoint->codec_cap)
+        free(peer_endpoint->codec_cap);
+
+    free(data);
+}
+
+static void a2dp_info_destroy(void* data)
+{
+    struct zblue_a2dp_info_t* a2dp_info = (struct zblue_a2dp_info_t*)data;
+    if (!a2dp_info)
+        return;
+
+    if (a2dp_info->peer_endpoint)
+        bt_list_free(a2dp_info->peer_endpoint);
+
     free(data);
 }
 
@@ -722,44 +739,50 @@ static bt_status_t check_local_remote_codec_aac(uint8_t* local_ie, uint8_t* remo
     return BT_STATUS_FAIL;
 }
 
-static int find_remote_codec(struct bt_a2dp_ep* local_ep, struct zblue_a2dp_info_t* a2dp_info, struct bt_a2dp_codec_cfg* config)
+static struct bt_a2dp_ep* find_remote_codec(struct bt_a2dp_ep* local_ep, struct zblue_a2dp_info_t* a2dp_info, struct bt_a2dp_codec_cfg* config)
 {
-    int index = 0;
-    bt_status_t flag;
+    bt_status_t status;
+    bt_list_node_t* node;
+    bt_list_t* list;
 
-    for (; index < a2dp_info->peer_endpoint_count; index++) {
-        if (local_ep->codec_type != a2dp_info->found_peer_endpoint[index].codec_type)
+    list = a2dp_info->peer_endpoint;
+    if (!list)
+        return NULL;
+
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        struct bt_a2dp_ep* found_peer_endpoint = bt_list_node(node);
+        if (local_ep->codec_type != found_peer_endpoint->codec_type)
             continue;
 
         if (local_ep->sep.sep_info.inuse != 0)
             continue;
 
-        if (a2dp_info->found_peer_endpoint[index].sep.sep_info.inuse != 0)
+        if (found_peer_endpoint->sep.sep_info.inuse != 0)
             continue;
 
-        if (local_ep->sep.sep_info.media_type != a2dp_info->found_peer_endpoint[index].sep.sep_info.media_type)
+        if (local_ep->sep.sep_info.media_type != found_peer_endpoint->sep.sep_info.media_type)
             continue;
 
-        if (local_ep->sep.sep_info.tsep == a2dp_info->found_peer_endpoint[index].sep.sep_info.tsep)
+        if (local_ep->sep.sep_info.tsep == found_peer_endpoint->sep.sep_info.tsep)
             continue;
 
-        if (local_ep->codec_cap->len != a2dp_info->found_peer_endpoint[index].codec_cap->len)
+        if (local_ep->codec_cap->len != found_peer_endpoint->codec_cap->len)
             continue;
 
         if (local_ep->codec_type == BT_A2DP_SBC) {
-            flag = check_local_remote_codec_sbc(local_ep->codec_cap->codec_ie,
-                a2dp_info->found_peer_endpoint[index].codec_cap->codec_ie, config->codec_config->codec_ie);
-            if (flag == BT_STATUS_SUCCESS)
-                return index;
+            status = check_local_remote_codec_sbc(local_ep->codec_cap->codec_ie,
+                found_peer_endpoint->codec_cap->codec_ie, config->codec_config->codec_ie);
+            if (status == BT_STATUS_SUCCESS)
+                return found_peer_endpoint;
         } else if (local_ep->codec_type == BT_A2DP_MPEG2) {
-            flag = check_local_remote_codec_aac(local_ep->codec_cap->codec_ie,
-                a2dp_info->found_peer_endpoint[index].codec_cap->codec_ie, config->codec_config->codec_ie);
-            if (flag == BT_STATUS_SUCCESS)
-                return index;
+            status = check_local_remote_codec_aac(local_ep->codec_cap->codec_ie,
+                found_peer_endpoint->codec_cap->codec_ie, config->codec_config->codec_ie);
+            if (status == BT_STATUS_SUCCESS)
+                return found_peer_endpoint;
         }
     }
-    index = -1;
-    return index;
+
+    return NULL;
 }
 
 static void zblue_on_stream_configured(struct bt_a2dp_stream* stream)
@@ -995,8 +1018,6 @@ static struct bt_a2dp_stream_ops stream_ops = {
 static uint8_t bt_a2dp_discover_endpoint_cb(struct bt_a2dp* a2dp,
     struct bt_a2dp_ep_info* info, struct bt_a2dp_ep** ep)
 {
-
-    int remote_index = 0;
     uint8_t local_index = 0;
     struct zblue_a2dp_info_t* a2dp_info;
 
@@ -1007,15 +1028,14 @@ static uint8_t bt_a2dp_discover_endpoint_cb(struct bt_a2dp* a2dp,
     }
 
     if (info) {
-        a2dp_info->found_peer_endpoint[a2dp_info->peer_endpoint_count].codec_cap = &a2dp_info->peer_sbc_capabilities[a2dp_info->peer_endpoint_count];
-        if (ep != NULL)
-            *ep = &a2dp_info->found_peer_endpoint[a2dp_info->peer_endpoint_count++];
-        else
-            return BT_A2DP_DISCOVER_EP_CONTINUE;
-
-        if (a2dp_info->peer_endpoint_count >= A2DP_PEER_ENDPOINT_MAX)
+        if (ep == NULL)
             return BT_A2DP_DISCOVER_EP_STOP;
 
+        struct bt_a2dp_ep* found_peer_endpoint = (struct bt_a2dp_ep*)calloc(1, sizeof(struct bt_a2dp_ep));
+        found_peer_endpoint->codec_cap = (struct bt_a2dp_codec_ie*)calloc(1, sizeof(struct bt_a2dp_codec_ie));
+
+        *ep = found_peer_endpoint;
+        bt_list_add_tail(a2dp_info->peer_endpoint, found_peer_endpoint);
         return BT_A2DP_DISCOVER_EP_CONTINUE;
     }
 
@@ -1025,16 +1045,15 @@ static uint8_t bt_a2dp_discover_endpoint_cb(struct bt_a2dp* a2dp,
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
         local_index = 0;
         while (local_index < ARRAY_SIZE(src_sbc_cfg_preferred)) {
-            remote_index = find_remote_codec(&a2dp_sbc_src_endpoint_local, a2dp_info,
+            struct bt_a2dp_ep* found_peer_endpoint = find_remote_codec(&a2dp_sbc_src_endpoint_local, a2dp_info,
                 &src_sbc_cfg_preferred[local_index]);
-            if (remote_index < 0) {
+            if (!found_peer_endpoint) {
                 local_index++;
                 continue;
             }
             memcpy(&a2dp_info->stream.codec_config, src_sbc_cfg_preferred[local_index].codec_config, sizeof(struct bt_a2dp_codec_ie));
 
-            bt_a2dp_stream_config(a2dp, &a2dp_info->stream,
-                &a2dp_sbc_src_endpoint_local, &a2dp_info->found_peer_endpoint[remote_index],
+            bt_a2dp_stream_config(a2dp, &a2dp_info->stream, &a2dp_sbc_src_endpoint_local, found_peer_endpoint,
                 &src_sbc_cfg_preferred[local_index]);
             return BT_A2DP_DISCOVER_EP_STOP;
         }
@@ -1042,16 +1061,15 @@ static uint8_t bt_a2dp_discover_endpoint_cb(struct bt_a2dp* a2dp,
 #ifdef CONFIG_BLUETOOTH_A2DP_AAC_CODEC
         local_index = 0;
         while (local_index < ARRAY_SIZE(src_aac_cfg_preferred)) {
-            remote_index = find_remote_codec(&a2dp_aac_src_endpoint_local, a2dp_info,
+            struct bt_a2dp_ep* found_peer_endpoint = find_remote_codec(&a2dp_aac_src_endpoint_local, a2dp_info,
                 &src_aac_cfg_preferred[local_index]);
-            if (remote_index < 0) {
+            if (!found_peer_endpoint) {
                 local_index++;
                 continue;
             }
             memcpy(&a2dp_info->stream.codec_config, src_aac_cfg_preferred[local_index].codec_config, sizeof(struct bt_a2dp_codec_ie));
 
-            bt_a2dp_stream_config(a2dp, &a2dp_info->stream,
-                &a2dp_aac_src_endpoint_local, &a2dp_info->found_peer_endpoint[remote_index],
+            bt_a2dp_stream_config(a2dp, &a2dp_info->stream, &a2dp_aac_src_endpoint_local, found_peer_endpoint,
                 &src_aac_cfg_preferred[local_index]);
             return BT_A2DP_DISCOVER_EP_STOP;
         }
@@ -1061,16 +1079,15 @@ static uint8_t bt_a2dp_discover_endpoint_cb(struct bt_a2dp* a2dp,
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
         local_index = 0;
         while (local_index < ARRAY_SIZE(snk_sbc_cfg_preferred)) {
-            remote_index = find_remote_codec(&a2dp_sbc_snk_endpoint_local, a2dp_info,
+            struct bt_a2dp_ep* found_peer_endpoint = find_remote_codec(&a2dp_sbc_snk_endpoint_local, a2dp_info,
                 &snk_sbc_cfg_preferred[local_index]);
-            if (remote_index < 0) {
+            if (!found_peer_endpoint) {
                 local_index++;
                 continue;
             }
             memcpy(&a2dp_info->stream.codec_config, snk_sbc_cfg_preferred[local_index].codec_config, sizeof(struct bt_a2dp_codec_ie));
 
-            bt_a2dp_stream_config(a2dp, &a2dp_info->stream,
-                &a2dp_sbc_snk_endpoint_local, &a2dp_info->found_peer_endpoint[remote_index],
+            bt_a2dp_stream_config(a2dp, &a2dp_info->stream, &a2dp_sbc_snk_endpoint_local, found_peer_endpoint,
                 &snk_sbc_cfg_preferred[local_index]);
             return BT_A2DP_DISCOVER_EP_STOP;
         }
@@ -1078,16 +1095,15 @@ static uint8_t bt_a2dp_discover_endpoint_cb(struct bt_a2dp* a2dp,
 #ifdef CONFIG_BLUETOOTH_A2DP_AAC_CODEC
         local_index = 0;
         while (local_index < ARRAY_SIZE(snk_aac_cfg_preferred)) {
-            remote_index = find_remote_codec(&a2dp_aac_snk_endpoint_local, a2dp_info,
+            struct bt_a2dp_ep* found_peer_endpoint = find_remote_codec(&a2dp_aac_snk_endpoint_local, a2dp_info,
                 &snk_aac_cfg_preferred[local_index]);
-            if (remote_index < 0) {
+            if (!found_peer_endpoint) {
                 local_index++;
                 continue;
             }
             memcpy(&a2dp_info->stream.codec_config, snk_aac_cfg_preferred[local_index].codec_config, sizeof(struct bt_a2dp_codec_ie));
 
-            bt_a2dp_stream_config(a2dp, &a2dp_info->stream,
-                &a2dp_aac_snk_endpoint_local, &a2dp_info->found_peer_endpoint[remote_index],
+            bt_a2dp_stream_config(a2dp, &a2dp_info->stream, &a2dp_aac_snk_endpoint_local, found_peer_endpoint,
                 &snk_aac_cfg_preferred[local_index]);
             return BT_A2DP_DISCOVER_EP_STOP;
         }
@@ -1118,6 +1134,7 @@ static void zblue_on_connected(struct bt_a2dp* a2dp, int err)
         BT_LOGW("a2dp_info already exists");
         flag_set(a2dp_info, A2DP_STATE_BIT_SIG_CONN);
         if (a2dp_info->int_acp == A2DP_INT) {
+            a2dp_info->peer_endpoint = bt_list_new(a2dp_peer_endpoint_destroy);
             bt_a2dp_discover(a2dp, &bt_discover_param);
             return;
         }
@@ -1146,13 +1163,13 @@ static void zblue_on_connected(struct bt_a2dp* a2dp, int err)
     a2dp_info->a2dp = a2dp;
     a2dp_info->conn = conn;
     memset(&a2dp_info->stream, 0, sizeof(a2dp_info->stream));
-    a2dp_info->peer_endpoint_count = 0;
     a2dp_info->int_acp = A2DP_ACP;
     a2dp_info->role = SEP_INVALID;
     a2dp_info->is_cleanup = false;
     flag_reset(a2dp_info);
     flag_set(a2dp_info, A2DP_STATE_BIT_SIG_CONN);
     a2dp_info->disconnecting = false;
+    a2dp_info->peer_endpoint = NULL;
 
     bt_list_add_tail(bt_a2dp_conn, a2dp_info);
 }
@@ -1455,7 +1472,7 @@ bt_status_t bt_sal_a2dp_source_init(uint8_t max_connections)
     int ret;
 
     if (!bt_a2dp_conn)
-        bt_a2dp_conn = bt_list_new(a2dp_info_destory);
+        bt_a2dp_conn = bt_list_new(a2dp_info_destroy);
 
     if (bt_list_length(bt_a2dp_conn)) {
         bt_list_clear(bt_a2dp_conn);
@@ -1495,7 +1512,7 @@ bt_status_t bt_sal_a2dp_sink_init(uint8_t max_connections)
     int ret;
 
     if (!bt_a2dp_conn) {
-        bt_a2dp_conn = bt_list_new(a2dp_info_destory);
+        bt_a2dp_conn = bt_list_new(a2dp_info_destroy);
     }
 
     if (bt_list_length(bt_a2dp_conn)) {
@@ -1561,12 +1578,12 @@ bt_status_t bt_sal_a2dp_source_connect(bt_controller_id_t id, bt_address_t* addr
     a2dp_info->a2dp = a2dp;
     a2dp_info->conn = conn;
     memset(&a2dp_info->stream, 0, sizeof(a2dp_info->stream));
-    a2dp_info->peer_endpoint_count = 0;
     a2dp_info->int_acp = A2DP_INT;
     a2dp_info->role = SEP_SRC;
     a2dp_info->is_cleanup = false;
     flag_reset(a2dp_info);
     a2dp_info->disconnecting = false;
+    a2dp_info->peer_endpoint = NULL;
 
     bt_list_add_tail(bt_a2dp_conn, a2dp_info);
     bt_conn_unref(conn);
@@ -1614,12 +1631,12 @@ bt_status_t bt_sal_a2dp_sink_connect(bt_controller_id_t id, bt_address_t* addr)
     a2dp_info->a2dp = a2dp;
     a2dp_info->conn = conn;
     memset(&a2dp_info->stream, 0, sizeof(a2dp_info->stream));
-    a2dp_info->peer_endpoint_count = 0;
     a2dp_info->int_acp = A2DP_INT;
     a2dp_info->role = SEP_SNK;
     a2dp_info->is_cleanup = false;
     flag_reset(a2dp_info);
     a2dp_info->disconnecting = false;
+    a2dp_info->peer_endpoint = NULL;
 
     bt_list_add_tail(bt_a2dp_conn, a2dp_info);
     bt_conn_unref(conn);
