@@ -656,8 +656,8 @@ config BLUETOOTH_GATT
 
 menuconfig BLUETOOTH_GATT_CLIENT
 	bool "Generic Attribute Profile (GATT) Client"
-	select BLUETOOTH_GATT
-	default y
+	default n if !BLUETOOTH_GATT
+	default y if BLUETOOTH_GATT
 
 if BLUETOOTH_GATT_CLIENT
 config BLUETOOTH_GATTC_MAX_CONNECTIONS
@@ -692,8 +692,8 @@ endif # BLUETOOTH_GATT_CLIENT
 
 menuconfig BLUETOOTH_GATT_SERVER
 	bool "Generic Attribute Profile (GATT) Server"
-	select BLUETOOTH_GATT
-	default y
+	default n if !BLUETOOTH_GATT
+	default y if BLUETOOTH_GATT
 
 if BLUETOOTH_GATT_SERVER
 config BLUETOOTH_GATTS_MAX_CONNECTIONS
