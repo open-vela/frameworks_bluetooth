@@ -22,10 +22,12 @@
 
 #include "audio_control.h"
 #include "bt_addr.h"
+#include "bt_dfx.h"
 #include "bt_hfp_hf.h"
 #include "bt_list.h"
 #include "bt_utils.h"
 #include "bt_vendor.h"
+#include "connection_manager.h"
 #include "hci_parser.h"
 #include "hfp_hf_service.h"
 #include "hfp_hf_state_machine.h"
@@ -78,6 +80,7 @@ typedef struct _hf_state_machine {
     bt_list_t* update_calls;
     hfp_hf_call_status_t call_status;
     uint8_t need_query;
+    bool need_query_callback;
     void* service;
 } hf_state_machine_t;
 
@@ -85,7 +88,7 @@ typedef struct {
     struct list_node node;
     uint32_t cmd_code;
     union {
-        uint8_t number[HFP_PHONENUM_DIGITS_MAX];
+        char number[HFP_PHONENUM_DIGITS_MAX];
     } param;
 } hf_at_cmd_t;
 
@@ -195,9 +198,11 @@ static const char* stack_event_to_string(hfp_hf_event_t event)
         CASE_RETURN_STR(HF_TERMINATE_CALL)
         CASE_RETURN_STR(HF_CONTROL_CALL)
         CASE_RETURN_STR(HF_QUERY_CURRENT_CALLS)
+        CASE_RETURN_STR(HF_QUERY_CURRENT_CALLS_WITH_CALLBACK)
         CASE_RETURN_STR(HF_SEND_AT_COMMAND)
         CASE_RETURN_STR(HF_UPDATE_BATTERY_LEVEL)
         CASE_RETURN_STR(HF_SEND_DTMF)
+        CASE_RETURN_STR(HF_GET_SUBSCRIBER_NUMBER)
         CASE_RETURN_STR(HF_TIMEOUT)
         CASE_RETURN_STR(HF_OFFLOAD_START_REQ)
         CASE_RETURN_STR(HF_OFFLOAD_STOP_REQ)
@@ -220,6 +225,7 @@ static const char* stack_event_to_string(hfp_hf_event_t event)
         CASE_RETURN_STR(HF_STACK_EVENT_CMD_RESULT)
         CASE_RETURN_STR(HF_STACK_EVENT_RING_INDICATION)
         CASE_RETURN_STR(HF_STACK_EVENT_CODEC_CHANGED)
+        CASE_RETURN_STR(HF_STACK_EVENT_CNUM)
     default:
         return "UNKNOWN_HF_EVENT";
     }
@@ -252,7 +258,7 @@ static void pending_action_create(hf_state_machine_t* hfsm, uint32_t cmd_code, v
     case HFP_ATCMD_CODE_ATD:
     case HFP_ATCMD_CODE_BLDN:
         if (param) {
-            memcpy(cmd->param.number, param, sizeof(cmd->param.number) - 1);
+            strlcpy(cmd->param.number, (const char*)param, sizeof(cmd->param.number));
         }
         break;
     default:
@@ -355,37 +361,56 @@ static void hf_service_fake_ciev(hf_state_machine_t* hfsm)
     HFP_HF_REPORT_CIEV_AND_CACHE(hfsm, callheld);
 }
 
+static void hf_notify_current_calls(hf_state_machine_t* hfsm)
+{
+    bt_list_t* calls_list = hfsm->current_calls;
+    hfp_current_call_t calls_array[HFP_CALL_LIST_MAX];
+    uint8_t i = 0;
+    hfp_current_call_t* call;
+
+    for (bt_list_node_t* call_node = bt_list_head(calls_list); call_node != NULL; call_node = bt_list_next(calls_list, call_node)) {
+        call = bt_list_node(call_node);
+        memcpy(&calls_array[i], call, sizeof(hfp_current_call_t));
+        if (++i >= HFP_CALL_LIST_MAX) {
+            break;
+        }
+    }
+    hf_service_notify_current_calls(&(hfsm->addr), i, calls_array);
+    hfsm->need_query_callback = false;
+}
+
 static void query_current_calls_final(hf_state_machine_t* hfsm)
 {
     BT_LOGD("Query current call final");
-    bt_list_node_t *cnode, *unode;
+    bt_list_node_t* unode;
     bt_list_t* clist = hfsm->current_calls;
     bt_list_t* ulist = hfsm->update_calls;
+    bt_list_node_t* cnode = bt_list_head(clist);
 
     hf_service_fake_ciev(hfsm);
 
-    for (cnode = bt_list_head(clist); cnode != NULL; cnode = bt_list_next(clist, cnode)) {
+    while (cnode) {
         hfp_current_call_t* ccall = bt_list_node(cnode);
         hfp_current_call_t* ucall = bt_list_find(ulist, call_index_cmp, &ccall->index);
+        bt_list_node_t* next_node = bt_list_next(clist, cnode);
         if (!ucall) {
-            bt_list_node_t* tmp = bt_list_next(clist, cnode);
             /* call not found from update list, notify had terminated */
             ccall->state = HFP_HF_CALL_STATE_DISCONNECTED;
             hf_service_notify_call_state_changed(&hfsm->addr, ccall);
             /* resource free in bt_list_remove_node */
             bt_list_remove_node(clist, cnode);
-            cnode = tmp;
-            if (!cnode)
-                break;
         } else {
-            if (ucall->state != ccall->state || ucall->mpty != ccall->mpty || strcmp(ucall->number, ccall->number)) {
+            if (ucall->dir != ccall->dir || ucall->state != ccall->state
+                || ucall->mpty != ccall->mpty || strcmp(ucall->number, ccall->number)) {
                 /* call state or mutil part or number changed, notify changed */
+                ccall->dir = ucall->dir;
                 ccall->state = ucall->state;
                 ccall->mpty = ucall->mpty;
                 snprintf(ccall->number, HFP_PHONENUM_DIGITS_MAX, "%s", ucall->number);
                 hf_service_notify_call_state_changed(&hfsm->addr, ccall);
             }
         }
+        cnode = next_node;
     }
 
     for (unode = bt_list_head(ulist); unode != NULL; unode = bt_list_next(ulist, unode)) {
@@ -397,6 +422,12 @@ static void query_current_calls_final(hf_state_machine_t* hfsm)
             hf_service_notify_call_state_changed(&hfsm->addr, ucall);
         }
     }
+
+    if (hfsm->need_query_callback) {
+        hf_notify_current_calls(hfsm);
+    }
+
+    flag_clear(hfsm, PENDING_CURRENT_CALLS_QUERY);
 
     bt_list_clear(ulist);
 }
@@ -412,6 +443,10 @@ static void state_machine_reset_calls(hf_state_machine_t* hfsm)
     if (hfsm->connect_timer)
         service_loop_cancel_timer(hfsm->connect_timer);
     hfsm->recognition_active = false;
+
+    hfsm->call_status.last_reported.call_status = HFP_CALL_NO_CALLS_IN_PROGRESS;
+    hfsm->call_status.last_reported.callheld_status = HFP_CALLHELD_NONE;
+    hfsm->call_status.last_reported.callsetup_status = HFP_CALLSETUP_NONE;
 }
 
 static void update_remote_features(hf_state_machine_t* hfsm, uint32_t remote_features)
@@ -464,6 +499,9 @@ static void disconnected_enter(state_machine_t* sm)
     hfsm->need_query = false;
     if (hsm_get_previous_state(sm)) {
         bt_pm_conn_close(PROFILE_HFP_HF, &hfsm->addr);
+#if defined(CONFIG_BLUETOOTH_CONNECTION_MANAGER)
+        bt_cm_disconnected(&hfsm->addr, PROFILE_HFP_HF);
+#endif
         bt_media_remove_listener(hfsm->volume_listener);
         hfsm->spk_volume = 0;
         hfsm->mic_volume = 0;
@@ -550,6 +588,7 @@ static bool disconnected_process_event(state_machine_t* sm, uint32_t event, void
 static void connect_timeout(service_timer_t* timer, void* data)
 {
     hf_state_machine_t* hfsm = (hf_state_machine_t*)data;
+    BT_DFX_HFP_CONN_ERROR(BT_DFXE_HFP_HF_CONN_TIMEOUT);
 
     hfp_hf_send_event(&hfsm->addr, HF_TIMEOUT);
 }
@@ -625,6 +664,28 @@ static bool check_sco_allowed(state_machine_t* sm)
     return true;
 }
 
+static void try_disconnect_audio(hf_state_machine_t* hfsm)
+{
+    BT_ADDR_LOG("Try disconnect audio for :%s", &hfsm->addr);
+
+    if (flag_isset(hfsm, PENDING_AUDIO_DISCONNECT)) {
+        BT_LOGD("Previous audio disconnection is pending");
+        return;
+    }
+
+    if (bt_sal_hfp_hf_disconnect_audio(&hfsm->addr) != BT_STATUS_SUCCESS) {
+        BT_LOGE("Failed to disconnect audio");
+        return;
+    }
+
+    // Should set flag when SCO not connected?
+    if (hf_state_machine_get_state(hfsm) == HFP_HF_STATE_AUDIO_CONNECTED) {
+        flag_set(hfsm, PENDING_AUDIO_DISCONNECT);
+    } else {
+        BT_LOGW("SCO not connected");
+    }
+}
+
 #ifdef CONFIG_HFP_HF_WEBCHAT_BLOCKER
 static void channel_type_verdict(state_machine_t* sm, uint32_t event, uint32_t status,
     uint64_t current_timestamp_us)
@@ -640,8 +701,7 @@ static void channel_type_verdict(state_machine_t* sm, uint32_t event, uint32_t s
                 BT_LOGD("%s: this might be a video chat from WeChat", __func__);
                 hfsm->call_status.webchat_flag_timestamp_us = current_timestamp_us;
                 if (hf_state_machine_get_state(hfsm) == HFP_HF_STATE_AUDIO_CONNECTED && !check_sco_allowed(sm)) {
-                    if (bt_sal_hfp_hf_disconnect_audio(&hfsm->addr) != BT_STATUS_SUCCESS)
-                        BT_ADDR_LOG("Terminate audio failed for :%s", &hfsm->addr);
+                    try_disconnect_audio(hfsm);
                 }
             }
         }
@@ -717,6 +777,7 @@ static void hf_retry_callback(service_timer_t* timer, void* data)
             hsm_transition_to(sm, &connecting_state);
         } else {
             BT_LOGI("failed to connect %s", _addr_str);
+            BT_DFX_HFP_CONN_ERROR(BT_DFXE_HFP_HF_CONN_RETRY_FAIL);
         }
     }
 
@@ -892,7 +953,7 @@ static void hold_call(hf_state_machine_t* hfsm)
         BT_LOGE("No call to hold");
 }
 
-static void handle_dailing_fail(state_machine_t* sm, uint8_t* number)
+static void handle_dailing_fail(state_machine_t* sm, char* number)
 {
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
     hfp_current_call_t call = { 0 };
@@ -902,7 +963,7 @@ static void handle_dailing_fail(state_machine_t* sm, uint8_t* number)
     call.state = HFP_HF_CALL_STATE_DISCONNECTED;
     if (number) {
         BT_LOGD("number: %s", number);
-        memcpy(call.number, number, sizeof(call.number));
+        strlcpy(call.number, number, sizeof(call.number));
     }
 
     hf_service_notify_call_state_changed(&hfsm->addr, &call);
@@ -932,6 +993,18 @@ static void handle_hf_set_voice_call_volume(state_machine_t* sm, hfp_volume_type
     } else if (type == HFP_VOLUME_TYPE_MIC) {
         hfsm->mic_volume = volume;
     }
+}
+
+static bt_status_t query_current_calls_with_callback(hf_state_machine_t* hfsm)
+{
+    if (flag_isset(hfsm, PENDING_CURRENT_CALLS_QUERY)) {
+        BT_LOGD("Service is querying current calls, wait until done before callback.");
+        hfsm->need_query_callback = true;
+        return BT_STATUS_SUCCESS;
+    }
+
+    hf_notify_current_calls(hfsm);
+    return BT_STATUS_SUCCESS;
 }
 
 static bool default_process_event(state_machine_t* sm, uint32_t event, hfp_hf_data_t* data)
@@ -969,6 +1042,12 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, hfp_hf_da
         if (status != BT_STATUS_SUCCESS)
             BT_LOGE("Query current call failed");
         break;
+    case HF_QUERY_CURRENT_CALLS_WITH_CALLBACK:
+        status = query_current_calls_with_callback(hfsm);
+        if (status != BT_STATUS_SUCCESS) {
+            BT_LOGE("Query current call with callback failed");
+        }
+        break;
     case HF_SEND_AT_COMMAND: {
         status = bt_sal_hfp_hf_send_at_cmd(&hfsm->addr, data->string1, strlen(data->string1));
         if (status != BT_STATUS_SUCCESS)
@@ -985,6 +1064,11 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, hfp_hf_da
         if (status != BT_STATUS_SUCCESS)
             BT_LOGE("Send dtmf failed");
         break;
+    case HF_GET_SUBSCRIBER_NUMBER:
+        status = bt_sal_hfp_hf_get_subscriber_number(&hfsm->addr);
+        if (status != BT_STATUS_SUCCESS)
+            BT_LOGE("Get subscriber number failed");
+        break;
     case HF_STACK_EVENT_VR_STATE_CHANGED: {
         hfp_hf_vr_state_t state = data->valueint1;
 
@@ -996,12 +1080,15 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, hfp_hf_da
     case HF_STACK_EVENT_CALLSETUP:
     case HF_STACK_EVENT_CALLHELD:
         update_call_status(sm, event, data->valueint1);
-        bt_sal_hfp_hf_get_current_calls(&hfsm->addr);
+        if (bt_sal_hfp_hf_get_current_calls(&hfsm->addr) == BT_STATUS_SUCCESS) {
+            flag_set(hfsm, PENDING_CURRENT_CALLS_QUERY);
+        }
         break;
     case HF_STACK_EVENT_CLIP: {
         char* number = data->string1;
         char* name = data->string2;
         BT_LOGD("CLIP:number :%s, name: %s", number, name == NULL ? "NULL" : name);
+        hf_service_notify_clip_received(&hfsm->addr, number, name);
         set_current_call_name(hfsm, number, name);
         break;
     }
@@ -1074,6 +1161,14 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, hfp_hf_da
     case HF_STACK_EVENT_CODEC_CHANGED:
         hfsm->codec = data->valueint1 == HFP_CODEC_MSBC ? HFP_CODEC_MSBC : HFP_CODEC_CVSD;
         break;
+    case HF_STACK_EVENT_CNUM: {
+        char* number = data->string1;
+        uint32_t service = data->valueint2;
+
+        BT_LOGD("CNUM:number: %s, service: %" PRIu32, number == NULL ? "NULL" : number, service);
+        hf_service_notify_subscriber_number(&hfsm->addr, data->string1, (hfp_subscriber_number_service_t)data->valueint2);
+        break;
+    }
     default:
         BT_LOGW("Unexpected event:%" PRIu32 "", event);
         break;
@@ -1135,6 +1230,9 @@ static void connected_enter(state_machine_t* sm)
     HF_DBG_ENTER(sm, &hfsm->addr);
 
     bt_pm_conn_open(PROFILE_HFP_HF, &hfsm->addr);
+#if defined(CONFIG_BLUETOOTH_CONNECTION_MANAGER)
+    bt_cm_connected(&hfsm->addr, PROFILE_HFP_HF);
+#endif
 
     if (hfsm->need_query) {
         bt_sal_hfp_hf_get_current_calls(&hfsm->addr);
@@ -1186,8 +1284,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         }
         break;
     case HF_DISCONNECT_AUDIO:
-        if (bt_sal_hfp_hf_disconnect_audio(&hfsm->addr) != BT_STATUS_SUCCESS)
-            BT_ADDR_LOG("Disconnect audio failed for :%s", &hfsm->addr);
+        try_disconnect_audio(hfsm); // Should set flag when SCO not connected?
         break;
     case HF_VOICE_RECOGNITION_START:
         if (!hfsm->recognition_active) {
@@ -1205,7 +1302,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         status = bt_sal_hfp_hf_dial_number(&hfsm->addr, data->string1);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Dial number: %s failed", data->string1);
-            handle_dailing_fail(sm, (uint8_t*)data->string1);
+            handle_dailing_fail(sm, data->string1);
             break;
         }
         update_dialing_time(sm, current_timestamp_us);
@@ -1263,6 +1360,9 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
             hsm_transition_to(sm, &audio_on_state);
             break;
         case HFP_AUDIO_STATE_DISCONNECTED:
+            BT_LOGW("SCO disconnected without connected");
+            flag_clear(hfsm, PENDING_AUDIO_DISCONNECT);
+            break;
         default:
             break;
         }
@@ -1290,6 +1390,8 @@ static void hfp_hf_offload_timeout_callback(service_timer_t* timer, void* data)
 
     msg = hfp_hf_msg_new(HF_OFFLOAD_TIMEOUT_EVT, &hfsm->addr);
     hf_state_machine_dispatch(hfsm, msg);
+    BT_DFX_HFP_OFFLOAD_ERROR(BT_DFXE_OFFLOAD_START_TIMEOUT);
+
     hfp_hf_msg_destroy(msg);
 }
 
@@ -1311,9 +1413,9 @@ static void audio_on_enter(state_machine_t* sm)
         bt_media_set_sco_available();
     } else {
         BT_LOGI("SCO is not allowed");
-        if (bt_sal_hfp_hf_disconnect_audio(&hfsm->addr) != BT_STATUS_SUCCESS)
-            BT_ADDR_LOG("Terminate audio failed for :%s", &hfsm->addr);
+        try_disconnect_audio(hfsm);
     }
+
     hf_service_notify_audio_state_changed(&hfsm->addr, HFP_AUDIO_STATE_CONNECTED);
 }
 
@@ -1324,6 +1426,7 @@ static void audio_on_exit(state_machine_t* sm)
 
     HF_DBG_EXIT(sm, &hfsm->addr);
 
+    bt_pm_busy(PROFILE_HFP_HF, &hfsm->addr);
     bt_pm_sco_close(PROFILE_HFP_HF, &hfsm->addr);
 
     /* TODO: set sco unavailable */
@@ -1340,6 +1443,8 @@ static void audio_on_exit(state_machine_t* sm)
             BT_LOGE("message alloc failed");
         }
     }
+
+    flag_clear(hfsm, PENDING_AUDIO_DISCONNECT);
 
     hf_service_notify_audio_state_changed(&hfsm->addr, HFP_AUDIO_STATE_DISCONNECTED);
 }
@@ -1360,10 +1465,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         hsm_transition_to(sm, &disconnected_state);
         break;
     case HF_DISCONNECT_AUDIO:
-        status = bt_sal_hfp_hf_disconnect_audio(&hfsm->addr);
-        if (status != BT_STATUS_SUCCESS) {
-            BT_LOGE("Disconnect Sco connection failed");
-        }
+        try_disconnect_audio(hfsm);
         break;
     case HF_VOICE_RECOGNITION_STOP:
         if (hfsm->recognition_active) {
@@ -1448,10 +1550,10 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         result = hci_get_result(hci_event);
         if (result != HCI_SUCCESS) {
             BT_LOGE("HF_OFFLOAD_START fail, status:0x%0x", result);
+            BT_DFX_HFP_OFFLOAD_ERROR(BT_DFXE_OFFLOAD_HCI_UNSPECIFIED_ERROR);
+
             audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
-            if (bt_sal_hfp_hf_disconnect_audio(&hfsm->addr) != BT_STATUS_SUCCESS) {
-                BT_ADDR_LOG("Terminate audio failed for :%s", &hfsm->addr);
-            }
+            try_disconnect_audio(hfsm);
             break;
         }
 
@@ -1462,9 +1564,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         flag_clear(hfsm, PENDING_OFFLOAD_START);
         hfsm->offload_timer = NULL;
         audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
-        if (bt_sal_hfp_hf_disconnect_audio(&hfsm->addr) != BT_STATUS_SUCCESS) {
-            BT_ADDR_LOG("Terminate audio failed for :%s", &hfsm->addr);
-        }
+        try_disconnect_audio(hfsm);
         break;
     }
     case HF_OFFLOAD_STOP_REQ:
