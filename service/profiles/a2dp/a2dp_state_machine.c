@@ -391,7 +391,7 @@ static void idle_enter(state_machine_t* sm)
     if (prev_state != NULL) {
         bt_pm_conn_close(PROFILE_A2DP, &a2dp_sm->addr);
         if (a2dp_sm->peer_sep == SEP_SRC) {
-#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+#if defined(CONFIG_BLUETOOTH_A2DP_SINK) && defined(CONFIG_BLUETOOTH_CONNECTION_MANAGER)
             bt_cm_disconnected(&a2dp_sm->addr, PROFILE_A2DP_SINK);
 #endif
         }
@@ -594,7 +594,7 @@ static void opened_enter(state_machine_t* sm)
 #endif
         bt_pm_conn_open(PROFILE_A2DP, &a2dp_sm->addr);
         if (a2dp_sm->peer_sep == SEP_SRC) {
-#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+#if defined(CONFIG_BLUETOOTH_A2DP_SINK) && defined(CONFIG_BLUETOOTH_CONNECTION_MANAGER)
             bt_cm_connected(&a2dp_sm->addr, PROFILE_A2DP_SINK);
 #endif
         }
