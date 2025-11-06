@@ -14,13 +14,13 @@
  * limitations under the License.
  ***************************************************************************/
 
+#include <string.h>
 #include <zephyr/bluetooth/addr.h>
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/l2cap.h>
 #include <zephyr/bluetooth/uuid.h>
-#include <string.h>
 
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
 #include "sal_interface.h"
@@ -78,6 +78,7 @@ static bt_status_t sal_send_req(sal_scan_req_t* req)
 
     if (!service_loop_work((void*)req, sal_invoke_async, NULL)) {
         BT_LOGE("%s, service_loop_work fail", __func__);
+        free(req);
         return BT_STATUS_FAIL;
     }
 
