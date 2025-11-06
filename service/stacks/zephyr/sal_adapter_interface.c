@@ -188,8 +188,11 @@ static bt_status_t sal_send_req(sal_adapter_req_t* req)
     if (!req)
         return BT_STATUS_PARM_INVALID;
 
-    if (!service_loop_work((void*)req, sal_invoke_async, NULL))
+    if (!service_loop_work((void*)req, sal_invoke_async, NULL)) {
+        BT_LOGE("%s, service_loop_work failed", __func__);
+        free(req);
         return BT_STATUS_FAIL;
+    }
 
     return BT_STATUS_SUCCESS;
 }
