@@ -100,5 +100,6 @@ void system_bluetooth_wrap_getAddressAsync(FeatureInstanceHandle feature, Append
 
     FeaturePromiseReject(feature, pid, status, "get address failed!");
     FeatureFreeInstanceHandle(data->feature_ins);
-    free(data);
+    if (!data)
+        free(data);
 }
