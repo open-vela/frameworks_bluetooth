@@ -78,6 +78,7 @@ static bt_status_t sal_send_req(sal_scan_req_t* req)
 
     if (!service_loop_work((void*)req, sal_invoke_async, NULL)) {
         BT_LOGE("%s, service_loop_work fail", __func__);
+        free(req);
         return BT_STATUS_FAIL;
     }
 
