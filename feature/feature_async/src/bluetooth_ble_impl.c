@@ -168,6 +168,16 @@ feature_bluetooth_gattc_info_t* find_gattc_info_by_userdata(bt_instance_t* ins, 
     return NULL;
 }
 
+void feature_gattc_service_free(void* data)
+{
+    bt_list_t* list = (bt_list_t*)data;
+    bt_list_node_t* node;
+
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        FeatureFreeValue((system_bluetooth_ble_GattService*)bt_list_node(node));
+    }
+}
+
 bt_status_t get_valid_uuid128(uint8_t uuid128[16], const char* in)
 {
     int num;
@@ -1250,6 +1260,24 @@ void feature_free_service(ft_context_ref ft_ctx, system_bluetooth_ble_GattServic
     }
 }
 
+static void bt_feature_free_gattc_service(ft_context_ref ft_ctx, bt_list_t* list)
+{
+    bt_list_node_t* node;
+
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        system_bluetooth_ble_GattService* feature_service_element = bt_list_node(node);
+        int included_service_count = feature_service_element->includeServices->_size;
+
+        for (int i = 0; i < included_service_count; i++) {
+            system_bluetooth_ble_GattService* feature_include_service;
+            feature_include_service = ((system_bluetooth_ble_GattService**)feature_service_element->includeServices->_element)[i];
+            feature_free_service(ft_ctx, feature_include_service);
+        }
+
+        feature_free_service(ft_ctx, feature_service_element);
+    }
+}
+
 static void discover_callback(bt_instance_t* ins, gatt_status_t status, gattc_handle_t conn_handle,
     const gatt_service_t* service)
 {
@@ -1272,15 +1300,18 @@ static void discover_callback(bt_instance_t* ins, gatt_status_t status, gattc_ha
         return;
     }
 
+    ft_context_ref ft_ctx = FeatureGetContext(data->interface);
+
     if (status != GATT_STATUS_SUCCESS) {
         FEATURE_LOG_ERROR("%s, get service failed, status: %d", __func__, status);
         FeaturePromiseReject(data->interface, data->pid, status, "gattc get service failed!");
+
+        bt_feature_free_gattc_service(ft_ctx, data->cached_services);
+        feature_gattc_service_free(data->cached_services);
         bt_list_free(data->cached_services);
         bt_list_remove(gattc_info->userdata_list, data);
         return;
     }
-
-    ft_context_ref ft_ctx = FeatureGetContext(data->interface);
 
     // service == NULL indicates the end of reporting
     if (service == NULL) {
@@ -1301,22 +1332,11 @@ static void discover_callback(bt_instance_t* ins, gatt_status_t status, gattc_ha
         FEATURE_LOG_INFO("%s, get service success", __func__);
         FeaturePromiseResolve(data->interface, data->pid, feature_service_array);
 
-        // for every outer feature_service in feature_service_array
-        for (int k = 0; k < feature_service_array->_size; k++) {
-            system_bluetooth_ble_GattService* feature_service_element = ((system_bluetooth_ble_GattService**)feature_service_array->_element)[k];
-            int included_service_count = feature_service_element->includeServices->_size;
-
-            for (int i = 0; i < included_service_count; i++) {
-                system_bluetooth_ble_GattService* feature_include_service;
-                feature_include_service = ((system_bluetooth_ble_GattService**)feature_service_element->includeServices->_element)[i];
-                feature_free_service(ft_ctx, feature_include_service);
-            }
-
-            feature_free_service(ft_ctx, feature_service_element);
-        }
-
+        bt_feature_free_gattc_service(ft_ctx, list);
         FeatureFreeValue(feature_service_array);
 
+        /* The FeatureFreeValue has already released the node within cached_services, so it should not be
+        released again during bt_list_remove, which would result in a double-free situation. */
         bt_list_free(data->cached_services);
         bt_list_remove(gattc_info->userdata_list, data);
 
@@ -1621,6 +1641,23 @@ error:
 }
 
 #ifdef CONFIG_BLUETOOTH_GATT
+static void bt_feature_free_gattc_cached_services(bt_list_t* list)
+{
+    bt_list_node_t* node;
+
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        gattc_data_t* data = bt_list_node(node);
+        bool is_service_data = gattc_userdata_type_cmp(data, (void*)FEATURE_GATTC_DISCOVERY);
+        if (is_service_data) {
+            ft_context_ref ft_ctx = FeatureGetContext(data->interface);
+
+            bt_feature_free_gattc_service(ft_ctx, data->cached_services);
+            feature_gattc_service_free(data->cached_services);
+            bt_list_free(data->cached_services);
+        }
+    }
+}
+
 static void feature_gattc_destroy(FeatureInterfaceHandle handle)
 {
     feature_bluetooth_gattc_info_t* gattc_info = (feature_bluetooth_gattc_info_t*)FeatureGetObjectData(handle);
@@ -1640,6 +1677,7 @@ static void feature_gattc_destroy(FeatureInterfaceHandle handle)
     }
 
     free(gattc_info->gattc);
+    bt_feature_free_gattc_cached_services(gattc_info->userdata_list);
     bt_list_free(gattc_info->userdata_list);
     bt_list_remove(features_info->feature_ble_gattc, gattc_info);
 }
@@ -1873,6 +1911,10 @@ static void gattc_get_service_cb(bt_instance_t* ins, bt_status_t status, void* u
 error:
     FEATURE_LOG_ERROR("%s, get service failed, status: %d", __func__, status);
     FeaturePromiseReject(data->interface, data->pid, status, "gattc get service failed!");
+
+    if (bt_list_length(data->cached_services))
+            FEATURE_LOG_ERROR("%s, The data->cached_services should not contain any data.", __func__);
+
     bt_list_free(data->cached_services);
     bt_list_remove(gattc_info->userdata_list, data);
 }
@@ -1921,6 +1963,9 @@ void system_bluetooth_ble_GattClient_interface_gattc_getServices(FeatureInterfac
 
 error:
     if (data) {
+        if (bt_list_length(data->cached_services))
+            FEATURE_LOG_ERROR("%s, The data->cached_services should not contain any data.", __func__);
+
         bt_list_free(data->cached_services);
         bt_list_remove(gattc_info->userdata_list, data);
     }
