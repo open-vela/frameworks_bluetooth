@@ -178,7 +178,9 @@ static int get_hfp_connection_state_cmd(void* handle, int argc, char* argv[])
         return CMD_INVALID_ADDR;
 
     int state = bt_hfp_hf_get_connection_state(handle, &addr);
-    return state;
+    PRINT("HFP HF connection state: %d", state);
+
+    return CMD_OK;
 }
 
 static int connect_audio_cmd(void* handle, int argc, char* argv[])
