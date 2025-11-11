@@ -56,6 +56,11 @@ typedef struct {
     uv_sem_t signal;
 } signal_msg_t;
 
+typedef struct {
+    thread_loop_work_t work;
+    uv_sem_t signal;
+} signal_work_t;
+
 #if defined(ANDROID)
 #define LOOP_THREAD_STACK_SIZE 40960
 #else
@@ -334,4 +339,49 @@ void do_in_thread_loop_sync(uv_loop_t* loop, thread_func_t func, void* data)
     do_in_thread_loop(loop, thread_sync_callback, &msg);
     uv_sem_wait(&msg.signal);
     uv_sem_destroy(&msg.signal);
+}
+
+static void work_sync_cb(uv_work_t* req)
+{
+    signal_work_t* work = req->data;
+    assert(work);
+
+    if (work->work.work_cb)
+        work->work.work_cb(&work->work, work->work.userdata);
+}
+
+static void after_work_sync_cb(uv_work_t* req, int status)
+{
+    signal_work_t* work = req->data;
+    assert(status == 0);
+    assert(work);
+
+    if (work->work.after_work_cb)
+        work->work.after_work_cb(&work->work, work->work.userdata);
+
+    uv_sem_post(&work->signal);
+}
+
+void thread_loop_work_sync(uv_loop_t* loop, void* user_data, thread_work_cb_t work_cb,
+    thread_after_work_cb_t after_work_cb)
+{
+    signal_work_t* work = zalloc(sizeof(*work));
+    if (work == NULL)
+        return;
+
+    work->work.userdata = user_data;
+    work->work.work_cb = work_cb;
+    work->work.after_work_cb = after_work_cb;
+    work->work.work.data = work;
+    uv_sem_init(&work->signal, 0);
+
+    if (uv_queue_work(loop, &work->work.work, work_sync_cb, after_work_sync_cb) != 0) {
+        syslog(LOG_DEBUG, "%s uv_queue_work failed", __func__);
+        goto exit;
+    }
+
+    uv_sem_wait(&work->signal);
+exit:
+    uv_sem_destroy(&work->signal);
+    free(work);
 }
