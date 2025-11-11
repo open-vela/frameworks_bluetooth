@@ -123,8 +123,13 @@ case CS_SUBCODE_START_DISTANCE_MEASUREMENT:
 case CS_SUBCODE_STOP_DISTANCE_MEASUREMENT:
     packet->cs_r.status = BTSYMBOLS(bt_cs_stop_distance_measurement)(ins,
     &packet->cs_pl._bt_cs_stop_distance_measurement.addr,
-packet->cs_pl._bt_cs_stop_distance_measurement.method,
-packet->cs_pl._bt_cs_stop_distance_measurement.timeout_bool);
+    packet->cs_pl._bt_cs_stop_distance_measurement.method,
+    packet->cs_pl._bt_cs_stop_distance_measurement.timeout_bool);
+        break;
+case CS_SUBCODE_TEST:
+    packet->cs_r.status = BTSYMBOLS(bt_cs_test)(ins,
+    &packet->cs_pl._bt_cs_test.data,
+    packet->cs_pl._bt_cs_test.len);
         break;
     default:
         break;

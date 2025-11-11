@@ -31,6 +31,10 @@
 
 #define CS_SUBCODE_STOP_DISTANCE_MEASUREMENT 5
 #define BT_CS_STOP_DISTANCE_MEASUREMENT BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_CS, CS_SUBCODE_STOP_DISTANCE_MEASUREMENT)
+
+#define CS_SUBCODE_TEST                      6
+#define BT_CS_TEST BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_CS, CS_SUBCODE_TEST)
+
 #define BT_IPC_CODE_COMMAND_CS_END BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_CS, BT_IPC_CODE_SUBCODE_MAX_NUM)
 
 #define BT_IPC_CODE_CALLBACK_CS_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_CS, 0)
@@ -54,6 +58,11 @@
             uint8_t method;
             uint8_t timeout_bool; /* boolean */
         } _bt_cs_stop_distance_measurement;
+
+        struct {
+            uint16_t len;
+            void* data;
+        } _bt_cs_test;
     } bt_message_cs_t;
 
     typedef union {

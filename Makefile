@@ -112,6 +112,7 @@ ifeq ($(CONFIG_BLUETOOTH_GATT), y)
 	CSRCS += service/stacks/zephyr/sal_gatt_server_interface.c
 ifeq ($(CONFIG_BLUETOOTH_LE_CS), y)
 	CSRCS += service/stacks/zephyr/profile/ras_server/cs_ras_server.c
+	CSRCS += service/stacks/zephyr/profile/cs_ras_test.c
 	CSRCS += service/stacks/zephyr/sal_le_cs_interface.c
 endif #CONFIG_BLUETOOTH_LE_CS
 endif #CONFIG_BLUETOOTH_GATT

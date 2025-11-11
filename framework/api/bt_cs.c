@@ -59,4 +59,11 @@ bt_status_t BTSYMBOLS(bt_cs_stop_distance_measurement)(bt_instance_t* ins, bt_ad
     return profile->stop_distance_measurement(addr, method, timeout);
 }
 
+bt_status_t BTSYMBOLS(bt_cs_test)(bt_instance_t* ins, void* data, uint16_t len)
+{
+    bt_cs_interface_t* profile = get_profile_service();
+
+    return profile->cs_test(data, len);
+}
+
 #endif /* CONFIG_BLUETOOTH_LE_CS */

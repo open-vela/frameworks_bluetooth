@@ -34,6 +34,7 @@
 #include "service_loop.h"
 #include "service_manager.h"
 #include "utils/log.h"
+#include "cs_ras_test.h"
 
 #ifdef CONFIG_BLUETOOTH_LE_CS
 
@@ -318,12 +319,19 @@ static bt_status_t cs_stop_distance_measurement(bt_address_t* addr, int method, 
     return BT_STATUS_SUCCESS;
 }
 
+static bt_status_t cs_test(void* data, uint16_t len)
+{
+    int err = cs_ras_subevent_recv_test(data, len);
+    return BT_STATUS_SUCCESS;
+}
+
 static const bt_cs_interface_t cs_interface = {
     .size = sizeof(cs_interface),
     .register_callbacks = cs_register_callbacks,
     .unregister_callbacks = cs_unregister_callbacks,
     .start_distance_measurement = cs_start_distance_measurement,
     .stop_distance_measurement = cs_stop_distance_measurement,
+    .cs_test = cs_test,
 };
 
 static const void* get_cs_profile_interface(void)

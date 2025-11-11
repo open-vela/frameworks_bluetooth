@@ -26,12 +26,14 @@
 
 static int cs_start_distance_measurement_cmd(void* handle, int argc, char* argv[]);
 static int cs_stop_distance_measurement_cmd(void* handle, int argc, char* argv[]);
+static int cs_test_cmd(void* handle, int argc, char* argv[]);
 
 static void* cs_callbacks = NULL;
 
 static bt_command_t g_cs_tables[] = {
     { "start", cs_start_distance_measurement_cmd, 0, "\"start distance measurement :\"" },
     { "stop", cs_stop_distance_measurement_cmd, 0, "\"stop distance measurement :\"" },
+    {"test", cs_test_cmd, 0, "\"Channel Sounding test mode :\""},
 };
 
 static void usage(void)
@@ -114,6 +116,13 @@ static int cs_stop_distance_measurement_cmd(void* handle, int argc, char* argv[]
 {
     bt_address_t addr = {0};
     bt_cs_stop_distance_measurement(handle, &addr, METHOD_CS, 1000);
+    return 0;
+}
+
+static int cs_test_cmd(void* handle, int argc, char* argv[])
+{
+    uint8_t data[10] = {0};
+    bt_cs_test(handle, (void *)data, sizeof(data));
     return 0;
 }
 

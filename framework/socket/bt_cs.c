@@ -109,4 +109,25 @@ bt_status_t bt_cs_stop_distance_measurement(bt_instance_t* ins, bt_address_t* ad
     return packet.cs_r.status;
 }
 
+bt_status_t bt_cs_test(bt_instance_t* ins, void* data, uint16_t len)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+    if (data) {
+        memcpy(&packet.cs_pl._bt_cs_test.data, data, len);
+    } else {
+        packet.cs_pl._bt_cs_test.data = NULL;
+    }
+
+    packet.cs_pl._bt_cs_test.len = len;
+
+    status = bt_socket_client_sendrecv(ins, &packet, BT_CS_TEST);
+    if (status != BT_STATUS_SUCCESS) {
+        return status;
+    }
+    return packet.cs_r.status;
+}
+
 #endif /* CONFIG_BLUETOOTH_LE_CS */

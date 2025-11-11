@@ -542,6 +542,8 @@ typedef struct {
     
     bt_status_t (*stop_distance_measurement)(bt_address_t* addr, int method, bool timeout);
 
+	bt_status_t (*cs_test)(void* data, uint16_t len);
+
 } bt_cs_interface_t;
 
 /*

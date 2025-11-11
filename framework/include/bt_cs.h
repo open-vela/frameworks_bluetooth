@@ -73,5 +73,6 @@ bool BTSYMBOLS(bt_cs_unregister_callbacks)(bt_instance_t* ins, void* cookie);
  bt_status_t BTSYMBOLS(bt_cs_start_distance_measurement)(bt_instance_t* ins, bt_distance_measurement_params_t* params);
  bt_status_t BTSYMBOLS(bt_cs_stop_distance_measurement)(bt_instance_t* ins, bt_address_t* addr, uint8_t method, bool timeout);
  bt_status_t BTSYMBOLS(bt_get_cs_max_supported_security_level)(bt_instance_t* ins, bt_address_t* addr);
+ bt_status_t BTSYMBOLS(bt_cs_test)(bt_instance_t* ins, void* data, uint16_t len);
  
 #endif /* __BT_CS_H__ */
