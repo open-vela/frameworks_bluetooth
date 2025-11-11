@@ -110,6 +110,51 @@ static bt_hfp_hf_call_info_t* find_call_by_context(bt_hfp_hf_connection_t* sal_c
     return (bt_hfp_hf_call_info_t*)bt_list_find(call_list, sal_call_context_cmp, z_context);
 }
 
+static bt_hfp_hf_call_info_t* new_call()
+{
+    bt_hfp_hf_call_info_t* call = (bt_hfp_hf_call_info_t*)zalloc(sizeof(bt_hfp_hf_call_info_t));
+    if (!call) {
+        BT_LOGE("%s, failed to allocate call entry", __func__);
+        return NULL;
+    }
+
+    call->state = HFP_HF_CALL_STATE_DISCONNECTED;
+    call->context = NULL;
+    return call;
+}
+
+static bt_hfp_hf_call_info_t* find_or_create_call(bt_hfp_hf_connection_t* sal_conn, struct bt_hfp_hf_call* z_context)
+{
+    if (!sal_conn || !sal_conn->calls) {
+        return NULL;
+    }
+
+    bt_hfp_hf_call_info_t* call = find_call_by_context(sal_conn, z_context);
+    if (call) {
+        return call;
+    }
+
+    call = new_call(z_context);
+    if (!call) {
+        return NULL;
+    }
+
+    call->context = z_context;
+
+    bt_list_add_tail(sal_conn->calls, call);
+    return call;
+}
+
+static int remove_call(bt_hfp_hf_connection_t* sal_conn, bt_hfp_hf_call_info_t* sal_call)
+{
+    if (!sal_conn || !sal_conn->calls || !sal_call) {
+        return -EINVAL;
+    }
+
+    bt_list_remove(sal_conn->calls, sal_call);
+    return 0;
+}
+
 static __attribute__((unused)) bt_hfp_hf_connection_t* find_connection_by_call_context(
     struct bt_hfp_hf_call* z_context,
     bt_hfp_hf_call_info_t** call_info)
@@ -144,7 +189,7 @@ static inline bt_hfp_hf_connection_t* find_connection_by_addr(bt_address_t* addr
     return (bt_hfp_hf_connection_t*)bt_list_find(g_sal_hf_conn_list, sal_conn_addr_cmp, addr);
 }
 
-static inline __attribute__((unused)) bt_hfp_hf_connection_t* find_connection_by_hf(struct bt_hfp_hf* hf)
+static inline bt_hfp_hf_connection_t* find_connection_by_hf(struct bt_hfp_hf* hf)
 {
     return (bt_hfp_hf_connection_t*)bt_list_find(g_sal_hf_conn_list, sal_conn_hf_cmp, hf);
 }
@@ -171,6 +216,18 @@ static bt_hfp_hf_connection_t* new_hf_connection(struct bt_conn* conn, struct bt
     bt_list_add_tail(g_sal_hf_conn_list, sal_conn);
 
     return sal_conn;
+}
+
+static void set_call_state(
+    bt_hfp_hf_connection_t* sal_conn,
+    bt_hfp_hf_call_info_t* sal_call,
+    hfp_hf_call_state_t state)
+{
+    if (!sal_call) {
+        return;
+    }
+
+    sal_call->state = state;
 }
 
 typedef struct _hf_connect_params {
@@ -260,6 +317,24 @@ static void zblue_on_connected(struct bt_conn* conn, struct bt_hfp_hf* hf)
     hfp_hf_on_connection_state_changed(&bd_addr, PROFILE_STATE_CONNECTED, 0, 0);
 }
 
+static void zblue_on_incoming_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_call* call)
+{
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_hf(hf);
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return;
+    }
+
+    bt_hfp_hf_call_info_t* sal_call = find_or_create_call(sal_conn, call);
+    if (!sal_call) {
+        BT_LOGE("%s, Failed to track incoming call", __func__);
+        return;
+    }
+
+    set_call_state(sal_conn, sal_call, HFP_HF_CALL_STATE_INCOMING);
+    hfp_hf_on_call_setup_state_changed(&sal_conn->addr, HFP_CALLSETUP_INCOMING);
+}
+
 static struct bt_hfp_hf_cb hf_callbacks = {
     .connected = zblue_on_connected,
     .disconnected = NULL,
@@ -268,7 +343,7 @@ static struct bt_hfp_hf_cb hf_callbacks = {
     .service = NULL,
     .outgoing = NULL,
     .remote_ringing = NULL,
-    .incoming = NULL,
+    .incoming = zblue_on_incoming_call,
     .incoming_held = NULL,
     .accept = NULL,
     .reject = NULL,
