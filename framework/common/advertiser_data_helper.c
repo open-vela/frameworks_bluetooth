@@ -94,7 +94,7 @@ static void advertiser_data_info(adv_data_t* ad)
     }
 
     syslog(4, "AdvType:(%s)\n", show_ad_type_desc(ad->type));
-    lib_dumpbuffer("AdvData:", ad->data, ad->len - 1);
+    BT_DUMPBUFFER("AdvData:", ad->data, ad->len - 1);
 
     switch (ad->type) {
     case BT_AD_FLAGS:
