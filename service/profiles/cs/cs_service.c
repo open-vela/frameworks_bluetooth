@@ -26,15 +26,15 @@
 #include "bt_list.h"
 #include "callbacks_list.h"
 #include "cs_msg.h"
+#include "cs_ras_server.h"
+#include "cs_ras_test.h"
 #include "cs_service.h"
 #include "cs_state_machine.h"
 #include "gatts_service.h"
 #include "power_manager.h"
-#include "cs_ras_server.h"
 #include "service_loop.h"
 #include "service_manager.h"
 #include "utils/log.h"
-#include "cs_ras_test.h"
 
 #ifdef CONFIG_BLUETOOTH_LE_CS
 
@@ -322,7 +322,7 @@ static bt_status_t cs_stop_distance_measurement(bt_address_t* addr, int method, 
 static bt_status_t cs_test(void* data, uint16_t len)
 {
     int err = cs_ras_subevent_recv_test(data, len);
-    return BT_STATUS_SUCCESS;
+    return (err == 0) ? BT_STATUS_SUCCESS : BT_STATUS_FAIL;
 }
 
 static const bt_cs_interface_t cs_interface = {

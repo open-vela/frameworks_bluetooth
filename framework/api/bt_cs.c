@@ -17,13 +17,12 @@
 
 #include <stdint.h>
 
-
+#include "bt_cs.h"
 #include "bt_internal.h"
 #include "bt_profile.h"
+#include "cs_service.h"
 #include "service_manager.h"
 #include "utils/log.h"
-#include "cs_service.h"
-#include "bt_cs.h"
 
 #ifdef CONFIG_BLUETOOTH_LE_CS
 

@@ -90,7 +90,7 @@ void cm_data_destory(cm_data_t* data)
 
 static bt_status_t bt_try_disconnect_acl(bt_profile_connection_manager_t* manager)
 {
-    struct bt_conn* conn;
+    struct bt_conn* conn = NULL;
     int ret;
 
     if (manager->profile_flags != FLAG_NONE) {
@@ -102,11 +102,11 @@ static bt_status_t bt_try_disconnect_acl(bt_profile_connection_manager_t* manage
         return bt_br_unpair((bt_addr_t*)&manager->device_addr);
     }
 
-    conn = bt_conn_lookup_addr_br((bt_addr_t*)&manager->device_addr);
-    if (conn == NULL) {
-        BT_LOGE("%s, conn not found.", __func__);
-        return BT_STATUS_FAIL;
-    }
+    // conn = bt_conn_lookup_addr_br((const bt_addr_t*)&manager->device_addr);
+    // if (conn == NULL) {
+    //     BT_LOGE("%s, conn not found.", __func__);
+    //     return BT_STATUS_FAIL;
+    // }
 
     ret = bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
     bt_conn_unref(conn);

@@ -19,35 +19,35 @@
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/gatt.h>
 
-#define RAS_TEST_SUCESS                                        (0)
-#define RAS_TEST_FAIL                                          (1)
+#define RAS_TEST_SUCESS (0)
+#define RAS_TEST_FAIL (1)
 
-#define RAS_TESTCASE_REAL_TIME_NOTIFY_VALID_RANG_DATA_001      (0)
-#define RAS_TESTCASE_REAL_TIME_INDICATE_VALID_RANG_DATA_002    (1)
-#define RAS_TESTCASE_ON_DEMAND_NOTIFY_VALID_RANG_DATA_003      (3)
-#define RAS_TESTCASE_ON_DEMAND_INDICATE_VALID_RANG_DATA_004    (4)
+#define RAS_TESTCASE_REAL_TIME_NOTIFY_VALID_RANG_DATA_001 (0)
+#define RAS_TESTCASE_REAL_TIME_INDICATE_VALID_RANG_DATA_002 (1)
+#define RAS_TESTCASE_ON_DEMAND_NOTIFY_VALID_RANG_DATA_003 (3)
+#define RAS_TESTCASE_ON_DEMAND_INDICATE_VALID_RANG_DATA_004 (4)
 #define RAS_TESTCASE_ON_DEMAND_OVERWRITE_VALID_RANG_DATA_1_005 (5)
 #define RAS_TESTCASE_ON_DEMAND_OVERWRITE_VALID_RANG_DATA_2_006 (6)
 #define RAS_TESTCASE_ON_DEMAND_OVERWRITE_VALID_RANG_DATA_3_007 (7)
 #define RAS_TESTCASE_ON_DEMAND_OVERWRITE_VALID_RANG_DATA_4_008 (8)
 #define RAS_TESTCASE_ON_DEMAND_OVERWRITE_VALID_RANG_DATA_5_009 (9)
-#define RAS_TESTCASE_ON_DEMAND_WRITE_RANG_DATA_TIMWOUT_010      (10)
+#define RAS_TESTCASE_ON_DEMAND_WRITE_RANG_DATA_TIMWOUT_010 (10)
 
 typedef uint16_t ras_testcase_t;
 
-int bt_gatt_notify_cb_test(struct bt_conn *conn,
-		      struct bt_gatt_notify_params *params);
+int bt_gatt_notify_cb_test(struct bt_conn* conn,
+    struct bt_gatt_notify_params* params);
 
-ssize_t bt_gatt_attr_read_test(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-			  void *buf, uint16_t buf_len, uint16_t offset,
-			  const void *value, uint16_t value_len);
+ssize_t bt_gatt_attr_read_test(struct bt_conn* conn, const struct bt_gatt_attr* attr,
+    void* buf, uint16_t buf_len, uint16_t offset,
+    const void* value, uint16_t value_len);
 
-int bt_gatt_notify_test(struct bt_conn *conn,
-				 const struct bt_gatt_attr *attr,
-				 const void *data, uint16_t len);
+int bt_gatt_notify_test(struct bt_conn* conn,
+    const struct bt_gatt_attr* attr,
+    const void* data, uint16_t len);
 
-int bt_gatt_indicate_test(struct bt_conn *conn,
-		     struct bt_gatt_indicate_params *params);
+int bt_gatt_indicate_test(struct bt_conn* conn,
+    struct bt_gatt_indicate_params* params);
 
-int cs_ras_subevent_recv_test(void *data, uint16_t len);
+int cs_ras_subevent_recv_test(void* data, uint16_t len);
 #endif /* _CS_RAS_TEST_H_ */

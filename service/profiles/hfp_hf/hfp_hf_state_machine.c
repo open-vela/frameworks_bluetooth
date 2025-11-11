@@ -774,7 +774,7 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
                     srand(time(NULL)); /* set random seed */
                     random_timeout = 100 + (rand() % 800);
                     BT_LOGD("retry HFP connection with device:[%s], delay=%" PRIu32 "ms",
-                        bt_addr_str(&hfsm->addr), random_timeout);
+                        bt_fw_addr_str(&hfsm->addr), random_timeout);
                     hfsm->retry_timer = service_loop_timer(random_timeout, 0, hf_retry_callback, sm);
                     hfsm->retry_cnt++;
                 }
@@ -927,7 +927,7 @@ static void handle_dailing_fail(state_machine_t* sm, char* number)
 {
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
     hfp_current_call_t call = { 0 };
-    BT_LOGD("%s, %s", __func__, bt_addr_str(&hfsm->addr));
+    BT_LOGD("%s, %s", __func__, bt_fw_addr_str(&hfsm->addr));
 
     call.dir = HFP_CALL_DIRECTION_OUTGOING;
     call.state = HFP_HF_CALL_STATE_DISCONNECTED;

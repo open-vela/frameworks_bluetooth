@@ -14,11 +14,11 @@
  * limitations under the License.
  ***************************************************************************/
 #define LOG_TAG "channel_sounding_api"
-#include <stdint.h>
 #include "bt_cs.h"
-#include "bt_socket.h"
 #include "bt_message.h"
+#include "bt_socket.h"
 #include "utils/log.h"
+#include <stdint.h>
 
 #ifdef CONFIG_BLUETOOTH_LE_CS
 
@@ -80,7 +80,8 @@ bool bt_cs_unregister_callbacks(bt_instance_t* ins, void* cookie)
     return true;
 }
 
-bt_status_t bt_cs_start_distance_measurement(bt_instance_t* ins, bt_distance_measurement_params_t* params){
+bt_status_t bt_cs_start_distance_measurement(bt_instance_t* ins, bt_distance_measurement_params_t* params)
+{
     bt_message_packet_t packet;
     bt_status_t status;
 
@@ -94,7 +95,8 @@ bt_status_t bt_cs_start_distance_measurement(bt_instance_t* ins, bt_distance_mea
     return packet.cs_r.status;
 }
 
-bt_status_t bt_cs_stop_distance_measurement(bt_instance_t* ins, bt_address_t* addr, uint8_t method, bool timeout){
+bt_status_t bt_cs_stop_distance_measurement(bt_instance_t* ins, bt_address_t* addr, uint8_t method, bool timeout)
+{
     bt_message_packet_t packet;
     bt_status_t status;
 

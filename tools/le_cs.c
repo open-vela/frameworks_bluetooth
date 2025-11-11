@@ -19,8 +19,8 @@
 
 #include "bluetooth.h"
 #include "bt_adapter.h"
-#include "bt_tools.h"
 #include "bt_cs.h"
+#include "bt_tools.h"
 
 #ifdef CONFIG_BLUETOOTH_LE_CS
 
@@ -33,7 +33,7 @@ static void* cs_callbacks = NULL;
 static bt_command_t g_cs_tables[] = {
     { "start", cs_start_distance_measurement_cmd, 0, "\"start distance measurement :\"" },
     { "stop", cs_stop_distance_measurement_cmd, 0, "\"stop distance measurement :\"" },
-    {"test", cs_test_cmd, 0, "\"Channel Sounding test mode :\""},
+    { "test", cs_test_cmd, 0, "\"Channel Sounding test mode :\"" },
 };
 
 static void usage(void)
@@ -46,21 +46,21 @@ static void usage(void)
     }
 }
 
-static void le_cs_distance_measure_started_cb(void* cookie,bt_address_t* addr, uint8_t method)
+static void le_cs_distance_measure_started_cb(void* cookie, bt_address_t* addr, uint8_t method)
 {
     PRINT("cs distance measure started. cookie:%p, addr:%s, method:%d\n",
         cookie, bt_addr_bastr(addr), method);
     return;
 }
 
-static void le_cs_distance_measure_stopped_cb(void* cookie,bt_address_t* addr, uint8_t reason, uint8_t method)
+static void le_cs_distance_measure_stopped_cb(void* cookie, bt_address_t* addr, uint8_t reason, uint8_t method)
 {
     PRINT("cs distance measure started. cookie:%p, addr:%s, reason:%d, method:%d\n",
         cookie, bt_addr_bastr(addr), reason, method);
     return;
 }
 
-static void le_cs_distance_measure_result_cb(void* cookie,bt_address_t* addr, uint8_t centimeter, uint8_t errorCentimeter,
+static void le_cs_distance_measure_result_cb(void* cookie, bt_address_t* addr, uint8_t centimeter, uint8_t errorCentimeter,
     uint8_t azimuthAngle, uint8_t errorAzimuthAngle, uint8_t altitudeAngle, uint8_t errorAltitudeAngle,
     long elapsedRealtimeNanos, uint8_t confidenceLevel, double delaySpreadMeters,
     uint8_t detectedAttackLevel, double velocityMetersPerSecond, uint8_t method)
@@ -114,15 +114,15 @@ static int cs_start_distance_measurement_cmd(void* handle, int argc, char* argv[
 
 static int cs_stop_distance_measurement_cmd(void* handle, int argc, char* argv[])
 {
-    bt_address_t addr = {0};
+    bt_address_t addr = { 0 };
     bt_cs_stop_distance_measurement(handle, &addr, METHOD_CS, 1000);
     return 0;
 }
 
 static int cs_test_cmd(void* handle, int argc, char* argv[])
 {
-    uint8_t data[10] = {0};
-    bt_cs_test(handle, (void *)data, sizeof(data));
+    uint8_t data[10] = { 0 };
+    bt_cs_test(handle, (void*)data, sizeof(data));
     return 0;
 }
 

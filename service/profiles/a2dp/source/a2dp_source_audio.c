@@ -516,7 +516,7 @@ void a2dp_source_setup_codec(bt_address_t* bd_addr)
     config = a2dp_codec_get_config();
     peer = a2dp_source_find_peer(bd_addr);
     if (peer == NULL) {
-        BT_LOGE("%s, can't find peer:%s", __func__, bt_addr_str(bd_addr));
+        BT_LOGE("%s, can't find peer:%s", __func__, bt_fw_addr_str(bd_addr));
         return;
     }
 
