@@ -240,6 +240,13 @@ ifneq ($(CONFIG_BLUETOOTH_AVRCP_CONTROL)$(CONFIG_BLUETOOTH_AVRCP_TARGET),)
 	CSRCS += service/stacks/zephyr/sal_avrcp_interface.c
 endif #CONFIG_BLUETOOTH_AVRCP_CONTROL/CONFIG_BLUETOOTH_AVRCP_TARGET
 
+ifeq ($(CONFIG_BLUETOOTH_HFP_HF), y)
+	CSRCS += service/stacks/zephyr/sal_hfp_hf_interface.c
+endif #CONFIG_BLUETOOTH_HFP_HF
+ifeq ($(CONFIG_BLUETOOTH_HFP_AG), y)
+	CSRCS += service/stacks/zephyr/sal_hfp_ag_interface.c
+endif #CONFIG_BLUETOOTH_HFP_AG
+
 ifeq ($(CONFIG_BLUETOOTH_HID_DEVICE), y)
 	CSRCS += service/stacks/zephyr/sal_hid_device_interface.c
 endif #CONFIG_BLUETOOTH_HID_DEVICE
