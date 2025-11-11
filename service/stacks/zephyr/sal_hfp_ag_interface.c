@@ -13,3 +13,205 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
+#include "sal_hfp_ag_interface.h"
+#include "bt_debug.h"
+#include "sal_connection_manager.h"
+#include "sal_interface.h"
+#include "sal_zblue.h"
+
+#undef BT_UUID_DECLARE_16
+#undef BT_UUID_DECLARE_32
+#undef BT_UUID_DECLARE_128
+
+#include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/classic/hfp_ag.h>
+#include <zephyr/bluetooth/classic/sdp.h>
+
+static struct bt_hfp_ag_cb g_hfp_ag_cb = {
+    .connected = NULL,
+    .disconnected = NULL,
+    .sco_connected = NULL,
+    .sco_disconnected = NULL,
+    .get_ongoing_call = NULL,
+    .memory_dial = NULL,
+    .number_call = NULL,
+    .outgoing = NULL,
+    .incoming = NULL,
+    .incoming_held = NULL,
+    .ringing = NULL,
+    .accept = NULL,
+    .held = NULL,
+    .retrieve = NULL,
+    .reject = NULL,
+    .terminate = NULL,
+    .codec = NULL,
+    .codec_negotiate = NULL,
+    .audio_connect_req = NULL,
+    .vgm = NULL,
+    .vgs = NULL,
+    .ecnr_turn_off = NULL,
+    .explicit_call_transfer = NULL,
+    .voice_recognition = NULL,
+    .ready_to_accept_audio = NULL,
+    .request_phone_number = NULL,
+    .transmit_dtmf_code = NULL,
+    .subscriber_number = NULL,
+    .hf_indicator_value = NULL,
+};
+
+bt_status_t bt_sal_hfp_ag_init(uint32_t features, uint8_t max_connection)
+{
+    (void)features;
+    (void)max_connection;
+    return BT_STATUS_UNSUPPORTED;
+}
+
+void bt_sal_hfp_ag_cleanup(void)
+{
+    return;
+}
+
+bt_status_t bt_sal_hfp_ag_connect(bt_address_t* addr)
+{
+    (void)addr;
+    return BT_STATUS_UNSUPPORTED;
+}
+
+bt_status_t bt_sal_hfp_ag_disconnect(bt_address_t* addr)
+{
+    (void)addr;
+    return BT_STATUS_UNSUPPORTED;
+}
+
+bt_status_t bt_sal_hfp_ag_connect_audio(bt_address_t* addr)
+{
+    (void)addr;
+    return BT_STATUS_UNSUPPORTED;
+}
+
+bt_status_t bt_sal_hfp_ag_disconnect_audio(bt_address_t* addr)
+{
+    (void)addr;
+    return BT_STATUS_UNSUPPORTED;
+}
+
+bt_status_t bt_sal_hfp_ag_start_voice_recognition(bt_address_t* addr)
+{
+    (void)addr;
+    return BT_STATUS_UNSUPPORTED;
+}
+
+bt_status_t bt_sal_hfp_ag_stop_voice_recognition(bt_address_t* addr)
+{
+    (void)addr;
+    return BT_STATUS_UNSUPPORTED;
+}
+
+bt_status_t bt_sal_hfp_ag_phone_state_change(bt_address_t* addr, uint8_t num_active,
+    uint8_t num_held, hfp_ag_call_state_t call_state, hfp_call_addrtype_t type,
+    const char* number, const char* name)
+{
+    (void)num_active;
+    (void)num_held;
+    (void)call_state;
+    (void)type;
+    (void)number;
+    (void)name;
+    return BT_STATUS_UNSUPPORTED;
+}
+
+bt_status_t bt_sal_hfp_ag_cind_response(bt_address_t* addr, hfp_ag_cind_resopnse_t* response)
+{
+    (void)addr;
+    (void)response;
+    return BT_STATUS_UNSUPPORTED;
+}
+
+bt_status_t bt_sal_hfp_ag_clcc_response(bt_address_t* addr, uint32_t index,
+    hfp_call_direction_t dir, hfp_ag_call_state_t call, hfp_call_mode_t mode,
+    hfp_call_mpty_type_t mpty, hfp_call_addrtype_t type, const char* number)
+{
+    (void)addr;
+    (void)index;
+    (void)dir;
+    (void)call;
+    (void)mode;
+    (void)mpty;
+    (void)type;
+    (void)number;
+    return BT_STATUS_UNSUPPORTED;
+}
+
+bt_status_t bt_sal_hfp_ag_dial_response(bt_address_t* addr, hfp_atcmd_result_t result)
+{
+    (void)addr;
+    (void)result;
+    return BT_STATUS_UNSUPPORTED;
+}
+
+bt_status_t bt_sal_hfp_ag_cops_response(bt_address_t* addr, const char* operator_name, uint16_t length)
+{
+    (void)addr;
+    (void)operator_name;
+    (void)length;
+    return BT_STATUS_UNSUPPORTED;
+}
+
+bt_status_t bt_sal_hfp_ag_notify_device_status_changed(bt_address_t* addr, hfp_network_state_t network,
+    hfp_roaming_state_t roam, uint8_t signal, uint8_t battery)
+{
+    (void)addr;
+    (void)network;
+    (void)roam;
+    (void)signal;
+    (void)battery;
+    return BT_STATUS_UNSUPPORTED;
+}
+
+bt_status_t bt_sal_hfp_ag_set_inband_ring_enable(bt_address_t* addr, bool enable)
+{
+    (void)addr;
+    (void)enable;
+    return BT_STATUS_UNSUPPORTED;
+}
+
+bt_status_t bt_sal_hfp_ag_set_volume(bt_address_t* addr, hfp_volume_type_t type, uint8_t volume)
+{
+    (void)addr;
+    (void)type;
+    (void)volume;
+    return BT_STATUS_UNSUPPORTED;
+}
+
+bt_status_t bt_sal_hfp_ag_send_at_cmd(bt_address_t* addr, const char* atcmd, uint16_t length)
+{
+    (void)addr;
+    (void)atcmd;
+    (void)length;
+    return BT_STATUS_UNSUPPORTED;
+}
+
+bt_status_t bt_sal_hfp_ag_manufacture_id_response(bt_address_t* addr,
+    const char* manufacturer_id,
+    uint16_t length)
+{
+    (void)addr;
+    (void)manufacturer_id;
+    (void)length;
+    return BT_STATUS_UNSUPPORTED;
+}
+
+bt_status_t bt_sal_hfp_ag_model_id_response(bt_address_t* addr, const char* model_id, uint16_t length)
+{
+    (void)addr;
+    (void)model_id;
+    (void)length;
+    return BT_STATUS_UNSUPPORTED;
+}
+
+bt_status_t bt_sal_hfp_ag_error_response(bt_address_t* addr, hfp_atcmd_result_t result)
+{
+    (void)addr;
+    (void)result;
+    return BT_STATUS_UNSUPPORTED;
+}
