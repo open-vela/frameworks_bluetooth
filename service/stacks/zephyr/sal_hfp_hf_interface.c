@@ -110,6 +110,23 @@ static bt_hfp_hf_call_info_t* find_call_by_context(bt_hfp_hf_connection_t* sal_c
     return (bt_hfp_hf_call_info_t*)bt_list_find(call_list, sal_call_context_cmp, z_context);
 }
 
+static bt_hfp_hf_call_info_t* find_call_by_state(bt_hfp_hf_connection_t* sal_conn, hfp_hf_call_state_t state)
+{
+    bt_list_node_t* node;
+    if (!sal_conn || !sal_conn->calls) {
+        return NULL;
+    }
+
+    for (node = bt_list_head(sal_conn->calls); node != NULL; node = bt_list_next(sal_conn->calls, node)) {
+        bt_hfp_hf_call_info_t* sal_call = bt_list_node(node);
+        if (sal_call->state == state) {
+            return sal_call;
+        }
+    }
+
+    return NULL;
+}
+
 static bt_hfp_hf_call_info_t* new_call()
 {
     bt_hfp_hf_call_info_t* call = (bt_hfp_hf_call_info_t*)zalloc(sizeof(bt_hfp_hf_call_info_t));
@@ -159,11 +176,10 @@ static __attribute__((unused)) bt_hfp_hf_connection_t* find_connection_by_call_c
     struct bt_hfp_hf_call* z_context,
     bt_hfp_hf_call_info_t** call_info)
 {
+    bt_list_node_t* node;
     if (!g_sal_hf_conn_list || !z_context) {
         return NULL;
     }
-
-    bt_list_node_t* node;
 
     for (node = bt_list_head(g_sal_hf_conn_list); node != NULL; node = bt_list_next(g_sal_hf_conn_list, node)) {
         bt_hfp_hf_connection_t* conn = bt_list_node(node);
@@ -431,7 +447,20 @@ bt_status_t bt_sal_hfp_hf_disconnect_audio(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_hf_answer_call(bt_address_t* addr)
 {
-    return BT_STATUS_UNSUPPORTED;
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    bt_hfp_hf_call_info_t* incoming = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_INCOMING);
+    if (!incoming) {
+        BT_LOGE("%s, No incoming call to answer", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    SAL_CHECK_RET(Z_API(bt_hfp_hf_accept)(incoming->context), 0);
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_hf_reject_call(bt_address_t* addr)
