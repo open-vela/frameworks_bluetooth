@@ -72,7 +72,7 @@ extern "C" {
 #define BT_IPC_CODE_CHECK_GROUP(code, group) ((uint32_t)(BT_IPC_GET_GROUP(code)) == (uint32_t)(group))
 #define BT_IPC_CODE_CHECK_SUBCODE(code, subcode) ((uint32_t)(BT_IPC_GET_SUBCODE(code)) == (uint32_t)(subcode))
 
-char* bt_ipc_code_to_string(uint32_t code);
+const char* bt_ipc_code_to_string(uint32_t code);
 #ifdef __cplusplus
 }
 #endif

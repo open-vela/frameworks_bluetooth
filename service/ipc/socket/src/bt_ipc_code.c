@@ -43,66 +43,96 @@
 
 static const char* bt_legacy_ipc_code_to_string(uint32_t type)
 {
-    if (((type >= BT_A2DP_SINK_MESSAGE_START) && (type <= BT_A2DP_SINK_MESSAGE_END)) ||
-        ((type >= BT_A2DP_SINK_CALLBACK_START) && (type <= BT_A2DP_SINK_CALLBACK_END))) {
-        return bt_a2dp_sink_ipc_code_to_string(type);
-    } else if (((type >= BT_A2DP_SOURCE_MESSAGE_START) && (type <= BT_A2DP_SOURCE_MESSAGE_END)) ||
-        ((type >= BT_A2DP_SOURCE_CALLBACK_START) && (type <= BT_A2DP_SOURCE_CALLBACK_END))) {
-        return bt_a2dp_source_ipc_code_to_string(type);
+    if (((type >= BT_MANAGER_MESSAGE_START) && (type <= BT_MANAGER_MESSAGE_END)) ||
+        ((type >= BT_MANAGER_CALLBACK_START) && (type <= BT_MANAGER_CALLBACK_END))) {
+        return bt_manager_ipc_code_to_string(type);
+    } else if ((type >= BT_DEVICE_MESSAGE_START) && (type <= BT_DEVICE_MESSAGE_END)) {
+        return bt_device_ipc_code_to_string(type);
     } else if (((type >= BT_ADAPTER_MESSAGE_START) && (type <= BT_ADAPTER_MESSAGE_END)) ||
         ((type >= BT_ADAPTER_CALLBACK_START) && (type <= BT_ADAPTER_CALLBACK_END))) {
         return bt_adapter_ipc_code_to_string(type);
-    } else if (((type >= BT_ADVERTISER_MESSAGE_START) && (type <= BT_ADVERTISER_MESSAGE_END)) ||
-        ((type >= BT_ADVERTISER_CALLBACK_START) && (type <= BT_ADVERTISER_CALLBACK_END))) {
-        return bt_advertiser_ipc_code_to_string(type);
-    } else if (((type >= BT_AVRCP_CONTROL_MESSAGE_START) && (type <= BT_AVRCP_CONTROL_MESSAGE_END)) ||
-        ((type >= BT_AVRCP_CONTROL_CALLBACK_START) && (type <= BT_AVRCP_CONTROL_CALLBACK_END))) {
-        return bt_avrcp_control_ipc_code_to_string(type);
+        #ifdef CONFIG_BLUETOOTH_A2DP_SINK
+    } else if (((type >= BT_A2DP_SINK_MESSAGE_START) && (type <= BT_A2DP_SINK_MESSAGE_END)) ||
+        ((type >= BT_A2DP_SINK_CALLBACK_START) && (type <= BT_A2DP_SINK_CALLBACK_END))) {
+        return bt_a2dp_sink_ipc_code_to_string(type);
+        #endif /* CONFIG_BLUETOOTH_A2DP_SINK */
+        #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
+    } else if (((type >= BT_A2DP_SOURCE_MESSAGE_START) && (type <= BT_A2DP_SOURCE_MESSAGE_END)) ||
+        ((type >= BT_A2DP_SOURCE_CALLBACK_START) && (type <= BT_A2DP_SOURCE_CALLBACK_END))) {
+        return bt_a2dp_source_ipc_code_to_string(type);
+        #endif /* CONFIG_BLUETOOTH_A2DP_SOURCE */
+        #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
     } else if (((type >= BT_AVRCP_TARGET_MESSAGE_START) && (type <= BT_AVRCP_TARGET_MESSAGE_END)) ||
         ((type >= BT_AVRCP_TARGET_CALLBACK_START) && (type <= BT_AVRCP_TARGET_CALLBACK_END))) {
         return bt_avrcp_target_ipc_code_to_string(type);
-    } else if ((type >= BT_DEVICE_MESSAGE_START) && (type <= BT_DEVICE_MESSAGE_END)) {
-        return bt_device_ipc_code_to_string(type);
-    } else if (((type >= BT_GATT_CLIENT_MESSAGE_START) && (type <= BT_GATT_CLIENT_MESSAGE_END)) ||
-        ((type >= BT_GATT_CLIENT_CALLBACK_START) && (type <= BT_GATT_CLIENT_CALLBACK_END))) {
-        return bt_gattc_ipc_code_to_string(type);
-    } else if (((type >= BT_GATT_SERVER_MESSAGE_START) && (type <= BT_GATT_SERVER_MESSAGE_END)) ||
-        ((type >= BT_GATT_SERVER_CALLBACK_START) && (type <= BT_GATT_SERVER_CALLBACK_END))) {
-        return bt_gatts_ipc_code_to_string(type);
-    } else if (((type >= BT_HFP_AG_MESSAGE_START) && (type <= BT_HFP_AG_MESSAGE_END)) ||
-        ((type >= BT_HFP_AG_CALLBACK_START) && (type <= BT_HFP_AG_CALLBACK_END))) {
-        return bt_hfp_ag_ipc_code_to_string(type);
+        #endif /* CONFIG_BLUETOOTH_AVRCP_TARGET */
+        #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+    } else if (((type >= BT_AVRCP_CONTROL_MESSAGE_START) && (type <= BT_AVRCP_CONTROL_MESSAGE_END)) ||
+        ((type >= BT_AVRCP_CONTROL_CALLBACK_START) && (type <= BT_AVRCP_CONTROL_CALLBACK_END))) {
+        return bt_avrcp_control_ipc_code_to_string(type);
+        #endif /* CONFIG_BLUETOOTH_AVRCP_CONTROL */
+        #ifdef CONFIG_BLUETOOTH_HFP_HF
     } else if (((type >= BT_HFP_HF_MESSAGE_START) && (type <= BT_HFP_HF_MESSAGE_END)) ||
         ((type >= BT_HFP_HF_CALLBACK_START) && (type <= BT_HFP_HF_CALLBACK_END))) {
         return bt_hfp_hf_ipc_code_to_string(type);
-    } else if (((type >= BT_HID_DEVICE_MESSAGE_START) && (type <= BT_HID_DEVICE_MESSAGE_END)) ||
-        ((type >= BT_HID_DEVICE_CALLBACK_START) && (type <= BT_HID_DEVICE_CALLBACK_END))) {
-        return bt_hid_device_ipc_code_to_string(type);
-    } else if (((type >= BT_L2CAP_MESSAGE_START) && (type <= BT_L2CAP_MESSAGE_END)) ||
-        ((type >= BT_L2CAP_CALLBACK_START) && (type <= BT_L2CAP_CALLBACK_END))) {
-        return bt_l2cap_ipc_code_to_string(type);
-    } else if ((type >= BT_LOG_MESSAGE_START) && (type <= BT_LOG_MESSAGE_END)) {
-        return bt_log_ipc_code_to_string(type);
-    } else if (((type >= BT_MANAGER_MESSAGE_START) && (type <= BT_MANAGER_MESSAGE_END)) ||
-        ((type >= BT_MANAGER_CALLBACK_START) && (type <= BT_MANAGER_CALLBACK_END))) {
-        return bt_manager_ipc_code_to_string(type);
-    } else if (((type >= BT_PAN_MESSAGE_START) && (type <= BT_PAN_MESSAGE_END)) ||
-        ((type >= BT_PAN_CALLBACK_START) && (type <= BT_PAN_CALLBACK_END))) {
-        return bt_pan_ipc_code_to_string(type);
-    } else if (((type >= BT_SCAN_MESSAGE_START) && (type <= BT_SCAN_MESSAGE_END)) ||
-        ((type >= BT_SCAN_CALLBACK_START) && (type <= BT_SCAN_CALLBACK_END))) {
-        return bt_scan_ipc_code_to_string(type);
+        #endif /* CONFIG_BLUETOOTH_HFP_HF */
+        #ifdef CONFIG_BLUETOOTH_HFP_AG
+    } else if (((type >= BT_HFP_AG_MESSAGE_START) && (type <= BT_HFP_AG_MESSAGE_END)) ||
+        ((type >= BT_HFP_AG_CALLBACK_START) && (type <= BT_HFP_AG_CALLBACK_END))) {
+        return bt_hfp_ag_ipc_code_to_string(type);
+        #endif /* CONFIG_BLUETOOTH_HFP_AG */
+        #ifdef CONFIG_BLUETOOTH_SPP
     } else if (((type >= BT_SPP_MESSAGE_START) && (type <= BT_SPP_MESSAGE_END)) ||
         ((type >= BT_SPP_CALLBACK_START) && (type <= BT_SPP_CALLBACK_END))) {
         return bt_spp_ipc_code_to_string(type);
+        #endif /* CONFIG_BLUETOOTH_SPP */
+        #ifdef CONFIG_BLUETOOTH_HID_DEVICE
+    } else if (((type >= BT_HID_DEVICE_MESSAGE_START) && (type <= BT_HID_DEVICE_MESSAGE_END)) ||
+        ((type >= BT_HID_DEVICE_CALLBACK_START) && (type <= BT_HID_DEVICE_CALLBACK_END))) {
+        return bt_hid_device_ipc_code_to_string(type);
+        #endif /* CONFIG_BLUETOOTH_HID_DEVICE */
+        #ifdef CONFIG_BLUETOOTH_GATT_CLIENT
+    } else if (((type >= BT_GATT_CLIENT_MESSAGE_START) && (type <= BT_GATT_CLIENT_MESSAGE_END)) ||
+        ((type >= BT_GATT_CLIENT_CALLBACK_START) && (type <= BT_GATT_CLIENT_CALLBACK_END))) {
+        return bt_gattc_ipc_code_to_string(type);
+        #endif /* CONFIG_BLUETOOTH_GATT_CLIENT */
+        #ifdef CONFIG_BLUETOOTH_GATT_SERVER
+    } else if (((type >= BT_GATT_SERVER_MESSAGE_START) && (type <= BT_GATT_SERVER_MESSAGE_END)) ||
+        ((type >= BT_GATT_SERVER_CALLBACK_START) && (type <= BT_GATT_SERVER_CALLBACK_END))) {
+        return bt_gatts_ipc_code_to_string(type);
+        #endif /* CONFIG_BLUETOOTH_GATT_SERVER */
+        #ifdef CONFIG_BLUETOOTH_L2CAP
+    } else if (((type >= BT_L2CAP_MESSAGE_START) && (type <= BT_L2CAP_MESSAGE_END)) ||
+        ((type >= BT_L2CAP_CALLBACK_START) && (type <= BT_L2CAP_CALLBACK_END))) {
+        return bt_l2cap_ipc_code_to_string(type);
+        #endif /* CONFIG_BLUETOOTH_L2CAP */
+        #ifdef CONFIG_BLUETOOTH_BLE_ADV
+    } else if (((type >= BT_ADVERTISER_MESSAGE_START) && (type <= BT_ADVERTISER_MESSAGE_END)) ||
+        ((type >= BT_ADVERTISER_CALLBACK_START) && (type <= BT_ADVERTISER_CALLBACK_END))) {
+        return bt_advertiser_ipc_code_to_string(type);
+        #endif /* CONFIG_BLUETOOTH_BLE_ADV */
+        #ifdef CONFIG_BLUETOOTH_BLE_SCAN
+    } else if (((type >= BT_SCAN_MESSAGE_START) && (type <= BT_SCAN_MESSAGE_END)) ||
+        ((type >= BT_SCAN_CALLBACK_START) && (type <= BT_SCAN_CALLBACK_END))) {
+        return bt_scan_ipc_code_to_string(type);
+        #endif /* CONFIG_BLUETOOTH_BLE_SCAN */
+        #ifdef CONFIG_BLUETOOTH_PAN
+    } else if (((type >= BT_PAN_MESSAGE_START) && (type <= BT_PAN_MESSAGE_END)) ||
+        ((type >= BT_PAN_CALLBACK_START) && (type <= BT_PAN_CALLBACK_END))) {
+        return bt_pan_ipc_code_to_string(type);
+        #endif /* CONFIG_BLUETOOTH_PAN */
+        #ifdef CONFIG_BLUETOOTH_LOG
+    } else if ((type >= BT_LOG_MESSAGE_START) && (type <= BT_LOG_MESSAGE_END)) {
+        return bt_log_ipc_code_to_string(type);
+        #endif /* CONFIG_BLUETOOTH_LOG */
     }
 
     return NULL;
 }
 
-char* bt_ipc_code_to_string(uint32_t code)
+const char* bt_ipc_code_to_string(uint32_t code)
 {
-    char* result = NULL;
+    const char* result = NULL;
 
     switch (BT_IPC_GET_GROUP(code)) {
     case BT_IPC_CODE_GROUP_LEGACY:
@@ -111,59 +141,91 @@ char* bt_ipc_code_to_string(uint32_t code)
     case BT_IPC_CODE_GROUP_MANAGER:
         result = bt_manager_ipc_code_to_string(code);
         break;
-    case BT_IPC_CODE_GROUP_ADAPTER:
-        result = bt_adapter_ipc_code_to_string(code);
-        break;
     case BT_IPC_CODE_GROUP_DEVICE:
         result = bt_device_ipc_code_to_string(code);
         break;
-    case BT_IPC_CODE_GROUP_LOG:
-        result = bt_log_ipc_code_to_string(code);
+    case BT_IPC_CODE_GROUP_ADAPTER:
+        result = bt_adapter_ipc_code_to_string(code);
         break;
-    case BT_IPC_CODE_GROUP_BLE_ADVERTISER:
-        result = bt_advertiser_ipc_code_to_string(code);
-        break;
-    case BT_IPC_CODE_GROUP_BLE_SCAN:
-        result = bt_scan_ipc_code_to_string(code);
-        break;
-    case BT_IPC_CODE_GROUP_L2CAP:
-        result = bt_l2cap_ipc_code_to_string(code);
-        break;
-    case BT_IPC_CODE_GROUP_A2DP_SRC:
-        result = bt_a2dp_source_ipc_code_to_string(code);
-        break;
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
     case BT_IPC_CODE_GROUP_A2DP_SINK:
         result = bt_a2dp_sink_ipc_code_to_string(code);
         break;
-    case BT_IPC_CODE_GROUP_AVRCP_CT:
-        result = bt_avrcp_control_ipc_code_to_string(code);
+#endif /* CONFIG_BLUETOOTH_A2DP_SINK */
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
+    case BT_IPC_CODE_GROUP_A2DP_SRC:
+        result = bt_a2dp_source_ipc_code_to_string(code);
         break;
+#endif /* CONFIG_BLUETOOTH_A2DP_SOURCE */
+#ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
     case BT_IPC_CODE_GROUP_AVRCP_TG:
         result = bt_avrcp_target_ipc_code_to_string(code);
         break;
+#endif /* CONFIG_BLUETOOTH_AVRCP_TARGET */
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+    case BT_IPC_CODE_GROUP_AVRCP_CT:
+        result = bt_avrcp_control_ipc_code_to_string(code);
+        break;
+#endif /* CONFIG_BLUETOOTH_AVRCP_CONTROL */
+#ifdef CONFIG_BLUETOOTH_HFP_HF
     case BT_IPC_CODE_GROUP_HFP_HF:
         result = bt_hfp_hf_ipc_code_to_string(code);
         break;
+#endif /* CONFIG_BLUETOOTH_HFP_HF */
+#ifdef CONFIG_BLUETOOTH_HFP_AG
     case BT_IPC_CODE_GROUP_HFP_AG:
         result = bt_hfp_ag_ipc_code_to_string(code);
         break;
+#endif /* CONFIG_BLUETOOTH_HFP_AG */
+#ifdef CONFIG_BLUETOOTH_SPP
     case BT_IPC_CODE_GROUP_SPP:
         result = bt_spp_ipc_code_to_string(code);
         break;
+#endif /* CONFIG_BLUETOOTH_SPP */
+#ifdef CONFIG_BLUETOOTH_HID_DEVICE
     case BT_IPC_CODE_GROUP_HID_DEV:
         result = bt_hid_device_ipc_code_to_string(code);
         break;
-    case BT_IPC_CODE_GROUP_PANU:
-        result = bt_pan_ipc_code_to_string(code);
-        break;
+#endif /* CONFIG_BLUETOOTH_HID_DEVICE */
+#ifdef CONFIG_BLUETOOTH_GATT_CLIENT
     case BT_IPC_CODE_GROUP_GATTC:
         result = bt_gattc_ipc_code_to_string(code);
         break;
+#endif /* CONFIG_BLUETOOTH_GATT_CLIENT */
+#ifdef CONFIG_BLUETOOTH_GATT_SERVER
     case BT_IPC_CODE_GROUP_GATTS:
         result = bt_gatts_ipc_code_to_string(code);
         break;
+#endif /* CONFIG_BLUETOOTH_GATT_SERVER */
+#ifdef CONFIG_BLUETOOTH_L2CAP
+    case BT_IPC_CODE_GROUP_L2CAP:
+        result = bt_l2cap_ipc_code_to_string(code);
+        break;
+#endif /* CONFIG_BLUETOOTH_L2CAP */
+#ifdef CONFIG_BLUETOOTH_BLE_ADV
+    case BT_IPC_CODE_GROUP_BLE_ADVERTISER:
+        result = bt_advertiser_ipc_code_to_string(code);
+        break;
+#endif /* CONFIG_BLUETOOTH_BLE_ADV */
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
+    case BT_IPC_CODE_GROUP_BLE_SCAN:
+        result = bt_scan_ipc_code_to_string(code);
+        break;
+#endif /* CONFIG_BLUETOOTH_BLE_SCAN */
+#ifdef CONFIG_BLUETOOTH_PAN
+    case BT_IPC_CODE_GROUP_PANU:
+        result = bt_pan_ipc_code_to_string(code);
+        break;
+#endif /* CONFIG_BLUETOOTH_PAN */
+#ifdef CONFIG_BLUETOOTH_LOG
+    case BT_IPC_CODE_GROUP_LOG:
+        result = bt_log_ipc_code_to_string(code);
+        break;
+#endif /* CONFIG_BLUETOOTH_LOG */
     default:
-        (void)snprintf(result, sizeof(result), "UNKNOWN_CODE(0x%" PRIx32 ")", code);
+        static __thread char buf[32];
+        (void)snprintf(buf, sizeof(result), "UNKNOWN_CODE(0x%" PRIx32 ")", code);
+        result = buf;
         break;
     }
 
