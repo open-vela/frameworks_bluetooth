@@ -22,6 +22,7 @@
 #include "sal_zblue.h"
 #include "service_loop.h"
 #include <errno.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -480,12 +481,19 @@ bt_status_t bt_sal_hfp_hf_hangup_call(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_hf_dial_number(bt_address_t* addr, const char* number)
 {
-    return BT_STATUS_UNSUPPORTED;
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
+    SAL_CHECK_RET(Z_API(bt_hfp_hf_number_call)(sal_conn->hf, number), 0);
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_hf_dial_memory(bt_address_t* addr, uint32_t memory)
 {
-    return BT_STATUS_UNSUPPORTED;
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
+    char mem_in_str[HFP_PHONENUM_DIGITS_MAX + 1];
+
+    snprintf(mem_in_str, sizeof(mem_in_str), "%" PRIu32, memory);
+    SAL_CHECK_RET(Z_API(bt_hfp_hf_memory_dial)(sal_conn->hf, mem_in_str), 0);
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_hf_call_control(bt_address_t* addr, hfp_call_control_t chld, uint32_t index)
