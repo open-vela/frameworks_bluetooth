@@ -43,19 +43,61 @@
 
 static const char* bt_legacy_ipc_code_to_string(uint32_t type)
 {
-    if (
-        (type >= BT_A2DP_SINK_MESSAGE_START && type <= BT_A2DP_SINK_MESSAGE_END) ||
-        (type >= BT_A2DP_SINK_CALLBACK_START && type <= BT_A2DP_SINK_CALLBACK_END)
-    ){
+    if (((type >= BT_A2DP_SINK_MESSAGE_START) && (type <= BT_A2DP_SINK_MESSAGE_END)) ||
+        ((type >= BT_A2DP_SINK_CALLBACK_START) && (type <= BT_A2DP_SINK_CALLBACK_END))) {
         return bt_a2dp_sink_ipc_code_to_string(type);
-    } else if (
-        (type >= BT_A2DP_SOURCE_MESSAGE_START && type <= BT_A2DP_SOURCE_MESSAGE_END) ||
-        (type >= BT_A2DP_SOURCE_CALLBACK_START && type <= BT_A2DP_SOURCE_CALLBACK_END)
-    ){
+    } else if (((type >= BT_A2DP_SOURCE_MESSAGE_START) && (type <= BT_A2DP_SOURCE_MESSAGE_END)) ||
+        ((type >= BT_A2DP_SOURCE_CALLBACK_START) && (type <= BT_A2DP_SOURCE_CALLBACK_END))) {
         return bt_a2dp_source_ipc_code_to_string(type);
-    } else {
-        return NULL;
+    } else if (((type >= BT_ADAPTER_MESSAGE_START) && (type <= BT_ADAPTER_MESSAGE_END)) ||
+        ((type >= BT_ADAPTER_CALLBACK_START) && (type <= BT_ADAPTER_CALLBACK_END))) {
+        return bt_adapter_ipc_code_to_string(type);
+    } else if (((type >= BT_ADVERTISER_MESSAGE_START) && (type <= BT_ADVERTISER_MESSAGE_END)) ||
+        ((type >= BT_ADVERTISER_CALLBACK_START) && (type <= BT_ADVERTISER_CALLBACK_END))) {
+        return bt_advertiser_ipc_code_to_string(type);
+    } else if (((type >= BT_AVRCP_CONTROL_MESSAGE_START) && (type <= BT_AVRCP_CONTROL_MESSAGE_END)) ||
+        ((type >= BT_AVRCP_CONTROL_CALLBACK_START) && (type <= BT_AVRCP_CONTROL_CALLBACK_END))) {
+        return bt_avrcp_control_ipc_code_to_string(type);
+    } else if (((type >= BT_AVRCP_TARGET_MESSAGE_START) && (type <= BT_AVRCP_TARGET_MESSAGE_END)) ||
+        ((type >= BT_AVRCP_TARGET_CALLBACK_START) && (type <= BT_AVRCP_TARGET_CALLBACK_END))) {
+        return bt_avrcp_target_ipc_code_to_string(type);
+    } else if ((type >= BT_DEVICE_MESSAGE_START) && (type <= BT_DEVICE_MESSAGE_END)) {
+        return bt_device_ipc_code_to_string(type);
+    } else if (((type >= BT_GATT_CLIENT_MESSAGE_START) && (type <= BT_GATT_CLIENT_MESSAGE_END)) ||
+        ((type >= BT_GATT_CLIENT_CALLBACK_START) && (type <= BT_GATT_CLIENT_CALLBACK_END))) {
+        return bt_gattc_ipc_code_to_string(type);
+    } else if (((type >= BT_GATT_SERVER_MESSAGE_START) && (type <= BT_GATT_SERVER_MESSAGE_END)) ||
+        ((type >= BT_GATT_SERVER_CALLBACK_START) && (type <= BT_GATT_SERVER_CALLBACK_END))) {
+        return bt_gatts_ipc_code_to_string(type);
+    } else if (((type >= BT_HFP_AG_MESSAGE_START) && (type <= BT_HFP_AG_MESSAGE_END)) ||
+        ((type >= BT_HFP_AG_CALLBACK_START) && (type <= BT_HFP_AG_CALLBACK_END))) {
+        return bt_hfp_ag_ipc_code_to_string(type);
+    } else if (((type >= BT_HFP_HF_MESSAGE_START) && (type <= BT_HFP_HF_MESSAGE_END)) ||
+        ((type >= BT_HFP_HF_CALLBACK_START) && (type <= BT_HFP_HF_CALLBACK_END))) {
+        return bt_hfp_hf_ipc_code_to_string(type);
+    } else if (((type >= BT_HID_DEVICE_MESSAGE_START) && (type <= BT_HID_DEVICE_MESSAGE_END)) ||
+        ((type >= BT_HID_DEVICE_CALLBACK_START) && (type <= BT_HID_DEVICE_CALLBACK_END))) {
+        return bt_hid_device_ipc_code_to_string(type);
+    } else if (((type >= BT_L2CAP_MESSAGE_START) && (type <= BT_L2CAP_MESSAGE_END)) ||
+        ((type >= BT_L2CAP_CALLBACK_START) && (type <= BT_L2CAP_CALLBACK_END))) {
+        return bt_l2cap_ipc_code_to_string(type);
+    } else if ((type >= BT_LOG_MESSAGE_START) && (type <= BT_LOG_MESSAGE_END)) {
+        return bt_log_ipc_code_to_string(type);
+    } else if (((type >= BT_MANAGER_MESSAGE_START) && (type <= BT_MANAGER_MESSAGE_END)) ||
+        ((type >= BT_MANAGER_CALLBACK_START) && (type <= BT_MANAGER_CALLBACK_END))) {
+        return bt_manager_ipc_code_to_string(type);
+    } else if (((type >= BT_PAN_MESSAGE_START) && (type <= BT_PAN_MESSAGE_END)) ||
+        ((type >= BT_PAN_CALLBACK_START) && (type <= BT_PAN_CALLBACK_END))) {
+        return bt_pan_ipc_code_to_string(type);
+    } else if (((type >= BT_SCAN_MESSAGE_START) && (type <= BT_SCAN_MESSAGE_END)) ||
+        ((type >= BT_SCAN_CALLBACK_START) && (type <= BT_SCAN_CALLBACK_END))) {
+        return bt_scan_ipc_code_to_string(type);
+    } else if (((type >= BT_SPP_MESSAGE_START) && (type <= BT_SPP_MESSAGE_END)) ||
+        ((type >= BT_SPP_CALLBACK_START) && (type <= BT_SPP_CALLBACK_END))) {
+        return bt_spp_ipc_code_to_string(type);
     }
+
+    return NULL;
 }
 
 char* bt_ipc_code_to_string(uint32_t code)
