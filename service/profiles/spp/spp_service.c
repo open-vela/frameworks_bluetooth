@@ -238,12 +238,16 @@ static int scn_bit_free(uint16_t scn)
 
 static spp_server_t* alloc_new_server(uint16_t scn, bt_uuid_t* uuid, spp_handle_t* handle)
 {
-    if (scn_bit_alloc(scn) != 0)
+    if (scn_bit_alloc(scn) != 0) {
+        BT_LOGW("No available scn");
         return NULL;
+    }
 
     spp_server_t* server = malloc(sizeof(spp_server_t));
-    if (!server)
+    if (!server) {
+        BT_LOGE("No memory for spp server");
         return NULL;
+    }
 
     server->scn = scn;
     bt_uuid_to_uuid128(uuid, &server->uuid);
@@ -255,6 +259,7 @@ static spp_server_t* alloc_new_server(uint16_t scn, bt_uuid_t* uuid, spp_handle_
 
 static void free_server_resource(spp_server_t* server)
 {
+    BT_LOGD("%s, scn: %" PRIu16, __func__, server->scn);
     spp_server_cleanup_devices(server);
     scn_bit_free(server->scn);
     list_delete(&server->node);
@@ -285,12 +290,16 @@ static spp_device_t* alloc_new_device(bt_address_t* addr, int16_t scn,
     spp_device_t* device;
 
     conn_id = index_alloc(g_spp_handle.allocator);
-    if (conn_id < 0)
+    if (conn_id < 0) {
+        BT_LOGW("No available conn_id");
         return NULL;
+    }
 
     device = malloc(sizeof(spp_device_t));
-    if (device == NULL)
+    if (device == NULL) {
+        BT_LOGE("No memory for spp device");
         return NULL;
+    }
 
     memset(device, 0, sizeof(spp_device_t));
     device->conn_id = conn_id;
@@ -449,8 +458,10 @@ static void spp_server_cleanup_devices(spp_server_t* server)
     list_for_every_safe(&g_spp_handle.devices, node, tmp)
     {
         device = (spp_device_t*)node;
-        if (device->server == server)
+        if (device->server == server) {
+            BT_LOGD("%s, close spp conn: %" PRIu16, __func__, device->conn_id);
             spp_device_cleanup(device, true);
+        }
     }
 }
 
@@ -476,12 +487,15 @@ static void spp_app_cleanup_devices(spp_handle_t* app)
     struct list_node* node;
     struct list_node* tmp;
 
+    BT_LOGD("%s, app_handle: %p", __func__, app);
+
     // cleanup all device
     list_for_every_safe(&g_spp_handle.devices, node, tmp)
     {
         device = (spp_device_t*)node;
         if (device->app_handle == app) {
             bt_pm_conn_close(PROFILE_SPP, &device->addr);
+            BT_LOGD("%s, close spp conn: %" PRIu16, __func__, device->conn_id);
             spp_device_cleanup(device, true);
         }
     }
