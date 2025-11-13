@@ -23,6 +23,7 @@
 #include "bt_tools.h"
 #include "bt_uuid.h"
 #include "euv_pipe.h"
+#include "utils.h"
 #include "uv_thread_loop.h"
 
 typedef struct {
@@ -465,9 +466,10 @@ static int start_server_cmd(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    uint16_t scn = atoi(argv[1]);
+    uint16_t scn;
+    CONVERT_ULONG(argv[1], uint16_t, scn);
     if (argc == 2)
-        uuid = strtol(argv[2], NULL, 16);
+        CONVERT_ULONG(argv[2], uint16_t, uuid);
     else
         uuid = BT_UUID_SERVCLASS_SERIAL_PORT;
 
@@ -487,7 +489,8 @@ static int stop_server_cmd(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    uint16_t scn = atoi(argv[1]);
+    uint16_t scn;
+    CONVERT_ULONG(argv[1], uint16_t, scn);
     bt_spp_server_stop(handle, spp_app_handle, scn);
 
     return CMD_OK;
@@ -507,10 +510,10 @@ static int connect_cmd(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[1], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    scn = atoi(argv[2]);
+    CONVERT_LONG(argv[2], int16_t, scn);
 
     if (argc == 3)
-        uuid = strtol(argv[3], NULL, 16);
+        CONVERT_ULONG(argv[3], uint16_t, uuid);
     else
         uuid = BT_UUID_SERVCLASS_SERIAL_PORT;
 
@@ -557,7 +560,7 @@ static int disconnect_cmd(void* handle, int argc, char* argv[])
     }
 
     msg->handle = handle;
-    msg->port = atoi(argv[2]);
+    CONVERT_ULONG(argv[2], uint16_t, msg->port);
 
     PRINT("%s, address:%s port:%d", __func__, argv[1], msg->port);
     do_in_thread_loop(&spp_thread_loop, spp_disconnect, msg);
@@ -601,7 +604,7 @@ static int write_cmd(void* handle, int argc, char* argv[])
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    port = atoi(argv[1]);
+    CONVERT_ULONG(argv[1], uint16_t, port);
     buf = (uint8_t*)strdup(argv[2]);
 
     spp_cmd_t* msg = malloc(sizeof(spp_cmd_t));
@@ -625,8 +628,8 @@ static int speed_test_cmd(void* handle, int argc, char* argv[])
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    port = atoi(argv[1]);
-    times = atoi(argv[2]);
+    CONVERT_LONG(argv[1], int, port);
+    CONVERT_LONG(argv[2], int, times);
     if (port < 0 || times < 0)
         return CMD_INVALID_PARAM;
 
@@ -665,19 +668,19 @@ static int ping_test_cmd(void* handle, int argc, char* argv[])
         != -1) {
         switch (opt) {
         case 'd':
-            delay = atoi(optarg);
+            CONVERT_LONG(optarg, int, delay);
             break;
         case 'c':
-            count = atoi(optarg);
+            CONVERT_LONG(optarg, int, count);
             break;
         case 't':
-            timeout = atoi(optarg);
+            CONVERT_LONG(optarg, int, timeout);
             break;
         case 's':
-            size = atoi(optarg);
+            CONVERT_LONG(optarg, int, size);
             break;
         case 'p':
-            port = atoi(optarg);
+            CONVERT_LONG(optarg, int, port);
             break;
         default:
             PRINT("%s, default opt:%c, arg:%s", __func__, opt, optarg);

@@ -40,6 +40,7 @@
 #include "bt_debug.h"
 #include "bt_tools.h"
 #include "bt_trace.h"
+#include "utils.h"
 #include "utils/btsnoop_log.h"
 
 static int enable_cmd(void* handle, int argc, char* argv[]);
@@ -140,7 +141,8 @@ static int mask_cmd(void* handle, int argc, char* argv[])
     int mask = property_get_int32("persist.bluetooth.log.stack_mask", 0x0);
     for (int i = 0; i < argc; i++) {
         if (argv[i] != NULL) {
-            int bit = atoi(argv[i]);
+            int bit;
+            CONVERT_LONG(argv[i], int, bit);
             if (bit < 0 || bit > 31)
                 return CMD_INVALID_PARAM;
 
@@ -164,7 +166,8 @@ static int filter_cmd(void* handle, int argc, char* argv[])
 
     for (int i = 0; i < argc; i++) {
         if (argv[i] != NULL) {
-            int bit = atoi(argv[i]);
+            int bit;
+            CONVERT_LONG(argv[i], int, bit);
             if (bit < 0 || bit >= BTSNOOP_FILTER_MAX)
                 return CMD_INVALID_PARAM;
 
@@ -182,7 +185,8 @@ static int unfilter_cmd(void* handle, int argc, char* argv[])
 
     for (int i = 0; i < argc; i++) {
         if (argv[i] != NULL) {
-            int bit = atoi(argv[i]);
+            int bit;
+            CONVERT_LONG(argv[i], int, bit);
             if (bit < 0 || bit >= BTSNOOP_FILTER_MAX)
                 return CMD_INVALID_PARAM;
 
@@ -202,7 +206,8 @@ static int unmask_cmd(void* handle, int argc, char* argv[])
     int mask = property_get_int32("persist.bluetooth.log.stack_mask", 0x0);
     for (int i = 0; i < argc; i++) {
         if (argv[i] != NULL) {
-            int bit = atoi(argv[i]);
+            int bit;
+            CONVERT_LONG(argv[i], int, bit);
             if (bit < 0 || bit > 31)
                 return CMD_INVALID_PARAM;
 
@@ -224,7 +229,8 @@ static int level_cmd(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int level = atoi(argv[0]);
+    int level;
+    CONVERT_LONG(argv[0], int, level);
     if (level != 0 && level != LOG_ERR && level != LOG_WARNING && level != LOG_INFO && level != LOG_DEBUG)
         return CMD_INVALID_PARAM;
 

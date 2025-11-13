@@ -19,6 +19,7 @@
 
 #include "bt_hid_device.h"
 #include "bt_tools.h"
+#include "utils.h"
 
 static int register_cmd(void* handle, int argc, char* argv[]);
 static int unregister_cmd(void* handle, int argc, char* argv[]);
@@ -260,8 +261,8 @@ static int register_cmd(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    app_type = atoi(argv[0]);
-    transport = (argc < 2) ? BT_TRANSPORT_BREDR : atoi(argv[1]);
+    CONVERT_LONG(argv[0], int, app_type);
+    transport = (argc < 2) ? BT_TRANSPORT_BREDR : strtol(argv[1], NULL, 10);
     if (transport != BT_TRANSPORT_BREDR && transport != BT_TRANSPORT_BLE)
         return CMD_INVALID_PARAM;
 
@@ -413,7 +414,7 @@ static int send_report_cmd(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    report_id = atoi(argv[1]);
+    CONVERT_ULONG(argv[1], uint8_t, report_id);
     size = strlen(argv[2]) + 1;
     buffer = (char*)malloc(size);
     if (!buffer)
@@ -450,8 +451,8 @@ static int send_keyboard_cmd(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    rpt_data[0] = strtol(argv[1], NULL, 16);
-    rpt_data[2] = strtol(argv[2], NULL, 16);
+    CONVERT_ULONG(argv[1], uint8_t, rpt_data[0]);
+    CONVERT_ULONG(argv[2], uint8_t, rpt_data[2]);
 
     PRINT("modifier key: 0x%02X, normal key: 0x%02X", rpt_data[0], rpt_data[2]);
     if (bt_hid_device_send_report(handle, &addr, 0, rpt_data, sizeof(rpt_data)) != BT_STATUS_SUCCESS)
@@ -476,8 +477,8 @@ static int send_mouse_cmd(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    rpt_data[1] = atoi(argv[1]);
-    rpt_data[2] = atoi(argv[2]);
+    CONVERT_LONG(argv[1], int8_t, rpt_data[1]);
+    CONVERT_LONG(argv[2], int8_t, rpt_data[2]);
 
     PRINT("X axises: %d, Y axises: %d", rpt_data[0], rpt_data[2]);
     if (bt_hid_device_send_report(handle, &addr, 0, (uint8_t*)rpt_data, sizeof(rpt_data)) != BT_STATUS_SUCCESS)
@@ -502,7 +503,7 @@ static int send_consumer_cmd(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    rpt_data[1] = strtol(argv[1], NULL, 16);
+    CONVERT_ULONG(argv[1], uint8_t, rpt_data[1]);
 
     PRINT("consumer key: 0x%02X", rpt_data[1]);
     if (bt_hid_device_send_report(handle, &addr, 1, rpt_data, sizeof(rpt_data)) != BT_STATUS_SUCCESS)

@@ -19,6 +19,7 @@
 
 #include "bt_pan.h"
 #include "bt_tools.h"
+#include "utils.h"
 
 static int connect_cmd(void* handle, int argc, char* argv[]);
 static int disconnect_cmd(void* handle, int argc, char* argv[]);
@@ -70,8 +71,8 @@ static int connect_cmd(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    dst_role = atoi(argv[1]);
-    src_role = atoi(argv[2]);
+    CONVERT_ULONG(argv[1], uint32_t, dst_role);
+    CONVERT_ULONG(argv[2], uint32_t, src_role);
     if (bt_pan_connect(handle, &addr, dst_role, src_role) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 

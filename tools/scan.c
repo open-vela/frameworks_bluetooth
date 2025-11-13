@@ -21,6 +21,7 @@
 #include "advertiser_data.h"
 #include "bt_le_scan.h"
 #include "bt_tools.h"
+#include "utils.h"
 
 static int start_scan_cmd(void* handle, int argc, char* argv[]);
 static int stop_scan_cmd(void* handle, int argc, char* argv[]);
@@ -99,7 +100,8 @@ static int start_scan_cmd(void* handle, int argc, char* argv[])
         != -1) {
         switch (opt) {
         case 't': {
-            int type = atoi(optarg);
+            int type;
+            CONVERT_LONG(optarg, int, type);
             if (type != 0 && type != 1) {
                 PRINT("Invalid type:%s", optarg);
                 return CMD_INVALID_OPT;
@@ -120,7 +122,8 @@ static int start_scan_cmd(void* handle, int argc, char* argv[])
             }
         } break;
         case 'm': {
-            int scanmode = atoi(optarg);
+            int scanmode;
+            CONVERT_LONG(optarg, int, scanmode);
             if (scanmode == 0)
                 settings.scan_mode = BT_SCAN_MODE_LOW_POWER;
             else if (scanmode == 1)
@@ -133,7 +136,8 @@ static int start_scan_cmd(void* handle, int argc, char* argv[])
             }
         } break;
         case 'l': {
-            int legacy = atoi(optarg);
+            int legacy;
+            CONVERT_LONG(optarg, int, legacy);
             if (legacy != 0 && legacy != 1) {
                 PRINT("Invalid legacy:%s", optarg);
                 return CMD_INVALID_OPT;
@@ -142,7 +146,8 @@ static int start_scan_cmd(void* handle, int argc, char* argv[])
             settings.legacy = legacy;
         } break;
         case 'f': {
-            uint16_t uuid = atoi(optarg);
+            uint16_t uuid;
+            CONVERT_ULONG(optarg, uint16_t, uuid);
             PRINT("uuid: 0x%02x ", uuid);
             filter.active = true;
             filter.uuids[0] = uuid;

@@ -14,6 +14,7 @@
  * limitations under the License.
  ***************************************************************************/
 
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -23,3 +24,27 @@ bool phy_is_vaild(uint8_t phy);
 int le_addr_type(const char* str, ble_addr_type_t* type);
 bool bttool_allocator(void** data, uint32_t size);
 uint32_t get_timestamp_msec(void);
+long convert_long(const char* str_tmp, int* err);
+unsigned long convert_ulong(const char* str_tmp, int* err);
+
+#define CONVERT_LONG(str_tmp, type, var)                            \
+    do {                                                            \
+        int err = 0;                                                \
+        long _temp = convert_long((str_tmp), &err);                 \
+        if (err == 1) {                                             \
+            PRINT("error, the input is not a pure numeric string"); \
+            return CMD_INVALID_PARAM;                               \
+        }                                                           \
+        (var) = (type)_temp;                                        \
+    } while (0)
+
+#define CONVERT_ULONG(str_tmp, type, var)                           \
+    do {                                                            \
+        int err = 0;                                                \
+        unsigned long _temp = convert_ulong((str_tmp), &err);       \
+        if (err == 1) {                                             \
+            PRINT("error, the input is not a pure numeric string"); \
+            return CMD_INVALID_PARAM;                               \
+        }                                                           \
+        (var) = (type)_temp;                                        \
+    } while (0)

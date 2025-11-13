@@ -22,6 +22,7 @@
 #include "bt_adapter.h"
 #include "bt_lea_tbs.h"
 #include "bt_tools.h"
+#include "utils.h"
 
 static int tbs_add(void* handle, int argc, char* argv[]);
 static int tbs_remove(void* handle, int argc, char* argv[]);
@@ -93,15 +94,15 @@ static int tbs_set_telephone_bearer_info(void* handle, int argc, char* argv[])
         return CMD_PARAM_NOT_ENOUGH;
 
     lea_tbs_telephone_bearer_t* bearer = (lea_tbs_telephone_bearer_t*)malloc(sizeof(lea_tbs_telephone_bearer_t));
-    bearer->bearer_ref = (void*)atoi(argv[0]);
+    CONVERT_ULONG(argv[0], void*, bearer->bearer_ref);
     strcpy((char*)bearer->provider_name, argv[1]);
     strcpy((char*)bearer->uci, argv[2]);
     strcpy((char*)bearer->uri_schemes, argv[3]);
-    bearer->technology = (uint8_t)atoi(argv[4]);
-    bearer->signal_strength = (uint8_t)atoi(argv[5]);
-    bearer->signal_strength_report_interval = (uint8_t)atoi(argv[6]);
-    bearer->status_flags = (uint8_t)atoi(argv[7]);
-    bearer->optional_opcodes_supported = (uint8_t)atoi(argv[8]);
+    CONVERT_ULONG(argv[4], uint8_t, bearer->technology);
+    CONVERT_ULONG(argv[5], uint8_t, bearer->signal_strength);
+    CONVERT_ULONG(argv[6], uint8_t, bearer->signal_strength_report_interval);
+    CONVERT_ULONG(argv[7], uint8_t, bearer->status_flags);
+    CONVERT_ULONG(argv[8], uint8_t, bearer->optional_opcodes_supported);
     if (bt_lea_tbs_set_telephone_bearer_info(handle, bearer) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
@@ -115,9 +116,9 @@ static int tbs_add_call(void* handle, int argc, char* argv[])
 
     lea_tbs_calls_t* call_s = (lea_tbs_calls_t*)malloc(sizeof(lea_tbs_calls_t));
 
-    call_s->index = (uint8_t)atoi(argv[0]);
-    call_s->state = (uint8_t)atoi(argv[1]);
-    call_s->flags = (uint8_t)atoi(argv[2]);
+    CONVERT_ULONG(argv[0], uint8_t, call_s->index);
+    CONVERT_ULONG(argv[1], uint8_t, call_s->state);
+    CONVERT_ULONG(argv[2], uint8_t, call_s->flags);
     strcpy((char*)call_s->call_uri, argv[3]);
     strcpy((char*)call_s->incoming_target_uri, argv[4]);
     strcpy((char*)call_s->friendly_name, argv[5]);
@@ -133,7 +134,8 @@ static int tbs_remove_call(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    uint8_t call_index = (uint8_t)atoi(argv[0]);
+    uint8_t call_index;
+    CONVERT_ULONG(argv[0], uint8_t, call_index);
 
     if (bt_lea_tbs_remove_call(handle, call_index) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -146,7 +148,8 @@ static int tbs_provider_name_changed(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    uint8_t* name = (uint8_t*)atoi(argv[0]);
+    uint8_t* name;
+    CONVERT_ULONG(argv[0], uint8_t*, name);
 
     if (bt_lea_tbs_provider_name_changed(handle, name) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -159,7 +162,8 @@ static int tbs_bearer_technology_changed(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    uint8_t technology = (uint8_t)atoi(argv[0]);
+    uint8_t technology;
+    CONVERT_ULONG(argv[0], uint8_t, technology);
 
     if (bt_lea_tbs_bearer_technology_changed(handle, technology) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -172,7 +176,8 @@ static int tbs_uri_schemes_supported_list_changed(void* handle, int argc, char* 
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    uint8_t* uri_schemes = (uint8_t*)atoi(argv[0]);
+    uint8_t* uri_schemes;
+    CONVERT_ULONG(argv[0], uint8_t*, uri_schemes);
 
     if (bt_lea_tbs_uri_schemes_supported_list_changed(handle, uri_schemes) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -185,7 +190,8 @@ static int tbs_signal_strength_changed(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    uint8_t strength = (uint8_t)atoi(argv[0]);
+    uint8_t strength;
+    CONVERT_ULONG(argv[0], uint8_t, strength);
 
     if (bt_lea_tbs_rssi_value_changed(handle, strength) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -198,7 +204,8 @@ static int tbs_signal_strength_report_interval_changed(void* handle, int argc, c
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    uint8_t interval = (uint8_t)atoi(argv[0]);
+    uint8_t interval;
+    CONVERT_ULONG(argv[0], uint8_t, interval);
 
     if (bt_lea_tbs_rssi_interval_changed(handle, interval) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -211,7 +218,8 @@ static int tbs_status_flags_changed(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    uint8_t status_flags = (uint8_t)atoi(argv[0]);
+    uint8_t status_flags;
+    CONVERT_ULONG(argv[0], uint8_t, status_flags);
 
     if (bt_lea_tbs_status_flags_changed(handle, status_flags) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -224,15 +232,16 @@ static int tbs_call_state_changed(void* handle, int argc, char* argv[])
     if (argc < 4)
         return CMD_PARAM_NOT_ENOUGH;
 
-    uint8_t number = (uint8_t)atoi(argv[0]);
+    uint8_t number;
+    CONVERT_ULONG(argv[0], uint8_t, number);
     lea_tbs_call_state_t* states_s;
     states_s = (lea_tbs_call_state_t*)malloc(sizeof(lea_tbs_call_state_t) * number);
     lea_tbs_call_state_t* sub_state = states_s;
 
     for (int i = 0; i < number; i++) {
-        (sub_state)->index = (uint8_t)atoi(argv[i]);
-        (sub_state)->state = (uint8_t)atoi(argv[i]);
-        (sub_state)->flags = (uint8_t)atoi(argv[i]);
+        CONVERT_ULONG(argv[i], uint8_t, (sub_state)->index);
+        CONVERT_ULONG(argv[i], uint8_t, (sub_state)->state);
+        CONVERT_ULONG(argv[i], uint8_t, (sub_state)->flags);
         sub_state++;
     }
 
@@ -247,8 +256,10 @@ static int tbs_notify_termination_reason(void* handle, int argc, char* argv[])
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    uint8_t call_index = (uint8_t)atoi(argv[0]);
-    uint8_t reason = (uint8_t)atoi(argv[1]);
+    uint8_t call_index;
+    CONVERT_ULONG(argv[0], uint8_t, call_index);
+    uint8_t reason;
+    CONVERT_ULONG(argv[1], uint8_t, reason);
 
     if (bt_lea_tbs_notify_termination_reason(handle, call_index, reason) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -261,8 +272,10 @@ static int tbs_call_control_response(void* handle, int argc, char* argv[])
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    uint8_t call_index = (uint8_t)atoi(argv[0]);
-    uint8_t result = atoi(argv[1]);
+    uint8_t call_index;
+    CONVERT_ULONG(argv[0], uint8_t, call_index);
+    uint8_t result;
+    CONVERT_ULONG(argv[1], uint8_t, result);
 
     if (bt_lea_tbs_call_control_response(handle, call_index, result) != BT_STATUS_SUCCESS)
         return CMD_ERROR;

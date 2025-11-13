@@ -62,3 +62,35 @@ uint32_t get_timestamp_msec(void)
 
     return (uint32_t)((ts.tv_sec * 1000L) + (ts.tv_nsec / 1000000));
 }
+
+long convert_long(const char* str_tmp, int* err)
+{
+    if (str_tmp == NULL) {
+        *err = 1;
+        return 0;
+    }
+    char* endptr;
+    errno = 0;
+    long out = strtol(str_tmp, &endptr, 0);
+    if (errno == ERANGE || endptr == (str_tmp) || *endptr != '\0') {
+        (*err) = 1;
+    }
+
+    return out;
+}
+
+unsigned long convert_ulong(const char* str_tmp, int* err)
+{
+    if (str_tmp == NULL) {
+        *err = 1;
+        return 0;
+    }
+    char* endptr;
+    errno = 0;
+    unsigned long out = strtoul(str_tmp, &endptr, 0);
+    if (errno == ERANGE || endptr == (str_tmp) || *endptr != '\0') {
+        (*err) = 1;
+    }
+
+    return out;
+}

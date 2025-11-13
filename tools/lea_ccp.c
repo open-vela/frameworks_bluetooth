@@ -22,6 +22,7 @@
 #include "bt_adapter.h"
 #include "bt_lea_ccp.h"
 #include "bt_tools.h"
+#include "utils.h"
 
 /// lea_interface_t
 static int ccp_read_bearer_provider_name(void* handle, int argc, char* argv[]);
@@ -301,7 +302,7 @@ static int ccp_call_control_by_index(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    opcode = atoi(argv[1]);
+    CONVERT_ULONG(argv[1], uint8_t, opcode);
 
     if (bt_lea_ccp_call_control_by_index(handle, &addr, opcode) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -341,9 +342,9 @@ static int ccp_join_calls(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    number = (uint8_t)atoi(argv[1]);
-    list_of_call_indexex[0] = (uint8_t)atoi(argv[2]);
-    list_of_call_indexex[1] = (uint8_t)atoi(argv[3]);
+    CONVERT_ULONG(argv[1], uint8_t, number);
+    CONVERT_ULONG(argv[2], uint8_t, list_of_call_indexex[0]);
+    CONVERT_ULONG(argv[3], uint8_t, list_of_call_indexex[1]);
     call_indexes = list_of_call_indexex;
 
     if (bt_lea_ccp_join_calls(handle, &addr, number, call_indexes) != BT_STATUS_SUCCESS)

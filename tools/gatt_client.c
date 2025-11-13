@@ -24,6 +24,7 @@
 #include "bt_device.h"
 #include "bt_gattc.h"
 #include "bt_tools.h"
+#include "utils.h"
 
 #define THROUGHTPUT_HORIZON 5
 
@@ -121,7 +122,8 @@ static int connect_cmd(void* handle, int argc, char* argv[])
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id;
+    CONVERT_LONG(argv[0], int, conn_id);
     CHECK_CONNCTION_ID(conn_id);
 
     bt_address_t addr;
@@ -129,7 +131,7 @@ static int connect_cmd(void* handle, int argc, char* argv[])
         return CMD_INVALID_ADDR;
 
     if (argc >= 3) {
-        addr_type = atoi(argv[2]);
+        CONVERT_LONG(argv[2], ble_addr_type_t, addr_type);
         if (addr_type > BT_LE_ADDR_TYPE_ANONYMOUS || addr_type < BT_LE_ADDR_TYPE_PUBLIC) {
             PRINT("Invalid address type");
             return CMD_INVALID_OPT;
@@ -147,7 +149,8 @@ static int disconnect_cmd(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id;
+    CONVERT_LONG(argv[0], int, conn_id);
     CHECK_CONNCTION_ID(conn_id);
 
     if (bt_gattc_disconnect(g_gattc_devies[conn_id].handle) != BT_STATUS_SUCCESS)
@@ -161,14 +164,16 @@ static int discover_services_cmd(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id;
+    CONVERT_LONG(argv[0], int, conn_id);
     CHECK_CONNCTION_ID(conn_id);
 
     bt_uuid_t* uuid_ptr = NULL;
     bt_uuid_t uuid;
 
     if (argc >= 2) {
-        uint16_t uuid_val = (uint16_t)strtol(argv[1], NULL, 16);
+        uint16_t uuid_val;
+        CONVERT_ULONG(argv[1], uint16_t, uuid_val);
         uuid = BT_UUID_DECLARE_16(uuid_val);
         uuid_ptr = &uuid;
     }
@@ -184,10 +189,12 @@ static int read_request_cmd(void* handle, int argc, char* argv[])
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id;
+    CONVERT_LONG(argv[0], int, conn_id);
     CHECK_CONNCTION_ID(conn_id);
 
-    uint16_t attr_handle = strtol(argv[1], NULL, 16);
+    uint16_t attr_handle;
+    CONVERT_ULONG(argv[1], uint16_t, attr_handle);
 
     if (bt_gattc_read(g_gattc_devies[conn_id].handle, attr_handle) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -200,12 +207,14 @@ static int write_cmd(void* handle, int argc, char* argv[])
     if (argc < 4)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id;
+    CONVERT_LONG(argv[0], int, conn_id);
     int len, i;
     uint8_t* value = NULL;
     CHECK_CONNCTION_ID(conn_id);
 
-    uint16_t attr_handle = strtol(argv[1], NULL, 16);
+    uint16_t attr_handle;
+    CONVERT_ULONG(argv[1], uint16_t, attr_handle);
 
     if (!strcmp(argv[2], "str")) {
         if (bt_gattc_write_without_response(g_gattc_devies[conn_id].handle, attr_handle,
@@ -221,8 +230,11 @@ static int write_cmd(void* handle, int argc, char* argv[])
         if (!value)
             return CMD_ERROR;
 
-        for (i = 0; i < len; i++)
-            value[i] = (uint8_t)(strtol(argv[3 + i], NULL, 16) & 0xFF);
+        for (i = 0; i < len; i++) {
+            CONVERT_ULONG(argv[3 + i], uint8_t, value[i]);
+            value[i] = value[i] & 0xFF;
+        }
+
         if (bt_gattc_write_without_response(g_gattc_devies[conn_id].handle, attr_handle, value, len) != BT_STATUS_SUCCESS)
             goto error;
     } else
@@ -243,12 +255,14 @@ static int write_signed_cmd(void* handle, int argc, char* argv[])
     if (argc < 4)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id;
+    CONVERT_LONG(argv[0], int, conn_id);
     int len, i;
     uint8_t* value = NULL;
     CHECK_CONNCTION_ID(conn_id);
 
-    uint16_t attr_handle = strtol(argv[1], NULL, 16);
+    uint16_t attr_handle;
+    CONVERT_ULONG(argv[1], uint16_t, attr_handle);
 
     if (!strcmp(argv[2], "str")) {
         if (bt_gattc_write_with_signed(g_gattc_devies[conn_id].handle, attr_handle,
@@ -264,8 +278,10 @@ static int write_signed_cmd(void* handle, int argc, char* argv[])
         if (!value)
             return CMD_ERROR;
 
-        for (i = 0; i < len; i++)
-            value[i] = (uint8_t)(strtol(argv[3 + i], NULL, 16) & 0xFF);
+        for (i = 0; i < len; i++) {
+            CONVERT_ULONG(argv[3 + i], uint8_t, value[i]);
+            value[i] = value[i] & 0xFF;
+        }
         if (bt_gattc_write_with_signed(g_gattc_devies[conn_id].handle, attr_handle, value, len) != BT_STATUS_SUCCESS)
             goto error;
     } else
@@ -286,12 +302,14 @@ static int write_request_cmd(void* handle, int argc, char* argv[])
     if (argc < 4)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id;
+    CONVERT_LONG(argv[0], int, conn_id);
     int len, i;
     uint8_t* value = NULL;
     CHECK_CONNCTION_ID(conn_id);
 
-    uint16_t attr_handle = (uint16_t)strtol(argv[1], NULL, 16);
+    uint16_t attr_handle;
+    CONVERT_ULONG(argv[1], uint16_t, attr_handle);
 
     if (!strcmp(argv[2], "str")) {
         if (bt_gattc_write(g_gattc_devies[conn_id].handle, attr_handle,
@@ -309,7 +327,8 @@ static int write_request_cmd(void* handle, int argc, char* argv[])
             return CMD_ERROR;
 
         for (i = 0; i < len; i++) {
-            value[i] = (uint8_t)(strtol(argv[3 + i], NULL, 16) & 0xFF);
+            CONVERT_ULONG(argv[3 + i], uint8_t, value[i]);
+            value[i] = value[i] & 0xFF;
         }
 
         if (bt_gattc_write(g_gattc_devies[conn_id].handle, attr_handle,
@@ -336,11 +355,14 @@ static int enable_cccd_cmd(void* handle, int argc, char* argv[])
     if (argc < 3)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id;
+    CONVERT_LONG(argv[0], int, conn_id);
     CHECK_CONNCTION_ID(conn_id);
 
-    uint16_t attr_handle = strtol(argv[1], NULL, 16);
-    uint16_t ccc_value = atoi(argv[2]);
+    uint16_t attr_handle;
+    CONVERT_ULONG(argv[1], uint16_t, attr_handle);
+    uint16_t ccc_value;
+    CONVERT_ULONG(argv[2], uint16_t, ccc_value);
 
     if (bt_gattc_subscribe(g_gattc_devies[conn_id].handle, attr_handle, ccc_value) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -353,10 +375,12 @@ static int disable_cccd_cmd(void* handle, int argc, char* argv[])
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id;
+    CONVERT_LONG(argv[0], int, conn_id);
     CHECK_CONNCTION_ID(conn_id);
 
-    uint16_t attr_handle = strtol(argv[1], NULL, 16);
+    uint16_t attr_handle;
+    CONVERT_ULONG(argv[1], uint16_t, attr_handle);
 
     if (bt_gattc_unsubscribe(g_gattc_devies[conn_id].handle, attr_handle) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -369,10 +393,12 @@ static int exchange_mtu_cmd(void* handle, int argc, char* argv[])
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id;
+    CONVERT_LONG(argv[0], int, conn_id);
     CHECK_CONNCTION_ID(conn_id);
 
-    uint32_t mtu = atoi(argv[1]);
+    uint32_t mtu;
+    CONVERT_ULONG(argv[1], uint32_t, mtu);
 
     if (bt_gattc_exchange_mtu(g_gattc_devies[conn_id].handle, mtu) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -385,15 +411,17 @@ static int update_conn_cmd(void* handle, int argc, char* argv[])
     if (argc < 7)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id;
+    CONVERT_LONG(argv[0], int, conn_id);
     CHECK_CONNCTION_ID(conn_id);
 
-    uint32_t min_interval = atoi(argv[1]);
-    uint32_t max_interval = atoi(argv[2]);
-    uint32_t latency = atoi(argv[3]);
-    uint32_t timeout = atoi(argv[4]);
-    uint32_t min_connection_event_length = atoi(argv[5]);
-    uint32_t max_connection_event_length = atoi(argv[6]);
+    uint32_t min_interval, max_interval, latency, timeout, min_connection_event_length, max_connection_event_length;
+    CONVERT_ULONG(argv[1], uint32_t, min_interval);
+    CONVERT_ULONG(argv[2], uint32_t, max_interval);
+    CONVERT_ULONG(argv[3], uint32_t, latency);
+    CONVERT_ULONG(argv[4], uint32_t, timeout);
+    CONVERT_ULONG(argv[5], uint32_t, min_connection_event_length);
+    CONVERT_ULONG(argv[6], uint32_t, max_connection_event_length);
 
     if (bt_gattc_update_connection_parameter(g_gattc_devies[conn_id].handle, min_interval, max_interval, latency,
             timeout, min_connection_event_length, max_connection_event_length)
@@ -408,7 +436,8 @@ static int read_phy_cmd(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id;
+    CONVERT_LONG(argv[0], int, conn_id);
     CHECK_CONNCTION_ID(conn_id);
 
     if (bt_gattc_read_phy(g_gattc_devies[conn_id].handle) != BT_STATUS_SUCCESS)
@@ -422,11 +451,14 @@ static int update_phy_cmd(void* handle, int argc, char* argv[])
     if (argc < 3)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id;
+    CONVERT_LONG(argv[0], int, conn_id);
     CHECK_CONNCTION_ID(conn_id);
 
-    int tx = atoi(argv[1]);
-    int rx = atoi(argv[2]);
+    int tx;
+    CONVERT_LONG(argv[1], int, tx);
+    int rx;
+    CONVERT_LONG(argv[2], int, rx);
 
     if (bt_gattc_update_phy(g_gattc_devies[conn_id].handle, tx, rx) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -439,7 +471,8 @@ static int read_rssi_cmd(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id;
+    CONVERT_LONG(argv[0], int, conn_id);
     CHECK_CONNCTION_ID(conn_id);
 
     if (bt_gattc_read_rssi(g_gattc_devies[conn_id].handle) != BT_STATUS_SUCCESS)
@@ -453,10 +486,12 @@ static int throughput_cmd(void* handle, int argc, char* argv[])
     if (argc < 3)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id;
+    CONVERT_LONG(argv[0], int, conn_id);
     CHECK_CONNCTION_ID(conn_id);
 
-    int32_t test_time = atoi(argv[2]);
+    int32_t test_time;
+    CONVERT_LONG(argv[2], int32_t, test_time);
     if (test_time <= 0)
         return CMD_INVALID_OPT;
 
@@ -465,7 +500,8 @@ static int throughput_cmd(void* handle, int argc, char* argv[])
         return CMD_ERROR;
     }
 
-    uint16_t attr_handle = strtol(argv[1], NULL, 16);
+    uint16_t attr_handle;
+    CONVERT_ULONG(argv[1], uint16_t, attr_handle);
 
     uint32_t write_length = g_gattc_devies[conn_id].gatt_mtu;
     uint8_t* payload = (uint8_t*)malloc(sizeof(uint8_t) * write_length);
@@ -720,7 +756,8 @@ static int delete_cmd(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id;
+    CONVERT_LONG(argv[0], int, conn_id);
     CHECK_CONNCTION_ID(conn_id);
 
     if (bt_gattc_delete_connect(g_gattc_devies[conn_id].handle) != BT_STATUS_SUCCESS)

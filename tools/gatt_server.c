@@ -22,6 +22,7 @@
 #include "bluetooth.h"
 #include "bt_gatts.h"
 #include "bt_tools.h"
+#include "utils.h"
 
 #define THROUGHTPUT_HORIZON 5
 #define ATT_HEADER_SIZE 3
@@ -324,11 +325,12 @@ static int connect_cmd(void* handle, int argc, char* argv[])
         return CMD_INVALID_ADDR;
 
     gatts_handle_t service_handle;
-    int service_id = atoi(argv[0]);
+    int service_id;
+    CONVERT_LONG(argv[0], int, service_id);
     GET_SERVICE_HANDLE(service_id, service_handle)
 
     if (argc >= 3) {
-        addr_type = atoi(argv[2]);
+        CONVERT_LONG(argv[2], ble_addr_type_t, addr_type);
         if (addr_type > BT_LE_ADDR_TYPE_ANONYMOUS || addr_type < BT_LE_ADDR_TYPE_PUBLIC) {
             return CMD_INVALID_OPT;
         }
@@ -350,7 +352,8 @@ static int disconnect_cmd(void* handle, int argc, char* argv[])
         return CMD_INVALID_ADDR;
 
     gatts_handle_t service_handle;
-    int service_id = atoi(argv[0]);
+    int service_id;
+    CONVERT_LONG(argv[0], int, service_id);
     GET_SERVICE_HANDLE(service_id, service_handle)
 
     gatts_device_t* device = find_gatts_device(&addr);
@@ -372,7 +375,8 @@ static int start_cmd(void* handle, int argc, char* argv[])
 
     gatts_handle_t service_handle;
     gatt_srv_db_t* service_db;
-    int service_id = atoi(argv[0]);
+    int service_id;
+    CONVERT_LONG(argv[0], int, service_id);
     switch (service_id) {
     case GATT_SERVICE_DIS:
         service_handle = g_dis_handle;
@@ -409,7 +413,8 @@ static int stop_cmd(void* handle, int argc, char* argv[])
 
     gatts_handle_t service_handle;
     uint16_t attr_handle;
-    int service_id = atoi(argv[0]);
+    int service_id;
+    CONVERT_LONG(argv[0], int, service_id);
     switch (service_id) {
     case GATT_SERVICE_DIS:
         service_handle = g_dis_handle;
@@ -454,7 +459,8 @@ static int notify_bas_cmd(void* handle, int argc, char* argv[])
         return CMD_INVALID_ADDR;
     }
 
-    int new_level = atoi(argv[1]);
+    int new_level;
+    CONVERT_LONG(argv[1], int, new_level);
     if (new_level < 0 || new_level > 100) {
         PRINT("invalid battery level: %d", new_level);
         return CMD_INVALID_OPT;
@@ -537,7 +543,8 @@ static int read_phy_cmd(void* handle, int argc, char* argv[])
         return CMD_INVALID_ADDR;
 
     gatts_handle_t service_handle;
-    int service_id = atoi(argv[0]);
+    int service_id;
+    CONVERT_LONG(argv[0], int, service_id);
     GET_SERVICE_HANDLE(service_id, service_handle)
 
     gatts_device_t* device = find_gatts_device(&addr);
@@ -557,15 +564,18 @@ static int update_phy_cmd(void* handle, int argc, char* argv[])
     if (argc < 4)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int tx = atoi(argv[2]);
-    int rx = atoi(argv[3]);
+    int tx;
+    CONVERT_LONG(argv[2], int, tx);
+    int rx;
+    CONVERT_LONG(argv[3], int, rx);
 
     bt_address_t addr;
     if (bt_addr_str2ba(argv[1], &addr) < 0)
         return CMD_INVALID_ADDR;
 
     gatts_handle_t service_handle;
-    int service_id = atoi(argv[0]);
+    int service_id;
+    CONVERT_LONG(argv[0], int, service_id);
     GET_SERVICE_HANDLE(service_id, service_handle)
 
     gatts_device_t* device = find_gatts_device(&addr);
@@ -589,7 +599,8 @@ static int throughput_cmd(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    int32_t test_time = atoi(argv[1]);
+    int32_t test_time;
+    CONVERT_LONG(argv[1], int32_t, test_time);
     if (test_time <= 0)
         return CMD_INVALID_OPT;
 
@@ -751,7 +762,8 @@ static int register_cmd(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int service_id = atoi(argv[0]);
+    int service_id;
+    CONVERT_LONG(argv[0], int, service_id);
     switch (service_id) {
     case GATT_SERVICE_DIS:
         if (g_dis_handle) {
@@ -793,7 +805,8 @@ static int unregister_cmd(void* handle, int argc, char* argv[])
         return CMD_PARAM_NOT_ENOUGH;
 
     gatts_handle_t service_handle;
-    int service_id = atoi(argv[0]);
+    int service_id;
+    CONVERT_LONG(argv[0], int, service_id);
     GET_SERVICE_HANDLE(service_id, service_handle)
 
     if (bt_gatts_unregister_service(service_handle) != BT_STATUS_SUCCESS)

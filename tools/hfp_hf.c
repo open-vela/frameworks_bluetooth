@@ -22,6 +22,7 @@
 #include "bt_adapter.h"
 #include "bt_hfp_hf.h"
 #include "bt_tools.h"
+#include "utils.h"
 
 static int connect_cmd(void* handle, int argc, char* argv[]);
 static int disconnect_cmd(void* handle, int argc, char* argv[]);
@@ -297,7 +298,8 @@ static int accept_call_cmd(void* handle, int argc, char* argv[])
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int flag = atoi(argv[1]);
+    int flag;
+    CONVERT_LONG(argv[1], int, flag);
     if (flag < 0 || flag > 2)
         return CMD_INVALID_PARAM;
 
@@ -365,7 +367,8 @@ static int control_call_cmd(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    int chld = atoi(argv[1]);
+    int chld;
+    CONVERT_LONG(argv[1], int, chld);
     if (chld < 0 || chld > 3)
         return CMD_INVALID_PARAM;
 
@@ -454,7 +457,8 @@ static int update_battery_level_cmd(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    int level = atoi(argv[1]);
+    int level;
+    CONVERT_LONG(argv[1], int, level);
     if (level < 0 || level > 100)
         return CMD_INVALID_PARAM;
 

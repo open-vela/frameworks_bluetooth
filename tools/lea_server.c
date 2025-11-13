@@ -22,6 +22,7 @@
 #include "bt_adapter.h"
 #include "bt_lea_server.h"
 #include "bt_tools.h"
+#include "utils.h"
 
 static int start_announce_cmd(void* handle, int argc, char* argv[]);
 static int stop_announce_cmd(void* handle, int argc, char* argv[]);
@@ -64,8 +65,8 @@ static int start_announce_cmd(void* handle, int argc, char* argv[])
 
     adv_size = sizeof(adv_data) / sizeof(adv_data[0]);
     md_size = sizeof(md_data) / sizeof(md_data[0]);
-    adv_id = atoi(argv[0]);
-    announce_type = atoi(argv[1]);
+    CONVERT_ULONG(argv[0], uint8_t, adv_id);
+    CONVERT_ULONG(argv[1], uint8_t, announce_type);
 
     if (bt_lea_server_start_announce(handle, adv_id, announce_type, adv_data, adv_size, md_data, md_size) != BT_STATUS_SUCCESS)
         return CMD_ERROR;

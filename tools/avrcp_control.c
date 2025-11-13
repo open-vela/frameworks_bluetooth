@@ -22,6 +22,7 @@
 #include "bt_adapter.h"
 #include "bt_avrcp_control.h"
 #include "bt_tools.h"
+#include "utils.h"
 
 static int getattrs_cmd(void* handle, int argc, char* argv[]);
 static int send_passthrough_cmd(void* handle, int argc, char* argv[]);
@@ -148,12 +149,14 @@ static int send_passthrough_cmd(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    int cmd = atoi(argv[1]);
+    int cmd;
+    CONVERT_LONG(argv[1], int, cmd);
     if (cmd > PASSTHROUGH_CMD_ID_RESERVED || cmd < 0) {
         return CMD_INVALID_PARAM;
     }
 
-    int op = atoi(argv[2]);
+    int op;
+    CONVERT_LONG(argv[2], int, op);
     if (op != 0 && op != 1) {
         return CMD_INVALID_PARAM;
     }
@@ -228,8 +231,10 @@ static int register_notification(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    int event = atoi(argv[1]);
-    int interval = atoi(argv[2]);
+    int event;
+    CONVERT_LONG(argv[1], int, event);
+    int interval;
+    CONVERT_LONG(argv[2], int, interval);
 
     if (bt_avrcp_control_register_notification(handle, &addr, event, interval) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
