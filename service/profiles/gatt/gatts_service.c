@@ -69,7 +69,6 @@
 typedef struct
 {
     bool started;
-    pthread_mutex_t device_lock;
     bt_list_t* services;
     bt_list_t* pend_ops;
 
@@ -88,7 +87,6 @@ typedef struct
 {
     void* remote;
     uint16_t srv_id;
-    pthread_mutex_t srv_lock;
     void** user_phandle;
     gatts_manager_t* manager;
     gatts_callbacks_t* callbacks;
@@ -213,7 +211,6 @@ static void gatts_service_delete(gatts_service_t* service)
     if (!service)
         return;
 
-    pthread_mutex_destroy(&service->srv_lock);
     bt_list_free(service->tables);
     free(service);
 }
@@ -244,7 +241,6 @@ static void gatts_process_message(void* data)
     gatts_service_t* service;
     gatts_msg_t* msg = (gatts_msg_t*)data;
 
-    pthread_mutex_lock(&g_gatts_manager.device_lock);
     if (!g_gatts_manager.started)
         goto end;
 
@@ -351,7 +347,6 @@ static void gatts_process_message(void* data)
     }
 
 end:
-    pthread_mutex_unlock(&g_gatts_manager.device_lock);
     gatts_msg_destory(msg);
 }
 
@@ -366,15 +361,8 @@ static bt_status_t gatts_send_message(gatts_msg_t* msg)
 
 static bt_status_t if_gatts_init(void)
 {
-    pthread_mutexattr_t attr;
-
     memset(&g_gatts_manager, 0, sizeof(g_gatts_manager));
     g_gatts_manager.started = false;
-
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    if (pthread_mutex_init(&g_gatts_manager.device_lock, &attr) < 0)
-        return BT_STATUS_FAIL;
 
     return BT_STATUS_SUCCESS;
 }
@@ -384,9 +372,7 @@ static bt_status_t if_gatts_startup(profile_on_startup_t cb)
     bt_status_t status;
     gatts_manager_t* manager = &g_gatts_manager;
 
-    pthread_mutex_lock(&manager->device_lock);
     if (manager->started) {
-        pthread_mutex_unlock(&manager->device_lock);
         cb(PROFILE_GATTS, true);
         return BT_STATUS_SUCCESS;
     }
@@ -408,7 +394,6 @@ static bt_status_t if_gatts_startup(profile_on_startup_t cb)
         goto fail;
 
     manager->started = true;
-    pthread_mutex_unlock(&manager->device_lock);
     cb(PROFILE_GATTS, true);
 
     return BT_STATUS_SUCCESS;
@@ -418,7 +403,6 @@ fail:
     manager->services = NULL;
     bt_list_free(manager->pend_ops);
     manager->pend_ops = NULL;
-    pthread_mutex_unlock(&manager->device_lock);
     cb(PROFILE_GATTS, false);
 
     return status;
@@ -428,10 +412,7 @@ static bt_status_t if_gatts_shutdown(profile_on_shutdown_t cb)
 {
     gatts_manager_t* manager = &g_gatts_manager;
 
-    pthread_mutex_lock(&manager->device_lock);
-
     if (!manager->started) {
-        pthread_mutex_unlock(&manager->device_lock);
         cb(PROFILE_GATTS, true);
         return BT_STATUS_SUCCESS;
     }
@@ -441,7 +422,6 @@ static bt_status_t if_gatts_shutdown(profile_on_shutdown_t cb)
     bt_list_free(manager->pend_ops);
     manager->pend_ops = NULL;
     manager->started = false;
-    pthread_mutex_unlock(&manager->device_lock);
     bt_sal_gatt_server_disable();
     cb(PROFILE_GATTS, true);
 
@@ -451,7 +431,6 @@ static bt_status_t if_gatts_shutdown(profile_on_shutdown_t cb)
 static void if_gatts_cleanup(void)
 {
     g_gatts_manager.started = false;
-    pthread_mutex_destroy(&g_gatts_manager.device_lock);
 }
 
 static int if_gatts_get_state(void)
@@ -465,8 +444,6 @@ static int if_gatts_dump(void)
     bt_list_t* slist = g_gatts_manager.services;
     int s_id = 0;
     char uuid_str[40] = { 0 };
-
-    pthread_mutex_lock(&g_gatts_manager.device_lock);
 
     for (snode = bt_list_head(slist); snode != NULL; snode = bt_list_next(slist, snode)) {
         gatts_service_t* service = (gatts_service_t*)bt_list_node(snode);
@@ -491,33 +468,22 @@ static int if_gatts_dump(void)
             BT_LOGI("\tNo Attributes were added");
     }
 
-    pthread_mutex_unlock(&g_gatts_manager.device_lock);
-
     return 0;
 }
 
 static bt_status_t if_gatts_register_service(void* remote, void** phandle, gatts_callbacks_t* callbacks)
 {
-    pthread_mutexattr_t attr;
-
     CHECK_ENABLED();
     if (!phandle)
         return BT_STATUS_PARM_INVALID;
 
-    pthread_mutex_lock(&g_gatts_manager.device_lock);
     gatts_service_t* service = gatts_service_new(callbacks);
     if (!service) {
-        pthread_mutex_unlock(&g_gatts_manager.device_lock);
         BT_LOGE("New gatts service alloc failed");
         return BT_STATUS_NOMEM;
     }
 
     bt_list_add_tail(g_gatts_manager.services, service);
-    pthread_mutex_unlock(&g_gatts_manager.device_lock);
-
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    pthread_mutex_init(&service->srv_lock, &attr);
 
     service->remote = remote;
     service->manager = &g_gatts_manager;
@@ -542,9 +508,7 @@ static bt_status_t if_gatts_unregister_service(void* srv_handle)
     }
 
     void** user_phandle = service->user_phandle;
-    pthread_mutex_lock(&g_gatts_manager.device_lock);
     bt_list_remove(g_gatts_manager.services, service);
-    pthread_mutex_unlock(&g_gatts_manager.device_lock);
     *user_phandle = NULL;
 
     return BT_STATUS_SUCCESS;
@@ -764,9 +728,7 @@ static bt_status_t if_gatts_read_phy(void* srv_handle, bt_address_t* addr)
     if (status == BT_STATUS_SUCCESS && service->callbacks->on_phy_read) {
         gatts_op_t* op = gatts_op_new(GATTS_REQ_READ_PHY);
         op->param.phy.srv_handle = srv_handle;
-        pthread_mutex_lock(&g_gatts_manager.device_lock);
         bt_list_add_tail(service->manager->pend_ops, op);
-        pthread_mutex_unlock(&g_gatts_manager.device_lock);
     }
     return status;
 }
@@ -785,9 +747,7 @@ static bt_status_t if_gatts_update_phy(void* srv_handle, bt_address_t* addr, ble
         op->param.phy.srv_handle = srv_handle;
         op->param.phy.tx_phy = tx_phy;
         op->param.phy.rx_phy = rx_phy;
-        pthread_mutex_lock(&g_gatts_manager.device_lock);
         bt_list_add_tail(service->manager->pend_ops, op);
-        pthread_mutex_unlock(&g_gatts_manager.device_lock);
     }
     return status;
 }
