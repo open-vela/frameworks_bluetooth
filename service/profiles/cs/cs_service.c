@@ -26,15 +26,15 @@
 #include "bt_list.h"
 #include "callbacks_list.h"
 #include "cs_msg.h"
+#include "cs_ras_server.h"
+#include "cs_ras_test.h"
 #include "cs_service.h"
 #include "cs_state_machine.h"
 #include "gatts_service.h"
 #include "power_manager.h"
-#include "cs_ras_server.h"
 #include "service_loop.h"
 #include "service_manager.h"
 #include "utils/log.h"
-#include "cs_ras_test.h"
 
 #ifdef CONFIG_BLUETOOTH_LE_CS
 
@@ -383,4 +383,26 @@ void bt_register_cs_service(void)
     register_service(&cs_service);
 }
 
+void cs_service_notify_started_cb(bt_address_t* addr, uint8_t method)
+{
+    BT_LOGD("%s", __FUNCTION__);
+    CS_CALLBACK_FOREACH(g_cs_service.callbacks, cs_distance_measure_started_cb, addr, state);
+}
+
+void cs_service_notify_stopped_cb(bt_address_t* addr, uint8_t reason, uint8_t method)
+{
+    BT_LOGD("%s", __FUNCTION__);
+    CS_CALLBACK_FOREACH(g_cs_service.callbacks, cs_distance_measure_stopped_cb, addr, state);
+}
+
+void cs_service_notify_result_cb(bt_address_t* addr, uint8_t centimeter, uint8_t errorCentimeter,
+    uint8_t azimuthAngle, uint8_t errorAzimuthAngle, uint8_t altitudeAngle, uint8_t errorAltitudeAngle,
+    long elapsedRealtimeNanos, uint8_t confidenceLevel, double delaySpreadMeters,
+    uint8_t detectedAttackLevel, double velocityMetersPerSecond, uint8_t method)
+{
+    BT_LOGD("%s", __FUNCTION__);
+    CS_CALLBACK_FOREACH(g_cs_service.callbacks, cs_distance_measure_result_cb, addr, centimeter, errorCentimeter,
+        azimuthAngle, errorAzimuthAngle, altitudeAngle, errorAltitudeAngle, elapsedRealtimeNanos, confidenceLevel,
+        delaySpreadMeters, detectedAttackLevel, velocityMetersPerSecond, method);
+}
 #endif /* CONFIG_BLUETOOTH_LE_CS */

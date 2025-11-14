@@ -31,6 +31,7 @@ extern "C" {
 #include "bt_message_advertiser.h"
 #include "bt_message_avrcp_control.h"
 #include "bt_message_avrcp_target.h"
+#include "bt_message_cs.h"
 #include "bt_message_device.h"
 #include "bt_message_gattc.h"
 #include "bt_message_gatts.h"
@@ -43,7 +44,6 @@ extern "C" {
 #include "bt_message_pan.h"
 #include "bt_message_scan.h"
 #include "bt_message_spp.h"
-#include "bt_message_cs.h"
 
 #include "service_loop.h"
 
@@ -56,6 +56,7 @@ typedef enum {
 #include "bt_message_advertiser.h"
 #include "bt_message_avrcp_control.h"
 #include "bt_message_avrcp_target.h"
+#include "bt_message_cs.h"
 #include "bt_message_device.h"
 #include "bt_message_gattc.h"
 #include "bt_message_gatts.h"
@@ -68,7 +69,6 @@ typedef enum {
 #include "bt_message_pan.h"
 #include "bt_message_scan.h"
 #include "bt_message_spp.h"
-#include "bt_message_cs.h"
     BT_MESSAGE_END,
 #undef __BT_MESSAGE_CODE__
 #define __BT_CALLBACK_CODE__
@@ -79,6 +79,7 @@ typedef enum {
 #include "bt_message_advertiser.h"
 #include "bt_message_avrcp_control.h"
 #include "bt_message_avrcp_target.h"
+#include "bt_message_cs.h"
 #include "bt_message_device.h"
 #include "bt_message_gattc.h"
 #include "bt_message_gatts.h"
@@ -90,7 +91,6 @@ typedef enum {
 #include "bt_message_pan.h"
 #include "bt_message_scan.h"
 #include "bt_message_spp.h"
-#include "bt_message_cs.h"
     BT_CALLBACK_END,
 #undef __BT_MESSAGE_CODE__
 } bt_message_type_t;
@@ -136,6 +136,7 @@ typedef struct
 
         bt_message_avrcp_target_t avrcp_target_pl;
         bt_message_cs_t cs_pl;
+        bt_message_cs_callbacks_t cs_cb;
         bt_message_avrcp_target_callbacks_t avrcp_target_cb;
         bt_message_avrcp_control_t avrcp_control_pl;
         bt_message_avrcp_control_callbacks_t avrcp_control_cb;

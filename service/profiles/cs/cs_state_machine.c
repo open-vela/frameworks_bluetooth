@@ -79,6 +79,7 @@ typedef struct _cs_state_machine {
     bt_address_t addr;
     bool is_capbilities_exchanged;
     bt_distance_measurement_params_t params;
+    bool started;
 } cs_state_machine_t;
 
 static bt_le_srv_cs_set_default_settings_param_t g_default_settings = {};
@@ -165,9 +166,15 @@ static const state_t started_state = {
 static void stopped_enter(state_machine_t* sm)
 {
     cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
-    // const state_t* prev_state = hsm_get_previous_state(sm);
+    const state_t* prev_state = hsm_get_previous_state(sm);
 
     CS_DBG_ENTER(sm, &cs_sm->addr);
+    if (prev_state != NULL) {
+        if (cs_sm->started) {
+            cs_service_notify_stopped_cb(&cs_sm->addr, cs_sm->params.reason, cs_sm->params.method);
+            cs_sm->started = false;
+        }
+    }
 }
 
 static void stopped_exit(state_machine_t* sm)
@@ -184,6 +191,9 @@ static bool stopped_process_event(state_machine_t* sm, uint32_t event, void* p_d
 
     CS_DBG_EVENT(sm, &cs_sm->addr, event);
     switch (event) {
+    case START_REQ:
+        BT_LOGE("cs has not connected");
+        break;
     case CONNECTED_EVT:
         hsm_transition_to(sm, &connected_state);
         break;
@@ -233,8 +243,15 @@ static void connected_enter(state_machine_t* sm)
 {
     cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
     // const state_t* prev_state = hsm_get_previous_state(sm);
+    const state_t* prev_state = hsm_get_previous_state(sm);
 
     CS_DBG_ENTER(sm, &cs_sm->addr);
+    if (prev_state != NULL) {
+        if (cs_sm->started) {
+            cs_service_notify_stopped_cb(&cs_sm->addr, cs_sm->params.reason, cs_sm->params.method);
+            cs_sm->started = false;
+        }
+    }
 }
 
 static void connected_exit(state_machine_t* sm)
@@ -407,9 +424,15 @@ static bool wait_for_procedure_complete_process_event(state_machine_t* sm, uint3
 static void started_enter(state_machine_t* sm)
 {
     cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
-    // const state_t* prev_state = hsm_get_previous_state(sm);
+    const state_t* prev_state = hsm_get_previous_state(sm);
 
     CS_DBG_ENTER(sm, &cs_sm->addr);
+    if (prev_state != NULL) {
+        if (cs_sm->started) {
+            cs_service_notify_started_cb(&cs_sm->addr, cs_sm->params.method);
+            cs_sm->started = false;
+        }
+    }
 }
 
 static void started_exit(state_machine_t* sm)
