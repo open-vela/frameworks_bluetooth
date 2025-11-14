@@ -808,7 +808,10 @@ success:
     a2dp_info->config->codec_config->len = found_peer_endpoint->codec_cap->len;
     a2dp_info->selected_peer_endpoint = (struct bt_a2dp_ep*)malloc(sizeof(struct bt_a2dp_ep));
     a2dp_info->selected_peer_endpoint->codec_cap = (struct bt_a2dp_codec_ie*)malloc(sizeof(struct bt_a2dp_codec_ie));
-    memcpy(a2dp_info->selected_peer_endpoint, found_peer_endpoint, sizeof(struct bt_a2dp_ep));
+    a2dp_info->selected_peer_endpoint->codec_type = found_peer_endpoint->codec_type;
+    memcpy(a2dp_info->selected_peer_endpoint->codec_cap, found_peer_endpoint->codec_cap, sizeof(struct bt_a2dp_codec_ie));
+    memcpy(&a2dp_info->selected_peer_endpoint->sep, &found_peer_endpoint->sep, sizeof(struct bt_avdtp_sep));
+    a2dp_info->selected_peer_endpoint->stream = found_peer_endpoint->stream;
     bt_list_free(a2dp_info->peer_endpoint);
     a2dp_info->peer_endpoint = NULL;
     return;
