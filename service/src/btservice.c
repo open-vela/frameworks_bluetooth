@@ -20,6 +20,7 @@
 #include "stack_manager.h"
 #include "state_machine.h"
 #include "storage.h"
+#include "cs_service.h"
 
 #ifdef CONFIG_BLUETOOTH_HFP_HF
 #include "hfp_hf_service.h"
@@ -180,6 +181,9 @@ void bt_profile_init(void)
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
     register_lea_vmicp_service();
 #endif
+#ifdef CONFIG_BLUETOOTH_LE_CS
+    bt_register_cs_service();
+#endif /* CONFIG_BLUETOOTH_LE_CS */
 }
 
 static int create_bt_folder(void)

@@ -55,18 +55,18 @@ typedef struct {
     } val;
 } bt_uuid_t;
 
-#ifndef BT_UUID_DECLARE_16
-#define BT_UUID_DECLARE_16(value) \
+#ifndef BT_FW_UUID_DECLARE_16
+#define BT_FW_UUID_DECLARE_16(value) \
     ((bt_uuid_t) { .type = BT_UUID16_TYPE, .val.u16 = (value) })
 #endif
 
-#ifndef BT_UUID_DECLARE_32
-#define BT_UUID_DECLARE_32(value) \
+#ifndef BT_FW_UUID_DECLARE_32
+#define BT_FW_UUID_DECLARE_32(value) \
     ((bt_uuid_t) { .type = BT_UUID32_TYPE, .val.u32 = (value) })
 #endif
 
-#ifndef BT_UUID_DECLARE_128
-#define BT_UUID_DECLARE_128(value...) \
+#ifndef BT_FW_UUID_DECLARE_128
+#define BT_FW_UUID_DECLARE_128(value...) \
     ((bt_uuid_t) { .type = BT_UUID128_TYPE, .val.u128 = { value } })
 #endif
 

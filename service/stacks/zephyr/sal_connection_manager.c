@@ -90,6 +90,7 @@ void cm_data_destory(cm_data_t* data)
 
 static bt_status_t bt_try_disconnect_acl(bt_profile_connection_manager_t* manager)
 {
+#if 0
     struct bt_conn* conn;
     int ret;
 
@@ -115,6 +116,7 @@ static bt_status_t bt_try_disconnect_acl(bt_profile_connection_manager_t* manage
         BT_LOGE("%s, bt_conn_disconnect failed.", __func__);
         return BT_STATUS_FAIL;
     }
+#endif
     return BT_STATUS_SUCCESS;
 }
 

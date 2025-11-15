@@ -26,8 +26,9 @@ extern "C" {
 #define BT_ADDR_LENGTH 6 /*define the address length*/
 #define BT_ADDR_STR_LENGTH 18
 
-#define bt_addr_str(addr) bt_addr_bastr(addr)
-
+#ifndef bt_fw_addr_str
+#define bt_fw_addr_str(addr) bt_addr_bastr(addr)
+#endif
 /**
  * @cond
  */

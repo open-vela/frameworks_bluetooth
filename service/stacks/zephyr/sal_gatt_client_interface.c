@@ -1188,7 +1188,7 @@ bt_status_t bt_sal_gatt_client_register_notifications(bt_controller_id_t id, bt_
         return BT_STATUS_PARM_INVALID;
     }
 
-    BT_LOGD("%s, addr:%s, element_id:0x%0x, properties:0x%0x, enable:%d", __func__, bt_addr_str(addr), element_id, properties, enable);
+    BT_LOGD("%s, addr:%s, element_id:0x%0x, properties:0x%0x, enable:%d", __func__, bt_fw_addr_str(addr), element_id, properties, enable);
     conn = get_le_conn_from_addr(addr);
     if (!conn) {
         BT_LOGE("%s, conn null", __func__);

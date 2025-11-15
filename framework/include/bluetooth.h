@@ -464,11 +464,13 @@ typedef struct bt_instance {
     callbacks_list_t* a2dp_source_callbacks;
     callbacks_list_t* avrcp_target_callbacks;
     callbacks_list_t* avrcp_control_callbacks;
+    callbacks_list_t* cs_callbacks;
     void* adapter_cookie;
     void* a2dp_sink_cookie;
     void* a2dp_source_cookie;
     void* avrcp_target_cookie;
     void* avrcp_control_cookie;
+    void* cs_cookie;
 
     callbacks_list_t* hfp_ag_callbacks;
     callbacks_list_t* hfp_hf_callbacks;
