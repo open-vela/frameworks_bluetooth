@@ -575,7 +575,7 @@ static struct bt_sdp_attribute a2dp_sink_attrs[] = {
                     },
                     {
                         BT_SDP_TYPE_SIZE(BT_SDP_UINT16), /* 09 */
-                        BT_SDP_ARRAY_16(0x0100U) /* AVDTP version: 01 00 */
+                        BT_SDP_ARRAY_16(0x0103U) /* AVDTP version: 01 03 */
                     }, ) }, )),
     BT_SDP_LIST(
         BT_SDP_ATTR_PROFILE_DESC_LIST,
@@ -695,7 +695,7 @@ static a2dp_codec_index_t zephyr_codec_2_sal_codec(uint8_t codec)
 static a2dp_codec_channel_mode_t zephyr_sbc_channel_mode_2_sal_channel_mode(
     struct bt_a2dp_codec_sbc_params* sbc_codec)
 {
-    if (sbc_codec->config[0] & (A2DP_SBC_CH_MODE_JOINT | A2DP_SBC_CH_MODE_STREO | A2DP_SBC_CH_MODE_DUAL)) {
+    if (sbc_codec->config[0] & (A2DP_SBC_CH_MODE_JOINT | A2DP_SBC_CH_MODE_STEREO | A2DP_SBC_CH_MODE_DUAL)) {
         return BTS_A2DP_CODEC_CHANNEL_MODE_STEREO;
     } else if (sbc_codec->config[0] & A2DP_SBC_CH_MODE_MONO) {
         return BTS_A2DP_CODEC_CHANNEL_MODE_MONO;
@@ -930,11 +930,11 @@ static void bt_a2dp_stream_released(struct bt_a2dp_stream* stream)
 
     if (a2dp_info->role == SEP_SRC) {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-        bt_sal_a2dp_source_event_callback(a2dp_event_new(STREAM_CLOSED_EVT, &a2dp_info->bd_addr));
+        bt_sal_a2dp_source_event_callback(a2dp_event_new(DISCONNECTED_EVT, &a2dp_info->bd_addr));
 #endif /* CONFIG_BLUETOOTH_A2DP_SOURCE */
     } else { /* SEP_SNK */
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
-        bt_sal_a2dp_sink_event_callback(a2dp_event_new(STREAM_CLOSED_EVT, &a2dp_info->bd_addr));
+        bt_sal_a2dp_sink_event_callback(a2dp_event_new(DISCONNECTED_EVT, &a2dp_info->bd_addr));
 #endif /* CONFIG_BLUETOOTH_A2DP_SINK */
     }
     if (a2dp_info->disconnecting == true && flag_isset(a2dp_info, A2DP_STATE_BIT_SIG_CONN)) {
@@ -1042,7 +1042,6 @@ static struct bt_a2dp_stream_ops stream_ops = {
     .released = zblue_on_stream_released,
     .started = zblue_on_stream_started,
     .suspended = zblue_on_stream_suspended,
-    .aborted = NULL,
 #if defined(CONFIG_BLUETOOTH_A2DP_SINK)
     .recv = zblue_on_stream_recv,
 #endif
@@ -1126,6 +1125,7 @@ static struct bt_avdtp_sep_info peer_seps[10];
 struct bt_a2dp_discover_param bt_discover_param = {
     .cb = bt_a2dp_discover_endpoint_cb,
     .seps_info = &peer_seps[0], /* it saves endpoint info internally. */
+    .avdtp_version = AVDTP_VERSION_1_3, /* at least AVDTP 1.3 to support Get All Capabilities */
     .sep_count = A2DP_PEER_ENDPOINT_MAX,
 };
 
@@ -1451,6 +1451,7 @@ static int zblue_on_suspend_req(struct bt_a2dp_stream* stream, uint8_t* rsp_err_
     *rsp_err_code = BT_AVDTP_SUCCESS;
     return 0;
 }
+
 static void zblue_on_suspend_rsp(struct bt_a2dp_stream* stream, uint8_t rsp_err_code)
 {
     if (rsp_err_code != 0)
@@ -1471,8 +1472,7 @@ static struct bt_a2dp_cb a2dp_cbks = {
     .start_rsp = zblue_on_start_rsp,
     .suspend_req = zblue_on_suspend_req,
     .suspend_rsp = zblue_on_suspend_rsp,
-    .abort_req = NULL,
-    .abort_rsp = NULL,
+    .reconfig_req = zblue_on_reconfig_req,
 };
 
 bt_status_t bt_sal_a2dp_source_init(uint8_t max_connections)
