@@ -1815,14 +1815,11 @@ bt_status_t bt_sal_a2dp_source_send_data(bt_controller_id_t id, bt_address_t* re
         return BT_STATUS_PARM_INVALID;
     }
 
-    media_packet_buf = net_buf_alloc(&bt_a2dp_tx_pool, K_FOREVER);
+    media_packet_buf = bt_a2dp_stream_create_pdu(&bt_a2dp_tx_pool, K_FOREVER);
     if (!media_packet_buf) {
         BT_LOGI("%s, fail to allocate buffer", __func__);
         return BT_STATUS_NOMEM;
     }
-
-    // Reserve space for the A2DP header
-    net_buf_reserve(media_packet_buf, BT_A2DP_STREAM_BUF_RESERVE);
 
     // buf = Media Packet Header(AVDTP_RTP_HEADER_LEN) + Media Payload
     // nbytes = Media Payload Length
