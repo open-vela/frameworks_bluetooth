@@ -511,7 +511,8 @@ void bt_socket_client_deinit(bt_instance_t* ins)
 
     /* Dispatch an empty work to ensure all pending work have completed, while
     `bt_socket_sync_close` guarantees no new work will enter the queue. */
-    thread_loop_work_sync(ins->client_loop, NULL, NULL, NULL);
+    if (uv_loop_alive(ins->client_loop))
+        thread_loop_work_sync(ins->client_loop, NULL, NULL, NULL);
 
     if (ins->external_loop && ins->external_async) {
         struct list_node* node;
