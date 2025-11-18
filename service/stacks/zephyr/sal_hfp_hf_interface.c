@@ -597,7 +597,20 @@ bt_status_t bt_sal_hfp_hf_answer_call(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_hf_reject_call(bt_address_t* addr)
 {
-    return BT_STATUS_UNSUPPORTED;
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return BT_STATUS_FAIL;
+    }
+
+    bt_hfp_hf_call_info_t* incoming_call = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_INCOMING);
+    if (!incoming_call) {
+        BT_LOGE("%s, No incoming call to reject", __func__);
+        return BT_STATUS_FAIL;
+    }
+
+    SAL_CHECK_RET(Z_API(bt_hfp_hf_reject)(incoming_call->context), 0);
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_hf_hold_call(bt_address_t* addr)
