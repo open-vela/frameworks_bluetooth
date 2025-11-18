@@ -379,6 +379,21 @@ static void zblue_on_incoming_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_call* 
     hfp_hf_on_call_setup_state_changed(&sal_conn->addr, HFP_CALLSETUP_INCOMING);
 }
 
+static void zblue_on_call_accept(struct bt_hfp_hf_call* call)
+{
+    bt_hfp_hf_call_info_t* sal_call = NULL;
+    bt_hfp_hf_connection_t* conn = find_connection_by_call_context(call, &sal_call);
+
+    if (!conn || !sal_call) {
+        BT_LOGW("%s, Failed to find call to accept", __func__);
+        return;
+    }
+
+    set_call_state(conn, sal_call, HFP_HF_CALL_STATE_ACTIVE);
+    hfp_hf_on_call_active_state_changed(&conn->addr, HFP_CALL_CALLS_IN_PROGRESS);
+    hfp_hf_on_call_setup_state_changed(&conn->addr, HFP_CALLSETUP_NONE);
+}
+
 static void zblue_on_call_reject(struct bt_hfp_hf_call* call)
 {
     bt_hfp_hf_call_info_t* sal_call = NULL;
@@ -496,7 +511,7 @@ static struct bt_hfp_hf_cb hf_callbacks = {
     .remote_ringing = NULL,
     .incoming = zblue_on_incoming_call,
     .incoming_held = NULL,
-    .accept = NULL,
+    .accept = zblue_on_call_accept,
     .reject = zblue_on_call_reject,
     .terminate = NULL,
     .held = NULL,
