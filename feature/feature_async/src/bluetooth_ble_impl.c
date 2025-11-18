@@ -113,7 +113,7 @@ static bool gattc_userdata_type_cmp(void* node, void* type)
     do {                                                                                         \
         feature_bluetooth_features_info_t* features_info;                                        \
         bt_list_t* list;                                                                         \
-        if (!ins) {                                                                              \
+        if (!ins || !ins->context) {                                                             \
             ret = NULL;                                                                          \
             break;                                                                               \
         }                                                                                        \
@@ -130,7 +130,7 @@ static bool gattc_userdata_type_cmp(void* node, void* type)
     do {                                                                               \
         feature_bluetooth_features_info_t* features_info;                              \
         bt_list_t* list;                                                               \
-        if (!ins) {                                                                    \
+        if (!ins || !ins->context) {                                                   \
             ret = NULL;                                                                \
             break;                                                                     \
         }                                                                              \
@@ -150,7 +150,7 @@ feature_bluetooth_gattc_info_t* find_gattc_info_by_userdata(bt_instance_t* ins, 
     bt_list_t* list;
     bt_list_node_t* node;
 
-    if (!ins)
+    if (!ins || !ins->context)
         return NULL;
 
     features_info = (feature_bluetooth_features_info_t*)(ins->context);
