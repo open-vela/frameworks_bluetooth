@@ -246,10 +246,12 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
     if (err) {
         state.connection_state = CONNECTION_STATE_DISCONNECTED;
         state.status = err;
+        bt_sal_cm_acl_disconnected_callback(cm_data_new(&state.addr, PROFILE_UNKOWN));
         goto error;
     }
 
     bt_sal_get_remote_name(BT_TRANSPORT_BREDR, &state.addr);
+    bt_sal_cm_acl_connected_callback(cm_data_new(&state.addr, PROFILE_UNKOWN));
 
 error:
     adapter_on_connection_state_changed(&state);
@@ -1277,6 +1279,9 @@ static void STACK_CALL(disconnect)(void* args)
 {
     sal_adapter_req_t* req = args;
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)&req->addr);
+    if (conn == NULL) {
+        return;
+    }
 
     SAL_CHECK(bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN), 0);
     bt_conn_unref(conn);
@@ -1284,6 +1289,32 @@ static void STACK_CALL(disconnect)(void* args)
 #endif
 
 bt_status_t bt_sal_disconnect(bt_controller_id_t id, bt_address_t* addr, uint8_t reason)
+{
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+    UNUSED(id);
+    sal_adapter_req_t* req;
+    bt_status_t status;
+
+    /* disconnect profile, then disconnect acl */
+    status = bt_sal_cm_try_disconnect_profiles(addr, false);
+
+    if (status == BT_STATUS_SUCCESS) {
+        return status;
+    }
+
+    req = sal_adapter_req(id, addr, STACK_CALL(disconnect));
+    if (!req)
+        return BT_STATUS_NOMEM;
+
+    req->adpt.reason = reason;
+
+    return sal_send_req(req);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
+}
+
+bt_status_t bt_sal_disconnect_internal(bt_controller_id_t id, bt_address_t* addr, uint8_t reason)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
@@ -1393,13 +1424,7 @@ bt_status_t bt_sal_cancel_bond(bt_controller_id_t id, bt_address_t* addr, bt_tra
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(remove_bond)(void* args)
 {
-    bt_status_t status;
     sal_adapter_req_t* req = args;
-
-    status = bt_sal_cm_try_disconnect_profiles(&req->addr, true);
-    if (status == BT_STATUS_SUCCESS)
-        return;
-
     SAL_CHECK(bt_br_unpair((bt_addr_t*)&req->addr), 0);
 }
 #endif
@@ -1409,12 +1434,35 @@ bt_status_t bt_sal_remove_bond(bt_controller_id_t id, bt_address_t* addr, bt_tra
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     sal_adapter_req_t* req;
+    bt_status_t status;
+
+    status = bt_sal_cm_try_disconnect_profiles(addr, true);
+
+    if (status == BT_STATUS_SUCCESS) {
+        return status;
+    }
 
     req = sal_adapter_req(id, addr, STACK_CALL(remove_bond));
     if (!req)
         return BT_STATUS_NOMEM;
 
     req->adpt.bond.transport = transport;
+
+    return sal_send_req(req);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
+}
+
+bt_status_t bt_sal_remove_bond_internal(bt_controller_id_t id, bt_address_t* addr)
+{
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+    UNUSED(id);
+    sal_adapter_req_t* req;
+
+    req = sal_adapter_req(id, addr, STACK_CALL(remove_bond));
+    if (!req)
+        return BT_STATUS_NOMEM;
 
     return sal_send_req(req);
 #else
