@@ -346,6 +346,21 @@ static void zblue_on_connected(struct bt_conn* conn, struct bt_hfp_hf* hf)
     hfp_hf_on_connection_state_changed(&bd_addr, PROFILE_STATE_CONNECTED, 0, 0);
 }
 
+static void zblue_hf_disconnected(struct bt_hfp_hf* hf)
+{
+    bt_hfp_hf_connection_t* conn = find_connection_by_hf(hf);
+    if (!conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return;
+    }
+    bt_address_t* bd_addr = &conn->addr;
+
+    hfp_hf_on_connection_state_changed(bd_addr, PROFILE_STATE_DISCONNECTING, 0, 0);
+    hfp_hf_on_connection_state_changed(bd_addr, PROFILE_STATE_DISCONNECTED, 0, 0);
+
+    bt_list_remove(g_sal_hf_conn_list, conn);
+}
+
 static void zblue_on_incoming_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_call* call)
 {
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_hf(hf);
@@ -459,7 +474,7 @@ static void zblue_on_current_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_current
 
 static struct bt_hfp_hf_cb hf_callbacks = {
     .connected = zblue_on_connected,
-    .disconnected = NULL,
+    .disconnected = zblue_hf_disconnected,
     .sco_connected = NULL,
     .sco_disconnected = NULL,
     .service = NULL,
@@ -538,7 +553,18 @@ bt_status_t bt_sal_hfp_hf_connect(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_hf_disconnect(bt_address_t* addr)
 {
-    return BT_STATUS_UNSUPPORTED;
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return BT_STATUS_FAIL;
+    }
+    if (!sal_conn->hf) {
+        BT_LOGE("%s, HFP HF not connected", __func__);
+        return BT_STATUS_FAIL;
+    }
+
+    SAL_CHECK_RET(Z_API(bt_hfp_hf_disconnect)(sal_conn->hf), 0);
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_hf_connect_audio(bt_address_t* addr)
