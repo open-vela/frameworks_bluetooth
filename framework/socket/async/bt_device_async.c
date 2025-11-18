@@ -28,96 +28,180 @@ static void device_s8_reply(bt_instance_t* ins, bt_message_packet_t* packet, voi
 {
     bt_s8_cb_t ret_cb = (bt_s8_cb_t)cb;
 
-    if (ret_cb)
-        ret_cb(ins, packet->devs_r.status, (int8_t)packet->devs_r.v8, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, 0, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->devs_r.status, (int8_t)packet->devs_r.v8, userdata);
 }
 
 static void device_status_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_status_cb_t ret_cb = (bt_status_cb_t)cb;
 
-    if (ret_cb)
-        ret_cb(ins, packet->devs_r.status, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->devs_r.status, userdata);
 }
 
 static void device_bool_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_bool_cb_t ret_cb = (bt_bool_cb_t)cb;
 
-    if (ret_cb)
-        ret_cb(ins, packet->devs_r.status, packet->devs_r.bbool, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, 0, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->devs_r.status, packet->devs_r.bbool, userdata);
 }
 
 static void device_u16_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_u16_cb_t ret_cb = (bt_u16_cb_t)cb;
 
-    if (ret_cb)
-        ret_cb(ins, packet->devs_r.status, packet->devs_r.v16, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, 0, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->devs_r.status, packet->devs_r.v16, userdata);
 }
 
 static void device_u32_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_u32_cb_t ret_cb = (bt_u32_cb_t)cb;
 
-    if (ret_cb)
-        ret_cb(ins, packet->devs_r.status, packet->devs_r.v32, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, 0, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->devs_r.status, packet->devs_r.v32, userdata);
 }
 
 static void device_get_device_type_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_device_type_cb_t ret_cb = (bt_device_type_cb_t)cb;
 
-    if (ret_cb)
-        ret_cb(ins, packet->devs_r.status, packet->devs_r.dtype, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, BT_DEVICE_TYPE_UNKNOW, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->devs_r.status, packet->devs_r.dtype, userdata);
 }
 
 static void device_get_name_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_string_cb_t ret_cb = (bt_string_cb_t)cb;
 
-    if (ret_cb)
-        ret_cb(ins, packet->devs_r.status, packet->devs_pl._bt_device_get_name.name, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, NULL, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->devs_r.status, packet->devs_pl._bt_device_get_name.name, userdata);
 }
 
 static void device_get_uuids_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_uuids_cb_t ret_cb = (bt_uuids_cb_t)cb;
 
-    if (ret_cb)
-        ret_cb(ins, packet->devs_r.status, packet->devs_pl._bt_device_get_uuids.uuids, packet->devs_pl._bt_device_get_uuids.size, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, NULL, 0, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->devs_r.status, packet->devs_pl._bt_device_get_uuids.uuids, packet->devs_pl._bt_device_get_uuids.size, userdata);
 }
 
 static void device_get_alias_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_string_cb_t ret_cb = (bt_string_cb_t)cb;
 
-    if (ret_cb)
-        ret_cb(ins, packet->devs_r.status, packet->devs_pl._bt_device_get_alias.alias, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, NULL, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->devs_r.status, packet->devs_pl._bt_device_get_alias.alias, userdata);
 }
 
 static void device_get_bond_state_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_device_get_bond_state_cb_t ret_cb = (bt_device_get_bond_state_cb_t)cb;
 
-    if (ret_cb)
-        ret_cb(ins, packet->devs_r.status, packet->devs_r.bstate, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, BOND_STATE_NONE, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->devs_r.status, packet->devs_r.bstate, userdata);
 }
 
 static void device_get_identity_address_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_address_cb_t ret_cb = (bt_address_cb_t)cb;
 
-    if (ret_cb)
-        ret_cb(ins, packet->devs_r.status, &packet->devs_pl._bt_device_addr.addr, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, NULL, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->devs_r.status, &packet->devs_pl._bt_device_addr.addr, userdata);
 }
 
 static void device_get_address_type_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_device_get_address_type_cb_t ret_cb = (bt_device_get_address_type_cb_t)cb;
 
-    if (ret_cb)
-        ret_cb(ins, packet->devs_r.status, packet->devs_r.atype, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, BT_LE_ADDR_TYPE_UNKNOWN, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->devs_r.status, packet->devs_r.atype, userdata);
 }
 
 static int bt_device_send_async(bt_instance_t* ins, bt_address_t* addr,
