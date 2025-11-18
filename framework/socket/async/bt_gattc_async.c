@@ -38,6 +38,11 @@ typedef struct {
     gattc_handle_t* user_phandle;
 } bt_gattc_create_connect_data_t;
 
+typedef struct {
+    void* userdata;
+    void* gattc_remote;
+} bt_gattc_delete_connect_data_t;
+
 static void gattc_status_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_status_cb_t ret_cb = (bt_status_cb_t)cb;
@@ -109,17 +114,33 @@ error:
 
 static void gattc_delete_connect_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
+    bt_gattc_delete_connect_data_t* data = userdata;
+    bt_socket_async_client_t* priv = ins->priv;
     bt_gattc_delete_connect_cb_t ret_cb = (bt_gattc_delete_connect_cb_t)cb;
+    bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)data->gattc_remote;
+    void** user_phandle = gattc_remote->user_phandle;
 
-    if (!ret_cb)
-        return;
+    bt_list_remove(priv->gattc_remote_list, gattc_remote);
+    *user_phandle = NULL;
 
-    if (!packet) {
-        ret_cb(ins, BT_STATUS_UNHANDLED, userdata);
+    if (!bt_list_length(priv->gattc_remote_list)) {
+        bt_list_free(priv->gattc_remote_list);
+        priv->gattc_remote_list = NULL;
+    }
+
+    if (!ret_cb) {
+        free(userdata);
         return;
     }
 
-    ret_cb(ins, packet->gattc_r.status, userdata);
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, data->userdata);
+        free(userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->gattc_r.status, data->userdata);
+    free(userdata);
 }
 
 static void gattc_write_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
@@ -201,11 +222,10 @@ fail:
 bt_status_t bt_gattc_delete_connect_async(gattc_handle_t conn_handle, bt_gattc_delete_connect_cb_t cb, void* userdata)
 {
     bt_message_packet_t packet = { 0 };
+    bt_gattc_delete_connect_data_t* data;
     bt_socket_async_client_t* priv;
-    bt_status_t status;
     bt_instance_t* ins;
     bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)conn_handle;
-    void** user_phandle;
 
     CHECK_NULL_PTR(gattc_remote);
 
@@ -216,18 +236,11 @@ bt_status_t bt_gattc_delete_connect_async(gattc_handle_t conn_handle, bt_gattc_d
     ins = gattc_remote->ins;
     packet.gattc_pl._bt_gattc_delete.handle = PTR2INT(uint64_t) gattc_remote->cookie;
 
-    status = bt_socket_client_send_with_reply(ins, &packet, BT_GATT_CLIENT_DELETE_CONNECT, gattc_delete_connect_reply, (void*)cb, userdata);
+    data = calloc(1, sizeof(bt_gattc_delete_connect_data_t));
+    data->userdata = userdata;
+    data->gattc_remote = (void*)gattc_remote;
 
-    user_phandle = gattc_remote->user_phandle;
-    bt_list_remove(priv->gattc_remote_list, gattc_remote);
-    *user_phandle = NULL;
-
-    if (!bt_list_length(priv->gattc_remote_list)) {
-        bt_list_free(priv->gattc_remote_list);
-        priv->gattc_remote_list = NULL;
-    }
-
-    return status;
+    return bt_socket_client_send_with_reply(ins, &packet, BT_GATT_CLIENT_DELETE_CONNECT, gattc_delete_connect_reply, (void*)cb, data);
 }
 
 bt_status_t bt_gattc_connect_async(gattc_handle_t conn_handle, bt_address_t* addr, ble_addr_type_t addr_type, bt_status_cb_t cb, void* userdata)
