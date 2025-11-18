@@ -447,6 +447,27 @@ static void zblue_on_call_terminate(struct bt_hfp_hf_call* call)
     remove_call(sal_conn, sal_call);
 }
 
+static void zblue_on_call_held(struct bt_hfp_hf_call* call)
+{
+    bt_hfp_hf_call_info_t* sal_call = NULL;
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_call_context(call, &sal_call);
+
+    if (!sal_conn || !sal_call) {
+        BT_LOGW("%s, Failed to find call to hold", __func__);
+        return;
+    }
+
+    hfp_hf_on_call_held_state_changed(&sal_conn->addr, HFP_CALLHELD_HELD);
+
+    if (sal_call->state == HFP_HF_CALL_STATE_ACTIVE) {
+        hfp_hf_on_call_active_state_changed(&sal_conn->addr, HFP_CALL_NO_CALLS_IN_PROGRESS);
+    } else {
+        BT_LOGW("Unexpected previous state %d.", sal_call->state);
+    }
+
+    set_call_state(sal_conn, sal_call, HFP_HF_CALL_STATE_HELD);
+}
+
 static void zblue_on_subscriber_number(struct bt_hfp_hf* hf, const char* number, uint8_t type, uint8_t service)
 {
     bt_address_t* bd_addr = zalloc(sizeof(bt_address_t));
@@ -553,7 +574,7 @@ static struct bt_hfp_hf_cb hf_callbacks = {
     .accept = zblue_on_call_accept,
     .reject = zblue_on_call_reject,
     .terminate = zblue_on_call_terminate,
-    .held = NULL,
+    .held = zblue_on_call_held,
     .retrieve = NULL,
     .signal = NULL,
     .roam = NULL,
