@@ -838,7 +838,7 @@ static void delete_client_cb(bt_instance_t* ins, bt_status_t status, void* userd
     user_ud = client->delete_client_ctx.delete_userdata;
     conn_handle = client->conn;
 
-    if (status == BT_STATUS_SUCCESS && g_gatt_client_list) {
+    if (g_gatt_client_list) {
         bt_list_remove(g_gatt_client_list, client);
 
         if (!bt_list_length(g_gatt_client_list)) {
