@@ -361,6 +361,24 @@ static void zblue_hf_disconnected(struct bt_hfp_hf* hf)
     bt_list_remove(g_sal_hf_conn_list, conn);
 }
 
+static void zblue_on_outgoing_call(struct bt_hfp_hf *hf, struct bt_hfp_hf_call *call)
+{
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_hf(hf);
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return;
+    }
+
+    bt_hfp_hf_call_info_t* sal_call = find_or_create_call(sal_conn, call);
+    if (!sal_call) {
+        BT_LOGE("%s, Failed to track outgoing call", __func__);
+        return;
+    }
+
+    set_call_state(sal_conn, sal_call, HFP_HF_CALL_STATE_DIALING);
+    hfp_hf_on_call_setup_state_changed(&sal_conn->addr, HFP_CALLSETUP_OUTGOING);
+}
+
 static void zblue_on_incoming_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_call* call)
 {
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_hf(hf);
@@ -507,7 +525,7 @@ static struct bt_hfp_hf_cb hf_callbacks = {
     .sco_connected = NULL,
     .sco_disconnected = NULL,
     .service = NULL,
-    .outgoing = NULL,
+    .outgoing = zblue_on_outgoing_call,
     .remote_ringing = NULL,
     .incoming = zblue_on_incoming_call,
     .incoming_held = NULL,
