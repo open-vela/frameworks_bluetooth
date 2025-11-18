@@ -30,7 +30,15 @@ static void adapter_status_reply(bt_instance_t* ins, bt_message_packet_t* packet
 {
     bt_status_cb_t ret_cb = (bt_status_cb_t)cb;
 
-    HANDLE_BT_ASTNC_CALLBACK(ret_cb, ins, packet, adpt_r, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->adpt_r.status, userdata);
 }
 
 static void adapter_bool_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
@@ -249,7 +257,7 @@ bt_status_t bt_adapter_register_callback_async(bt_instance_t* ins,
 {
     bt_register_callback_data_t* data;
     bt_socket_async_client_t* priv;
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
     bt_status_t status;
     void* handle;
 
@@ -302,7 +310,7 @@ send_message:
 
 bt_status_t bt_adapter_unregister_callback_async(bt_instance_t* ins, void* cookie, bt_bool_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
     bt_socket_async_client_t* priv;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
@@ -324,7 +332,7 @@ bt_status_t bt_adapter_unregister_callback_async(bt_instance_t* ins, void* cooki
 
 bt_status_t bt_adapter_enable_async(bt_instance_t* ins, bt_status_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -333,7 +341,7 @@ bt_status_t bt_adapter_enable_async(bt_instance_t* ins, bt_status_cb_t cb, void*
 
 bt_status_t bt_adapter_disable_async(bt_instance_t* ins, bt_status_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -342,7 +350,7 @@ bt_status_t bt_adapter_disable_async(bt_instance_t* ins, bt_status_cb_t cb, void
 
 bt_status_t bt_adapter_enable_le_async(bt_instance_t* ins, bt_status_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -351,7 +359,7 @@ bt_status_t bt_adapter_enable_le_async(bt_instance_t* ins, bt_status_cb_t cb, vo
 
 bt_status_t bt_adapter_disable_le_async(bt_instance_t* ins, bt_status_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -360,7 +368,7 @@ bt_status_t bt_adapter_disable_le_async(bt_instance_t* ins, bt_status_cb_t cb, v
 
 bt_status_t bt_adapter_get_state_async(bt_instance_t* ins, bt_adapter_get_state_cb_t get_state_cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -369,7 +377,7 @@ bt_status_t bt_adapter_get_state_async(bt_instance_t* ins, bt_adapter_get_state_
 
 bt_status_t bt_adapter_is_le_enabled_async(bt_instance_t* ins, bt_bool_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -378,7 +386,7 @@ bt_status_t bt_adapter_is_le_enabled_async(bt_instance_t* ins, bt_bool_cb_t cb, 
 
 bt_status_t bt_adapter_get_type_async(bt_instance_t* ins, bt_device_type_cb_t get_dtype_cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -392,7 +400,7 @@ bt_status_t bt_adapter_set_discovery_filter_async(bt_instance_t* ins, bt_status_
 
 bt_status_t bt_adapter_start_discovery_async(bt_instance_t* ins, uint32_t timeout, bt_status_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -403,7 +411,7 @@ bt_status_t bt_adapter_start_discovery_async(bt_instance_t* ins, uint32_t timeou
 
 bt_status_t bt_adapter_cancel_discovery_async(bt_instance_t* ins, bt_status_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -412,7 +420,7 @@ bt_status_t bt_adapter_cancel_discovery_async(bt_instance_t* ins, bt_status_cb_t
 
 bt_status_t bt_adapter_is_discovering_async(bt_instance_t* ins, bt_bool_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -421,7 +429,7 @@ bt_status_t bt_adapter_is_discovering_async(bt_instance_t* ins, bt_bool_cb_t cb,
 
 bt_status_t bt_adapter_get_address_async(bt_instance_t* ins, bt_address_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -430,7 +438,7 @@ bt_status_t bt_adapter_get_address_async(bt_instance_t* ins, bt_address_cb_t cb,
 
 bt_status_t bt_adapter_set_name_async(bt_instance_t* ins, const char* name, bt_status_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -445,7 +453,7 @@ bt_status_t bt_adapter_set_name_async(bt_instance_t* ins, const char* name, bt_s
 
 bt_status_t bt_adapter_get_name_async(bt_instance_t* ins, bt_string_cb_t get_name_cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -454,7 +462,7 @@ bt_status_t bt_adapter_get_name_async(bt_instance_t* ins, bt_string_cb_t get_nam
 
 bt_status_t bt_adapter_get_uuids_async(bt_instance_t* ins, bt_uuids_cb_t get_uuids_cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -463,7 +471,7 @@ bt_status_t bt_adapter_get_uuids_async(bt_instance_t* ins, bt_uuids_cb_t get_uui
 
 bt_status_t bt_adapter_set_scan_mode_async(bt_instance_t* ins, bt_scan_mode_t mode, bool bondable, bt_status_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -475,7 +483,7 @@ bt_status_t bt_adapter_set_scan_mode_async(bt_instance_t* ins, bt_scan_mode_t mo
 
 bt_status_t bt_adapter_get_scan_mode_async(bt_instance_t* ins, bt_adapter_get_scan_mode_cb_t get_scan_mode_cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -484,7 +492,7 @@ bt_status_t bt_adapter_get_scan_mode_async(bt_instance_t* ins, bt_adapter_get_sc
 
 bt_status_t bt_adapter_set_device_class_async(bt_instance_t* ins, uint32_t cod, bt_status_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -495,7 +503,7 @@ bt_status_t bt_adapter_set_device_class_async(bt_instance_t* ins, uint32_t cod, 
 
 bt_status_t bt_adapter_get_device_class_async(bt_instance_t* ins, bt_u32_cb_t get_cod_cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -504,7 +512,7 @@ bt_status_t bt_adapter_get_device_class_async(bt_instance_t* ins, bt_u32_cb_t ge
 
 bt_status_t bt_adapter_set_io_capability_async(bt_instance_t* ins, bt_io_capability_t cap, bt_status_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -515,7 +523,7 @@ bt_status_t bt_adapter_set_io_capability_async(bt_instance_t* ins, bt_io_capabil
 
 bt_status_t bt_adapter_get_io_capability_async(bt_instance_t* ins, bt_adapter_get_io_capability_cb_t get_ioc_cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -525,7 +533,7 @@ bt_status_t bt_adapter_get_io_capability_async(bt_instance_t* ins, bt_adapter_ge
 bt_status_t bt_adapter_set_inquiry_scan_parameters_async(bt_instance_t* ins, bt_scan_type_t type,
     uint16_t interval, uint16_t window, bt_status_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -539,7 +547,7 @@ bt_status_t bt_adapter_set_inquiry_scan_parameters_async(bt_instance_t* ins, bt_
 bt_status_t bt_adapter_set_page_scan_parameters_async(bt_instance_t* ins, bt_scan_type_t type,
     uint16_t interval, uint16_t window, bt_status_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -552,7 +560,7 @@ bt_status_t bt_adapter_set_page_scan_parameters_async(bt_instance_t* ins, bt_sca
 
 bt_status_t bt_adapter_set_le_io_capability_async(bt_instance_t* ins, uint32_t le_io_cap, bt_status_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -563,7 +571,7 @@ bt_status_t bt_adapter_set_le_io_capability_async(bt_instance_t* ins, uint32_t l
 
 bt_status_t bt_adapter_get_le_io_capability_async(bt_instance_t* ins, bt_u32_cb_t get_le_ioc_cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -572,7 +580,7 @@ bt_status_t bt_adapter_get_le_io_capability_async(bt_instance_t* ins, bt_u32_cb_
 
 bt_status_t bt_adapter_get_le_address_async(bt_instance_t* ins, bt_adapter_get_le_address_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -581,7 +589,7 @@ bt_status_t bt_adapter_get_le_address_async(bt_instance_t* ins, bt_adapter_get_l
 
 bt_status_t bt_adapter_set_le_address_async(bt_instance_t* ins, bt_address_t* addr, bt_status_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -592,7 +600,7 @@ bt_status_t bt_adapter_set_le_address_async(bt_instance_t* ins, bt_address_t* ad
 
 bt_status_t bt_adapter_set_le_identity_address_async(bt_instance_t* ins, bt_address_t* addr, bool is_public, bt_status_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -604,7 +612,7 @@ bt_status_t bt_adapter_set_le_identity_address_async(bt_instance_t* ins, bt_addr
 
 bt_status_t bt_adapter_set_le_appearance_async(bt_instance_t* ins, uint16_t appearance, bt_status_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -615,7 +623,7 @@ bt_status_t bt_adapter_set_le_appearance_async(bt_instance_t* ins, uint16_t appe
 
 bt_status_t bt_adapter_get_le_appearance_async(bt_instance_t* ins, bt_u16_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -625,7 +633,7 @@ bt_status_t bt_adapter_get_le_appearance_async(bt_instance_t* ins, bt_u16_cb_t c
 bt_status_t bt_adapter_le_enable_key_derivation_async(bt_instance_t* ins,
     bool brkey_to_lekey, bool lekey_to_brkey, bt_status_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -637,7 +645,7 @@ bt_status_t bt_adapter_le_enable_key_derivation_async(bt_instance_t* ins,
 
 bt_status_t bt_adapter_le_add_whitelist_async(bt_instance_t* ins, bt_address_t* addr, bt_status_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -648,7 +656,7 @@ bt_status_t bt_adapter_le_add_whitelist_async(bt_instance_t* ins, bt_address_t* 
 
 bt_status_t bt_adapter_le_remove_whitelist_async(bt_instance_t* ins, bt_address_t* addr, bt_status_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -659,7 +667,7 @@ bt_status_t bt_adapter_le_remove_whitelist_async(bt_instance_t* ins, bt_address_
 
 bt_status_t bt_adapter_get_bonded_devices_async(bt_instance_t* ins, bt_transport_t transport, bt_adapter_get_devices_cb_t get_bonded_cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -670,7 +678,7 @@ bt_status_t bt_adapter_get_bonded_devices_async(bt_instance_t* ins, bt_transport
 
 bt_status_t bt_adapter_get_connected_devices_async(bt_instance_t* ins, bt_transport_t transport, bt_adapter_get_devices_cb_t get_connected_cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -682,7 +690,7 @@ bt_status_t bt_adapter_get_connected_devices_async(bt_instance_t* ins, bt_transp
 bt_status_t bt_adapter_set_afh_channel_classification_async(bt_instance_t* ins, uint16_t central_frequency,
     uint16_t band_width, uint16_t number, bt_status_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -700,7 +708,7 @@ bt_status_t bt_adapter_set_auto_sniff_async(bt_instance_t* ins, bt_auto_sniff_pa
 
 bt_status_t bt_adapter_disconnect_all_devices_async(bt_instance_t* ins, bt_status_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -709,7 +717,7 @@ bt_status_t bt_adapter_disconnect_all_devices_async(bt_instance_t* ins, bt_statu
 
 bt_status_t bt_adapter_is_support_bredr_async(bt_instance_t* ins, bt_bool_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -718,7 +726,7 @@ bt_status_t bt_adapter_is_support_bredr_async(bt_instance_t* ins, bt_bool_cb_t c
 
 bt_status_t bt_adapter_is_support_le_async(bt_instance_t* ins, bt_bool_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
@@ -727,7 +735,7 @@ bt_status_t bt_adapter_is_support_le_async(bt_instance_t* ins, bt_bool_cb_t cb, 
 
 bt_status_t bt_adapter_is_support_leaudio_async(bt_instance_t* ins, bt_bool_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
