@@ -38,6 +38,11 @@ static void le_scan_bool_reply(bt_instance_t* ins, bt_message_packet_t* packet, 
     if (!ret_cb)
         return;
 
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, 0, userdata);
+        return;
+    }
+
     ret_cb(ins, packet->scan_r.status, packet->scan_r.vbool, userdata);
 }
 
@@ -46,18 +51,28 @@ static void le_start_scan_reply(bt_instance_t* ins, bt_message_packet_t* packet,
     bt_scan_remote_t* scan;
     bt_le_start_scan_data_t* data = userdata;
     bt_le_start_scan_cb_t ret_cb = (bt_le_start_scan_cb_t)cb;
+    bt_status_t status;
+
+    if (!packet) {
+        status = BT_STATUS_UNHANDLED;
+        goto error;
+    }
 
     scan = (bt_scan_remote_t*)data->scan;
     if (!packet->scan_r.remote) {
-        ret_cb(ins, BT_STATUS_FAIL, data->scan, data->userdata);
-        free(data->scan);
-        free(data);
-        return;
+        status = BT_STATUS_FAIL;
+        goto error;
     }
 
     scan->remote = packet->scan_r.remote;
     ret_cb(ins, packet->scan_r.status, data->scan, data->userdata);
 
+    free(data);
+    return;
+
+error:
+    ret_cb(ins, status, NULL, data->userdata);
+    free(data->scan);
     free(data);
 }
 

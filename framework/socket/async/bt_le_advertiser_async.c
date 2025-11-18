@@ -37,6 +37,11 @@ static void le_advertiser_status_reply(bt_instance_t* ins, bt_message_packet_t* 
     if (!ret_cb)
         return;
 
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, context);
+        return;
+    }
+
     ret_cb(ins, packet->adv_r.status, context);
 }
 
@@ -47,25 +52,43 @@ static void le_advertiser_bool_reply(bt_instance_t* ins, bt_message_packet_t* pa
     if (!ret_cb)
         return;
 
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, 0, userdata);
+        return;
+    }
+
     ret_cb(ins, packet->adv_r.status, packet->adv_r.vbool, userdata);
 }
 
 static void le_start_advertising_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_advertiser_remote_t* adv;
+    bt_status_t status;
     bt_le_start_advertising_data_t* data = userdata;
     bt_le_start_adv_callback_cb_t ret_cb = (bt_le_start_adv_callback_cb_t)cb;
 
     adv = (bt_advertiser_remote_t*)data->adv;
 
+    if (!packet) {
+        status = BT_STATUS_UNHANDLED;
+        goto error;
+    }
+
     if (!packet->adv_r.remote) {
-        data->adv = NULL;
-        free(adv);
+        status = packet->adv_r.status;
+        goto error;
     } else {
         adv->remote = packet->adv_r.remote;
     }
 
     ret_cb(ins, packet->adv_r.status, data->adv, data->userdata);
+    free(data);
+    return;
+
+error:
+    data->adv = NULL;
+    free(adv);
+    ret_cb(ins, status, data->adv, data->userdata);
     free(data);
 }
 

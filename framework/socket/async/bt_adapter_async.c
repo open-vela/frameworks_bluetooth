@@ -30,123 +30,225 @@ static void adapter_status_reply(bt_instance_t* ins, bt_message_packet_t* packet
 {
     bt_status_cb_t ret_cb = (bt_status_cb_t)cb;
 
-    if (ret_cb)
-        ret_cb(ins, packet->adpt_r.status, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->adpt_r.status, userdata);
 }
 
 static void adapter_bool_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_bool_cb_t ret_cb = (bt_bool_cb_t)cb;
 
-    if (ret_cb)
-        ret_cb(ins, packet->adpt_r.status, packet->adpt_r.bbool, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, 0, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->adpt_r.status, packet->adpt_r.bbool, userdata);
 }
 
 static void adapter_uint16_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_u16_cb_t ret_cb = (bt_u16_cb_t)cb;
 
-    if (ret_cb)
-        ret_cb(ins, packet->adpt_r.status, packet->adpt_r.v16, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, 0, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->adpt_r.status, packet->adpt_r.v16, userdata);
 }
 
 static void adapter_uint32_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_u32_cb_t ret_cb = (bt_u32_cb_t)cb;
 
-    if (ret_cb)
-        ret_cb(ins, packet->adpt_r.status, packet->adpt_r.v32, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, 0, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->adpt_r.status, packet->adpt_r.v32, userdata);
 }
 
 static void adapter_get_state_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_adapter_get_state_cb_t ret_cb = (bt_adapter_get_state_cb_t)cb;
 
-    if (ret_cb)
-        ret_cb(ins, packet->adpt_r.status, packet->adpt_r.state, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, BT_ADAPTER_STATE_OFF, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->adpt_r.status, packet->adpt_r.state, userdata);
 }
 
 static void adapter_get_device_type_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_device_type_cb_t ret_cb = (bt_device_type_cb_t)cb;
 
-    if (ret_cb)
-        ret_cb(ins, packet->adpt_r.status, packet->adpt_r.dtype, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, BT_DEVICE_TYPE_UNKNOW, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->adpt_r.status, packet->adpt_r.dtype, userdata);
 }
 
 static void adapter_get_address_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_address_cb_t ret_cb = (bt_address_cb_t)cb;
 
-    if (ret_cb)
-        ret_cb(ins, packet->adpt_r.status, &packet->adpt_pl._bt_adapter_get_address.addr, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, NULL, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->adpt_r.status, &packet->adpt_pl._bt_adapter_get_address.addr, userdata);
 }
 
 static void adapter_get_name_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_string_cb_t ret_cb = (bt_string_cb_t)cb;
 
-    if (ret_cb)
-        ret_cb(ins, packet->adpt_r.status, packet->adpt_pl._bt_adapter_get_name.name, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, NULL, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->adpt_r.status, packet->adpt_pl._bt_adapter_get_name.name, userdata);
 }
 
 static void adapter_get_uuids_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_uuids_cb_t ret_cb = (bt_uuids_cb_t)cb;
 
-    if (ret_cb)
-        ret_cb(ins, packet->adpt_r.status, packet->adpt_pl._bt_adapter_get_uuids.uuids, packet->adpt_pl._bt_adapter_get_uuids.size, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, NULL, 0, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->adpt_r.status, packet->adpt_pl._bt_adapter_get_uuids.uuids, packet->adpt_pl._bt_adapter_get_uuids.size, userdata);
 }
 
 static void adapter_get_scan_mode_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_adapter_get_scan_mode_cb_t ret_cb = (bt_adapter_get_scan_mode_cb_t)cb;
 
-    if (ret_cb)
-        ret_cb(ins, packet->adpt_r.status, packet->adpt_r.mode, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, BT_SCAN_MODE_NONE, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->adpt_r.status, packet->adpt_r.mode, userdata);
 }
 
 static void adapter_get_io_capability_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_adapter_get_io_capability_cb_t ret_cb = (bt_adapter_get_io_capability_cb_t)cb;
 
-    if (ret_cb)
-        ret_cb(ins, packet->adpt_r.status, packet->adpt_r.ioc, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, BT_IO_CAPABILITY_UNKNOW, userdata);
+        return;
+    }
+
+    ret_cb(ins, packet->adpt_r.status, packet->adpt_r.ioc, userdata);
 }
 
 static void adapter_get_devices_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_adapter_get_devices_cb_t ret_cb = (bt_adapter_get_devices_cb_t)cb;
 
-    if (ret_cb) {
-        ret_cb(ins, packet->adpt_r.status, packet->adpt_pl._bt_adapter_get_bonded_devices.addr,
-            packet->adpt_pl._bt_adapter_get_bonded_devices.num, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, NULL, 0, userdata);
+        return;
     }
+
+    ret_cb(ins, packet->adpt_r.status, packet->adpt_pl._bt_adapter_get_bonded_devices.addr,
+        packet->adpt_pl._bt_adapter_get_bonded_devices.num, userdata);
 }
 
 static void adapter_get_le_address_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_adapter_get_le_address_cb_t ret_cb = (bt_adapter_get_le_address_cb_t)cb;
 
-    if (ret_cb) {
-        ret_cb(ins, packet->adpt_r.status, &packet->adpt_pl._bt_adapter_get_le_address.addr,
-            packet->adpt_pl._bt_adapter_get_le_address.type, userdata);
+    if (!ret_cb)
+        return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, NULL, BT_LE_ADDR_TYPE_UNKNOWN, userdata);
+        return;
     }
+
+    ret_cb(ins, packet->adpt_r.status, &packet->adpt_pl._bt_adapter_get_le_address.addr,
+        packet->adpt_pl._bt_adapter_get_le_address.type, userdata);
 }
 
 static void adapter_register_callback_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_register_callback_data_t* data = userdata;
     bt_socket_async_client_t* priv = ins->priv;
+    bt_status_t status;
     bt_register_callback_cb_t ret_cb = (bt_register_callback_cb_t)cb;
 
+    if (!packet) {
+        status = BT_STATUS_UNHANDLED;
+        goto error;
+    }
+
     if (packet->adpt_r.status != BT_STATUS_SUCCESS) {
-        bt_callbacks_list_free(priv->adapter_callbacks);
-        priv->adapter_callbacks = NULL;
+        status = packet->adpt_r.status;
+        goto error;
     }
 
     ret_cb(ins, packet->adpt_r.status, data->cookie, data->userdata);
 
+    free(data);
+    return;
+
+error:
+    bt_callbacks_list_free(priv->adapter_callbacks);
+    priv->adapter_callbacks = NULL;
+    ret_cb(ins, status, data->cookie, data->userdata);
     free(data);
 }
 

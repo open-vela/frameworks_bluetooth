@@ -763,6 +763,17 @@ fail:
     return BT_STATUS_FAIL;
 }
 
+static void bt_socket_invoke_async_cb(bt_instance_t* ins, bt_list_t* list)
+{
+    bt_list_node_t* node;
+
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        bt_message_context_t* ctx = bt_list_node(node);
+        if (ctx && ctx->reply_cb)
+            ctx->reply_cb(ins, NULL, ctx->cb, ctx->userdata);
+    }
+}
+
 void bt_socket_async_client_deinit(bt_instance_t* ins)
 {
     bt_socket_async_client_t* priv;
@@ -777,6 +788,7 @@ void bt_socket_async_client_deinit(bt_instance_t* ins)
     uv_read_stop((uv_stream_t*)priv->pipe);
 
     if (priv->pending_queue) {
+        bt_socket_invoke_async_cb(ins, priv->pending_queue);
         bt_list_free(priv->pending_queue);
         priv->pending_queue = NULL;
     }

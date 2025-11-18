@@ -45,6 +45,11 @@ static void gattc_status_reply(bt_instance_t* ins, bt_message_packet_t* packet, 
     if (!ret_cb)
         return;
 
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, userdata);
+        return;
+    }
+
     ret_cb(ins, packet->gattc_r.status, userdata);
 }
 
@@ -54,6 +59,11 @@ static void gattc_get_attribute_reply(bt_instance_t* ins, bt_message_packet_t* p
 
     if (!ret_cb)
         return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, NULL, userdata);
+        return;
+    }
 
     ret_cb(ins, packet->gattc_r.status, &packet->gattc_r.attr_desc, userdata);
 }
@@ -65,7 +75,7 @@ static void gattc_create_connect_reply(bt_instance_t* ins, bt_message_packet_t* 
     bt_gattc_create_connect_cb_t ret_cb = (bt_gattc_create_connect_cb_t)cb;
     bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)data->gattc_remote;
 
-    if (packet->gattc_r.status != BT_STATUS_SUCCESS)
+    if (!packet || packet->gattc_r.status != BT_STATUS_SUCCESS)
         goto error;
 
     gattc_remote->cookie = PTR2INT(uint64_t) packet->gattc_r.handle;
@@ -87,6 +97,12 @@ error:
         priv->gattc_remote_list = NULL;
     }
 
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, data->user_phandle, data->userdata);
+        free(userdata);
+        return;
+    }
+
     ret_cb(ins, packet->gattc_r.status, data->user_phandle, data->userdata);
     free(userdata);
 }
@@ -98,6 +114,11 @@ static void gattc_delete_connect_reply(bt_instance_t* ins, bt_message_packet_t* 
     if (!ret_cb)
         return;
 
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, userdata);
+        return;
+    }
+
     ret_cb(ins, packet->gattc_r.status, userdata);
 }
 
@@ -107,6 +128,11 @@ static void gattc_write_reply(bt_instance_t* ins, bt_message_packet_t* packet, v
 
     if (!ret_cb)
         return;
+
+    if (!packet) {
+        ret_cb(ins, BT_STATUS_UNHANDLED, userdata);
+        return;
+    }
 
     ret_cb(ins, packet->gattc_r.status, userdata);
 }
