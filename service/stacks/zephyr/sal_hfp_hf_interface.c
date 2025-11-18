@@ -364,6 +364,33 @@ static void zblue_on_incoming_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_call* 
     hfp_hf_on_call_setup_state_changed(&sal_conn->addr, HFP_CALLSETUP_INCOMING);
 }
 
+static void zblue_on_subscriber_number(struct bt_hfp_hf* hf, const char* number, uint8_t type, uint8_t service)
+{
+    bt_address_t* bd_addr = zalloc(sizeof(bt_address_t));
+
+    bt_hfp_hf_connection_t* conn = find_connection_by_hf(hf);
+    if (!conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return;
+    }
+
+    hfp_subscriber_number_service_t fw_service = 0;
+    switch (service) {
+    case 4:
+        fw_service = HFP_HF_SERVICE_VOICE;
+        break;
+    case 5:
+        fw_service = HFP_HF_SERVICE_FAX;
+        break;
+    default:
+        BT_LOGW("%s, Unknown service: %d", __func__, service);
+        break;
+    }
+
+    bt_sal_get_remote_address(conn->conn, bd_addr);
+    hfp_hf_on_subscriber_number_response(bd_addr, number, fw_service);
+}
+
 static void zblue_on_current_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_current_call* call)
 {
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_hf(hf);
@@ -462,7 +489,7 @@ static struct bt_hfp_hf_cb hf_callbacks = {
     .vre_state = NULL,
     .textual_representation = NULL,
     .request_phone_number = NULL,
-    .subscriber_number = NULL,
+    .subscriber_number = zblue_on_subscriber_number,
     .query_call = zblue_on_current_call,
 };
 
@@ -619,5 +646,9 @@ bt_status_t bt_sal_hfp_hf_send_dtmf(bt_address_t* addr, char dtmf)
 
 bt_status_t bt_sal_hfp_hf_get_subscriber_number(bt_address_t* addr)
 {
-    return BT_STATUS_UNSUPPORTED;
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
+
+    SAL_CHECK_RET(Z_API(bt_hfp_hf_query_subscriber)(sal_conn->hf), 0);
+
+    return BT_STATUS_SUCCESS;
 }
