@@ -88,6 +88,7 @@ static void zblue_on_ct_passthrough_rsp(struct bt_avrcp_ct* ct, uint8_t tid, bt_
 static void zblue_on_ct_notification_rsp(struct bt_avrcp_ct* ct, uint8_t tid, uint8_t status, uint8_t event_id, struct bt_avrcp_event_data* data);
 static void zblue_on_ct_get_element_attrs_rsp(struct bt_avrcp_ct* ct, uint8_t tid, uint8_t status, struct net_buf* buf);
 static void zblue_on_ct_get_play_status_rsp(struct bt_avrcp_ct* ct, uint8_t tid, uint8_t status, struct net_buf* buf);
+static bt_status_t avrcp_control_disconnect(bt_controller_id_t id, bt_address_t* bd_addr);
 #endif
 
 #ifdef CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME
@@ -722,6 +723,8 @@ static void zblue_on_ct_connected(struct bt_conn* conn, struct bt_avrcp_ct* ct)
     msg->data.conn_state.conn_state = PROFILE_STATE_CONNECTED;
     msg->data.conn_state.reason = PROFILE_REASON_UNSPECIFIED;
     bt_sal_avrcp_control_event_callback(msg);
+    bt_sal_cm_profile_connected_callback(cm_data_new(&avrcp_info->bd_addr, PROFILE_AVRCP_CT));
+    bt_sal_profile_disconnect_register(&avrcp_info->bd_addr, PROFILE_AVRCP_CT, PRIMARY_ADAPTER, avrcp_control_disconnect);
 }
 
 static void zblue_on_ct_disconnected(struct bt_avrcp_ct* ct)
@@ -1378,9 +1381,9 @@ static void zblue_on_tg_get_play_status_req(struct bt_avrcp_tg* tg, uint8_t tid)
 }
 #endif
 
-bt_status_t bt_sal_avrcp_control_connect(bt_controller_id_t id, bt_address_t* bd_addr)
-{
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+static bt_status_t avrcp_control_connect(bt_controller_id_t id, bt_address_t* bd_addr)
+{
     int err;
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)bd_addr);
 
@@ -1397,14 +1400,21 @@ bt_status_t bt_sal_avrcp_control_connect(bt_controller_id_t id, bt_address_t* bd
         return BT_STATUS_FAIL;
 
     return BT_STATUS_SUCCESS;
+}
+#endif
+
+bt_status_t bt_sal_avrcp_control_connect(bt_controller_id_t id, bt_address_t* addr)
+{
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+    return bt_sal_profile_connect_request(addr, PROFILE_AVRCP_CT, id, avrcp_control_connect);
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif
 }
 
-bt_status_t bt_sal_avrcp_control_disconnect(bt_controller_id_t id, bt_address_t* bd_addr)
-{
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+static bt_status_t avrcp_control_disconnect(bt_controller_id_t id, bt_address_t* bd_addr)
+{
     zblue_avrcp_info_t* avrcp_info;
     int err;
 
@@ -1424,14 +1434,21 @@ bt_status_t bt_sal_avrcp_control_disconnect(bt_controller_id_t id, bt_address_t*
         goto failed;
 
     return BT_STATUS_SUCCESS;
-#else
-    return BT_STATUS_NOT_SUPPORTED;
-#endif
 
 failed:
     bt_list_free(avrcp_info->tg_tid);
     bt_list_remove(bt_avrcp_conn, avrcp_info);
     return BT_STATUS_FAIL;
+}
+#endif
+
+bt_status_t bt_sal_avrcp_control_disconnect(bt_controller_id_t id, bt_address_t* addr)
+{
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+    return bt_sal_profile_disconnect_request(addr, PROFILE_AVRCP_CT, id, avrcp_control_disconnect);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 bool bt_sal_avrcp_try_disconnect_avrcp_control(bt_controller_id_t id, bt_address_t* addr)
