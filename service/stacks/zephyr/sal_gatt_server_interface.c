@@ -58,7 +58,14 @@
 #define GATT_PERM_ENC_READ_MASK (BT_GATT_PERM_READ_ENCRYPT | BT_GATT_PERM_READ_AUTHEN)
 #define GATT_PERM_ENC_WRITE_MASK (BT_GATT_PERM_WRITE_ENCRYPT | BT_GATT_PERM_WRITE_AUTHEN)
 
-#define GATT_OPS_WRITE_REQUEST 0 /* not used */
+#define GATT_OPS_WRITE_REQUEST 0
+#define GATT_OPS_READ_REQUEST 1
+#define GATT_WRITE_FLAGS_RELIABLE_WRITE (BT_GATT_WRITE_FLAG_PREPARE | BT_GATT_WRITE_FLAG_EXECUTE)
+
+#define MAKE_REQUEST_ID(handle, op_type) (((uint32_t)(op_type) << 31) | ((handle)&0xFFFF))
+#define REQUEST_ID_HANDLE(id) ((uint16_t)((id)&0xFFFF))
+#define REQUEST_ID_OP_TYPE(id) (((id) >> 31) & 0x1)
+#define REQUEST_ID_NORSP ((uint32_t)0xFFFFFFFF)
 
 #define STACK_CALL(func) zblue_##func
 
@@ -155,22 +162,26 @@ static struct bt_gatt_attr server_db[CONFIG_GATT_SERVER_MAX_ATTRIBUTES];
 static ssize_t read_value(struct bt_conn* conn, const struct bt_gatt_attr* attr,
     void* buf, uint16_t len, uint16_t offset)
 {
-    uint16_t pts_read_size;
+    bt_address_t addr;
+    gatt_element_t* element;
+    uint32_t request_id;
     struct gatt_value* user_data = attr->user_data;
+
+    if (!user_data || !user_data->context) {
+        BT_LOGE("%s, user_data or context is NULL", __func__);
+        return BT_GATT_ERR(BT_ATT_ERR_UNLIKELY);
+    }
 
     BT_LOGD("%s, handle:0x%0x, user_data 0x%p, user_data_len:%d", __func__, attr->handle, user_data, user_data->len);
 
-    if (bt_uuid_cmp(attr->uuid, BT_UUID_DECLARE_16(0xFF06)) == 0) {
-        pts_read_size = bt_gatt_get_mtu(conn) - 1;
-        static uint8_t s_fake[512] = { 0 };
-        if (pts_read_size <= 512) {
-            memset(s_fake, 0xAA, pts_read_size);
-        }
+    element = user_data->context;
 
-        return bt_gatt_attr_read(conn, attr, buf, len, offset, s_fake, pts_read_size);
-    }
+    get_le_addr_from_conn(conn, &addr);
 
-    return bt_gatt_attr_read(conn, attr, buf, len, offset, user_data->data, user_data->len);
+    request_id = MAKE_REQUEST_ID(element->handle, GATT_OPS_READ_REQUEST);
+    if_gatts_on_received_element_read_request(&addr, request_id, element->handle);
+
+    return -EINPROGRESS;
 }
 
 static ssize_t write_value(struct bt_conn* conn, const struct bt_gatt_attr* attr,
@@ -178,11 +189,26 @@ static ssize_t write_value(struct bt_conn* conn, const struct bt_gatt_attr* attr
 {
     bt_address_t addr;
     gatt_element_t* element;
+    uint32_t request_id;
+    int ret;
     struct gatt_value* user_data = attr->user_data;
 
     if (!user_data || !user_data->context) {
         BT_LOGE("%s, user_data or context is NULL", __func__);
         return BT_GATT_ERR(BT_ATT_ERR_UNLIKELY);
+    }
+
+    if (flags & GATT_WRITE_FLAGS_RELIABLE_WRITE) {
+        BT_LOGE("%s, reliable write is not supported", __func__);
+        return BT_GATT_ERR(BT_ATT_ERR_UNLIKELY);
+    }
+
+    if (flags & BT_GATT_WRITE_FLAG_CMD) {
+        request_id = REQUEST_ID_NORSP;
+        ret = len;
+    } else {
+        request_id = MAKE_REQUEST_ID(element->handle, GATT_OPS_WRITE_REQUEST);
+        ret = -EINPROGRESS;
     }
 
     element = user_data->context;
@@ -195,9 +221,9 @@ static ssize_t write_value(struct bt_conn* conn, const struct bt_gatt_attr* attr
 
     get_le_addr_from_conn(conn, &addr);
 
-    if_gatts_on_received_element_write_request(&addr, GATT_OPS_WRITE_REQUEST, element->handle, (uint8_t*)buf, offset, len);
+    if_gatts_on_received_element_write_request(&addr, request_id, element->handle, (uint8_t*)buf, offset, len);
 
-    return len;
+    return ret;
 }
 
 static struct bt_gatt_attr* gatt_db_add(const struct bt_gatt_attr* pattern, size_t user_data_len)
@@ -891,7 +917,33 @@ bt_status_t bt_sal_gatt_server_cancel_connection(bt_controller_id_t id, bt_addre
 
 bt_status_t bt_sal_gatt_server_send_response(bt_controller_id_t id, bt_address_t* addr, uint32_t request_id, uint8_t* value, uint16_t length)
 {
-    return BT_STATUS_UNSUPPORTED;
+    struct bt_conn* conn;
+    uint16_t handle;
+    uint8_t op_type;
+    int err;
+    if (!addr || request_id == REQUEST_ID_NORSP) {
+        return BT_STATUS_PARM_INVALID;
+    }
+    conn = get_le_conn_from_addr(addr);
+    if (!conn) {
+        return BT_STATUS_NOT_FOUND;
+    }
+    handle = REQUEST_ID_HANDLE(request_id);
+    op_type = REQUEST_ID_OP_TYPE(request_id);
+    switch (op_type) {
+    case GATT_OPS_READ_REQUEST:
+        if (!value) {
+            return BT_STATUS_PARM_INVALID;
+        }
+        err = bt_gatt_send_read_rsp(conn, 0, handle, value, length);
+        break;
+    case GATT_OPS_WRITE_REQUEST:
+        err = bt_gatt_send_write_rsp(conn, 0, handle);
+        break;
+    default:
+        return BT_STATUS_UNSUPPORTED;
+    }
+    return (!err) ? BT_STATUS_SUCCESS : BT_STATUS_FAIL;
 }
 
 bt_status_t bt_sal_gatt_server_set_attr_value(bt_controller_id_t id, bt_address_t* addr, uint32_t request_id, uint8_t* value, uint16_t length)
