@@ -106,7 +106,6 @@ typedef struct {
     FtPromiseId pid;
     gattc_userdata_type_t userdata_type;
     FeatureInterfaceHandle interface;
-    bt_list_t* cached_services;
 } gattc_data_t;
 
 typedef struct {

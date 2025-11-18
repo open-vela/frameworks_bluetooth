@@ -1251,14 +1251,13 @@ void feature_free_service(ft_context_ref ft_ctx, system_bluetooth_ble_GattServic
 }
 
 static void discover_callback(bt_instance_t* ins, gatt_status_t status, gattc_handle_t conn_handle,
-    const gatt_service_t* service)
+    const gatt_service_t* service[], size_t count)
 {
     feature_bluetooth_gattc_info_t* gattc_info;
     gattc_data_t* data = NULL;
     bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)conn_handle;
     bt_instance_t* bluetooth_instance = gattc_remote->ins;
-    system_bluetooth_ble_GattService* feature_service;
-    FtArray* include_service_array;
+    FtArray* feature_service_array;
 
     FIND_INFO_BY_OBJECT(bluetooth_instance, conn_handle, gattc, gattc_info);
     if (!gattc_info) {
@@ -1275,68 +1274,55 @@ static void discover_callback(bt_instance_t* ins, gatt_status_t status, gattc_ha
     if (status != GATT_STATUS_SUCCESS) {
         FEATURE_LOG_ERROR("%s, get service failed, status: %d", __func__, status);
         FeaturePromiseReject(data->interface, data->pid, status, "gattc get service failed!");
-        bt_list_free(data->cached_services);
         bt_list_remove(gattc_info->userdata_list, data);
         return;
     }
 
     ft_context_ref ft_ctx = FeatureGetContext(data->interface);
 
+    feature_service_array = system_bluetooth_ble_malloc_GattService_struct_type_array();
+    feature_service_array->_size = count;
+    feature_service_array->_element = calloc(feature_service_array->_size, sizeof(system_bluetooth_ble_GattService*));
+
     // service == NULL indicates the end of reporting
-    if (service == NULL) {
-        bt_list_node_t* node;
-        FtArray* feature_service_array;
-        int index = 0;
-        bt_list_t* list = data->cached_services;
+    for (int index = 0; index < count; index++) {
+        system_bluetooth_ble_GattService* feature_service = feature_get_service_info(ft_ctx, service[index]);
 
-        feature_service_array = system_bluetooth_ble_malloc_GattService_struct_type_array();
-        feature_service_array->_size = bt_list_length(data->cached_services);
-        feature_service_array->_element = calloc(feature_service_array->_size, sizeof(system_bluetooth_ble_GattService*));
-
-        for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
-            system_bluetooth_ble_GattService* service_node = bt_list_node(node);
-            ((system_bluetooth_ble_GattService**)feature_service_array->_element)[index++] = service_node;
+        FtArray* include_service_array = system_bluetooth_ble_malloc_GattService_struct_type_array();
+        include_service_array->_size = service[index]->included_service_count;
+        include_service_array->_element = calloc(service[index]->included_service_count, sizeof(system_bluetooth_ble_GattService*));
+        for (uint8_t i = 0; i < service[index]->included_service_count; i++) {
+            ((system_bluetooth_ble_GattService**)include_service_array->_element)[i] = feature_get_include_service_info(ft_ctx, &service[index]->included_services[i]);
+            // GattService nests up to one level, so any inner GattService does not nest further.
+            ((system_bluetooth_ble_GattService**)include_service_array->_element)[i]->includeServices = NULL;
         }
 
-        FEATURE_LOG_INFO("%s, get service success", __func__);
-        FeaturePromiseResolve(data->interface, data->pid, feature_service_array);
+        feature_service->includeServices = include_service_array;
 
-        // for every outer feature_service in feature_service_array
-        for (int k = 0; k < feature_service_array->_size; k++) {
-            system_bluetooth_ble_GattService* feature_service_element = ((system_bluetooth_ble_GattService**)feature_service_array->_element)[k];
-            int included_service_count = feature_service_element->includeServices->_size;
+        ((system_bluetooth_ble_GattService**)feature_service_array->_element)[index] = feature_service;
+    }
 
-            for (int i = 0; i < included_service_count; i++) {
-                system_bluetooth_ble_GattService* feature_include_service;
-                feature_include_service = ((system_bluetooth_ble_GattService**)feature_service_element->includeServices->_element)[i];
-                feature_free_service(ft_ctx, feature_include_service);
-            }
+    FEATURE_LOG_INFO("%s, get service success", __func__);
+    FeaturePromiseResolve(data->interface, data->pid, feature_service_array);
 
-            feature_free_service(ft_ctx, feature_service_element);
+    // for every outer feature_service in feature_service_array
+    for (int k = 0; k < feature_service_array->_size; k++) {
+        system_bluetooth_ble_GattService* feature_service_element = ((system_bluetooth_ble_GattService**)feature_service_array->_element)[k];
+        int included_service_count = feature_service_element->includeServices->_size;
+
+        for (int i = 0; i < included_service_count; i++) {
+            system_bluetooth_ble_GattService* feature_include_service;
+            feature_include_service = ((system_bluetooth_ble_GattService**)feature_service_element->includeServices->_element)[i];
+            feature_free_service(ft_ctx, feature_include_service);
         }
 
-        FeatureFreeValue(feature_service_array);
-
-        bt_list_free(data->cached_services);
-        bt_list_remove(gattc_info->userdata_list, data);
-
-        return;
+        feature_free_service(ft_ctx, feature_service_element);
     }
 
-    feature_service = feature_get_service_info(ft_ctx, service);
+    FeatureFreeValue(feature_service_array);
+    bt_list_remove(gattc_info->userdata_list, data);
 
-    include_service_array = system_bluetooth_ble_malloc_GattService_struct_type_array();
-    include_service_array->_size = service->included_service_count;
-    include_service_array->_element = calloc(service->included_service_count, sizeof(system_bluetooth_ble_GattService*));
-    for (uint8_t i = 0; i < service->included_service_count; i++) {
-        ((system_bluetooth_ble_GattService**)include_service_array->_element)[i] = feature_get_include_service_info(ft_ctx, &service->included_services[i]);
-        // GattService nests up to one level, so any inner GattService does not nest further.
-        ((system_bluetooth_ble_GattService**)include_service_array->_element)[i]->includeServices = NULL;
-    }
-
-    feature_service->includeServices = include_service_array;
-
-    bt_list_add_tail(data->cached_services, feature_service);
+    return;
 }
 
 static void read_char_callback(bt_instance_t* ins, gatt_status_t status, gattc_handle_t conn_handle,
@@ -1873,7 +1859,6 @@ static void gattc_get_service_cb(bt_instance_t* ins, bt_status_t status, void* u
 error:
     FEATURE_LOG_ERROR("%s, get service failed, status: %d", __func__, status);
     FeaturePromiseReject(data->interface, data->pid, status, "gattc get service failed!");
-    bt_list_free(data->cached_services);
     bt_list_remove(gattc_info->userdata_list, data);
 }
 #endif
@@ -1908,7 +1893,6 @@ void system_bluetooth_ble_GattClient_interface_gattc_getServices(FeatureInterfac
     data->interface = handle;
     data->pid = pid;
     data->userdata_type = FEATURE_GATTC_DISCOVERY;
-    data->cached_services = bt_list_new(NULL);
     bt_list_add_tail(gattc_info->userdata_list, data);
 
     status = bt_gattc_feature_get_service_async(gattc_info->gattc->handle, gattc_get_service_cb, data);
@@ -1921,7 +1905,6 @@ void system_bluetooth_ble_GattClient_interface_gattc_getServices(FeatureInterfac
 
 error:
     if (data) {
-        bt_list_free(data->cached_services);
         bt_list_remove(gattc_info->userdata_list, data);
     }
 
