@@ -173,7 +173,7 @@ static int remove_call(bt_hfp_hf_connection_t* sal_conn, bt_hfp_hf_call_info_t* 
     return 0;
 }
 
-static __attribute__((unused)) bt_hfp_hf_connection_t* find_connection_by_call_context(
+static bt_hfp_hf_connection_t* find_connection_by_call_context(
     struct bt_hfp_hf_call* z_context,
     bt_hfp_hf_call_info_t** call_info)
 {
@@ -379,6 +379,20 @@ static void zblue_on_incoming_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_call* 
     hfp_hf_on_call_setup_state_changed(&sal_conn->addr, HFP_CALLSETUP_INCOMING);
 }
 
+static void zblue_on_call_reject(struct bt_hfp_hf_call* call)
+{
+    bt_hfp_hf_call_info_t* sal_call = NULL;
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_call_context(call, &sal_call);
+
+    if (!sal_conn || !sal_call) {
+        BT_LOGW("%s, Failed to find call to reject", __func__);
+        return;
+    }
+
+    remove_call(sal_conn, sal_call);
+    hfp_hf_on_call_setup_state_changed(&sal_conn->addr, HFP_CALLSETUP_NONE);
+}
+
 static void zblue_on_subscriber_number(struct bt_hfp_hf* hf, const char* number, uint8_t type, uint8_t service)
 {
     bt_address_t* bd_addr = zalloc(sizeof(bt_address_t));
@@ -483,7 +497,7 @@ static struct bt_hfp_hf_cb hf_callbacks = {
     .incoming = zblue_on_incoming_call,
     .incoming_held = NULL,
     .accept = NULL,
-    .reject = NULL,
+    .reject = zblue_on_call_reject,
     .terminate = NULL,
     .held = NULL,
     .retrieve = NULL,
