@@ -43,15 +43,7 @@ static void device_status_reply(bt_instance_t* ins, bt_message_packet_t* packet,
 {
     bt_status_cb_t ret_cb = (bt_status_cb_t)cb;
 
-    if (!ret_cb)
-        return;
-
-    if (!packet) {
-        ret_cb(ins, BT_STATUS_UNHANDLED, userdata);
-        return;
-    }
-
-    ret_cb(ins, packet->devs_r.status, userdata);
+    HANDLE_BT_ASTNC_CALLBACK(ret_cb, ins, packet, devs_r, userdata);
 }
 
 static void device_bool_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
