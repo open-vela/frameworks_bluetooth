@@ -82,7 +82,7 @@ bt_status_t BTSYMBOLS(bt_adapter_start_limited_discovery)(bt_instance_t* ins, ui
     return adapter_start_discovery(timeout, true);
 }
 
-bt_status_t BTSYMBOLS(bt_adapter_set_debug_mode)(bt_instance_t* ins, uint8_t mode, uint8_t operation)
+bt_status_t BTSYMBOLS(bt_adapter_set_debug_mode)(bt_instance_t* ins, bt_debug_mode_t mode, uint8_t operation)
 {
     return adapter_set_debug_mode(mode, operation);
 }
