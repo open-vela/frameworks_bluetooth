@@ -75,8 +75,10 @@ extern void z_sys_init(void);
 
 static void zblue_on_connected(struct bt_conn* conn, uint8_t err);
 static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason);
+#ifdef CONFIG_BT_SMP
 static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level, enum bt_security_err err);
 static void zblue_on_pairing_complete_ctkd(struct bt_conn* conn, bool is_link_key);
+#endif
 static void zblue_on_pairing_complete(struct bt_conn* conn, bool bonded);
 static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err reason);
 static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer);
@@ -315,6 +317,7 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
 #endif
 }
 
+#ifdef CONFIG_BT_SMP
 static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
     enum bt_security_err err)
 {
@@ -355,6 +358,7 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
 
     adapter_on_encryption_state_changed(&addr, encrypted, BT_TRANSPORT_BLE);
 }
+#endif
 
 static void zblue_on_param_updated(struct bt_conn* conn, uint16_t interval, uint16_t latency, uint16_t timeout)
 {
@@ -461,6 +465,7 @@ static void zblue_on_phy_updated(struct bt_conn* conn, struct bt_conn_le_phy_inf
 
 static void zblue_on_pairing_complete_ctkd(struct bt_conn* conn, bool is_link_key)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     bt_address_t addr;
     const bt_addr_t* dst;
 
@@ -478,6 +483,7 @@ static void zblue_on_pairing_complete_ctkd(struct bt_conn* conn, bool is_link_ke
     memcpy(addr.addr, dst->val, sizeof(addr.addr));
 
     adapter_on_bond_state_changed(&addr, BOND_STATE_BONDED, BT_TRANSPORT_BLE, BT_STATUS_SUCCESS, true);
+#endif
 }
 
 static void zblue_on_pairing_complete(struct bt_conn* conn, bool bonded)
@@ -1181,15 +1187,18 @@ bt_status_t bt_sal_le_create_bond(bt_controller_id_t id, bt_address_t* addr, ble
 #endif
 }
 
+#ifdef CONFIG_BT_SMP
 static void STACK_CALL(set_security_level)(void* args)
 {
     sal_adapter_req_t* req = args;
 
     g_security_level = req->adpt.security_level;
 }
+#endif
 
 bt_status_t bt_sal_le_set_security_level(bt_controller_id_t id, uint8_t level)
 {
+#ifdef CONFIG_BT_SMP
     sal_adapter_req_t* req;
 
     req = sal_adapter_req(id, NULL, STACK_CALL(set_security_level));
@@ -1201,15 +1210,18 @@ bt_status_t bt_sal_le_set_security_level(bt_controller_id_t id, uint8_t level)
     req->adpt.security_level = level;
 
     return sal_send_req(req);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
+#ifdef CONFIG_BT_SMP
 static void zblue_convert_le_addr(bt_address_t* addr, ble_addr_type_t type, bt_addr_le_t* le_addr)
 {
     le_addr->type = zblue_convert_addr_type(type);
     memcpy(le_addr->a.val, addr, sizeof(addr->addr));
 }
 
-#ifdef CONFIG_BT_SMP
 static void STACK_CALL(remove_bond)(void* args)
 {
     sal_adapter_req_t* req = args;
