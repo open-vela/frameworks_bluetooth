@@ -131,6 +131,7 @@ typedef struct adapter_state_machine {
 #define ADPATER_STM_DEBUG 1
 #if ADPATER_STM_DEBUG
 
+#ifdef CONFIG_BLUETOOTH_SERVICE_LOG_LEVEL
 static const char* event_to_string(uint16_t event)
 {
     switch (event) {
@@ -161,6 +162,7 @@ static const char* event_to_string(uint16_t event)
         return "unknown";
     }
 }
+#endif
 
 #define ADAPTER_DBG_ENTER(__sm)                           \
     BT_LOGD("Enter, PrevState=%s ---> NewState=%s",       \

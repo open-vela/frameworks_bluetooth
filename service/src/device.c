@@ -422,8 +422,8 @@ static void device_get_remote_uuids(bt_device_t* device, remote_device_propertie
     uint8_t count_uuid16 = 0;
     uint8_t count_uuid128 = 0;
     uint8_t* uuids_prop = prop->uuids;
-    uint8_t* p;
-    uint8_t* q;
+    uint8_t* p = NULL;
+    uint8_t* q = NULL;
     bt_uuid_t bt_uuid128_base = {
         .type = BT_UUID128_TYPE,
         .val.u128 = { 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,

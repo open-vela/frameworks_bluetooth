@@ -452,11 +452,13 @@ static int if_gatts_dump(void)
         int t_id = 0;
 
         BT_LOGI("GATT Service[%d]: ID:0x%04x", s_id++, service->srv_id);
+        UNUSED(s_id);
         for (tnode = bt_list_head(tlist); tnode != NULL; tnode = bt_list_next(tlist, tnode)) {
             service_table_t* table = (service_table_t*)bt_list_node(tnode);
             gatt_element_t* element = table->elements;
 
             BT_LOGI("\tAttribute Table[%d]: Handle:0x%04x~0x%04x, Num:%d", t_id++, table->start_handle, table->end_handle, table->element_size);
+            UNUSED(t_id);
             for (int i = 0; i < table->element_size; i++, element++) {
                 bt_uuid_to_string(&element->uuid, uuid_str, 40);
                 BT_LOGI("\t\t>[0x%04x][Type:%d][Prop:%04x][UUID:%s]", element->handle, element->type, element->properties,
