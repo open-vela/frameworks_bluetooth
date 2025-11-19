@@ -334,11 +334,11 @@ if(CONFIG_BLUETOOTH)
         OR CONFIG_BLUETOOTH_BLE_AUDIO))
       list(REMOVE_ITEM CSRCS
            ${BLUETOOTH_DIR}/service/profiles/system/media_system.c)
+    else()
+      file(GLOB APPEND_FILES
+           ${BLUETOOTH_DIR}/service/profiles/audio_interface/*.c)
+      list(APPEND CSRCS ${APPEND_FILES})
     endif()
-
-    file(GLOB APPEND_FILES
-         ${BLUETOOTH_DIR}/service/profiles/audio_interface/*.c)
-    list(APPEND CSRCS ${APPEND_FILES})
 
     if(CONFIG_BLUETOOTH_GATT_CLIENT)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/profiles/gatt/gattc_event.c)

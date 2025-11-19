@@ -264,11 +264,12 @@ ifeq ($(CONFIG_BLUETOOTH_A2DP),)
 endif #CONFIG_BLUETOOTH_A2DP
 ifeq ($(findstring y, $(CONFIG_BLUETOOTH_A2DP)_$(CONFIG_BLUETOOTH_HFP_AG)_$(CONFIG_BLUETOOTH_HFP_HF)_$(CONFIG_BLUETOOTH_BLE_AUDIO)), )
 	CSRCS := $(filter-out $(wildcard service/profiles/system/media_system.c),$(wildcard $(CSRCS)))
+else
+	CSRCS += service/profiles/audio_interface/*.c
 endif #CONFIG_BLUETOOTH_A2DP/CONFIG_BLUETOOTH_HFP_AG/CONFIG_BLUETOOTH_HFP_HF
 ifeq ($(CONFIG_MICO_MEDIA_MAIN_PLAYER),y)
 	CFLAGS += ${INCDIR_PREFIX}${TOPDIR}/../vendor/xiaomi/miai/mediaplayer/include
 endif #CONFIG_MICO_MEDIA_MAIN_PLAYER
-	CSRCS += service/profiles/audio_interface/*.c
 ifeq ($(CONFIG_BLUETOOTH_GATT_CLIENT), y)
 	CSRCS += service/profiles/gatt/gattc_event.c
 	CSRCS += service/profiles/gatt/gattc_service.c
