@@ -465,6 +465,7 @@ static void bonded_device_loaded(void* data, uint16_t length, uint16_t items)
             BT_LOGD("BONDED DEVICE[%d], Name:[%s] Addr:[%s] LinkKey: [%02X] | [%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X]",
                 i, remote->name, addr_str, remote->link_key_type, lk[0], lk[1], lk[2], lk[3], lk[4], lk[5], lk[6],
                 lk[7], lk[8], lk[9], lk[10], lk[11], lk[12], lk[13], lk[14], lk[15]);
+            UNUSED(lk);
             bt_sal_set_bonded_devices(PRIMARY_ADAPTER, remote, 1);
             remote++;
         }
@@ -510,6 +511,7 @@ static void le_bonded_device_loaded(void* data, uint16_t length, uint16_t items)
             BT_LOGD("LE BOND DEVICE[%d], Addr:[%s] Atype:[%d] LTK: [%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X]",
                 i, addr_str, remote->addr_type, ltk[0], ltk[1], ltk[2], ltk[3], ltk[4], ltk[5], ltk[6], ltk[7],
                 ltk[8], ltk[9], ltk[10], ltk[11], ltk[12], ltk[13], ltk[14], ltk[15]);
+            UNUSED(ltk);
             remote++;
         }
 
@@ -783,6 +785,7 @@ static void process_link_key_update_evt(bt_address_t* addr, bt_128key_t link_key
     BT_LOGI("DEVICE[%s] LinkKey: %02X | [%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X]",
         addr_str, type, lk[0], lk[1], lk[2], lk[3], lk[4], lk[5], lk[6],
         lk[7], lk[8], lk[9], lk[10], lk[11], lk[12], lk[13], lk[14], lk[15]);
+    UNUSED(lk);
     adapter_unlock();
 }
 
@@ -912,10 +915,12 @@ static void process_connection_state_changed_evt(bt_address_t* addr, acl_state_p
 {
     bt_device_t* device;
     adapter_service_t* adapter = &g_adapter_service;
+    const char* conn_str = acl_connection_str(acl_params->connection_state);
 
     BT_ADDR_LOG("ACL connection state changed, addr:%s, link:%d, state:%s, status:%d, reason:%" PRIu32 "", addr,
-        acl_params->transport, acl_connection_str(acl_params->connection_state),
+        acl_params->transport, conn_str,
         acl_params->status, acl_params->hci_reason_code);
+    UNUSED(conn_str);
 
     adapter_lock();
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
@@ -1163,6 +1168,7 @@ static void process_le_bonded_device_update_evt(remote_device_le_properties_t* p
         BT_LOGD("LE BOND DEVICE[%d]: Addr:[%s] Atype:[%d] LTK: [%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X]",
             i, addr_str, prop->addr_type, ltk[0], ltk[1], ltk[2], ltk[3], ltk[4], ltk[5], ltk[6], ltk[7],
             ltk[8], ltk[9], ltk[10], ltk[11], ltk[12], ltk[13], ltk[14], ltk[15]);
+        UNUSED(ltk);
         prop++;
     }
 
