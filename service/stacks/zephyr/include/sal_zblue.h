@@ -19,6 +19,7 @@
 #include "bt_addr.h"
 #include "bt_status.h"
 
+#include <zephyr/bluetooth/addr.h>
 #include <zephyr/bluetooth/conn.h>
 
 #define AVDTP_RTP_HEADER_LEN 12
@@ -27,4 +28,3 @@
 bt_status_t bt_sal_get_remote_address(struct bt_conn* conn, bt_address_t* addr);
 
 #endif
-
