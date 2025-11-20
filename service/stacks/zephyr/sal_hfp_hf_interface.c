@@ -538,6 +538,17 @@ static void zblue_on_vgs(struct bt_hfp_hf *hf, uint8_t gain)
     hfp_hf_on_volume_changed(&conn->addr, HFP_VOLUME_TYPE_SPK, gain);
 }
 
+static void zblue_on_voice_recognition(struct bt_hfp_hf *hf, bool activate)
+{
+    bt_hfp_hf_connection_t* conn = find_connection_by_hf(hf);
+    if (!conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return;
+    }
+
+    hfp_hf_on_voice_recognition_state_changed(&conn->addr, activate);
+}
+
 static void zblue_on_clip(struct bt_hfp_hf_call *call, char *number, uint8_t type)
 {
     bt_hfp_hf_call_info_t* sal_call = NULL;
@@ -680,7 +691,7 @@ static struct bt_hfp_hf_cb hf_callbacks = {
     .codec_negotiate = zblue_on_codec_negotiate,
     .ecnr_turn_off = NULL,
     .call_waiting = NULL,
-    .voice_recognition = NULL,
+    .voice_recognition = zblue_on_voice_recognition,
     .vre_state = NULL,
     .textual_representation = NULL,
     .request_phone_number = NULL,
