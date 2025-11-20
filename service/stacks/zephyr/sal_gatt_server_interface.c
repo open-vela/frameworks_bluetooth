@@ -43,10 +43,6 @@
 #define CONFIG_GATT_SERVER_MAX_ATTRIBUTES 30
 #endif
 
-#ifndef CONFIG_GATT_SERVER_MAX_CHARSIZE
-#define CONFIG_GATT_SERVER_MAX_CHARSIZE 512
-#endif
-
 #define NEXT_DB_ATTR(attr) (attr + 1)
 #define LAST_DB_ATTR (server_db + (attr_count - 1))
 
@@ -98,13 +94,6 @@ struct add_characteristic {
     uint32_t attr_length;
     uint8_t* attr_data;
     gatt_element_t* element;
-};
-
-struct gatt_value {
-    void* context;
-    uint8_t flags[1];
-    uint16_t len;
-    uint8_t data[0];
 };
 
 struct gatt_ccc_wrapper {
@@ -165,16 +154,13 @@ static ssize_t read_value(struct bt_conn* conn, const struct bt_gatt_attr* attr,
     bt_address_t addr;
     gatt_element_t* element;
     uint32_t request_id;
-    struct gatt_value* user_data = attr->user_data;
 
-    if (!user_data || !user_data->context) {
-        BT_LOGE("%s, user_data or context is NULL", __func__);
+    if (!attr || !attr->user_data) {
+        BT_LOGE("%s, user_data is NULL", __func__);
         return BT_GATT_ERR(BT_ATT_ERR_UNLIKELY);
     }
 
-    BT_LOGD("%s, handle:0x%0x, user_data 0x%p, user_data_len:%d", __func__, attr->handle, user_data, user_data->len);
-
-    element = user_data->context;
+    element = (gatt_element_t*)attr->user_data;
 
     get_le_addr_from_conn(conn, &addr);
 
@@ -191,12 +177,13 @@ static ssize_t write_value(struct bt_conn* conn, const struct bt_gatt_attr* attr
     gatt_element_t* element;
     uint32_t request_id;
     int ret;
-    struct gatt_value* user_data = attr->user_data;
 
-    if (!user_data || !user_data->context) {
-        BT_LOGE("%s, user_data or context is NULL", __func__);
+    if (!attr || !attr->user_data) {
+        BT_LOGE("%s, user_data is NULL", __func__);
         return BT_GATT_ERR(BT_ATT_ERR_UNLIKELY);
     }
+
+    element = (gatt_element_t*)attr->user_data;
 
     if (flags & GATT_WRITE_FLAGS_RELIABLE_WRITE) {
         BT_LOGE("%s, reliable write is not supported", __func__);
@@ -210,14 +197,6 @@ static ssize_t write_value(struct bt_conn* conn, const struct bt_gatt_attr* attr
         request_id = MAKE_REQUEST_ID(element->handle, GATT_OPS_WRITE_REQUEST);
         ret = -EINPROGRESS;
     }
-
-    element = user_data->context;
-
-    BT_LOGD("%s", __func__);
-
-    /* FIXME: length check */
-    memcpy(user_data->data + offset, buf, len);
-    user_data->len = offset + len;
 
     get_le_addr_from_conn(conn, &addr);
 
@@ -329,8 +308,6 @@ static int alloc_characteristic(struct add_characteristic* ch)
 {
     struct bt_gatt_attr *attr_chrc, *attr_value;
     struct bt_gatt_chrc* chrc_data;
-    struct gatt_value* user_data;
-    size_t total_size;
 
     /* Add Characteristic Declaration */
     attr_chrc = gatt_db_add(&(struct bt_gatt_attr)BT_GATT_ATTRIBUTE(BT_UUID_GATT_CHRC, BT_GATT_PERM_READ, bt_gatt_attr_read_chrc, NULL, (&(struct bt_gatt_chrc) {})), sizeof(*chrc_data));
@@ -343,29 +320,11 @@ static int alloc_characteristic(struct add_characteristic* ch)
         return -EINVAL;
     }
 
-    total_size = sizeof(*user_data) + (ch->attr_length > 0 ? ch->attr_length : CONFIG_GATT_SERVER_MAX_CHARSIZE);
-
-    user_data = zalloc(total_size);
-    if (!user_data) {
-        BT_LOGE("%s, user_data allocation failed", __func__);
-        return -ENOMEM;
-    }
-
-    if (ch->attr_length > 0 && ch->attr_data) {
-        memcpy(user_data->data, ch->attr_data, ch->attr_length);
-        user_data->len = ch->attr_length;
-    }
-
-    user_data->context = ch->element;
-
-    attr_value = gatt_db_add(&(struct bt_gatt_attr)BT_GATT_ATTRIBUTE(ch->uuid, ch->permissions & GATT_PERM_MASK, read_value, write_value, user_data), total_size);
+    attr_value = gatt_db_add(&(struct bt_gatt_attr)BT_GATT_ATTRIBUTE(ch->uuid, ch->permissions & GATT_PERM_MASK, read_value, write_value, ch->element), 0);
     if (!attr_value) {
         BT_LOGE("%s, attr_value allocation failed", __func__);
-        free(user_data);
         return -EINVAL;
     }
-
-    free(user_data);
 
     chrc_data = attr_chrc->user_data;
     chrc_data->properties = ch->properties;
@@ -557,22 +516,6 @@ static void add_descriptor(gatt_element_t* element)
         BT_LOGE("%s, alloc descriptor fail", __func__);
         return;
     }
-}
-
-static void set_value(uint16_t attr_id, uint8_t* val, uint16_t len)
-{
-    struct bt_gatt_attr* attr = &server_db[attr_id - server_db[0].handle];
-    struct gatt_value* value;
-
-    if (!bt_uuid_cmp(attr->uuid, BT_UUID_GATT_CCC)) {
-        BT_LOGE("%s cccd not set", __func__);
-        return;
-    }
-
-    value = attr->user_data;
-
-    memcpy(value->data, val, len);
-    value->len = len;
 }
 
 static void zblue_gatts_mtu_updated_callback(struct bt_conn* conn, uint16_t tx, uint16_t rx)
@@ -946,17 +889,6 @@ bt_status_t bt_sal_gatt_server_send_response(bt_controller_id_t id, bt_address_t
     return (!err) ? BT_STATUS_SUCCESS : BT_STATUS_FAIL;
 }
 
-bt_status_t bt_sal_gatt_server_set_attr_value(bt_controller_id_t id, bt_address_t* addr, uint32_t request_id, uint8_t* value, uint16_t length)
-{
-    set_value(request_id, value, length);
-    return BT_STATUS_SUCCESS;
-}
-
-bt_status_t bt_sal_gatt_server_get_attr_value(bt_controller_id_t id, bt_address_t* addr, uint32_t request_id, uint8_t* value, uint16_t length)
-{
-    return BT_STATUS_UNSUPPORTED;
-}
-
 static void send_notification_result(struct bt_conn* conn, void* user_data)
 {
     gatt_element_t* element = (gatt_element_t*)user_data;
@@ -1031,23 +963,16 @@ static void send_indication_destory(struct bt_gatt_indicate_params* params)
 
 static void send_indication_result(struct bt_conn* conn, struct bt_gatt_indicate_params* params, uint8_t err)
 {
-    struct gatt_value* value;
     gatt_element_t* element;
     bt_address_t addr;
     bt_status_t status = GATT_STATUS_SUCCESS;
 
-    if (!params || !params->attr) {
+    if (!params || !params->attr || !params->attr->user_data) {
         BT_LOGE("%s, params or attr is NULL", __func__);
         return;
     }
 
-    value = (struct gatt_value*)params->attr->user_data;
-    if (!value || !value->context) {
-        BT_LOGE("%s, value or context is NULL", __func__);
-        return;
-    }
-
-    element = value->context;
+    element = (gatt_element_t*)params->attr->user_data;
 
     if (!element) {
         BT_LOGE("%s, element is NULL", __func__);
