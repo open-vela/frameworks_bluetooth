@@ -566,6 +566,17 @@ static void zblue_on_voice_recognition(struct bt_hfp_hf *hf, bool activate)
     hfp_hf_on_voice_recognition_state_changed(&conn->addr, activate);
 }
 
+static void zblue_on_ring_indication(struct bt_hfp_hf_call *call)
+{
+    bt_hfp_hf_connection_t* conn = find_connection_by_call_context(call, NULL);
+    if (!conn) {
+        BT_LOGW("%s, Failed to find connection for ring", __func__);
+        return;
+    }
+
+    hfp_hf_on_ring_active_state_changed(&conn->addr, true, HFP_IN_BAND_RINGTONE_NOT_PROVIDED);
+}
+
 static void zblue_on_clip(struct bt_hfp_hf_call *call, char *number, uint8_t type)
 {
     bt_hfp_hf_call_info_t* sal_call = NULL;
@@ -698,7 +709,7 @@ static struct bt_hfp_hf_cb hf_callbacks = {
     .signal = NULL,
     .roam = NULL,
     .battery = NULL,
-    .ring_indication = NULL,
+    .ring_indication = zblue_on_ring_indication,
     .dialing = NULL,
     .clip = zblue_on_clip,
     .vgm = zblue_on_vgm,
