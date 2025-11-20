@@ -1098,12 +1098,36 @@ bt_status_t bt_sal_hfp_hf_set_volume(bt_address_t* addr, hfp_volume_type_t type,
 
 bt_status_t bt_sal_hfp_hf_start_voice_recognition(bt_address_t* addr)
 {
-    return BT_STATUS_UNSUPPORTED;
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    int ret = Z_API(bt_hfp_hf_voice_recognition)(sal_conn->hf, true);
+    if (ret == -ENOTSUP) {
+        return BT_STATUS_UNSUPPORTED;
+    }
+
+    SAL_CHECK_RET(ret, 0);
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_hf_stop_voice_recognition(bt_address_t* addr)
 {
-    return BT_STATUS_UNSUPPORTED;
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    int ret = Z_API(bt_hfp_hf_voice_recognition)(sal_conn->hf, false);
+    if (ret == -ENOTSUP) {
+        return BT_STATUS_UNSUPPORTED;
+    }
+
+    SAL_CHECK_RET(ret, 0);
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_hf_send_battery_level(bt_address_t* addr, uint8_t value)
