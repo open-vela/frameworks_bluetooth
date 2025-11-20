@@ -928,7 +928,27 @@ bt_status_t bt_sal_hfp_hf_hold_call(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_hf_hangup_call(bt_address_t* addr)
 {
-    return BT_STATUS_UNSUPPORTED;
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return BT_STATUS_FAIL;
+    }
+
+    bt_hfp_hf_call_info_t* target = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_ACTIVE);
+    if (!target) {
+        target = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_DIALING);
+    }
+    if (!target) {
+        target = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_ALERTING);
+    }
+
+    if (!target) {
+        BT_LOGE("%s, No active/dialing/alerting call to hang up", __func__);
+        return BT_STATUS_FAIL;
+    }
+
+    SAL_CHECK_RET(Z_API(bt_hfp_hf_terminate)(target->context), 0);
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_hf_dial_number(bt_address_t* addr, const char* number)
