@@ -1067,7 +1067,33 @@ bt_status_t bt_sal_hfp_hf_get_current_calls(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_hf_set_volume(bt_address_t* addr, hfp_volume_type_t type, uint8_t volume)
 {
-    return BT_STATUS_UNSUPPORTED;
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    uint8_t gain = volume > 15 ? 15 : volume;
+
+    int ret;
+    switch (type) {
+    case HFP_VOLUME_TYPE_MIC:
+        ret = Z_API(bt_hfp_hf_vgm)(sal_conn->hf, gain);
+        break;
+    case HFP_VOLUME_TYPE_SPK:
+        ret = Z_API(bt_hfp_hf_vgs)(sal_conn->hf, gain);
+        break;
+    default:
+        BT_LOGE("%s, Unknown volume type: %d", __func__, type);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    if (ret == -ENOTSUP) {
+        return BT_STATUS_UNSUPPORTED;
+    }
+
+    SAL_CHECK_RET(ret, 0);
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_hf_start_voice_recognition(bt_address_t* addr)
