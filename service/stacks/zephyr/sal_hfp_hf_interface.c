@@ -1132,7 +1132,21 @@ bt_status_t bt_sal_hfp_hf_stop_voice_recognition(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_hf_send_battery_level(bt_address_t* addr, uint8_t value)
 {
-    return BT_STATUS_UNSUPPORTED;
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    uint8_t level = (value > 100) ? 100 : value;
+
+    int ret = Z_API(bt_hfp_hf_battery)(sal_conn->hf, level);
+    if (ret == -ENOTSUP) {
+        return BT_STATUS_UNSUPPORTED;
+    }
+
+    SAL_CHECK_RET(ret, 0);
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_hf_send_at_cmd(bt_address_t* addr, const char* cmd, uint16_t len)
