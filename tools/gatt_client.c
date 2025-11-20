@@ -169,7 +169,7 @@ static int discover_services_cmd(void* handle, int argc, char* argv[])
 
     if (argc >= 2) {
         uint16_t uuid_val = (uint16_t)strtol(argv[1], NULL, 16);
-        uuid = BT_UUID_DECLARE_16(uuid_val);
+        uuid = BT_FW_UUID_DECLARE_16(uuid_val);
         uuid_ptr = &uuid;
     }
 
