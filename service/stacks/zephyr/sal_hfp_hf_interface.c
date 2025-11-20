@@ -516,6 +516,28 @@ static void zblue_on_subscriber_number(struct bt_hfp_hf* hf, const char* number,
     hfp_hf_on_subscriber_number_response(bd_addr, number, fw_service);
 }
 
+static void zblue_on_vgm(struct bt_hfp_hf *hf, uint8_t gain)
+{
+    bt_hfp_hf_connection_t* conn = find_connection_by_hf(hf);
+    if (!conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return;
+    }
+
+    hfp_hf_on_volume_changed(&conn->addr, HFP_VOLUME_TYPE_MIC, gain);
+}
+
+static void zblue_on_vgs(struct bt_hfp_hf *hf, uint8_t gain)
+{
+    bt_hfp_hf_connection_t* conn = find_connection_by_hf(hf);
+    if (!conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return;
+    }
+
+    hfp_hf_on_volume_changed(&conn->addr, HFP_VOLUME_TYPE_SPK, gain);
+}
+
 static void zblue_on_clip(struct bt_hfp_hf_call *call, char *number, uint8_t type)
 {
     bt_hfp_hf_call_info_t* sal_call = NULL;
@@ -620,8 +642,8 @@ static struct bt_hfp_hf_cb hf_callbacks = {
     .ring_indication = NULL,
     .dialing = NULL,
     .clip = zblue_on_clip,
-    .vgm = NULL,
-    .vgs = NULL,
+    .vgm = zblue_on_vgm,
+    .vgs = zblue_on_vgs,
     .inband_ring = NULL,
     .operator = NULL,
     .codec_negotiate = NULL,
