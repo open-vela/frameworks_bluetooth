@@ -103,6 +103,10 @@ static void bt_socket_client_callback_process(bt_instance_t* ins, bt_message_pac
         { BT_AVRCP_TARGET_CALLBACK_START, BT_AVRCP_TARGET_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_avrcp_target_callback },
         { BT_IPC_CODE_CALLBACK_AVRCP_TG_BEGIN, BT_IPC_CODE_CALLBACK_AVRCP_TG_END, (bt_socket_callback_t)bt_socket_client_avrcp_target_callback },
 #endif
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+        { BT_AVRCP_CONTROL_CALLBACK_START, BT_AVRCP_CONTROL_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_avrcp_control_callback },
+        { BT_IPC_CODE_CALLBACK_AVRCP_CT_BEGIN, BT_IPC_CODE_CALLBACK_AVRCP_CT_END, (bt_socket_callback_t)bt_socket_client_avrcp_control_callback },
+#endif
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
         { BT_ADVERTISER_CALLBACK_START, BT_ADVERTISER_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_advertiser_callback },
         { BT_IPC_CODE_CALLBACK_BLE_ADVERTISER_BEGIN, BT_IPC_CODE_CALLBACK_BLE_ADVERTISER_END, (bt_socket_callback_t)bt_socket_client_advertiser_callback },
