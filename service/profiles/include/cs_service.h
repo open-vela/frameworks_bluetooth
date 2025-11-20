@@ -558,9 +558,9 @@ void cs_service_notify_started_cb(bt_address_t* addr, uint8_t method);
 
 void cs_service_notify_stopped_cb(bt_address_t* addr, uint8_t reason, uint8_t method);
 
-void cs_service_notify_result_cb(bt_address_t* addr, uint8_t centimeter, uint8_t errorCentimeter,
-    uint8_t azimuthAngle, uint8_t errorAzimuthAngle, uint8_t altitudeAngle, uint8_t errorAltitudeAngle,
-    uint16_t elapsedRealtimeNanos, uint8_t confidenceLevel, uint32_t delaySpreadMeters,
-    uint8_t detectedAttackLevel, uint32_t velocityMetersPerSecond, uint8_t method);
+void cs_service_notify_result_cb(bt_address_t* addr, uint8_t centimeter, uint8_t error_centimeter,
+    uint8_t azimuth_angle, uint8_t errorazimuth_angle, uint8_t altitude_angle, uint8_t erroraltitude_angle,
+    uint16_t elapsed_realtime_nanos, uint8_t confidence_level, uint32_t delay_spread_meters,
+    uint8_t detected_attack_level, uint32_t velocity_meters_per_second, uint8_t method);
 
 #endif /* __CS_SERVICE_H__ */
