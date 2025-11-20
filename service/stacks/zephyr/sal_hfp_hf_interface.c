@@ -516,6 +516,23 @@ static void zblue_on_subscriber_number(struct bt_hfp_hf* hf, const char* number,
     hfp_hf_on_subscriber_number_response(bd_addr, number, fw_service);
 }
 
+static void zblue_on_clip(struct bt_hfp_hf_call *call, char *number, uint8_t type)
+{
+    bt_hfp_hf_call_info_t* sal_call = NULL;
+    bt_hfp_hf_connection_t* conn = find_connection_by_call_context(call, &sal_call);
+    if (!conn) {
+        BT_LOGE("%s, Failed to find connection for CLIP", __func__);
+        return;
+    }
+
+    if (sal_call) {
+        sal_call->type = type;
+    }
+
+    const char *num = number ? number : "";
+    hfp_hf_on_clip(&conn->addr, num, "");
+}
+
 static void zblue_on_current_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_current_call* call)
 {
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_hf(hf);
@@ -602,7 +619,7 @@ static struct bt_hfp_hf_cb hf_callbacks = {
     .battery = NULL,
     .ring_indication = NULL,
     .dialing = NULL,
-    .clip = NULL,
+    .clip = zblue_on_clip,
     .vgm = NULL,
     .vgs = NULL,
     .inband_ring = NULL,
