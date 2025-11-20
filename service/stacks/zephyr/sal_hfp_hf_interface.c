@@ -56,6 +56,7 @@ typedef struct _bt_hfp_hf_call_info {
 typedef struct _bt_hfp_hf_connection {
     bt_address_t addr;
     struct bt_conn* conn;
+    struct bt_conn* sco_conn;
     bt_list_t* calls;
     struct bt_hfp_hf* hf;
     hfp_callsetup_t callsetup_state;
@@ -68,6 +69,14 @@ static void free_connection(void* data)
     bt_hfp_hf_connection_t* sal_conn = (bt_hfp_hf_connection_t*)data;
     if (sal_conn->calls) {
         bt_list_free(sal_conn->calls);
+    }
+    if (sal_conn->conn) {
+        bt_conn_unref(sal_conn->conn);
+        sal_conn->conn = NULL;
+    }
+    if (sal_conn->sco_conn) {
+        bt_conn_unref(sal_conn->sco_conn);
+        sal_conn->sco_conn = NULL;
     }
     free(sal_conn);
     return;
@@ -114,6 +123,7 @@ static bt_hfp_hf_call_info_t* find_call_by_context(bt_hfp_hf_connection_t* sal_c
 static bt_hfp_hf_call_info_t* find_call_by_state(bt_hfp_hf_connection_t* sal_conn, hfp_hf_call_state_t state)
 {
     bt_list_node_t* node;
+
     if (!sal_conn || !sal_conn->calls) {
         return NULL;
     }
@@ -178,6 +188,7 @@ static bt_hfp_hf_connection_t* find_connection_by_call_context(
     bt_hfp_hf_call_info_t** call_info)
 {
     bt_list_node_t* node;
+
     if (!g_sal_hf_conn_list || !z_context) {
         return NULL;
     }
@@ -209,6 +220,24 @@ static inline bt_hfp_hf_connection_t* find_connection_by_addr(bt_address_t* addr
 static inline bt_hfp_hf_connection_t* find_connection_by_hf(struct bt_hfp_hf* hf)
 {
     return (bt_hfp_hf_connection_t*)bt_list_find(g_sal_hf_conn_list, sal_conn_hf_cmp, hf);
+}
+
+static bt_hfp_hf_connection_t* find_connection_by_sco(struct bt_conn* sco)
+{
+    bt_list_node_t* node;
+
+    if (!g_sal_hf_conn_list || !sco) {
+        return NULL;
+    }
+
+    for (node = bt_list_head(g_sal_hf_conn_list); node != NULL; node = bt_list_next(g_sal_hf_conn_list, node)) {
+        bt_hfp_hf_connection_t* conn = bt_list_node(node);
+        if (conn && conn->sco_conn == sco) {
+            return conn;
+        }
+    }
+
+    return NULL;
 }
 
 static bt_hfp_hf_connection_t* new_hf_connection(struct bt_conn* conn, struct bt_hfp_hf* hf)
@@ -359,6 +388,29 @@ static void zblue_hf_disconnected(struct bt_hfp_hf* hf)
     hfp_hf_on_connection_state_changed(bd_addr, PROFILE_STATE_DISCONNECTED, 0, 0);
 
     bt_list_remove(g_sal_hf_conn_list, conn);
+}
+
+static void zblue_on_sco_connected(struct bt_hfp_hf *hf, struct bt_conn *sco_conn)
+{
+    bt_hfp_hf_connection_t* conn = find_connection_by_hf(hf);
+    if (!conn) {
+        BT_LOGE("%s, Failed to find connection for SCO", __func__);
+        return;
+    }
+
+    hfp_hf_on_audio_connection_state_changed(&conn->addr, HFP_AUDIO_STATE_CONNECTED, 0);
+}
+
+static void zblue_on_sco_disconnected(struct bt_conn *sco_conn, uint8_t reason)
+{
+    (void)reason;
+    bt_hfp_hf_connection_t* conn = find_connection_by_sco(sco_conn);
+    if (!conn) {
+        BT_LOGW("%s, Failed to find connection for SCO disconn", __func__);
+        return;
+    }
+
+    hfp_hf_on_audio_connection_state_changed(&conn->addr, HFP_AUDIO_STATE_DISCONNECTED, 0);
 }
 
 static void zblue_on_outgoing_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_call* call)
@@ -694,8 +746,8 @@ static void zblue_on_current_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_current
 static struct bt_hfp_hf_cb hf_callbacks = {
     .connected = zblue_on_connected,
     .disconnected = zblue_hf_disconnected,
-    .sco_connected = NULL,
-    .sco_disconnected = NULL,
+    .sco_connected = zblue_on_sco_connected,
+    .sco_disconnected = zblue_on_sco_disconnected,
     .service = NULL,
     .outgoing = zblue_on_outgoing_call,
     .remote_ringing = zblue_on_remote_ringing,
@@ -805,7 +857,20 @@ bt_status_t bt_sal_hfp_hf_connect_audio(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_hf_disconnect_audio(bt_address_t* addr)
 {
-    return BT_STATUS_UNSUPPORTED;
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    if (!sal_conn->sco_conn) {
+        BT_LOGW("%s, SCO not connected", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    int ret = bt_conn_disconnect(sal_conn->sco_conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+    SAL_CHECK_RET(ret, 0);
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_hf_answer_call(bt_address_t* addr)
