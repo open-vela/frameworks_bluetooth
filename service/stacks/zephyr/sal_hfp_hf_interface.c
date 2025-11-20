@@ -555,6 +555,37 @@ static void zblue_on_clip(struct bt_hfp_hf_call *call, char *number, uint8_t typ
     hfp_hf_on_clip(&conn->addr, num, "");
 }
 
+static void zblue_on_codec_negotiate(struct bt_hfp_hf* hf, uint8_t id)
+{
+    bt_hfp_hf_connection_t* conn = find_connection_by_hf(hf);
+    if (!conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return;
+    }
+
+    int ret = Z_API(bt_hfp_hf_select_codec)(hf, id);
+    if (ret) {
+        BT_LOGE("%s, bt_hfp_hf_select_codec failed: %d", __func__, ret);
+    }
+
+    hfp_codec_config_t cfg = { 0 };
+    switch (id) {
+    case BT_HFP_HF_CODEC_MSBC:
+        cfg.codec = HFP_CODEC_MSBC;
+        cfg.sample_rate = 16000;
+        cfg.bit_width = 16;
+        break;
+    case BT_HFP_HF_CODEC_CVSD:
+    default:
+        cfg.codec = HFP_CODEC_CVSD;
+        cfg.sample_rate = 8000;
+        cfg.bit_width = 16;
+        break;
+    }
+
+    hfp_hf_on_codec_changed(&conn->addr, &cfg);
+}
+
 static void zblue_on_current_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_current_call* call)
 {
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_hf(hf);
@@ -646,7 +677,7 @@ static struct bt_hfp_hf_cb hf_callbacks = {
     .vgs = zblue_on_vgs,
     .inband_ring = NULL,
     .operator = NULL,
-    .codec_negotiate = NULL,
+    .codec_negotiate = zblue_on_codec_negotiate,
     .ecnr_turn_off = NULL,
     .call_waiting = NULL,
     .voice_recognition = NULL,
