@@ -48,6 +48,7 @@ static const struct bt_sdp_discover_params sdp_discover = {
 };
 
 typedef struct _bt_hfp_hf_call_info {
+    uint8_t index;
     uint8_t type;
     hfp_hf_call_state_t state;
     struct bt_hfp_hf_call* context;
@@ -138,6 +139,23 @@ static bt_hfp_hf_call_info_t* find_call_by_state(bt_hfp_hf_connection_t* sal_con
     return NULL;
 }
 
+static bt_hfp_hf_call_info_t* find_call_by_index(bt_hfp_hf_connection_t* conn, uint8_t index)
+{
+    bt_list_node_t* node;
+    
+    if (!conn || !conn->calls || index == 0) {
+        return NULL;
+    }
+    
+    for (node = bt_list_head(conn->calls); node != NULL; node = bt_list_next(conn->calls, node)) {
+        bt_hfp_hf_call_info_t* sal_call = bt_list_node(node);
+        if (sal_call->index == index) {
+            return sal_call;
+        }
+    }
+    return NULL;
+}
+
 static bt_hfp_hf_call_info_t* new_call()
 {
     bt_hfp_hf_call_info_t* call = (bt_hfp_hf_call_info_t*)zalloc(sizeof(bt_hfp_hf_call_info_t));
@@ -147,7 +165,6 @@ static bt_hfp_hf_call_info_t* new_call()
     }
 
     call->state = HFP_HF_CALL_STATE_DISCONNECTED;
-    call->context = NULL;
     return call;
 }
 
@@ -696,6 +713,8 @@ static void zblue_on_current_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_current
 
     BT_LOGD("%s, CLCC %d: %s", __func__, call->index, call->number);
 
+    bt_hfp_hf_call_info_t* sal_call = find_or_create_call(sal_conn, call->call);
+
     uint32_t idx = call->index;
     hfp_call_direction_t dir = HFP_CALL_DIRECTION_OUTGOING;
     switch (call->dir) {
@@ -739,6 +758,9 @@ static void zblue_on_current_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_current
     }
 
     hfp_call_mpty_type_t mpty = call->multiparty ? HFP_CALL_MPTY_TYPE_MULTI : HFP_CALL_MPTY_TYPE_SINGLE;
+
+    sal_call->index = idx;
+    sal_call->state = status;
 
     hfp_hf_on_current_call_response(&bd_addr, idx, dir, status, mpty, call->number, call->type);
 }
@@ -970,7 +992,69 @@ bt_status_t bt_sal_hfp_hf_dial_memory(bt_address_t* addr, uint32_t memory)
 
 bt_status_t bt_sal_hfp_hf_call_control(bt_address_t* addr, hfp_call_control_t chld, uint32_t index)
 {
-    return BT_STATUS_UNSUPPORTED;
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    int ret = -ENOTSUP;
+    switch (chld) {
+    case HFP_HF_CALL_CONTROL_CHLD_0: {
+        bt_hfp_hf_call_info_t* waiting = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_WAITING);
+        if (waiting) {
+            ret = Z_API(bt_hfp_hf_set_udub)(sal_conn->hf);
+        } else {
+            bt_hfp_hf_call_info_t* held = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_HELD);
+            if (held) {
+                ret = Z_API(bt_hfp_hf_release_all_held)(sal_conn->hf);
+            } else {
+                BT_LOGW("%s, No waiting/held call for CHLD=0", __func__);
+                return BT_STATUS_PARM_INVALID;
+            }
+        }
+        break;
+    }
+    case HFP_HF_CALL_CONTROL_CHLD_1:
+        if (index > 0) {
+            bt_hfp_hf_call_info_t* by_idx = find_call_by_index(sal_conn, (uint8_t)index);
+            if (!by_idx) {
+                BT_LOGE("%s, No call with index %u for CHLD=1<idx>", __func__, (unsigned)index);
+                return BT_STATUS_PARM_INVALID;
+            }
+            ret = Z_API(bt_hfp_hf_release_specified_call)(by_idx->context);
+        } else {
+            ret = Z_API(bt_hfp_hf_release_active_accept_other)(sal_conn->hf);
+        }
+        break;
+    case HFP_HF_CALL_CONTROL_CHLD_2:
+        if (index > 0) {
+            bt_hfp_hf_call_info_t* by_idx = find_call_by_index(sal_conn, (uint8_t)index);
+            if (!by_idx) {
+                BT_LOGE("%s, No call with index %u for CHLD=2<idx>", __func__, (unsigned)index);
+                return BT_STATUS_PARM_INVALID;
+            }
+            ret = Z_API(bt_hfp_hf_private_consultation_mode)(by_idx->context);
+        } else {
+            ret = Z_API(bt_hfp_hf_hold_active_accept_other)(sal_conn->hf);
+        }
+        break;
+    case HFP_HF_CALL_CONTROL_CHLD_3:
+        ret = Z_API(bt_hfp_hf_join_conversation)(sal_conn->hf);
+        break;
+    case HFP_HF_CALL_CONTROL_CHLD_4:
+        ret = Z_API(bt_hfp_hf_explicit_call_transfer)(sal_conn->hf);
+        break;
+    default:
+        return BT_STATUS_UNSUPPORTED;
+    }
+
+    if (ret == -ENOTSUP) {
+        return BT_STATUS_UNSUPPORTED;
+    }
+
+    SAL_CHECK_RET(ret, 0);
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_hf_get_current_calls(bt_address_t* addr)
