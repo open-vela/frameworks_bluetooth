@@ -1156,7 +1156,25 @@ bt_status_t bt_sal_hfp_hf_send_at_cmd(bt_address_t* addr, const char* cmd, uint1
 
 bt_status_t bt_sal_hfp_hf_send_dtmf(bt_address_t* addr, char dtmf)
 {
-    return BT_STATUS_UNSUPPORTED;
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    bt_hfp_hf_call_info_t* active = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_ACTIVE);
+    if (!active) {
+        BT_LOGE("%s, No active call for DTMF", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    int ret = Z_API(bt_hfp_hf_transmit_dtmf_code)(active->context, dtmf);
+    if (ret == -ENOTSUP) {
+        return BT_STATUS_UNSUPPORTED;
+    }
+
+    SAL_CHECK_RET(ret, 0);
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_hf_get_subscriber_number(bt_address_t* addr)
