@@ -1368,16 +1368,19 @@ bt_status_t bt_sal_create_bond(bt_controller_id_t id, bt_address_t* addr, bt_tra
     return BT_STATUS_NOT_SUPPORTED;
 #endif
 }
-
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(set_security_level)(void* args)
 {
+
     sal_adapter_req_t* req = args;
 
     g_security_level = req->adpt.security_level;
 }
+#endif /* CONFIG_BLUETOOTH_BREDR_SUPPORT */
 
 bt_status_t bt_sal_set_security_level(bt_controller_id_t id, uint8_t level)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     sal_adapter_req_t* req;
 
     req = sal_adapter_req(id, NULL, STACK_CALL(set_security_level));
@@ -1389,6 +1392,10 @@ bt_status_t bt_sal_set_security_level(bt_controller_id_t id, uint8_t level)
     req->adpt.security_level = level;
 
     return sal_send_req(req);
+#else
+    BT_LOGE("Unsupported BR/EDR.");
+    return BT_STATUS_UNSUPPORTED;
+#endif /* CONFIG_BLUETOOTH_BREDR_SUPPORT */
 }
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT

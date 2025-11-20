@@ -402,7 +402,7 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
     }
     case STACK_EVENT_ASE_CODEC_CONFIG: {
         if (data->valueint2) {
-            BT_LOGD("addr%s, stream:0x%08x, codec fail result:%d", bt_addr_str(&leas_sm->addr), data->valueint1, data->valueint2);
+            BT_LOGD("addr%s, stream:0x%08x, codec fail result:%d", bt_fw_addr_str(&leas_sm->addr), data->valueint1, data->valueint2);
             return false;
         }
         lea_client_ucc_config_qos(data->valueint3, &leas_sm->addr, data->valueint1);
@@ -410,7 +410,7 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
     }
     case STACK_EVENT_ASE_QOS_CONFIG: {
         if (data->valueint2) {
-            BT_LOGD("addr%s, stream:0x%08x, qos fail result:%d", bt_addr_str(&leas_sm->addr), data->valueint1, data->valueint2);
+            BT_LOGD("addr%s, stream:0x%08x, qos fail result:%d", bt_fw_addr_str(&leas_sm->addr), data->valueint1, data->valueint2);
             return false;
         }
         lea_client_ucc_enable(data->valueint3, &leas_sm->addr, data->valueint1);

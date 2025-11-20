@@ -417,7 +417,7 @@ static bt_status_t pm_request_sniff(bt_address_t* peer_addr, bt_pm_mode_index_t 
 
     device = pm_conn_device_find(peer_addr);
     if (!device) {
-        BT_LOGE("%s, fail to find device:%s", __func__, bt_addr_str(peer_addr));
+        BT_LOGE("%s, fail to find device:%s", __func__, bt_fw_addr_str(peer_addr));
         return BT_STATUS_FAIL;
     }
 
@@ -426,7 +426,7 @@ static bt_status_t pm_request_sniff(bt_address_t* peer_addr, bt_pm_mode_index_t 
         return BT_STATUS_SUCCESS;
     }
 
-    BT_LOGD("%s, peer_addr:%s, max:%d, min:%d, attempt:%d, timeout:%d", __func__, bt_addr_str(peer_addr), mode.max, mode.min, mode.attempt, mode.timeout);
+    BT_LOGD("%s, peer_addr:%s, max:%d, min:%d, attempt:%d, timeout:%d", __func__, bt_fw_addr_str(peer_addr), mode.max, mode.min, mode.attempt, mode.timeout);
     ret = bt_sal_set_power_mode(PRIMARY_ADAPTER, peer_addr, &mode);
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s, fail to set power mode, ret:%d", __func__, ret);
@@ -446,7 +446,7 @@ static bt_status_t pm_request_active(bt_address_t* peer_addr)
 
     device = pm_conn_device_find(peer_addr);
     if (!device) {
-        BT_LOGE("%s, fail to fail to find device:%s", __func__, bt_addr_str(peer_addr));
+        BT_LOGE("%s, fail to fail to find device:%s", __func__, bt_fw_addr_str(peer_addr));
         return BT_STATUS_FAIL;
     }
 
@@ -454,7 +454,7 @@ static bt_status_t pm_request_active(bt_address_t* peer_addr)
         return BT_STATUS_SUCCESS;
     }
 
-    BT_LOGD("%s, peer_addr:%s", __func__, bt_addr_str(peer_addr));
+    BT_LOGD("%s, peer_addr:%s", __func__, bt_fw_addr_str(peer_addr));
     ret = bt_sal_set_power_mode(PRIMARY_ADAPTER, peer_addr, &mode);
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s, fail to set power mode, ret:%d", __func__, ret);
@@ -576,14 +576,14 @@ static void pm_mode_request(bt_address_t* peer_addr, uint8_t req, uint16_t profi
 
     connected = adapter_is_remote_connected(peer_addr, BT_TRANSPORT_BREDR);
     if (!connected) {
-        BT_LOGE("%s, device:%s disconnected", __func__, bt_addr_str(peer_addr));
+        BT_LOGE("%s, device:%s disconnected", __func__, bt_fw_addr_str(peer_addr));
         pm_stop_timer(peer_addr);
         return;
     }
 
     ret = pm_prefer_config(peer_addr, &pm_action, &timeout_ms, &allowed_modes, &profile_id);
     if (!ret) {
-        BT_LOGE("%s, device:%s prefer pm config fail, ret:%d", __func__, bt_addr_str(peer_addr), ret);
+        BT_LOGE("%s, device:%s prefer pm config fail, ret:%d", __func__, bt_fw_addr_str(peer_addr), ret);
         return;
     }
 
@@ -621,7 +621,7 @@ static void pm_timeout_callback(service_timer_t* timer, void* data)
         pm_timer->active = false;
     }
 
-    BT_LOGD("%s, addr:%s, profile_id:%d, pm_action:%d", __func__, bt_addr_str(&pm_timer->peer_addr), pm_timer->profile_id, pm_timer->pm_action);
+    BT_LOGD("%s, addr:%s, profile_id:%d, pm_action:%d", __func__, bt_fw_addr_str(&pm_timer->peer_addr), pm_timer->profile_id, pm_timer->pm_action);
     pm_mode_request(&pm_timer->peer_addr, BT_PM_EXECUTE, pm_timer->profile_id);
 }
 
@@ -665,7 +665,7 @@ static void bt_pm_hanlde_callback(bt_pm_state_t state, uint8_t profile_id, bt_ad
     if (!service) {
         service = pm_conn_service_add(profile_id, state, peer_addr);
         if (!service) {
-            BT_LOGE("%s, fail to add service device:%s, profile_id:%d", __func__, bt_addr_str(peer_addr), profile_id);
+            BT_LOGE("%s, fail to add service device:%s, profile_id:%d", __func__, bt_fw_addr_str(peer_addr), profile_id);
             return;
         }
     } else {
@@ -815,10 +815,10 @@ void bt_pm_remote_link_mode_changed(bt_address_t* addr, uint8_t mode, uint16_t s
     bt_pm_device_t* device;
     bt_pm_manager_t* manager = &g_pm_manager;
 
-    BT_LOGD("%s, addr:%s, mode:%d, sniff_interval:%" PRId16, __func__, bt_addr_str(addr), mode, sniff_interval);
+    BT_LOGD("%s, addr:%s, mode:%d, sniff_interval:%" PRId16, __func__, bt_fw_addr_str(addr), mode, sniff_interval);
     device = pm_conn_device_find(addr);
     if (!device) {
-        BT_LOGE("%s, fail to find device:%s", __func__, bt_addr_str(addr));
+        BT_LOGE("%s, fail to find device:%s", __func__, bt_fw_addr_str(addr));
         return;
     }
 
@@ -846,7 +846,7 @@ void bt_pm_remote_device_connected(bt_address_t* addr)
 
     device = pm_conn_device_add(addr);
     if (!device) {
-        BT_LOGE("%s, fail to add device:%s", __func__, bt_addr_str(addr));
+        BT_LOGE("%s, fail to add device:%s", __func__, bt_fw_addr_str(addr));
         return;
     }
 }
@@ -857,7 +857,7 @@ void bt_pm_remote_device_disconnected(bt_address_t* addr)
 
     device = pm_conn_device_find(addr);
     if (!device) {
-        BT_LOGE("%s, fail to find device:%s", __func__, bt_addr_str(addr));
+        BT_LOGE("%s, fail to find device:%s", __func__, bt_fw_addr_str(addr));
         return;
     }
 

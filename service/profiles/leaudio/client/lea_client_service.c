@@ -733,7 +733,7 @@ static bool lea_client_message_prehandle(lea_client_state_machine_t* leas_sm,
         ret = check_group_completed_by_state(group->group_id, LEA_ASCS_OP_STREAMING);
         pthread_mutex_unlock(&service->group_lock);
         if (!ret) {
-            BT_LOGD("%s, addr:%s group streamming not completed", __func__, bt_addr_str(&event->data.addr));
+            BT_LOGD("%s, addr:%s group streamming not completed", __func__, bt_fw_addr_str(&event->data.addr));
             return false;
         }
 
@@ -1775,7 +1775,7 @@ lea_audio_stream_t* lea_client_update_stream(lea_audio_stream_t* stream)
 
     group = find_group_by_addr(&stream->addr);
     if (!group) {
-        BT_LOGE("%s, addr:%s, group_id:0x%0x, is_source:%d, group not exist", __func__, bt_addr_str(&stream->addr),
+        BT_LOGE("%s, addr:%s, group_id:0x%0x, is_source:%d, group not exist", __func__, bt_fw_addr_str(&stream->addr),
             stream->group_id, stream->is_source)
         return NULL;
     }
@@ -1783,7 +1783,7 @@ lea_audio_stream_t* lea_client_update_stream(lea_audio_stream_t* stream)
     local_stream = bt_list_find(service->leac_streams, lea_client_stream_cmp, &stream->stream_id);
     if (!local_stream) {
         pthread_mutex_unlock(&service->stream_lock);
-        BT_LOGE("%s, addr:%s, group_id:0x%0x, is_source:%d, local_stream not exist", __func__, bt_addr_str(&stream->addr),
+        BT_LOGE("%s, addr:%s, group_id:0x%0x, is_source:%d, local_stream not exist", __func__, bt_fw_addr_str(&stream->addr),
             stream->group_id, stream->is_source)
         return NULL;
     }
@@ -1791,7 +1791,7 @@ lea_audio_stream_t* lea_client_update_stream(lea_audio_stream_t* stream)
     stream->group_id = group->group_id;
     memcpy(local_stream, stream, sizeof(lea_audio_stream_t));
     pthread_mutex_unlock(&service->stream_lock);
-    BT_LOGD("%s addr:%s, group_id:0x%0x, is_source:%d, started:%d", __func__, bt_addr_str(&local_stream->addr),
+    BT_LOGD("%s addr:%s, group_id:0x%0x, is_source:%d, started:%d", __func__, bt_fw_addr_str(&local_stream->addr),
         local_stream->group_id, local_stream->is_source,
         local_stream->started);
 
@@ -2231,7 +2231,7 @@ bt_status_t lea_client_ucc_config_qos(uint32_t group_id, bt_address_t* addr, uin
     completed = check_group_completed_by_op(group_id, LEA_ASCS_OP_QOS);
     pthread_mutex_unlock(&service->group_lock);
     if (!completed) {
-        BT_LOGD("%s, addr:%s group qos not completed", __func__, bt_addr_str(addr));
+        BT_LOGD("%s, addr:%s group qos not completed", __func__, bt_fw_addr_str(addr));
         return BT_STATUS_FAIL;
     }
 
@@ -2240,7 +2240,7 @@ bt_status_t lea_client_ucc_config_qos(uint32_t group_id, bt_address_t* addr, uin
         BT_LOGE("%s, get_ases_streams_id_form_group failed", __func__);
         return ret;
     }
-    BT_LOGD("%s, addr:%s, number:%d", __func__, bt_addr_str(addr), number);
+    BT_LOGD("%s, addr:%s, number:%d", __func__, bt_fw_addr_str(addr), number);
 
     if (number > LEA_CLIENT_MAX_STREAM_NUM) {
         BT_LOGE("%s, stream number(%d) over max(%d)", __func__, number,
@@ -2290,7 +2290,7 @@ bt_status_t lea_client_ucc_enable(uint32_t group_id, bt_address_t* addr, uint32_
     completed = check_group_completed_by_op(group_id, LEA_ASCS_OP_ENABLING);
     pthread_mutex_unlock(&service->group_lock);
     if (!completed) {
-        BT_LOGD("%s, addr:%s group enabling not completed", __func__, bt_addr_str(addr));
+        BT_LOGD("%s, addr:%s group enabling not completed", __func__, bt_fw_addr_str(addr));
         return BT_STATUS_FAIL;
     }
 
@@ -2299,7 +2299,7 @@ bt_status_t lea_client_ucc_enable(uint32_t group_id, bt_address_t* addr, uint32_
         BT_LOGE("%s, get_ases_streams_id_form_group failed", __func__);
         return ret;
     }
-    BT_LOGD("%s, addr:%s, number:%d", __func__, bt_addr_str(addr), number);
+    BT_LOGD("%s, addr:%s, number:%d", __func__, bt_fw_addr_str(addr), number);
 
     if (number > LEA_CLIENT_MAX_STREAM_NUM) {
         BT_LOGE("%s, stream number(%d) over max(%d)", __func__, number,

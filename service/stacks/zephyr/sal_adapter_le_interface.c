@@ -75,7 +75,9 @@ extern void z_sys_init(void);
 static void zblue_on_connected(struct bt_conn* conn, uint8_t err);
 static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason);
 static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level, enum bt_security_err err);
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void zblue_on_pairing_complete_ctkd(struct bt_conn* conn, bool is_link_key);
+#endif
 static void zblue_on_pairing_complete(struct bt_conn* conn, bool bonded);
 static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err reason);
 static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer);
@@ -113,7 +115,9 @@ static struct bt_conn_cb g_conn_cbs = {
 };
 
 static struct bt_conn_auth_info_cb g_conn_auth_info_cbs = {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     .pairing_complete_ctkd = zblue_on_pairing_complete_ctkd,
+#endif
     .pairing_complete = zblue_on_pairing_complete,
     .pairing_failed = zblue_on_pairing_failed,
     .bond_deleted = zblue_on_bond_deleted,
@@ -458,6 +462,7 @@ static void zblue_on_phy_updated(struct bt_conn* conn, struct bt_conn_le_phy_inf
 }
 #endif /*CONFIG_BT_USER_PHY_UPDATE*/
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void zblue_on_pairing_complete_ctkd(struct bt_conn* conn, bool is_link_key)
 {
     bt_address_t addr;
@@ -478,6 +483,7 @@ static void zblue_on_pairing_complete_ctkd(struct bt_conn* conn, bool is_link_ke
 
     adapter_on_bond_state_changed(&addr, BOND_STATE_BONDED, BT_TRANSPORT_BLE, BT_STATUS_SUCCESS, true);
 }
+#endif
 
 static void zblue_on_pairing_complete(struct bt_conn* conn, bool bonded)
 {

@@ -531,7 +531,7 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
                     srand(time(NULL)); /* set random seed */
                     random_timeout = 100 + (rand() % 800);
                     BT_LOGD("retry HFP connection with device:[%s], delay=%" PRIu32 "ms",
-                        bt_addr_str(&agsm->addr), random_timeout);
+                        bt_fw_addr_str(&agsm->addr), random_timeout);
                     agsm->retry_timer = service_loop_timer(random_timeout, 0, ag_retry_callback, sm);
                     agsm->retry_cnt++;
                 }

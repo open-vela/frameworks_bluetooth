@@ -472,6 +472,7 @@ void bt_sal_cm_acl_disconnected_callback(cm_data_t* data)
 
 bt_status_t bt_sal_cm_try_disconnect_profiles(bt_address_t* addr, bool is_unpair)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     bt_profile_connection_manager_t* manager;
     struct bt_conn* conn;
     struct bt_conn_info info;
@@ -530,8 +531,12 @@ bt_status_t bt_sal_cm_try_disconnect_profiles(bt_address_t* addr, bool is_unpair
     bt_list_add_tail(bt_sal_disconnecting_list, manager);
 
     return bt_try_disconnect_acl(manager);
+#else
+    return BT_STATUS_SUCCESS;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static bt_status_t bt_sal_try_profile_connect(bt_address_t* addr)
 {
     bt_profile_connection_manager_t* manager;
@@ -570,10 +575,12 @@ static bt_status_t bt_sal_try_profile_connect(bt_address_t* addr)
 
     return bt_sal_trigger_profile_conn_act(manager, bt_sal_connecting_list);
 }
+#endif
 
 bt_status_t bt_sal_profile_connect_request(bt_address_t* addr, uint8_t profile_id, bt_controller_id_t id,
     bt_profile_conn_handler_t handler)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     bt_profile_connection_manager_t* manager;
     bt_profile_conn_handler_node_t* entry_node;
 
@@ -600,6 +607,9 @@ bt_status_t bt_sal_profile_connect_request(bt_address_t* addr, uint8_t profile_i
     bt_list_add_tail(manager->profile_conn_handler_list, entry_node);
 
     return bt_sal_try_profile_connect(addr);
+#else
+    return BT_STATUS_SUCCESS;
+#endif
 }
 
 bt_status_t bt_sal_profile_disconnect_register(bt_address_t* addr, uint8_t profile_id, bt_controller_id_t id,

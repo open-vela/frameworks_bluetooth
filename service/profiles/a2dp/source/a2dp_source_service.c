@@ -67,7 +67,7 @@ static void set_active_peer(bt_address_t* bd_addr, uint16_t acl_hdl)
     a2dp_device_t* device = find_a2dp_device_by_addr(&g_a2dp_source.list, bd_addr);
 
     if (!device) {
-        BT_LOGE("No A2DP device found with the provided address:%s", bt_addr_str(bd_addr));
+        BT_LOGE("No A2DP device found with the provided address:%s", bt_fw_addr_str(bd_addr));
         return;
     }
 
@@ -138,7 +138,7 @@ static void a2dp_service_prepare_handle(a2dp_state_machine_t* sm,
 
         device = find_a2dp_device_by_addr(&g_a2dp_source.list, &event->event_data.bd_addr);
         if (!device) {
-            BT_LOGE("A2DP find_device_by_addr:%s failed", bt_addr_str(&event->event_data.bd_addr));
+            BT_LOGE("A2DP find_device_by_addr:%s failed", bt_fw_addr_str(&event->event_data.bd_addr));
             break;
         }
 
@@ -375,7 +375,7 @@ static int a2dp_source_dump(void)
             is_active = 0;
         state = a2dp_state_machine_current_state(device->a2dp_sm);
         BT_LOGD("\tDevice[%d]: Addr: %s, State: %s, Active: %s\n", i,
-            bt_addr_str(&device->bd_addr), state, is_active ? "true" : "false");
+            bt_fw_addr_str(&device->bd_addr), state, is_active ? "true" : "false");
     }
     if (i == 0)
         BT_LOGE("\tNo A2dp Sink device found\n");
@@ -618,7 +618,7 @@ static const profile_service_t a2dp_source_service = {
     .name = PROFILE_A2DP_NAME,
     .id = PROFILE_A2DP,
     .transport = BT_TRANSPORT_BREDR,
-    .uuid = BT_UUID_DECLARE_16(BT_UUID_A2DP_SRC),
+    .uuid = BT_FW_UUID_DECLARE_16(BT_UUID_A2DP_SRC),
     .init = a2dp_source_init,
     .startup = a2dp_source_startup,
     .shutdown = a2dp_source_shutdown,

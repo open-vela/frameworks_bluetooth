@@ -230,7 +230,7 @@ static void handle_avrcp_connection_state(avrcp_msg_t* msg)
     }
     pthread_mutex_unlock(&g_avrc_target.mutex);
 
-    BT_LOGD("avrc tg connnection --> device:[%s], state: %d", bt_addr_str(addr), state);
+    BT_LOGD("avrc tg connnection --> device:[%s], state: %d", bt_fw_addr_str(addr), state);
 
     device = tg_device_find(addr);
 
@@ -245,7 +245,7 @@ static void handle_avrcp_connection_state(avrcp_msg_t* msg)
                 srand(time(NULL)); /* set random seed */
                 random_timeout = 100 + (rand() % 800);
                 BT_LOGD("retry AVRCP connection with device:[%s], delay=%" PRIu32 "ms",
-                    bt_addr_str(addr), random_timeout);
+                    bt_fw_addr_str(addr), random_timeout);
                 device->retry_timer = service_loop_timer(random_timeout, 0, tg_retry_callback, device);
                 device->retry_cnt++;
             }

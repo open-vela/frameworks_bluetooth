@@ -233,7 +233,7 @@ static char* stack_event_to_string(a2dp_event_type_t event)
 
 static void a2dp_report_connection_state(a2dp_state_machine_t* stm, bt_address_t* addr, profile_connection_state_t state)
 {
-    BT_LOGD("%s, addr:%s, state: %d", __func__, bt_addr_str(addr), state);
+    BT_LOGD("%s, addr:%s, state: %d", __func__, bt_fw_addr_str(addr), state);
 
     if (stm->peer_sep == SEP_SRC) {
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
@@ -253,7 +253,7 @@ static void a2dp_report_connection_state(a2dp_state_machine_t* stm, bt_address_t
 
 static void a2dp_report_audio_state(a2dp_state_machine_t* stm, bt_address_t* addr, a2dp_audio_state_t state)
 {
-    BT_LOGD("%s, addr:%s, state: %d", __func__, bt_addr_str(addr), state);
+    BT_LOGD("%s, addr:%s, state: %d", __func__, bt_fw_addr_str(addr), state);
 
     if (stm->peer_sep == SEP_SRC) {
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
@@ -269,7 +269,7 @@ static void a2dp_report_audio_state(a2dp_state_machine_t* stm, bt_address_t* add
 
 static void a2dp_report_audio_config_state(a2dp_state_machine_t* stm, bt_address_t* addr)
 {
-    BT_LOGD("%s, addr:%s", __func__, bt_addr_str(addr));
+    BT_LOGD("%s, addr:%s", __func__, bt_fw_addr_str(addr));
 
     if (stm->peer_sep == SEP_SRC) {
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK

@@ -163,7 +163,7 @@ int service_manager_startup(uint8_t transport)
 int service_manager_get_uuid(bt_uuid_t* uuids, uint16_t* size)
 {
     uint16_t cnt = 0;
-    bt_uuid_t empty_uuid = BT_UUID_DECLARE_128(0);
+    bt_uuid_t empty_uuid = BT_FW_UUID_DECLARE_128(0);
 
     for (int i = 0; i < PROFILE_MAX && cnt < BT_UUID_MAX_NUM; i++) {
         profile_service_t* profile = service_slots[i].service;

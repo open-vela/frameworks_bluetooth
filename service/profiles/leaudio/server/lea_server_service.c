@@ -345,7 +345,7 @@ static bool lea_server_message_prehandle(lea_server_state_machine_t* leasm,
         size_t size;
         bool ret;
 
-        BT_LOGD("%s addr:%s, started:%d, stream_id:0x%08x", __func__, bt_addr_str(&audio_stream->addr),
+        BT_LOGD("%s addr:%s, started:%d, stream_id:0x%08x", __func__, bt_fw_addr_str(&audio_stream->addr),
             audio_stream->started, audio_stream->stream_id);
         memcpy(&audio_stream->addr, &event->data.addr, sizeof(bt_address_t));
         audio_stream->started = true;
@@ -362,7 +362,7 @@ static bool lea_server_message_prehandle(lea_server_state_machine_t* leasm,
 
         ret = lea_server_streams_are_started(&event->data.addr);
         if (!ret) {
-            BT_LOGW("device(%s) streams streamming not completed", bt_addr_str(&event->data.addr));
+            BT_LOGW("device(%s) streams streamming not completed", bt_fw_addr_str(&event->data.addr));
             return false;
         }
 
@@ -679,7 +679,7 @@ static void lea_server_update_connection_state(bt_address_t* addr, profile_conne
 
     device = find_lea_server_device_by_addr(addr);
     if (!device) {
-        BT_LOGE("%s, device(%s) not found", __func__, bt_addr_str(addr));
+        BT_LOGE("%s, device(%s) not found", __func__, bt_fw_addr_str(addr));
         return;
     }
 
@@ -869,7 +869,7 @@ lea_audio_stream_t* lea_server_update_stream(lea_audio_stream_t* stream)
     local_stream = bt_list_find(service->leas_stream, lea_server_stream_cmp, &stream->stream_id);
     if (!local_stream) {
         BT_LOGE("fail, %s addr:%s,  stream_id:0x%08x not exist", __func__,
-            bt_addr_str(&stream->addr), stream->stream_id);
+            bt_fw_addr_str(&stream->addr), stream->stream_id);
         pthread_mutex_unlock(&service->stream_lock);
         return NULL;
     }
@@ -1111,7 +1111,7 @@ bt_status_t lea_server_streams_started(bt_address_t* addr)
 
     for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
         stream = bt_list_node(node);
-        BT_LOGD("%s addr:%s, started:%d, stream_id:0x%08x", __func__, bt_addr_str(&stream->addr),
+        BT_LOGD("%s addr:%s, started:%d, stream_id:0x%08x", __func__, bt_fw_addr_str(&stream->addr),
             stream->started, stream->stream_id);
         if (stream->started && (bt_addr_compare(addr, &stream->addr) == 0)) {
             msg = lea_server_msg_new_ext(STACK_EVENT_STREAM_STARTED,
@@ -1133,7 +1133,7 @@ void lea_server_on_ascs_event(bt_address_t* addr, uint8_t id, uint8_t state, uin
 
     device = find_lea_server_device_by_addr(addr);
     if (!device) {
-        BT_LOGE("%s, device(%s) not exist", __func__, bt_addr_str(addr));
+        BT_LOGE("%s, device(%s) not exist", __func__, bt_fw_addr_str(addr));
         return;
     }
 
@@ -1172,7 +1172,7 @@ void lea_server_on_ascs_event(bt_address_t* addr, uint8_t id, uint8_t state, uin
 void lea_server_on_csis_lock_state_changed(uint32_t csis_id, bt_address_t* addr, uint8_t lock)
 {
     char* state[] = { "NA", "Unlocked", "Locked" };
-    BT_LOGD("%s, addr:%s(%s)", __func__, bt_addr_str(addr), state[lock]);
+    BT_LOGD("%s, addr:%s(%s)", __func__, bt_fw_addr_str(addr), state[lock]);
 }
 
 bool lea_server_on_pacs_info_request(lea_pacs_info_t* pacs_info)

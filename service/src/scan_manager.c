@@ -288,11 +288,11 @@ static void notify_scanners_scan_result(void* data)
             }
 
             if (scanner_hsearch_find(result->adv_data, result->length)) {
-                BT_LOGD("scanner_hsearch_find addr:%s", bt_addr_str(&result->addr));
+                BT_LOGD("scanner_hsearch_find addr:%s", bt_fw_addr_str(&result->addr));
                 continue;
             } else {
                 scanner_hsearch_add(result->adv_data, result->length);
-                BT_LOGD("scanner_hsearch_add addr:%s", bt_addr_str(&result->addr));
+                BT_LOGD("scanner_hsearch_add addr:%s", bt_fw_addr_str(&result->addr));
             }
         }
 

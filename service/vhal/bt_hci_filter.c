@@ -129,7 +129,7 @@ static bool le_adv_report_filter(uint8_t* data, uint32_t size)
 
     if (scan_hsearch_find(adv_data, adv_len)) {
 #ifdef BT_HCI_FILTER_LOG_ENABLE
-        BT_LOGD("scan_hsearch_find addr:%s", bt_addr_str((bt_address_t*)addr->val));
+        BT_LOGD("scan_hsearch_find addr:%s", bt_fw_addr_str((bt_address_t*)addr->val));
 #endif
         return true;
     }
@@ -166,7 +166,7 @@ static bool le_ext_adv_report_filter(uint8_t* data, uint32_t size)
 
     if (scan_hsearch_find(adv_data, adv_len)) {
 #ifdef BT_HCI_FILTER_LOG_ENABLE
-        BT_LOGD("scan_hsearch_find addr:%s", bt_addr_str((bt_address_t*)addr->val));
+        BT_LOGD("scan_hsearch_find addr:%s", bt_fw_addr_str((bt_address_t*)addr->val));
 #endif
         return true;
     }

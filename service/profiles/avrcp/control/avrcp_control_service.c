@@ -282,7 +282,7 @@ static void handle_avrcp_connection_state(avrcp_msg_t* msg)
     }
     pthread_mutex_unlock(&g_avrc_controller.mutex);
 
-    BT_LOGD("avrc ct connnection --> device:[%s], state: %d", bt_addr_str(addr), state);
+    BT_LOGD("avrc ct connnection --> device:[%s], state: %d", bt_fw_addr_str(addr), state);
 
     device = ct_device_find(addr);
     /* set device state */
