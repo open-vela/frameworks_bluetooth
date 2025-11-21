@@ -951,6 +951,11 @@ void hfp_ag_on_received_nrec_request(bt_address_t* addr, uint8_t nrec)
     hfp_ag_send_message(msg);
 }
 
+void hfp_ag_on_call_sync(bt_address_t* addr)
+{
+    hfp_ag_send_event(addr, AG_STACK_EVENT_CALL_SYNC);
+}
+
 static const profile_service_t hfp_ag_service = {
     .auto_start = true,
     .name = PROFILE_HFP_AG_NAME,

@@ -28,6 +28,7 @@ bt_status_t tele_service_call_control(uint8_t chld);
 void tele_service_get_phone_state(uint8_t* num_active, uint8_t* num_held,
     uint8_t* call_state);
 void tele_service_query_current_call(bt_address_t* addr);
+void tele_service_get_current_calls(void);
 char* tele_service_get_operator(void);
 bt_status_t tele_service_get_network_info(hfp_network_state_t* network,
     hfp_roaming_state_t* roam,

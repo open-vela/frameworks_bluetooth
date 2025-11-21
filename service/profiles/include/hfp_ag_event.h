@@ -78,7 +78,8 @@ typedef enum {
     AG_STACK_EVENT_CALL_CONTROL,
     AG_STACK_EVENT_AT_COMMAND,
     AG_STACK_EVENT_SEND_DTMF,
-    AG_STACK_EVENT_NREC_REQ
+    AG_STACK_EVENT_NREC_REQ,
+    AG_STACK_EVENT_CALL_SYNC
 } hfp_ag_event_t;
 
 typedef struct

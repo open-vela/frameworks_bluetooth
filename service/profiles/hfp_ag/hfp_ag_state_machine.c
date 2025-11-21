@@ -789,6 +789,17 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
     case AG_OFFLOAD_STOP_EVT:
         audio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
         break;
+    case AG_STACK_EVENT_CALL_SYNC:
+        if (agsm->virtual_call_started) {
+            bt_sal_hfp_ag_call_sync(HFP_CALL_DIRECTION_INCOMING,
+                HFP_AG_CALL_STATE_ACTIVE, HFP_CALL_MODE_VOICE, HFP_CALL_MPTY_TYPE_SINGLE,
+                HFP_CALL_ADDRTYPE_UNKNOWN, HFP_FAKE_NUMBER);
+        } else {
+#ifdef CONFIG_LIB_DBUS
+            tele_service_get_current_calls();
+#endif
+        }
+        break;
     default:
         BT_LOGW("Unexpected event:%" PRIu32 "", event);
         break;
