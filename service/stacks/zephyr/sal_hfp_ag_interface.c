@@ -485,14 +485,38 @@ static int zblue_on_ag_get_ongoing_call(struct bt_hfp_ag* ag)
     return 0;
 }
 
+static int zblue_on_ag_memory_dial(struct bt_hfp_ag* ag, const char* location, char** number)
+{
+    return -ENOTSUP;
+}
+
+static int zblue_on_ag_number_call(struct bt_hfp_ag* ag, const char* number)
+{
+    bt_hfp_ag_connection_t* sal_conn;
+
+    if (!ag || !number) {
+        return -EINVAL;
+    }
+
+    sal_conn = find_connection_by_ag(ag);
+    if (!sal_conn) {
+        BT_LOGE("%s, connection not found for ag=%p", __func__, ag);
+        return -EINVAL;
+    }
+
+    hfp_ag_on_dial_number(&sal_conn->addr, (char*)number, strlen(number));
+
+    return 0;
+}
+
 static struct bt_hfp_ag_cb g_hfp_ag_cb = {
     .connected = zblue_on_ag_connected,
     .disconnected = zblue_on_ag_disconnected,
     .sco_connected = zblue_on_ag_sco_connected,
     .sco_disconnected = zblue_on_ag_sco_disconnected,
     .get_ongoing_call = zblue_on_ag_get_ongoing_call,
-    .memory_dial = NULL,
-    .number_call = NULL,
+    .memory_dial = zblue_on_ag_memory_dial,
+    .number_call = zblue_on_ag_number_call,
     .outgoing = NULL,
     .incoming = NULL,
     .incoming_held = NULL,
