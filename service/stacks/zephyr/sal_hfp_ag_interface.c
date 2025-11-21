@@ -117,7 +117,7 @@ static bt_hfp_ag_connection_t* find_connection_by_ag(struct bt_hfp_ag* ag)
     return (bt_hfp_ag_connection_t*)bt_list_find(g_sal_ag_conn_list, sal_conn_ag_cmp, ag);
 }
 
-static __attribute__((unused)) bt_hfp_ag_connection_t* find_connection_by_conn(struct bt_conn* conn)
+static bt_hfp_ag_connection_t* find_connection_by_conn(struct bt_conn* conn)
 {
     if (!g_sal_ag_conn_list) {
         BT_LOGE("%s, ag conn list not initialized", __func__);
@@ -404,11 +404,25 @@ static void zblue_on_ag_sco_connected(struct bt_hfp_ag* ag, struct bt_conn* sco_
     hfp_ag_on_audio_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_CONNECTED, 0xFFFF); // sco conn handle not supported
 }
 
+static void zblue_on_ag_sco_disconnected(struct bt_conn* sco_conn, uint8_t reason)
+{
+    BT_LOGD("%s, HFP AG SCO disconnected, reason=%d", __func__, reason);
+    bt_hfp_ag_connection_t* sal_conn = find_connection_by_conn(sco_conn);
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return;
+    }
+
+    sal_conn->sco_context = NULL;
+
+    hfp_ag_on_audio_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_DISCONNECTED, 0xFFFF); // sco conn handle not supported
+}
+
 static struct bt_hfp_ag_cb g_hfp_ag_cb = {
     .connected = zblue_on_ag_connected,
     .disconnected = zblue_on_ag_disconnected,
     .sco_connected = zblue_on_ag_sco_connected,
-    .sco_disconnected = NULL,
+    .sco_disconnected = zblue_on_ag_sco_disconnected,
     .get_ongoing_call = NULL,
     .memory_dial = NULL,
     .number_call = NULL,
@@ -497,8 +511,29 @@ bt_status_t bt_sal_hfp_ag_connect_audio(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_ag_disconnect_audio(bt_address_t* addr)
 {
-    (void)addr;
-    return BT_STATUS_UNSUPPORTED;
+    bt_hfp_ag_connection_t* sal_conn = find_connection_by_addr(addr);
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    if (!sal_conn->context) {
+        BT_LOGE("%s, ACL conn context not initiated", __func__);
+        return BT_STATUS_FAIL;
+    }
+
+    if (!sal_conn->sco_context) {
+        BT_LOGE("%s, SCO connection not initiated", __func__);
+        return BT_STATUS_FAIL;
+    }
+
+    hfp_ag_on_audio_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_DISCONNECTING, 0xFFFF); // sco conn handle not supported
+
+    int err = bt_conn_disconnect(sal_conn->sco_context, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+    bt_conn_unref(sal_conn->sco_context);
+    SAL_CHECK_RET(err, 0);
+
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_ag_start_voice_recognition(bt_address_t* addr)
