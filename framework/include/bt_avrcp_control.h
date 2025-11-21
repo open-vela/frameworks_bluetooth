@@ -50,21 +50,21 @@ typedef struct {
 
 /**
  * @brief Register callback functions to AVRCP Controller service.
- * 
- * When initializing an AVRCP Controller, an application should register callback functions 
- * to the AVRCP Controller service. Subsequently, the AVRCP Controller service will 
+ *
+ * When initializing an AVRCP Controller, an application should register callback functions
+ * to the AVRCP Controller service. Subsequently, the AVRCP Controller service will
  * notify the application of any state changes via the registered callback functions.
- * 
+ *
  * Callback functions includes:
  *   * connection_state_cb
  *   * get_element_attribute_cb
- * 
+ *
  * @param ins - Bluetooth client instance.
  * @param callbacks - AVRCP Controller callback functions.
- * @return void* - Callbacks cookie, if the callback is registered successfuly. NULL, 
+ * @return void* - Callbacks cookie, if the callback is registered successfuly. NULL,
  *                 if the callback is already registered or registration fails.
  *                 To obtain more information, refer to bt_remote_callbacks_register().
- * 
+ *
  * **Example:**
  * @code
 static const avrcp_control_callbacks_t avrcp_control_cbs = {
@@ -76,7 +76,7 @@ static const avrcp_control_callbacks_t avrcp_control_cbs = {
 void avrcp_control_init(void* ins)
 {
     static void* control_cbks_cookie;
-    
+
     control_cbks_cookie = bt_avrcp_control_register_callbacks(ins, &avrcp_control_cbs);
 }
  * @endcode
@@ -85,10 +85,10 @@ void* BTSYMBOLS(bt_avrcp_control_register_callbacks)(bt_instance_t* ins, const a
 
 /**
  * @brief Unregister callback functions from AVRCP Controller service.
- * 
- * An application may use this interface to stop listening on the AVRCP Controller 
+ *
+ * An application may use this interface to stop listening on the AVRCP Controller
  * callbacks and to release the associated resources.
- * 
+ *
  * @param ins - Bluetooth client instance.
  * @param cookie - Callbacks cookie.
  * @return true - Callback unregistration successful.
@@ -107,10 +107,10 @@ bool BTSYMBOLS(bt_avrcp_control_unregister_callbacks)(bt_instance_t* ins, void* 
 /**
  * @brief Get element attributes from AVRCP Target.
  *
- * This function is used when an application wants to obtain song information 
- * from an AVRCP Target device, including title, artist name, album name, track 
+ * This function is used when an application wants to obtain song information
+ * from an AVRCP Target device, including title, artist name, album name, track
  * number, total number of tracks, genre, playing time.
- * 
+ *
  * @param ins - Bluetooth client instance.
  * @param addr - The Bluetooth address of the peer device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
