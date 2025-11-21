@@ -424,6 +424,31 @@ static void free_l2cap_channel(void* context)
     free(channel);
 }
 
+static void l2cap_cleanup_app(void* app_handle)
+{
+    bt_list_node_t* node;
+    bt_list_node_t* next;
+    bt_list_t* list;
+
+    // remove all channels
+    BT_LOGD("%s, remove all L2CAP channels belong to app 0x%p", __func__, app_handle);
+    list = g_l2cap_manager.channel_list;
+    for (node = bt_list_head(list); node != NULL; node = next) {
+        l2cap_channel_t* channel = (l2cap_channel_t*)bt_list_node(node);
+        next = bt_list_next(list, node);
+        if (channel->app_handle == app_handle) {
+            BT_LOGD("%s, remove L2CAP channel(id: %" PRIu16 "/ cid: 0x%" PRIx16 ") from list",
+                __func__, channel->id, channel->local_cid);
+
+            if (channel->channel_connected) {
+                bt_sal_l2cap_disconnect_channel(channel->local_cid); // disconnect channel
+            }
+
+            bt_list_remove_node(list, node);
+        }
+    }
+}
+
 static void l2cap_receive_data_from_app(euv_pipe_t* pipe, const uint8_t* buf, ssize_t size)
 {
     l2cap_channel_t* channel;
@@ -821,6 +846,13 @@ bool l2cap_unregister_callbacks(void** remote, void* cookie)
         BT_LOGI("%s, adapter is not enabled", __func__);
         return true;
     }
+
+    if (!cookie) {
+        BT_LOGE("%s, invalid arg", __func__);
+        return false;
+    }
+
+    l2cap_cleanup_app((void*)cookie);
 
     return bt_remote_callbacks_unregister(g_l2cap_manager.callbacks, remote, (remote_callback_t*)cookie);
 }
