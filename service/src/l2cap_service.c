@@ -869,6 +869,12 @@ bt_status_t l2cap_listen_channel(void* handle, l2cap_config_option_t* option)
 
     CHECK_ADAPTER_ENABLED(BT_STATUS_NOT_ENABLED);
 
+    if (option->transport != BT_TRANSPORT_BLE) {
+        // TBD: support BR/EDR later
+        BT_LOGW("%s, only support LE transport", __func__);
+        return BT_STATUS_UNSUPPORTED;
+    }
+
     pthread_mutex_lock(&g_l2cap_manager.l2cap_lock);
     if (option->psm == 0) {
         option->psm = alloc_le_dynamic_psm();
@@ -994,12 +1000,18 @@ exit:
     return status;
 }
 
-bt_status_t l2cap_stop_listen_channel(void* handle, uint16_t psm)
+bt_status_t l2cap_stop_listen_channel(void* handle, bt_transport_t transport, uint16_t psm)
 {
     bt_status_t status = BT_STATUS_SUCCESS;
     l2cap_channel_t* channel;
 
     CHECK_ADAPTER_ENABLED(BT_STATUS_NOT_ENABLED);
+
+    if (transport != BT_TRANSPORT_BLE) {
+        // TBD: support BR/EDR later
+        BT_LOGW("%s, only support LE transport", __func__);
+        return BT_STATUS_UNSUPPORTED;
+    }
 
     pthread_mutex_lock(&g_l2cap_manager.l2cap_lock);
     channel = find_l2cap_channel_by_conn_param(NULL, psm, L2CAP_CHANNEL_ROLE_SERVER_LISTEN, false);
