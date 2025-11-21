@@ -100,7 +100,7 @@ static bt_hfp_ag_connection_t* find_connection_by_addr(bt_address_t* addr)
     return (bt_hfp_ag_connection_t*)bt_list_find(g_sal_ag_conn_list, sal_conn_addr_cmp, addr);
 }
 
-static __attribute__((unused)) bt_hfp_ag_connection_t* find_connection_by_ag(struct bt_hfp_ag* ag)
+static bt_hfp_ag_connection_t* find_connection_by_ag(struct bt_hfp_ag* ag)
 {
     if (!g_sal_ag_conn_list) {
         BT_LOGE("%s, ag conn list not initialized", __func__);
@@ -350,9 +350,32 @@ static void zblue_on_ag_connected(struct bt_conn* conn, struct bt_hfp_ag* ag)
     hfp_ag_on_connection_state_changed(&bd_addr, PROFILE_STATE_CONNECTED, 0, 0);
 }
 
+static void zblue_on_ag_disconnected(struct bt_hfp_ag* ag)
+{
+    BT_LOGD("%s, HFP AG disconnected, ag=%p", __func__, ag);
+    bt_address_t bd_addr;
+
+    bt_hfp_ag_connection_t* sal_conn = find_connection_by_ag(ag);
+
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return;
+    }
+
+    if (bt_sal_get_remote_address(sal_conn->context, &bd_addr) != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, Failed to get remote address", __func__);
+        return;
+    }
+
+    bt_list_remove(g_sal_ag_conn_list, sal_conn);
+
+    hfp_ag_on_connection_state_changed(&bd_addr, PROFILE_STATE_DISCONNECTING, 0, 0);
+    hfp_ag_on_connection_state_changed(&bd_addr, PROFILE_STATE_DISCONNECTED, 0, 0);
+}
+
 static struct bt_hfp_ag_cb g_hfp_ag_cb = {
     .connected = zblue_on_ag_connected,
-    .disconnected = NULL,
+    .disconnected = zblue_on_ag_disconnected,
     .sco_connected = NULL,
     .sco_disconnected = NULL,
     .get_ongoing_call = NULL,
@@ -414,8 +437,16 @@ bt_status_t bt_sal_hfp_ag_connect(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_ag_disconnect(bt_address_t* addr)
 {
-    (void)addr;
-    return BT_STATUS_UNSUPPORTED;
+    bt_hfp_ag_connection_t* conn = find_connection_by_addr(addr);
+    if (!conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    hfp_ag_on_connection_state_changed(addr, PROFILE_STATE_DISCONNECTING, 0, 0);
+
+    SAL_CHECK_RET(Z_API(bt_hfp_ag_disconnect)(conn->ag), 0);
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_ag_connect_audio(bt_address_t* addr)
