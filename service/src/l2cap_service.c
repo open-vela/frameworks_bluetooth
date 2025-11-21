@@ -78,8 +78,8 @@
  * Private Types
  ****************************************************************************/
 typedef enum {
-    L2CAP_CHANNEL_ROLE_SERVER,
-    L2CAP_CHANNEL_ROLE_ACCEPT,
+    L2CAP_CHANNEL_ROLE_SERVER_LISTEN,
+    L2CAP_CHANNEL_ROLE_SERVER_ACCEPT,
     L2CAP_CHANNEL_ROLE_CLIENT,
 } l2cap_channel_role_t;
 
@@ -212,7 +212,7 @@ static l2cap_channel_t* alloc_free_channel(void* handle, bt_address_t* addr, uin
     int id;
     l2cap_channel_t* channel;
 
-    if (addr && role == L2CAP_CHANNEL_ROLE_SERVER) {
+    if (addr && role == L2CAP_CHANNEL_ROLE_SERVER_LISTEN) {
         // this check is not necessary?
         BT_LOGW("%s, server channel remote addr is not NULL", __func__);
         return NULL;
@@ -342,8 +342,8 @@ static l2cap_channel_t* find_l2cap_channel_by_conn_param(bt_address_t* addr, uin
         }
         break;
     }
-    case L2CAP_CHANNEL_ROLE_SERVER:
-    case L2CAP_CHANNEL_ROLE_ACCEPT: {
+    case L2CAP_CHANNEL_ROLE_SERVER_LISTEN:
+    case L2CAP_CHANNEL_ROLE_SERVER_ACCEPT: {
         // server and accept find by psm
         for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
             l2cap_channel_t* channel = (l2cap_channel_t*)bt_list_node(node);
@@ -375,13 +375,13 @@ static void free_le_dynamic_psm(uint16_t psm)
         return;
     }
 
-    channel = find_l2cap_channel_by_conn_param(NULL, psm, L2CAP_CHANNEL_ROLE_SERVER, false);
+    channel = find_l2cap_channel_by_conn_param(NULL, psm, L2CAP_CHANNEL_ROLE_SERVER_LISTEN, false);
     if (channel) {
         BT_LOGI("%s, psm %" PRIu16 " is used to listen", __func__, psm);
         return;
     }
 
-    channel = find_l2cap_channel_by_conn_param(NULL, psm, L2CAP_CHANNEL_ROLE_ACCEPT, true);
+    channel = find_l2cap_channel_by_conn_param(NULL, psm, L2CAP_CHANNEL_ROLE_SERVER_ACCEPT, true);
     if (channel) {
         BT_LOGI("%s, psm %" PRIu16 " is used to accept", __func__, psm);
         return;
@@ -542,7 +542,7 @@ static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* p
         return;
     }
 
-    role = param->is_client ? L2CAP_CHANNEL_ROLE_CLIENT : L2CAP_CHANNEL_ROLE_SERVER;
+    role = param->is_client ? L2CAP_CHANNEL_ROLE_CLIENT : L2CAP_CHANNEL_ROLE_SERVER_LISTEN;
     channel = find_l2cap_channel_by_conn_param(addr, param->psm, role, false);
     if (!channel) {
         BT_LOGE("%s, find L2CAP channel null, local cid: 0x%" PRIx16, __func__, param->local_cid);
@@ -557,11 +557,11 @@ static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* p
         return;
     }
 
-    if (role == L2CAP_CHANNEL_ROLE_SERVER) {
+    if (role == L2CAP_CHANNEL_ROLE_SERVER_LISTEN) {
         memcpy(&channel->addr, addr, sizeof(channel->addr));
         channel->local_cid = param->local_cid;
-        channel->role = L2CAP_CHANNEL_ROLE_ACCEPT;
-        new_listen_channel = alloc_free_channel((void*)channel->app_handle, NULL, channel->psm, L2CAP_CHANNEL_ROLE_SERVER);
+        channel->role = L2CAP_CHANNEL_ROLE_SERVER_ACCEPT;
+        new_listen_channel = alloc_free_channel((void*)channel->app_handle, NULL, channel->psm, L2CAP_CHANNEL_ROLE_SERVER_LISTEN);
         if (!new_listen_channel) {
             BT_LOGE("%s, allocate new listen channel for psm: %" PRIx16 "failed", __func__, channel->psm);
             return;
@@ -833,7 +833,7 @@ bt_status_t l2cap_listen_channel(void* handle, l2cap_config_option_t* option)
         }
     }
 
-    channel = alloc_free_channel(handle, NULL, option->psm, L2CAP_CHANNEL_ROLE_SERVER);
+    channel = alloc_free_channel(handle, NULL, option->psm, L2CAP_CHANNEL_ROLE_SERVER_LISTEN);
     if (!channel) {
         status = BT_STATUS_NOMEM;
         goto out;
@@ -948,7 +948,7 @@ bt_status_t l2cap_stop_listen_channel(void* handle, uint16_t psm)
     CHECK_ADAPTER_ENABLED(BT_STATUS_NOT_ENABLED);
 
     pthread_mutex_lock(&g_l2cap_manager.l2cap_lock);
-    channel = find_l2cap_channel_by_conn_param(NULL, psm, L2CAP_CHANNEL_ROLE_SERVER, false);
+    channel = find_l2cap_channel_by_conn_param(NULL, psm, L2CAP_CHANNEL_ROLE_SERVER_LISTEN, false);
     if (!channel) {
         status = BT_STATUS_NOT_FOUND;
         BT_LOGE("%s, L2CAP(psm: 0x%" PRIx16 ") not found", __func__, psm);
