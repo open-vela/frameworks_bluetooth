@@ -52,6 +52,7 @@ typedef struct _bt_hfp_ag_call_info {
 typedef struct _bt_hfp_ag_connection {
     bt_address_t addr;
     struct bt_conn* context;
+    struct bt_conn* sco_context;
     struct bt_hfp_ag* ag;
 } bt_hfp_ag_connection_t;
 
@@ -91,6 +92,13 @@ static bool sal_conn_context_cmp(void* sal_context, void* z_context)
     return sal_conn && sal_conn->context == conn;
 }
 
+static bool sal_conn_sco_context_cmp(void* sal_context, void* z_context)
+{
+    bt_hfp_ag_connection_t* sal_conn = (bt_hfp_ag_connection_t*)sal_context;
+    struct bt_conn* sco_conn = (struct bt_conn*)z_context;
+    return sal_conn && sal_conn->sco_context == sco_conn;
+}
+
 static bt_hfp_ag_connection_t* find_connection_by_addr(bt_address_t* addr)
 {
     if (!g_sal_ag_conn_list) {
@@ -116,6 +124,15 @@ static __attribute__((unused)) bt_hfp_ag_connection_t* find_connection_by_conn(s
         return NULL;
     }
     return (bt_hfp_ag_connection_t*)bt_list_find(g_sal_ag_conn_list, sal_conn_context_cmp, conn);
+}
+
+static __attribute__((unused)) bt_hfp_ag_connection_t* find_connection_by_sco_context(struct bt_conn* sco_conn)
+{
+    if (!g_sal_ag_conn_list) {
+        BT_LOGE("%s, ag conn list not initialized", __func__);
+        return NULL;
+    }
+    return (bt_hfp_ag_connection_t*)bt_list_find(g_sal_ag_conn_list, sal_conn_sco_context_cmp, sco_conn);
 }
 
 static bt_hfp_ag_connection_t* new_sal_connection(struct bt_conn* conn, struct bt_hfp_ag* ag)
@@ -373,10 +390,24 @@ static void zblue_on_ag_disconnected(struct bt_hfp_ag* ag)
     hfp_ag_on_connection_state_changed(&bd_addr, PROFILE_STATE_DISCONNECTED, 0, 0);
 }
 
+static void zblue_on_ag_sco_connected(struct bt_hfp_ag* ag, struct bt_conn* sco_conn)
+{
+    BT_LOGD("%s, HFP AG SCO connected, ag=%p", __func__, ag);
+    bt_hfp_ag_connection_t* sal_conn = find_connection_by_ag(ag);
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return;
+    }
+
+    sal_conn->sco_context = sco_conn;
+
+    hfp_ag_on_audio_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_CONNECTED, 0xFFFF); // sco conn handle not supported
+}
+
 static struct bt_hfp_ag_cb g_hfp_ag_cb = {
     .connected = zblue_on_ag_connected,
     .disconnected = zblue_on_ag_disconnected,
-    .sco_connected = NULL,
+    .sco_connected = zblue_on_ag_sco_connected,
     .sco_disconnected = NULL,
     .get_ongoing_call = NULL,
     .memory_dial = NULL,
@@ -451,8 +482,17 @@ bt_status_t bt_sal_hfp_ag_disconnect(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_ag_connect_audio(bt_address_t* addr)
 {
-    (void)addr;
-    return BT_STATUS_UNSUPPORTED;
+    bt_hfp_ag_connection_t* sal_conn = find_connection_by_addr(addr);
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    SAL_CHECK_RET(Z_API(bt_hfp_ag_audio_connect)(sal_conn->ag, BT_HFP_AG_CODEC_CVSD), 0);
+
+    hfp_ag_on_audio_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_CONNECTING, 0xFFFF); // sco conn handle not supported
+
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_ag_disconnect_audio(bt_address_t* addr)
