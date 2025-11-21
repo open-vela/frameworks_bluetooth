@@ -233,6 +233,7 @@ static l2cap_channel_t* alloc_free_channel(void* handle, bt_address_t* addr, uin
     channel = (l2cap_channel_t*)calloc(1, sizeof(l2cap_channel_t));
     if (!channel) {
         BT_LOGE("%s, alloc l2cap channel failed", __func__);
+        index_free(g_l2cap_manager.id_allocator, id);
         return NULL;
     }
 
