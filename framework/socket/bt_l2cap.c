@@ -142,6 +142,23 @@ bt_status_t bt_l2cap_stop_listen(bt_instance_t* ins, void* handle, uint16_t psm)
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
+    packet.l2cap_pl._bt_l2cap_stop_listen.transport = BT_TRANSPORT_BLE;
+    packet.l2cap_pl._bt_l2cap_stop_listen.psm = psm;
+    status = bt_socket_client_sendrecv(ins, &packet, BT_L2CAP_STOP_LISTEN);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.l2cap_r.status;
+}
+
+bt_status_t bt_l2cap_stop_listen_with_transport(bt_instance_t* ins, void* handle, bt_transport_t transport, uint16_t psm)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    packet.l2cap_pl._bt_l2cap_stop_listen.transport = transport;
     packet.l2cap_pl._bt_l2cap_stop_listen.psm = psm;
     status = bt_socket_client_sendrecv(ins, &packet, BT_L2CAP_STOP_LISTEN);
     if (status != BT_STATUS_SUCCESS)

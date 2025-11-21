@@ -49,5 +49,10 @@ bt_status_t BTSYMBOLS(bt_l2cap_disconnect)(bt_instance_t* ins, void* handle, uin
 
 bt_status_t BTSYMBOLS(bt_l2cap_stop_listen)(bt_instance_t* ins, void* handle, uint16_t psm)
 {
-    return l2cap_stop_listen_channel(handle, psm);
+    return l2cap_stop_listen_channel(handle, BT_TRANSPORT_BLE, psm);
+}
+
+bt_status_t BTSYMBOLS(bt_l2cap_stop_listen_with_transport)(bt_instance_t* ins, void* handle, bt_transport_t transport, uint16_t psm)
+{
+    return l2cap_stop_listen_channel(handle, transport, psm);
 }

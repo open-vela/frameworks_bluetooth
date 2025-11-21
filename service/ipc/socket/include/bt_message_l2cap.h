@@ -39,8 +39,8 @@ BT_L2CAP_MESSAGE_START,
 {
 #endif
 
-#include "bt_l2cap.h"
 #include "bt_ipc_code.h"
+#include "bt_l2cap.h"
 
 #define BT_IPC_CODE_COMMAND_L2CAP_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_L2CAP, 0)
 // TODO: Add new BT IPC Code sequentially
@@ -74,6 +74,7 @@ BT_L2CAP_MESSAGE_START,
         } _bt_l2cap_disconnect;
 
         struct {
+            uint8_t transport; /* bt_transport_t */
             uint16_t psm;
         } _bt_l2cap_stop_listen;
 

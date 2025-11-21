@@ -134,7 +134,9 @@ void bt_socket_server_l2cap_process(service_poll_t* poll, int fd,
     default:
         switch (BT_IPC_GET_SUBCODE(packet->code)) {
         case L2CAP_SUBCODE_STOP_LISTEN:
-            packet->l2cap_r.status = BTSYMBOLS(bt_l2cap_stop_listen)(ins, ins->l2cap_cookie,
+            packet->l2cap_r.status = BTSYMBOLS(bt_l2cap_stop_listen_with_transport)(ins,
+                ins->l2cap_cookie,
+                packet->l2cap_pl._bt_l2cap_stop_listen.transport,
                 packet->l2cap_pl._bt_l2cap_stop_listen.psm);
             break;
         default:
