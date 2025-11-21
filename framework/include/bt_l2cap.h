@@ -26,6 +26,8 @@ extern "C" {
 #define BTSYMBOLS(s) s
 #endif
 
+#define INVALID_L2CAP_LISTEN_ID 0xFFFF
+
 enum {
     LE_PSM_DYNAMIC_MIN = 0x0080,
     LE_PSM_DYNAMIC_MAX = 0x00FF,
@@ -63,7 +65,7 @@ typedef struct {
     uint16_t outgoing_mtu; /* Outgoing transmit MTU */
     uint16_t id; /* Connected L2CAP Channel socket id */
     // for L2CAP listen only.
-    uint16_t listen_id; /* New L2CAP Listen socket id */
+    uint16_t listen_id; /* New L2CAP Listen socket id, INVALID_L2CAP_LISTEN_ID indicates invalid */
     char proxy_name[16]; /* Proxy name for server */
 } l2cap_connect_params_t;
 

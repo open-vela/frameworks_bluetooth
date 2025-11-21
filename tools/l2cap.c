@@ -174,7 +174,8 @@ static void l2cap_channel_connected_process(void* data)
         free(channel);
         goto free_msg;
     }
-    if (msg->listen_id >= 0 && msg->proxy_name) {
+
+    if (msg->listen_id != INVALID_L2CAP_LISTEN_ID) {
         channel->is_listening = false; /* listen channel transfer to connected(accept) channel */
         PRINT("prepare a new listen channel(id: %" PRIu16 ") for PSM:0x%" PRIx16, msg->listen_id, msg->psm);
         /* Create a new channel for listening */
@@ -291,11 +292,16 @@ static void on_connected(void* handle, l2cap_connect_params_t* params)
     msg->id = params->id;
     msg->psm = params->psm;
     msg->cid = params->cid;
-    if (params->listen_id > 0) {
+    msg->listen_id = params->listen_id;
+    if (params->listen_id != INVALID_L2CAP_LISTEN_ID) {
         PRINT("new listen(id: %" PRIu16 "/ proxy_name: %s) for listen psm: 0x%" PRIx16,
             params->listen_id, params->proxy_name, params->psm);
-        msg->listen_id = params->listen_id;
         msg->proxy_name = strdup(params->proxy_name);
+        if (!msg->proxy_name) {
+            PRINT("%s, allocate proxy name failed", __func__);
+            free(msg);
+            return;
+        }
     }
 
     memcpy(&msg->addr, &params->addr, sizeof(bt_address_t));

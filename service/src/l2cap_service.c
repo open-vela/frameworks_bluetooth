@@ -569,7 +569,7 @@ static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* p
     int ret;
     l2cap_channel_t* channel;
     l2cap_channel_t* new_listen_channel = NULL;
-    l2cap_connect_params_t conn_param;
+    l2cap_connect_params_t conn_param = { .listen_id = INVALID_L2CAP_LISTEN_ID };
     l2cap_channel_role_t role;
 
     if (!addr || !param) {
