@@ -456,6 +456,19 @@ static bt_command_t g_l2cap_commands[] = {
     { "write", write_cmd, 0, "\"write data to peer   param: <id> <data>\"" },
 };
 
+static void usage(void)
+{
+    int i;
+
+    printf("Usage:\n");
+    printf("\tpsm: Protocol/Service Multiplexer value(128~191, 0 only for start listen)\n");
+    printf("\tid: L2CAP Sock id, which is returned by connect/listen command\n");
+    printf("\tCommands:\n");
+    for (i = 0; i < ARRAY_SIZE(g_l2cap_commands); i++) {
+        printf("\t%-8s\t%s\n", g_l2cap_commands[i].cmd, g_l2cap_commands[i].help);
+    }
+}
+
 int l2cap_command_exec(void* handle, int argc, char* argv[])
 {
     int ret = CMD_USAGE_FAULT;
@@ -463,6 +476,9 @@ int l2cap_command_exec(void* handle, int argc, char* argv[])
     if (argc > 0) {
         ret = execute_command_in_table(handle, g_l2cap_commands, ARRAY_SIZE(g_l2cap_commands), argc, argv);
     }
+
+    if (ret < 0)
+        usage();
 
     return ret;
 }
