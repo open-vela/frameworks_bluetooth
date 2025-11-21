@@ -28,7 +28,7 @@ typedef struct {
     uint16_t psm;
     uint16_t cid;
     uint16_t id;
-} l2cap_channel_t;
+} l2cap_chnl_t;
 
 typedef struct {
     bt_address_t addr;
@@ -45,15 +45,15 @@ static uv_loop_t g_l2cap_thread;
 static void* g_l2cap_handle;
 static struct list_node channel_list = LIST_INITIAL_VALUE(channel_list);
 
-static l2cap_channel_t* find_channel_by_id(uint16_t id)
+static l2cap_chnl_t* find_channel_by_id(uint16_t id)
 {
     struct list_node* node;
     struct list_node* list = &channel_list;
-    l2cap_channel_t* channel;
+    l2cap_chnl_t* channel;
 
     list_for_every(list, node)
     {
-        channel = (l2cap_channel_t*)node;
+        channel = (l2cap_chnl_t*)node;
         if (channel->id == id) {
             return channel;
         }
@@ -62,15 +62,15 @@ static l2cap_channel_t* find_channel_by_id(uint16_t id)
     return NULL;
 }
 
-static l2cap_channel_t* find_channel_by_pipe(euv_pipe_t* pipe)
+static l2cap_chnl_t* find_channel_by_pipe(euv_pipe_t* pipe)
 {
     struct list_node* node;
     struct list_node* list = &channel_list;
-    l2cap_channel_t* channel;
+    l2cap_chnl_t* channel;
 
     list_for_every(list, node)
     {
-        channel = (l2cap_channel_t*)node;
+        channel = (l2cap_chnl_t*)node;
         if (channel->pipe == pipe) {
             return channel;
         }
@@ -86,7 +86,7 @@ static void write_complete_cb(euv_pipe_t* handle, uint8_t* buf, int status)
 
 static void read_complete_cb(euv_pipe_t* pipe, const uint8_t* buf, ssize_t nread)
 {
-    l2cap_channel_t* channel;
+    l2cap_chnl_t* channel;
 
     // need lock
     if (nread < 0) {
@@ -112,7 +112,7 @@ static void read_complete_cb(euv_pipe_t* pipe, const uint8_t* buf, ssize_t nread
 
 static void data_path_connected_cb(euv_pipe_t* pipe, int status, void* data)
 {
-    l2cap_channel_t* channel = (l2cap_channel_t*)data;
+    l2cap_chnl_t* channel = (l2cap_chnl_t*)data;
     // need lock
     PRINT("l2cap channel(id:%" PRIu16 ") data path establish status:%d\n", channel->id, status); // euv thread
 
@@ -122,7 +122,7 @@ static void data_path_connected_cb(euv_pipe_t* pipe, int status, void* data)
 static void add_l2cap_channel(void* data)
 {
     l2cap_msg_t* msg;
-    l2cap_channel_t* channel;
+    l2cap_chnl_t* channel;
 
     if (!data) {
         PRINT("invalid arg\n");
@@ -130,7 +130,7 @@ static void add_l2cap_channel(void* data)
     }
 
     msg = (l2cap_msg_t*)data;
-    channel = (l2cap_channel_t*)zalloc(sizeof(l2cap_channel_t));
+    channel = (l2cap_chnl_t*)zalloc(sizeof(l2cap_chnl_t));
     if (!channel) {
         PRINT("allocate channel failed\n");
         goto free_msg;
@@ -158,7 +158,7 @@ static void l2cap_channel_connected_process(void* data)
 {
     int ret;
     l2cap_msg_t* msg;
-    l2cap_channel_t* channel;
+    l2cap_chnl_t* channel;
 
     if (!data) {
         PRINT("invalid arg\n");
@@ -202,7 +202,7 @@ free_msg:
 static void l2cap_channel_disconnected_process(void* data)
 {
     l2cap_msg_t* msg;
-    l2cap_channel_t* channel;
+    l2cap_chnl_t* channel;
 
     if (!data) {
         PRINT("invalid arg\n");
@@ -231,7 +231,7 @@ static void l2cap_channel_disconnected_process(void* data)
 static void do_l2cap_write(void* data)
 {
     l2cap_msg_t* msg;
-    l2cap_channel_t* channel;
+    l2cap_chnl_t* channel;
 
     if (!data) {
         PRINT("invalid arg\n");
