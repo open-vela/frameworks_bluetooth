@@ -109,6 +109,10 @@ bool BTSYMBOLS(bt_avrcp_control_unregister_callbacks)(bt_instance_t* ins, void* 
 /**
  * @brief Get element attribute from peer device.
  *
+ * This function is used when an application wants to obtain song information
+ * from an AVRCP Target device, including title, artist name, album name, track
+ * number, total number of tracks, genre, playing time.
+ *
  * @param ins - Bluetooth client instance.
  * @param addr - Remote BT address.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
