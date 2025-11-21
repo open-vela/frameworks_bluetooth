@@ -74,6 +74,11 @@
  */
 #define PSM_BIT_MASK(psm) (1ULL << (psm - LE_PSM_DYNAMIC_MIN))
 
+/**
+ * \def L2CAP Tx SDU watermark
+ */
+#define L2CAP_TX_QUOTA 16
+
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -92,6 +97,7 @@ typedef struct {
     l2cap_endpoint_param_t incoming;
     l2cap_endpoint_param_t outgoing;
     uint16_t tx_mtu;
+    uint16_t tx_quota;
     uint16_t id;
     l2cap_channel_role_t role;
     bool channel_connected;
@@ -449,6 +455,9 @@ static void l2cap_receive_data_from_app(euv_pipe_t* pipe, const uint8_t* buf, ss
             BT_LOGW("%s, L2CAP channel not connected", __func__);
         } else {
             bt_sal_l2cap_send_packet(channel->local_cid, (uint8_t*)buf, size);
+            if (!(--channel->tx_quota)) {
+                euv_pipe_read_stop(channel->pipe);
+            }
         }
     }
 
@@ -577,6 +586,7 @@ static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* p
     memcpy(&channel->incoming, &param->incoming, sizeof(channel->incoming));
     memcpy(&channel->outgoing, &param->outgoing, sizeof(channel->outgoing));
     channel->tx_mtu = MIN(param->outgoing.mtu, CONFIG_BLUETOOTH_L2CAP_OUTGOING_MTU);
+    channel->tx_quota = L2CAP_TX_QUOTA; // TODO: need to adjust quota according to mtu and memory
 
     // restart read pipe to adjust mtu
     ret = euv_pipe_read_stop(channel->pipe);
@@ -594,7 +604,8 @@ static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* p
     }
 
     BT_LOGI("L2CAP channel(id: %" PRIu16 "/cid: 0x%" PRIx16 ") connected", channel->id, channel->local_cid);
-    BT_LOGD("L2CAP channel(id: %" PRIu16 "/cid: 0x%" PRIx16 ") mtu: %" PRIu16, channel->id, channel->local_cid, channel->tx_mtu);
+    BT_LOGD("L2CAP channel(id: %" PRIu16 "/cid: 0x%" PRIx16 ") Tx mtu: %" PRIu16 ", Tx quota: %" PRIu16,
+        channel->id, channel->local_cid, channel->tx_mtu, channel->tx_quota);
     channel->channel_connected = true;
 
     // notify app
@@ -659,9 +670,19 @@ static void handle_packet_received(bt_address_t* addr, uint16_t cid, uint8_t* pa
 
 static void handle_packet_sent(bt_address_t* addr, uint16_t cid)
 {
-    // do nothing for now.
-    UNUSED(addr);
-    UNUSED(cid);
+    l2cap_channel_t* channel;
+
+    channel = find_l2cap_channel_by_cid(cid);
+    if (!channel) {
+        BT_LOGE("%s, find L2CAP channel null, local cid: 0x%" PRIx16, __func__, cid);
+        return;
+    }
+
+    if (channel->pipe && !channel->tx_quota) {
+        euv_pipe_read_start(channel->pipe, channel->tx_mtu, l2cap_receive_data_from_app, NULL);
+    }
+
+    channel->tx_quota++;
 }
 
 static void handle_l2cap_event(void* data)
