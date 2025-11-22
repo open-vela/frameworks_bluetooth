@@ -47,9 +47,33 @@ typedef struct {
     uint16_t len;
 } l2cap_msg_t;
 
+typedef struct {
+    void* handle;
+    enum {
+        TRANS_IDLE = 0,
+        TRANS_WRITING,
+        TRANS_SENDING,
+        TRANS_RECVING,
+        TRANS_ECHO,
+    } state;
+    uint8_t* bulk_buf;
+    int32_t bulk_count;
+    uint32_t bulk_length;
+    uint32_t trans_total_size;
+    uint32_t received_size;
+    uint64_t start_timestamp;
+    uint64_t end_timestamp;
+} l2cap_trans_ctx_t;
+
+static const char* TRANS_START = "START:";
+static const char* TRANS_START_ACK = "START_ACK";
+static const char* TRANS_EOF = "EOF";
+
 static uv_loop_t g_l2cap_thread;
 static void* g_l2cap_handle;
 static struct list_node channel_list = LIST_INITIAL_VALUE(channel_list);
+static l2cap_trans_ctx_t g_trans_ctx = { 0 };
+static sem_t speed_tx_sem;
 
 static l2cap_chnl_t* find_channel_by_id(uint16_t id)
 {
@@ -68,21 +92,9 @@ static l2cap_chnl_t* find_channel_by_id(uint16_t id)
     return NULL;
 }
 
-static l2cap_chnl_t* find_channel_by_pipe(euv_pipe_t* pipe)
+static void l2cap_trans_reset(void)
 {
-    struct list_node* node;
-    struct list_node* list = &channel_list;
-    l2cap_chnl_t* channel;
-
-    list_for_every(list, node)
-    {
-        channel = (l2cap_chnl_t*)node;
-        if (channel->pipe == pipe) {
-            return channel;
-        }
-    }
-
-    return NULL;
+    memset(&g_trans_ctx, 0, sizeof(g_trans_ctx));
 }
 
 static void write_complete_cb(euv_pipe_t* handle, uint8_t* buf, int status)
@@ -90,39 +102,124 @@ static void write_complete_cb(euv_pipe_t* handle, uint8_t* buf, int status)
     free(buf);
 }
 
+static void bulk_trans_complete(euv_pipe_t* handle, uint8_t* buf, int status)
+{
+    l2cap_trans_ctx_t* ctx = &g_trans_ctx;
+
+    ctx->bulk_count--;
+    if (ctx->bulk_count)
+        euv_pipe_write(handle, buf, ctx->bulk_length, bulk_trans_complete);
+    else
+        free(buf);
+}
+
+static bool bulk_buf_gen(uint8_t** buf, uint32_t length)
+{
+    uint32_t data_len;
+    struct bulk_buf_t {
+        char delimiter[4];
+        uint32_t length;
+        uint8_t filled_data[0];
+    } * bulk_buf;
+
+    if (length < sizeof(struct bulk_buf_t)) {
+        PRINT("bulk length is too short");
+        return false;
+    }
+
+    bulk_buf = malloc(length);
+    if (!bulk_buf) {
+        PRINT("allocate bulk buffer failed");
+        return false;
+    }
+
+    strncpy(bulk_buf->delimiter, "Vela", 4);
+    bulk_buf->length = length;
+    data_len = length - sizeof(struct bulk_buf_t);
+    for (uint32_t i = 0; i < data_len; i++) {
+        bulk_buf->filled_data[i] = (uint8_t)(i % 256);
+    }
+
+    *buf = (uint8_t*)bulk_buf;
+    return true;
+}
+
+static void show_result(uint64_t start, uint64_t end, uint32_t bytes)
+{
+    float use = (float)(end - start) / 1000;
+    float spd = (float)(bytes / 1024) / use;
+
+    PRINT("transmit done, total: %" PRIu32 " bytes, use: %f seconds, speed: %f KB/s", bytes, use, spd);
+}
+
+static void handle_l2cap_data_recv(euv_pipe_t* handle, const uint8_t* buf, ssize_t size)
+{
+    l2cap_trans_ctx_t* ctx = &g_trans_ctx;
+    if (ctx->state != TRANS_IDLE && handle != ctx->handle) {
+        PRINT("l2cap is testing ,ignore it");
+        return;
+    }
+
+    switch (ctx->state) {
+    case TRANS_IDLE:
+        if (strncmp((const char*)buf, TRANS_START, strlen(TRANS_START)) == 0) {
+            l2cap_trans_reset();
+            ctx->handle = handle;
+            ctx->state = TRANS_RECVING;
+            sscanf((const char*)buf, "START:%" PRIu32 ";", &ctx->trans_total_size);
+            PRINT("receive start, waiting for %" PRIu32 " bytes transmit done", ctx->trans_total_size);
+            euv_pipe_write(handle, (uint8_t*)TRANS_START_ACK, strlen(TRANS_START_ACK), NULL);
+            ctx->start_timestamp = get_timestamp_msec();
+        } else
+            lib_dumpbuffer("read data:", buf, size); // no need to free
+        break;
+    case TRANS_SENDING:
+        if (strncmp((const char*)buf, TRANS_EOF, strlen(TRANS_EOF)) == 0) {
+            ctx->end_timestamp = get_timestamp_msec();
+            show_result(ctx->start_timestamp, ctx->end_timestamp, ctx->trans_total_size);
+            l2cap_trans_reset();
+        } else if (strncmp((const char*)buf, TRANS_START_ACK, strlen(TRANS_START_ACK)) == 0) {
+            sem_post(&speed_tx_sem);
+            if (!bulk_buf_gen(&ctx->bulk_buf, ctx->bulk_length)) {
+                l2cap_trans_reset();
+                PRINT("generate bulk buffer failed");
+                // TBD: send error to peer to end test
+                return;
+            }
+
+            ctx->start_timestamp = get_timestamp_msec();
+            euv_pipe_write(handle, ctx->bulk_buf, ctx->bulk_length, bulk_trans_complete);
+        }
+        break;
+    case TRANS_RECVING:
+        ctx->received_size += size;
+        if (ctx->received_size >= ctx->trans_total_size) {
+            ctx->end_timestamp = get_timestamp_msec();
+            show_result(ctx->start_timestamp, ctx->end_timestamp, ctx->trans_total_size);
+            euv_pipe_write(handle, (uint8_t*)TRANS_EOF, strlen(TRANS_EOF), NULL);
+            l2cap_trans_reset();
+        }
+        break;
+    default:
+        break;
+    }
+}
+
 static void read_complete_cb(euv_pipe_t* pipe, const uint8_t* buf, ssize_t nread)
 {
-    l2cap_chnl_t* channel;
+    if (nread > 0) {
+        handle_l2cap_data_recv(pipe, buf, nread);
 
-    // need lock
-    if (nread < 0) {
-        PRINT("read failed:%s\n", uv_strerror(nread));
-        euv_pipe_read_stop(pipe);
-        channel = find_channel_by_pipe(pipe);
-        if (channel == NULL) {
-            PRINT("channel not found\n");
-            return;
-        }
-
-        euv_pipe_disconnect(channel->pipe);
-        channel->pipe = NULL;
-        list_delete(&channel->node);
-        free(channel);
-    } else if (nread == 0) {
-        if (buf)
-            free((void*)buf);
-    } else {
-        lib_dumpbuffer("read data:", buf, nread);
+    } else if (nread < 0) {
+        PRINT("read failed:%s, wait for connection disconnect", uv_strerror(nread));
     }
 }
 
 static void data_path_connected_cb(euv_pipe_t* pipe, int status, void* data)
 {
     l2cap_chnl_t* channel = (l2cap_chnl_t*)data;
-    // need lock
-    PRINT("l2cap channel(id:%" PRIu16 ") data path establish status:%d\n", channel->id, status); // euv thread
 
-    // do nothing
+    PRINT("l2cap channel(id:%" PRIu16 ") data path establish status:%d", channel->id, status);
 }
 
 static void add_l2cap_channel(void* data)
@@ -198,23 +295,21 @@ free_msg:
 
 static void l2cap_channel_disconnected_process(void* data)
 {
-    l2cap_msg_t* msg;
+    l2cap_msg_t* msg = (l2cap_msg_t*)data;
     l2cap_chnl_t* channel;
 
-    if (!data) {
-        PRINT("invalid arg\n");
-        return;
-    }
-
-    msg = (l2cap_msg_t*)data;
     channel = find_channel_by_id(msg->id);
     if (channel == NULL) {
-        PRINT("channel not found\n");
+        PRINT("%s, channel not found", __func__);
         free(msg);
         return;
     }
 
-    PRINT("free channel(id:%" PRIu16 ")\n", msg->id);
+    if (g_trans_ctx.handle == channel->pipe) {
+        l2cap_trans_reset();
+    }
+
+    PRINT("free channel(id:%" PRIu16 ")", msg->id);
     if (channel->pipe) {
         euv_pipe_disconnect(channel->pipe);
         channel->pipe = NULL;
@@ -276,6 +371,43 @@ static void do_l2cap_stop_listen(void* data)
     }
 
     free(msg);
+}
+
+static void do_l2cap_speed_test(void* data)
+{
+    l2cap_msg_t* msg = (l2cap_msg_t*)data;
+    l2cap_chnl_t* channel;
+    l2cap_trans_ctx_t* trans_ctx = &g_trans_ctx;
+    uint16_t times;
+    uint16_t id;
+    static uint8_t start[100];
+
+    id = msg->id;
+    times = msg->len;
+    free(msg);
+
+    channel = find_channel_by_id(id);
+    if (channel == NULL || channel->pipe == NULL) {
+        PRINT("channel not found or pipe disconnected");
+        return;
+    }
+
+    if (trans_ctx->state != TRANS_IDLE) {
+        PRINT("l2cap is testing");
+        return;
+    }
+
+    trans_ctx->handle = channel->pipe;
+    trans_ctx->state = TRANS_SENDING;
+    trans_ctx->bulk_length = L2CAP_TRANS_MTU_CFG;
+    trans_ctx->bulk_count = times;
+    trans_ctx->trans_total_size = L2CAP_TRANS_MTU_CFG * times;
+
+    PRINT("L2cap channel(id:%" PRIu16 ") speed test", id);
+    memset(start, 0, sizeof(start));
+    sprintf((char*)start, "START:%" PRIu32 ";", trans_ctx->trans_total_size);
+    euv_pipe_write(channel->pipe, start, strlen((const char*)start), NULL);
+    PRINT("transmit start, waiting for %" PRIu32 " bytes transmit done", trans_ctx->trans_total_size);
 }
 
 static void on_connected(void* handle, l2cap_connect_params_t* params)
@@ -522,12 +654,53 @@ static int stop_listen_cmd(void* handle, int argc, char* argv[])
     return CMD_OK;
 }
 
+static int speed_test_cmd(void* handle, int argc, char* argv[])
+{
+    l2cap_msg_t* msg;
+    struct timespec ts;
+
+    if (!handle || !g_l2cap_handle) {
+        PRINT("L2CAP tool not ready!");
+        return CMD_ERROR;
+    }
+
+    if (argc < 2)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    msg = (l2cap_msg_t*)malloc(sizeof(l2cap_msg_t));
+    if (!msg) {
+        PRINT("allocate msg failed");
+        return CMD_ERROR;
+    }
+
+    msg->id = strtoul(argv[0], NULL, 10);
+    msg->len = strtoul(argv[1], NULL, 10);
+    if (msg->id < 0 || msg->len <= 0) {
+        PRINT("invalid param");
+        free(msg);
+        return CMD_ERROR;
+    }
+
+    do_in_thread_loop(&g_l2cap_thread, do_l2cap_speed_test, msg);
+
+    clock_gettime(CLOCK_REALTIME, &ts);
+    ts.tv_sec += 2;
+    if (sem_timedwait(&speed_tx_sem, &ts) < 0) {
+        PRINT("wait speed test ack failed");
+        l2cap_trans_reset();
+        return CMD_ERROR;
+    }
+
+    return CMD_OK;
+}
+
 static bt_command_t g_l2cap_commands[] = {
     { "connect", connect_cmd, 0, "\"connect l2cap channel      param: <address> <psm>\"" },
     { "listen", listen_cmd, 0, "\"listen l2cap channel        param: <psm>\"" },
     { "disconnect", disconnect_cmd, 0, "\"disconnect l2cap channel  param: <id>\"" },
     { "stoplisten", stop_listen_cmd, 0, "\"stop listen l2cap channel  param: <psm>\"" },
     { "write", write_cmd, 0, "\"write data to peer   param: <id> <data>\"" },
+    { "speed", speed_test_cmd, 0, "\"speed test l2cap channel    param: <id> <iteration>\"" },
 };
 
 static void usage(void)
@@ -559,6 +732,7 @@ int l2cap_command_exec(void* handle, int argc, char* argv[])
 
 int l2cap_command_init(void* handle)
 {
+    sem_init(&speed_tx_sem, 0, 0);
     thread_loop_init(&g_l2cap_thread);
     thread_loop_run(&g_l2cap_thread, true, "bttool-l2cap");
     g_l2cap_handle = bt_l2cap_register_callbacks(handle, &l2cap_callback);
@@ -570,5 +744,6 @@ void l2cap_command_uninit(void* handle)
 {
     bt_l2cap_unregister_callbacks(handle, g_l2cap_handle);
     thread_loop_exit(&g_l2cap_thread);
+    sem_destroy(&speed_tx_sem);
     memset(&g_l2cap_thread, 0, sizeof(g_l2cap_thread));
 }
