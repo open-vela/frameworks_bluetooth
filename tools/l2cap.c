@@ -22,6 +22,10 @@
 #include "euv_pipe.h"
 #include "uv_thread_loop.h"
 
+#define L2CAP_TRANS_MTU_CFG 1000
+#define L2CAP_TRANS_MPS_CFG 251
+#define L2CAP_TRANS_CREDIT_CFG 30
+
 typedef struct {
     struct list_node node;
     euv_pipe_t* pipe;
@@ -355,24 +359,26 @@ static int connect_cmd(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    conn_option.psm = atoi(argv[1]);
-    // defaule param
-    conn_option.transport = BT_TRANSPORT_BLE;
-    conn_option.mode = L2CAP_CHANNEL_MODE_LE_CREDIT_BASED_FLOW_CONTROL;
-    conn_option.mtu = 128;
-    conn_option.le_mps = 128;
-    conn_option.init_credits = 0xffff;
-    if (bt_l2cap_connect(handle, g_l2cap_handle, &addr, &conn_option) != BT_STATUS_SUCCESS) {
-        PRINT("connect %s failed\n", argv[0]);
+    msg = (l2cap_msg_t*)zalloc(sizeof(l2cap_msg_t));
+    if (!msg) {
+        PRINT("allocate msg failed");
         return CMD_ERROR;
     }
 
-    PRINT("L2cap channel(id:%" PRIu16 ") connecting\n", conn_option.id);
-    msg = (l2cap_msg_t*)malloc(sizeof(l2cap_msg_t));
-    if (!msg) {
-        PRINT("allocate msg failed\n");
+    conn_option.psm = strtoul(argv[1], NULL, 0);
+    // defaule param
+    conn_option.transport = BT_TRANSPORT_BLE;
+    conn_option.mode = L2CAP_CHANNEL_MODE_LE_CREDIT_BASED_FLOW_CONTROL;
+    conn_option.mtu = L2CAP_TRANS_MTU_CFG;
+    conn_option.le_mps = L2CAP_TRANS_MPS_CFG;
+    conn_option.init_credits = L2CAP_TRANS_CREDIT_CFG;
+    if (bt_l2cap_connect(handle, g_l2cap_handle, &addr, &conn_option) != BT_STATUS_SUCCESS) {
+        PRINT("connect %s failed", argv[0]);
+        free(msg);
         return CMD_ERROR;
     }
+
+    PRINT("L2cap channel(id:%" PRIu16 ") connecting", conn_option.id);
 
     msg->id = conn_option.id;
     msg->psm = conn_option.psm;
@@ -395,27 +401,29 @@ static int listen_cmd(void* handle, int argc, char* argv[])
     }
 
     if (argc < 1)
-        return CMD_PARAM_NOT_ENOUGH;
+        conn_option.psm = 0;
+    else
+        conn_option.psm = strtoul(argv[0], NULL, 0);
 
-    conn_option.psm = atoi(argv[0]);
+    msg = (l2cap_msg_t*)zalloc(sizeof(l2cap_msg_t));
+    if (!msg) {
+        PRINT("allocate msg failed");
+        return CMD_ERROR;
+    }
+
     // default param
     conn_option.transport = BT_TRANSPORT_BLE;
     conn_option.mode = L2CAP_CHANNEL_MODE_LE_CREDIT_BASED_FLOW_CONTROL;
-    conn_option.mtu = 128;
-    conn_option.le_mps = 128;
-    conn_option.init_credits = 0xffff;
+    conn_option.mtu = L2CAP_TRANS_MTU_CFG;
+    conn_option.le_mps = L2CAP_TRANS_MPS_CFG;
+    conn_option.init_credits = L2CAP_TRANS_CREDIT_CFG;
     if (bt_l2cap_listen(handle, g_l2cap_handle, &conn_option) != BT_STATUS_SUCCESS) {
         PRINT("listen 0x%" PRIx16 " failed", conn_option.psm);
+        free(msg);
         return CMD_ERROR;
     }
 
-    PRINT("L2cap channel(id:%" PRIu16 "/psm:0x%x) start listen\n", conn_option.id, conn_option.psm);
-    msg = (l2cap_msg_t*)malloc(sizeof(l2cap_msg_t));
-    if (!msg) {
-        PRINT("allocate msg failed\n");
-        return CMD_ERROR;
-    }
-
+    PRINT("L2cap channel(id:%" PRIu16 "/psm:0x%" PRIx16 ") start listen", conn_option.id, conn_option.psm);
     msg->id = conn_option.id;
     msg->psm = conn_option.psm;
     msg->is_listening = true;
@@ -437,9 +445,13 @@ static int disconnect_cmd(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    id = atoi(argv[0]);
-    PRINT("L2cap channel(id:%" PRIu16 ") disconnecting\n", id);
-    bt_l2cap_disconnect(handle, g_l2cap_handle, id);
+    id = strtoul(argv[0], NULL, 10);
+    if (bt_l2cap_disconnect(handle, g_l2cap_handle, id) != BT_STATUS_SUCCESS) {
+        PRINT("disconnect %" PRIu16 " failed", id);
+        return CMD_ERROR;
+    }
+
+    PRINT("L2cap channel(id:%" PRIu16 ") disconnecting", id);
 
     return CMD_OK;
 }
@@ -470,9 +482,9 @@ static int write_cmd(void* handle, int argc, char* argv[])
         return CMD_ERROR;
     }
 
-    msg->id = atoi(argv[0]);
+    msg->id = strtoul(argv[0], NULL, 10);
     msg->buf = buf;
-    msg->len = strlen(argv[1]);
+    msg->len = strlen((char*)buf);
     do_in_thread_loop(&g_l2cap_thread, do_l2cap_write, msg);
 
     return CMD_OK;
