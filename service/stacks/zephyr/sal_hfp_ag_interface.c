@@ -241,7 +241,6 @@ static enum bt_hfp_ag_call_dir service_call_dir_to_sal_dir(hfp_call_direction_t 
 
 static bt_hfp_ag_call_info_t* build_sal_call(
     hfp_call_direction_t dir, hfp_ag_call_state_t call,
-    hfp_call_mode_t mode, hfp_call_mpty_type_t mpty,
     hfp_call_addrtype_t type, const char* number)
 {
     enum bt_hfp_ag_call_status state = tele_call_state_to_sal_status(call);
@@ -281,7 +280,7 @@ static bt_hfp_ag_call_info_t* update_sal_call(bt_hfp_ag_connection_t* conn,
         sal_call->dir = service_call_dir_to_sal_dir(dir);
         sal_call->type = type;
     } else {
-        sal_call = build_sal_call(dir, call, mode, mpty, type, number);
+        sal_call = build_sal_call(dir, call, type, number);
         if (!sal_call) {
             return NULL;
         }
@@ -651,17 +650,203 @@ bt_status_t bt_sal_hfp_ag_stop_voice_recognition(bt_address_t* addr)
     return BT_STATUS_SUCCESS;
 }
 
+typedef struct {
+    bt_hfp_ag_call_info_t* call_info; /* includes call_context + number */
+    bt_hfp_ag_connection_t* connection; /* includes ag pointer */
+} hfp_ag_operation_context_t;
+
+/* unified wrapper signature */
+typedef int (*call_operation_t)(hfp_ag_operation_context_t* operation_context);
+
+/* ============================================================
+ * Wrapper
+ * ============================================================ */
+
+static int accept_call(hfp_ag_operation_context_t* operation_context)
+{
+    return Z_API(bt_hfp_ag_accept)(operation_context->call_info->context);
+}
+
+static int remote_accept_call(hfp_ag_operation_context_t* operation_context)
+{
+    return Z_API(bt_hfp_ag_remote_accept)(operation_context->call_info->context);
+}
+
+static int hold_call(hfp_ag_operation_context_t* operation_context)
+{
+    return Z_API(bt_hfp_ag_hold)(operation_context->call_info->context);
+}
+
+static int hold_incoming_call(hfp_ag_operation_context_t* operation_context)
+{
+    return Z_API(bt_hfp_ag_hold_incoming)(operation_context->call_info->context);
+}
+
+static int retrieve_call(hfp_ag_operation_context_t* operation_context)
+{
+    return Z_API(bt_hfp_ag_retrieve)(operation_context->call_info->context);
+}
+
+static int remote_ringing_call(hfp_ag_operation_context_t* operation_context)
+{
+    return Z_API(bt_hfp_ag_remote_ringing)(operation_context->call_info->context);
+}
+
+static int terminate_call(hfp_ag_operation_context_t* operation_context)
+{
+    return Z_API(bt_hfp_ag_terminate)(operation_context->call_info->context);
+}
+
+static int reject_call(hfp_ag_operation_context_t* operation_context)
+{
+    return Z_API(bt_hfp_ag_reject)(operation_context->call_info->context);
+}
+
+static int remote_reject_call(hfp_ag_operation_context_t* operation_context)
+{
+    return Z_API(bt_hfp_ag_remote_reject)(operation_context->call_info->context);
+}
+
+static int outgoing_call(hfp_ag_operation_context_t* operation_context)
+{
+    return Z_API(bt_hfp_ag_outgoing)(
+        operation_context->connection->ag,
+        operation_context->call_info->number);
+}
+
+static int incoming_call(hfp_ag_operation_context_t* operation_context)
+{
+    return Z_API(bt_hfp_ag_remote_incoming)(
+        operation_context->connection->ag,
+        operation_context->call_info->number);
+}
+
+/* ============================================================
+ * Transition Table
+ * ============================================================ */
+
+typedef struct {
+    enum bt_hfp_ag_call_status new_state;
+    call_operation_t op;
+} new_call_entry_t;
+
+typedef struct {
+    enum bt_hfp_ag_call_status previous;
+    hfp_ag_call_state_t next;
+    call_operation_t op;
+} call_transition_t;
+
+/* ------ new call operation table ------ */
+
+static const new_call_entry_t new_call_map[] = {
+    { BT_HFP_AG_CALL_STATUS_INCOMING, incoming_call },
+    { BT_HFP_AG_CALL_STATUS_WAITING, incoming_call },
+    { BT_HFP_AG_CALL_STATUS_DIALING, outgoing_call },
+};
+
+/* ------ existing call operation table ------ */
+
+static const call_transition_t call_transition_map[] = {
+
+    { BT_HFP_AG_CALL_STATUS_INCOMING, HFP_AG_CALL_STATE_ACTIVE, accept_call },
+    { BT_HFP_AG_CALL_STATUS_WAITING, HFP_AG_CALL_STATE_ACTIVE, accept_call },
+
+    { BT_HFP_AG_CALL_STATUS_INCOMING, HFP_AG_CALL_STATE_HELD, hold_incoming_call },
+    { BT_HFP_AG_CALL_STATUS_WAITING, HFP_AG_CALL_STATE_HELD, hold_incoming_call },
+
+    { BT_HFP_AG_CALL_STATUS_INCOMING, HFP_AG_CALL_STATE_IDLE, reject_call },
+    { BT_HFP_AG_CALL_STATUS_INCOMING, HFP_AG_CALL_STATE_DISCONNECTED, reject_call },
+    { BT_HFP_AG_CALL_STATUS_WAITING, HFP_AG_CALL_STATE_IDLE, reject_call },
+    { BT_HFP_AG_CALL_STATUS_WAITING, HFP_AG_CALL_STATE_DISCONNECTED, reject_call },
+
+    { BT_HFP_AG_CALL_STATUS_DIALING, HFP_AG_CALL_STATE_ALERTING, remote_ringing_call },
+    { BT_HFP_AG_CALL_STATUS_DIALING, HFP_AG_CALL_STATE_ACTIVE, remote_accept_call },
+    { BT_HFP_AG_CALL_STATUS_DIALING, HFP_AG_CALL_STATE_IDLE, remote_reject_call },
+    { BT_HFP_AG_CALL_STATUS_DIALING, HFP_AG_CALL_STATE_DISCONNECTED, remote_reject_call },
+
+    { BT_HFP_AG_CALL_STATUS_ALERTING, HFP_AG_CALL_STATE_ACTIVE, remote_accept_call },
+    { BT_HFP_AG_CALL_STATUS_ALERTING, HFP_AG_CALL_STATE_IDLE, remote_reject_call },
+    { BT_HFP_AG_CALL_STATUS_ALERTING, HFP_AG_CALL_STATE_DISCONNECTED, remote_reject_call },
+
+    { BT_HFP_AG_CALL_STATUS_ACTIVE, HFP_AG_CALL_STATE_HELD, hold_call },
+    { BT_HFP_AG_CALL_STATUS_HELD, HFP_AG_CALL_STATE_ACTIVE, retrieve_call },
+
+    { BT_HFP_AG_CALL_STATUS_ACTIVE, HFP_AG_CALL_STATE_IDLE, terminate_call },
+    { BT_HFP_AG_CALL_STATUS_ACTIVE, HFP_AG_CALL_STATE_DISCONNECTED, terminate_call },
+    { BT_HFP_AG_CALL_STATUS_HELD, HFP_AG_CALL_STATE_IDLE, terminate_call },
+    { BT_HFP_AG_CALL_STATUS_HELD, HFP_AG_CALL_STATE_DISCONNECTED, terminate_call },
+};
+
+static const new_call_entry_t* find_new_call_entry(enum bt_hfp_ag_call_status state)
+{
+    for (size_t i = 0; i < ARRAY_SIZE(new_call_map); i++) {
+        if (new_call_map[i].new_state == state) {
+            return &new_call_map[i];
+        }
+    }
+    return NULL;
+}
+
+static const call_transition_t* find_call_transition(
+    enum bt_hfp_ag_call_status prev,
+    hfp_ag_call_state_t next)
+{
+    for (size_t i = 0; i < ARRAY_SIZE(call_transition_map); i++) {
+        if (call_transition_map[i].previous == prev && call_transition_map[i].next == next) {
+            return &call_transition_map[i];
+        }
+    }
+    return NULL;
+}
+
 bt_status_t bt_sal_hfp_ag_phone_state_change(bt_address_t* addr, uint8_t num_active,
     uint8_t num_held, hfp_ag_call_state_t call_state, hfp_call_addrtype_t type,
     const char* number, const char* name)
 {
-    (void)num_active;
-    (void)num_held;
-    (void)call_state;
-    (void)type;
-    (void)number;
-    (void)name;
-    return BT_STATUS_UNSUPPORTED;
+    bt_hfp_ag_connection_t* connection = find_connection_by_addr(addr);
+    if (!connection) {
+        return BT_STATUS_FAIL;
+    }
+
+    bt_hfp_ag_call_info_t* call_info = find_call_by_number(number);
+
+    hfp_ag_operation_context_t operation_context = {
+        .call_info = call_info,
+        .connection = connection,
+    };
+
+    if (!call_info) {
+
+        const new_call_entry_t* entry = find_new_call_entry(tele_call_state_to_sal_status(call_state));
+        if (!entry) {
+            return BT_STATUS_FAIL;
+        }
+
+        call_info = build_sal_call(HFP_CALL_DIRECTION_INCOMING, call_state,
+            type, number);
+        if (!call_info) {
+            return BT_STATUS_FAIL;
+        }
+
+        bt_list_add_head(g_sal_ag_call_list, call_info);
+        operation_context.call_info = call_info;
+
+        SAL_CHECK_RET(entry->op(&operation_context), 0);
+        return BT_STATUS_SUCCESS;
+    }
+
+    const call_transition_t* transition = find_call_transition(call_info->state, call_state);
+
+    if (!transition) {
+        BT_LOGE("%s, no valid transition from %d to %d",
+            __func__, call_info->state, call_state);
+        return BT_STATUS_FAIL;
+    }
+
+    SAL_CHECK_RET(transition->op(&operation_context), 0);
+    call_info->state = tele_call_state_to_sal_status(call_state);
+
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_ag_call_sync(
