@@ -939,10 +939,21 @@ bt_status_t bt_sal_hfp_ag_dial_response(bt_address_t* addr, hfp_atcmd_result_t r
 
 bt_status_t bt_sal_hfp_ag_cops_response(bt_address_t* addr, const char* operator_name, uint16_t length)
 {
-    (void)addr;
-    (void)operator_name;
+    bt_hfp_ag_connection_t* sal_conn;
     (void)length;
-    return BT_STATUS_UNSUPPORTED;
+
+    if (!addr || !operator_name) {
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    sal_conn = find_connection_by_addr(addr);
+    if (!sal_conn || !sal_conn->ag) {
+        BT_LOGE("%s, connection not found", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    SAL_CHECK_RET(Z_API(bt_hfp_ag_set_operator)(sal_conn->ag, 0, (char*)operator_name), 0);
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_ag_notify_device_status_changed(bt_address_t* addr, hfp_network_state_t network,
