@@ -239,6 +239,18 @@ static enum bt_hfp_ag_call_dir service_call_dir_to_sal_dir(hfp_call_direction_t 
     }
 }
 
+static bt_hfp_ag_call_info_t* new_sal_call()
+{
+    bt_hfp_ag_call_info_t* call = (bt_hfp_ag_call_info_t*)zalloc(sizeof(bt_hfp_ag_call_info_t));
+    if (!call) {
+        BT_LOGE("%s, failed to allocate call entry", __func__);
+        return NULL;
+    }
+
+    call->context = NULL;
+    return call;
+}
+
 static bt_hfp_ag_call_info_t* build_sal_call(
     hfp_call_direction_t dir, hfp_ag_call_state_t call,
     hfp_call_addrtype_t type, const char* number)
@@ -248,7 +260,7 @@ static bt_hfp_ag_call_info_t* build_sal_call(
         return NULL;
     }
 
-    bt_hfp_ag_call_info_t* sal_call = (bt_hfp_ag_call_info_t*)zalloc(sizeof(bt_hfp_ag_call_info_t));
+    bt_hfp_ag_call_info_t* sal_call = new_sal_call();
     if (!sal_call) {
         BT_LOGE("%s, failed to allocate memory", __func__);
         return NULL;
@@ -287,19 +299,6 @@ static bt_hfp_ag_call_info_t* update_sal_call(bt_hfp_ag_connection_t* conn,
         bt_list_add_head(g_sal_ag_call_list, sal_call);
     }
     return sal_call;
-}
-
-static bt_hfp_ag_call_info_t* new_sal_call()
-{
-    bt_hfp_ag_call_info_t* call = (bt_hfp_ag_call_info_t*)zalloc(sizeof(bt_hfp_ag_call_info_t));
-    if (!call) {
-        BT_LOGE("%s, failed to allocate call entry", __func__);
-        return NULL;
-    }
-
-    call->state = HFP_AG_CALL_STATE_DISCONNECTED;
-    call->context = NULL;
-    return call;
 }
 
 static __attribute__((unused)) bt_hfp_ag_call_info_t* find_or_create_call(bt_hfp_ag_connection_t* conn, struct bt_hfp_ag_call* z_context)
@@ -959,12 +958,27 @@ bt_status_t bt_sal_hfp_ag_cops_response(bt_address_t* addr, const char* operator
 bt_status_t bt_sal_hfp_ag_notify_device_status_changed(bt_address_t* addr, hfp_network_state_t network,
     hfp_roaming_state_t roam, uint8_t signal, uint8_t battery)
 {
-    (void)addr;
-    (void)network;
-    (void)roam;
-    (void)signal;
-    (void)battery;
-    return BT_STATUS_UNSUPPORTED;
+    bt_hfp_ag_connection_t* sal_conn;
+
+    if (!addr) {
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    sal_conn = find_connection_by_addr(addr);
+    if (!sal_conn || !sal_conn->ag) {
+        BT_LOGE("%s, connection not found", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    SAL_CHECK_RET(Z_API(bt_hfp_ag_service_availability)(sal_conn->ag, network ? true : false), 0);
+
+    SAL_CHECK_RET(Z_API(bt_hfp_ag_roaming_status)(sal_conn->ag, roam ? 1 : 0), 0);
+
+    SAL_CHECK_RET(Z_API(bt_hfp_ag_signal_strength)(sal_conn->ag, signal > 5 ? 5 : signal), 0);
+
+    SAL_CHECK_RET(Z_API(bt_hfp_ag_battery_level)(sal_conn->ag, battery > 5 ? 5 : battery), 0);
+
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_ag_set_inband_ring_enable(bt_address_t* addr, bool enable)
