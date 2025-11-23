@@ -929,7 +929,7 @@ bt_status_t bt_sal_hfp_ag_clcc_response(bt_address_t* addr, uint32_t index,
     (void)mpty;
     (void)type;
     (void)number;
-    return BT_STATUS_UNSUPPORTED;
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_ag_dial_response(bt_address_t* addr, hfp_atcmd_result_t result)
