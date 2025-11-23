@@ -934,9 +934,7 @@ bt_status_t bt_sal_hfp_ag_clcc_response(bt_address_t* addr, uint32_t index,
 
 bt_status_t bt_sal_hfp_ag_dial_response(bt_address_t* addr, hfp_atcmd_result_t result)
 {
-    (void)addr;
-    (void)result;
-    return BT_STATUS_UNSUPPORTED;
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_ag_cops_response(bt_address_t* addr, const char* operator_name, uint16_t length)
