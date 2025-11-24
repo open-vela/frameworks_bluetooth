@@ -816,6 +816,23 @@ static void zblue_on_ag_voice_recognition(struct bt_hfp_ag* ag, bool activate)
     hfp_ag_on_voice_recognition_state_changed(&sal_conn->addr, activate);
 }
 
+static void zblue_on_ag_transmit_dtmf_code(struct bt_hfp_ag* ag, char code)
+{
+    bt_hfp_ag_connection_t* sal_conn;
+
+    if (!ag) {
+        return;
+    }
+
+    sal_conn = find_connection_by_ag(ag);
+    if (!sal_conn) {
+        BT_LOGE("%s, connection not found for ag=%p", __func__, ag);
+        return;
+    }
+
+    hfp_ag_on_received_dtmf(&sal_conn->addr, code);
+}
+
 static struct bt_hfp_ag_cb g_hfp_ag_cb = {
     .connected = zblue_on_ag_connected,
     .disconnected = zblue_on_ag_disconnected,
@@ -843,7 +860,7 @@ static struct bt_hfp_ag_cb g_hfp_ag_cb = {
     .voice_recognition = zblue_on_ag_voice_recognition,
     .ready_to_accept_audio = NULL,
     .request_phone_number = NULL,
-    .transmit_dtmf_code = NULL,
+    .transmit_dtmf_code = zblue_on_ag_transmit_dtmf_code,
     .subscriber_number = NULL,
     .hf_indicator_value = NULL,
 };
