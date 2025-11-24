@@ -40,6 +40,7 @@ typedef struct {
     uint8_t profile_id;
     bt_profile_conn_handler_t handler;
     bt_controller_id_t id;
+    bt_list_t* manager_list;
     void* user_data;
 } sal_async_profile_req_t;
 
@@ -152,7 +153,7 @@ static bt_profile_connection_manager_t* find_or_create_connection_manager(bt_lis
 }
 
 static sal_async_profile_req_t* sal_async_profile_req(bt_address_t* addr, bt_profile_conn_handler_t handler,
-    uint8_t profile_id, bt_controller_id_t id, void* user_data)
+    uint8_t profile_id, bt_controller_id_t id, bt_list_t* manager_list, void* user_data)
 {
     sal_async_profile_req_t* req = calloc(sizeof(sal_async_profile_req_t), 1);
 
@@ -160,6 +161,7 @@ static sal_async_profile_req_t* sal_async_profile_req(bt_address_t* addr, bt_pro
         req->profile_id = profile_id;
         req->id = id;
         req->handler = handler;
+        req->manager_list = manager_list;
         req->user_data = user_data;
         if (addr)
             memcpy(&req->device_addr, addr, sizeof(bt_address_t));
@@ -178,14 +180,14 @@ static void sal_invoke_async(service_work_t* work, void* userdata)
 
     SAL_ASSERT(req);
 
-    if (!req->user_data) {
+    if (!req->manager_list) {
         /* !req->user_data means a direct profile "disconnection" */
-        req->handler(req->id, &req->device_addr);
+        req->handler(req->id, &req->device_addr, req->user_data);
         free(req);
         return;
     }
 
-    manager_list = (bt_list_t*)req->user_data;
+    manager_list = (bt_list_t*)req->manager_list;
 
     manager = (bt_profile_connection_manager_t*)bt_list_find(manager_list,
         bt_connection_manager_find, &req->device_addr);
@@ -212,7 +214,7 @@ static void sal_invoke_async(service_work_t* work, void* userdata)
         return;
     }
 
-    status = req->handler(req->id, &req->device_addr);
+    status = req->handler(req->id, &req->device_addr, req->user_data);
 
     if (status != BT_STATUS_SUCCESS) {
         flags_clear(&manager->profile_flags, profile_id_to_flag(req->profile_id));
@@ -291,7 +293,7 @@ static bt_status_t bt_sal_trigger_profile_conn_act(bt_profile_connection_manager
         }
 
         /* async invoke to service_worker thread */
-        req = sal_async_profile_req(addr, entry_node->handler, entry_node->profile_id, entry_node->id, manager_list);
+        req = sal_async_profile_req(addr, entry_node->handler, entry_node->profile_id, entry_node->id, manager_list, entry_node->user_data);
 
         if (sal_send_async_req(req) != BT_STATUS_SUCCESS) {
             BT_LOGE("%s, profile_id: %u", __func__, entry_node->profile_id);
@@ -573,7 +575,7 @@ static bt_status_t bt_sal_try_profile_connect(bt_address_t* addr)
 }
 
 bt_status_t bt_sal_profile_connect_request(bt_address_t* addr, uint8_t profile_id, bt_controller_id_t id,
-    bt_profile_conn_handler_t handler)
+    bt_profile_conn_handler_t handler, void* user_data)
 {
     bt_profile_connection_manager_t* manager;
     bt_profile_conn_handler_node_t* entry_node;
@@ -598,13 +600,14 @@ bt_status_t bt_sal_profile_connect_request(bt_address_t* addr, uint8_t profile_i
     entry_node->handler = handler;
     entry_node->profile_id = profile_id;
     entry_node->id = id;
+    entry_node->user_data = user_data;
     bt_list_add_tail(manager->profile_conn_handler_list, entry_node);
 
     return bt_sal_try_profile_connect(addr);
 }
 
 bt_status_t bt_sal_profile_disconnect_register(bt_address_t* addr, uint8_t profile_id, bt_controller_id_t id,
-    bt_profile_conn_handler_t handler)
+    bt_profile_conn_handler_t handler, void* user_data)
 {
     bt_profile_connection_manager_t* manager;
     bt_profile_conn_handler_node_t* entry_node;
@@ -629,18 +632,19 @@ bt_status_t bt_sal_profile_disconnect_register(bt_address_t* addr, uint8_t profi
     entry_node->handler = handler;
     entry_node->profile_id = profile_id;
     entry_node->id = id;
+    entry_node->user_data = user_data;
     bt_list_add_tail(manager->profile_conn_handler_list, entry_node);
 
     return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_profile_disconnect_request(bt_address_t* addr, uint8_t profile_id, bt_controller_id_t id,
-    bt_profile_conn_handler_t handler)
+    bt_profile_conn_handler_t handler, void* user_data)
 {
     sal_async_profile_req_t* req;
 
     /* async invoke to service_worker thread */
-    req = sal_async_profile_req(addr, handler, profile_id, id, NULL);
+    req = sal_async_profile_req(addr, handler, profile_id, id, NULL, user_data);
 
     if (sal_send_async_req(req) != BT_STATUS_SUCCESS) {
         BT_LOGE("%s, profile_id: %u", __func__, profile_id);
