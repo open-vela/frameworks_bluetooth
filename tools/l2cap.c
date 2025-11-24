@@ -28,6 +28,7 @@ typedef struct {
     uint16_t psm;
     uint16_t cid;
     uint16_t id;
+    bool is_listening;
 } l2cap_chnl_t;
 
 typedef struct {
@@ -36,6 +37,7 @@ typedef struct {
     uint16_t psm;
     uint16_t cid;
     uint16_t listen_id; // for server listen
+    bool is_listening;
     char* proxy_name;
     uint8_t* buf;
     uint16_t len;
@@ -121,28 +123,23 @@ static void data_path_connected_cb(euv_pipe_t* pipe, int status, void* data)
 
 static void add_l2cap_channel(void* data)
 {
-    l2cap_msg_t* msg;
+    l2cap_msg_t* msg = (l2cap_msg_t*)data;
     l2cap_chnl_t* channel;
 
-    if (!data) {
-        PRINT("invalid arg\n");
-        return;
-    }
-
-    msg = (l2cap_msg_t*)data;
     channel = (l2cap_chnl_t*)zalloc(sizeof(l2cap_chnl_t));
     if (!channel) {
-        PRINT("allocate channel failed\n");
+        PRINT("allocate channel failed");
         goto free_msg;
         // TBD: cancel l2cap channel listen or connect immediately?
     }
 
-    PRINT("L2cap channel(id:%" PRIu16 ") alloc success\n", msg->id);
+    PRINT("L2cap channel(id:%" PRIu16 ") alloc success", msg->id);
     channel->id = msg->id;
     channel->psm = msg->psm;
+    channel->is_listening = msg->is_listening;
     channel->pipe = euv_pipe_connect(&g_l2cap_thread, msg->proxy_name, data_path_connected_cb, channel);
     if (!channel->pipe) {
-        PRINT("connect pipe failed\n");
+        PRINT("connect pipe failed");
         free(channel);
         goto free_msg;
     }
@@ -157,37 +154,32 @@ free_msg:
 static void l2cap_channel_connected_process(void* data)
 {
     int ret;
-    l2cap_msg_t* msg;
+    l2cap_msg_t* msg = (l2cap_msg_t*)data;
     l2cap_chnl_t* channel;
 
-    if (!data) {
-        PRINT("invalid arg\n");
-        return;
-    }
-
-    msg = (l2cap_msg_t*)data;
     channel = find_channel_by_id(msg->id);
     if (channel == NULL) {
-        PRINT("channel not found\n");
+        PRINT("%s, channel not found", __func__);
         goto free_msg;
     }
 
     channel->cid = msg->cid;
-    PRINT("L2cap channel(id:%" PRIu16 "/cid:%x) connected\n", msg->id, msg->cid);
+    PRINT("L2cap channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") connected", msg->id, msg->cid);
     ret = euv_pipe_read_start(channel->pipe, 2048, read_complete_cb, NULL);
     if (ret) {
-        PRINT("start read pipe failed\n");
+        PRINT("start read pipe failed");
         // disconnect data path, l2cap service will disconnect l2cap channel
         euv_pipe_disconnect(channel->pipe);
         list_delete(&channel->node);
         free(channel);
         goto free_msg;
     }
-
-    // Clone listen channel
-    if (msg->listen_id > 0 && msg->proxy_name) {
-        PRINT("prepare a new listen channel(id: %" PRIu16 ") for PSM:0x%x\n", msg->listen_id, msg->psm);
-        msg->id = msg->listen_id; // for reusing add_l2cap_channel method.
+    if (msg->listen_id >= 0 && msg->proxy_name) {
+        channel->is_listening = false; /* listen channel transfer to connected(accept) channel */
+        PRINT("prepare a new listen channel(id: %" PRIu16 ") for PSM:0x%" PRIx16, msg->listen_id, msg->psm);
+        /* Create a new channel for listening */
+        msg->id = msg->listen_id;
+        msg->is_listening = true;
         add_l2cap_channel((void*)msg);
         return;
     }
@@ -253,6 +245,34 @@ static void do_l2cap_write(void* data)
     free(msg);
 }
 
+static void do_l2cap_stop_listen(void* data)
+{
+    l2cap_msg_t* msg = (l2cap_msg_t*)data;
+    struct list_node* node;
+    struct list_node* tmp;
+    struct list_node* list = &channel_list;
+    l2cap_chnl_t* channel;
+
+    list_for_every_safe(list, node, tmp)
+    {
+        channel = (l2cap_chnl_t*)node;
+        if (channel->is_listening && channel->psm == msg->psm) {
+            PRINT("free listen channel(id:%" PRIu16 ") for psm:0x%" PRIx16, channel->id, msg->psm);
+            if (channel->pipe) {
+                euv_pipe_disconnect(channel->pipe);
+                channel->pipe = NULL;
+            }
+
+            list_delete(&channel->node);
+            free(channel);
+            channel = NULL;
+            break;
+        }
+    }
+
+    free(msg);
+}
+
 static void on_connected(void* handle, l2cap_connect_params_t* params)
 {
     l2cap_msg_t* msg;
@@ -272,7 +292,8 @@ static void on_connected(void* handle, l2cap_connect_params_t* params)
     msg->psm = params->psm;
     msg->cid = params->cid;
     if (params->listen_id > 0) {
-        PRINT("new listen(id: %" PRIu16 "/ proxy_name: %s) for listen psm: 0x%x)", params->listen_id, params->proxy_name, params->psm);
+        PRINT("new listen(id: %" PRIu16 "/ proxy_name: %s) for listen psm: 0x%" PRIx16,
+            params->listen_id, params->proxy_name, params->psm);
         msg->listen_id = params->listen_id;
         msg->proxy_name = strdup(params->proxy_name);
     }
@@ -350,6 +371,7 @@ static int connect_cmd(void* handle, int argc, char* argv[])
     msg->id = conn_option.id;
     msg->psm = conn_option.psm;
     msg->proxy_name = strdup(conn_option.proxy_name);
+    msg->is_listening = false;
     memcpy(&msg->addr, &addr, sizeof(bt_address_t));
     do_in_thread_loop(&g_l2cap_thread, add_l2cap_channel, msg);
 
@@ -377,7 +399,7 @@ static int listen_cmd(void* handle, int argc, char* argv[])
     conn_option.le_mps = 128;
     conn_option.init_credits = 0xffff;
     if (bt_l2cap_listen(handle, g_l2cap_handle, &conn_option) != BT_STATUS_SUCCESS) {
-        PRINT("listen %d failed\n", conn_option.psm);
+        PRINT("listen 0x%" PRIx16 " failed", conn_option.psm);
         return CMD_ERROR;
     }
 
@@ -390,6 +412,7 @@ static int listen_cmd(void* handle, int argc, char* argv[])
 
     msg->id = conn_option.id;
     msg->psm = conn_option.psm;
+    msg->is_listening = true;
     msg->proxy_name = strdup(conn_option.proxy_name);
     do_in_thread_loop(&g_l2cap_thread, add_l2cap_channel, msg);
 
@@ -449,10 +472,43 @@ static int write_cmd(void* handle, int argc, char* argv[])
     return CMD_OK;
 }
 
+static int stop_listen_cmd(void* handle, int argc, char* argv[])
+{
+    uint16_t psm;
+    l2cap_msg_t* msg;
+
+    if (!handle || !g_l2cap_handle) {
+        PRINT("L2CAP tool not ready!");
+        return CMD_ERROR;
+    }
+
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    msg = (l2cap_msg_t*)zalloc(sizeof(l2cap_msg_t));
+    if (!msg) {
+        PRINT("allocate msg failed");
+        return CMD_ERROR;
+    }
+
+    psm = strtoul(argv[0], NULL, 0);
+    if (bt_l2cap_stop_listen_with_transport(handle, g_l2cap_handle, BT_TRANSPORT_BLE, psm) != BT_STATUS_SUCCESS) {
+        PRINT("stop listen 0x%" PRIX16 " failed", psm);
+        return CMD_ERROR;
+    }
+
+    PRINT("L2cap stop listen psm:0x%" PRIx16, psm);
+    msg->psm = psm;
+    do_in_thread_loop(&g_l2cap_thread, do_l2cap_stop_listen, msg);
+
+    return CMD_OK;
+}
+
 static bt_command_t g_l2cap_commands[] = {
     { "connect", connect_cmd, 0, "\"connect l2cap channel      param: <address> <psm>\"" },
     { "listen", listen_cmd, 0, "\"listen l2cap channel        param: <psm>\"" },
     { "disconnect", disconnect_cmd, 0, "\"disconnect l2cap channel  param: <id>\"" },
+    { "stoplisten", stop_listen_cmd, 0, "\"stop listen l2cap channel  param: <psm>\"" },
     { "write", write_cmd, 0, "\"write data to peer   param: <id> <data>\"" },
 };
 
