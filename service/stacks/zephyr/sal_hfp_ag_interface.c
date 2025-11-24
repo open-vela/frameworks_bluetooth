@@ -799,6 +799,23 @@ static void zblue_on_ag_vgs(struct bt_hfp_ag* ag, uint8_t gain)
     hfp_ag_on_volume_changed(&sal_conn->addr, HFP_VOLUME_TYPE_SPK, gain);
 }
 
+static void zblue_on_ag_voice_recognition(struct bt_hfp_ag* ag, bool activate)
+{
+    bt_hfp_ag_connection_t* sal_conn;
+
+    if (!ag) {
+        return;
+    }
+
+    sal_conn = find_connection_by_ag(ag);
+    if (!sal_conn) {
+        BT_LOGE("%s, connection not found for ag=%p", __func__, ag);
+        return;
+    }
+
+    hfp_ag_on_voice_recognition_state_changed(&sal_conn->addr, activate);
+}
+
 static struct bt_hfp_ag_cb g_hfp_ag_cb = {
     .connected = zblue_on_ag_connected,
     .disconnected = zblue_on_ag_disconnected,
@@ -823,7 +840,7 @@ static struct bt_hfp_ag_cb g_hfp_ag_cb = {
     .vgs = zblue_on_ag_vgs,
     .ecnr_turn_off = NULL,
     .explicit_call_transfer = NULL,
-    .voice_recognition = NULL,
+    .voice_recognition = zblue_on_ag_voice_recognition,
     .ready_to_accept_audio = NULL,
     .request_phone_number = NULL,
     .transmit_dtmf_code = NULL,
