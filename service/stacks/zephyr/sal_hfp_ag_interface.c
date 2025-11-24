@@ -983,9 +983,20 @@ bt_status_t bt_sal_hfp_ag_notify_device_status_changed(bt_address_t* addr, hfp_n
 
 bt_status_t bt_sal_hfp_ag_set_inband_ring_enable(bt_address_t* addr, bool enable)
 {
-    (void)addr;
-    (void)enable;
-    return BT_STATUS_UNSUPPORTED;
+    bt_hfp_ag_connection_t* sal_conn;
+
+    if (!addr) {
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    sal_conn = find_connection_by_addr(addr);
+    if (!sal_conn || !sal_conn->ag) {
+        BT_LOGE("%s, connection not found", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    SAL_CHECK_RET(Z_API(bt_hfp_ag_inband_ringtone)(sal_conn->ag, enable), 0);
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_ag_set_volume(bt_address_t* addr, hfp_volume_type_t type, uint8_t volume)
