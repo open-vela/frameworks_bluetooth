@@ -532,6 +532,31 @@ static void zblue_on_ag_outgoing(struct bt_hfp_ag* ag, struct bt_hfp_ag_call* ca
     }
 }
 
+static void zblue_on_ag_incoming(struct bt_hfp_ag* ag, struct bt_hfp_ag_call* call, const char* number)
+{
+    bt_hfp_ag_connection_t* sal_conn;
+    bt_hfp_ag_call_info_t* sal_call;
+
+    if (!ag || !call || !number) {
+        return;
+    }
+
+    sal_conn = find_connection_by_ag(ag);
+    if (!sal_conn) {
+        BT_LOGE("%s, connection not found for ag=%p", __func__, ag);
+        return;
+    }
+
+    sal_call = find_call_by_number(number);
+    if (!sal_call) {
+        BT_LOGE("%s, call with number=%s not tracked", __func__, number);
+    } else {
+        sal_call->dir = BT_HFP_AG_CALL_DIR_INCOMING;
+        sal_call->state = tele_call_state_to_sal_status(HFP_AG_CALL_STATE_INCOMING);
+        sal_call->context = call;
+    }
+}
+
 static struct bt_hfp_ag_cb g_hfp_ag_cb = {
     .connected = zblue_on_ag_connected,
     .disconnected = zblue_on_ag_disconnected,
@@ -541,7 +566,7 @@ static struct bt_hfp_ag_cb g_hfp_ag_cb = {
     .memory_dial = zblue_on_ag_memory_dial,
     .number_call = zblue_on_ag_number_call,
     .outgoing = zblue_on_ag_outgoing,
-    .incoming = NULL,
+    .incoming = zblue_on_ag_incoming,
     .incoming_held = NULL,
     .ringing = NULL,
     .accept = NULL,
