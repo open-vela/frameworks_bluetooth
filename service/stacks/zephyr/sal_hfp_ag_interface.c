@@ -657,6 +657,33 @@ static void zblue_on_ag_accept(struct bt_hfp_ag_call* call)
     hfp_ag_on_answer_call(&sal_conn->addr);
 }
 
+static void zblue_on_ag_held(struct bt_hfp_ag* ag, struct bt_hfp_ag_call* call)
+{
+    bt_hfp_ag_connection_t* sal_conn = NULL;
+    bt_hfp_ag_call_info_t* sal_call;
+
+    if (!ag || !call) {
+        return;
+    }
+
+    sal_call = find_call_by_context(call, &sal_conn);
+    if (!sal_conn) {
+        BT_LOGE("%s, connection not found for call=%p", __func__, call);
+        return;
+    }
+
+    if (!sal_call) {
+        BT_LOGE("%s, call not tracked", __func__);
+        return;
+    }
+
+    if (sal_call->state != BT_HFP_AG_CALL_STATUS_ACTIVE) {
+        return;
+    }
+
+    hfp_ag_on_hangup_call(&sal_conn->addr);
+}
+
 static struct bt_hfp_ag_cb g_hfp_ag_cb = {
     .connected = zblue_on_ag_connected,
     .disconnected = zblue_on_ag_disconnected,
@@ -670,7 +697,7 @@ static struct bt_hfp_ag_cb g_hfp_ag_cb = {
     .incoming_held = zblue_on_ag_incoming_held,
     .ringing = NULL,
     .accept = zblue_on_ag_accept,
-    .held = NULL,
+    .held = zblue_on_ag_held,
     .retrieve = NULL,
     .reject = NULL,
     .terminate = NULL,
