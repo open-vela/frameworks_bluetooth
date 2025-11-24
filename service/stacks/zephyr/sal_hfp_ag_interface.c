@@ -765,6 +765,40 @@ static void zblue_on_ag_terminate(struct bt_hfp_ag_call* call)
     hfp_ag_on_call_control(&sal_conn->addr, HFP_HF_CALL_CONTROL_CHLD_1);
 }
 
+static void zblue_on_ag_vgm(struct bt_hfp_ag* ag, uint8_t gain)
+{
+    bt_hfp_ag_connection_t* sal_conn;
+
+    if (!ag) {
+        return;
+    }
+
+    sal_conn = find_connection_by_ag(ag);
+    if (!sal_conn) {
+        BT_LOGE("%s, connection not found for ag=%p", __func__, ag);
+        return;
+    }
+
+    hfp_ag_on_volume_changed(&sal_conn->addr, HFP_VOLUME_TYPE_MIC, gain);
+}
+
+static void zblue_on_ag_vgs(struct bt_hfp_ag* ag, uint8_t gain)
+{
+    bt_hfp_ag_connection_t* sal_conn;
+
+    if (!ag) {
+        return;
+    }
+
+    sal_conn = find_connection_by_ag(ag);
+    if (!sal_conn) {
+        BT_LOGE("%s, connection not found for ag=%p", __func__, ag);
+        return;
+    }
+
+    hfp_ag_on_volume_changed(&sal_conn->addr, HFP_VOLUME_TYPE_SPK, gain);
+}
+
 static struct bt_hfp_ag_cb g_hfp_ag_cb = {
     .connected = zblue_on_ag_connected,
     .disconnected = zblue_on_ag_disconnected,
@@ -785,8 +819,8 @@ static struct bt_hfp_ag_cb g_hfp_ag_cb = {
     .codec = NULL,
     .codec_negotiate = NULL,
     .audio_connect_req = NULL,
-    .vgm = NULL,
-    .vgs = NULL,
+    .vgm = zblue_on_ag_vgm,
+    .vgs = zblue_on_ag_vgs,
     .ecnr_turn_off = NULL,
     .explicit_call_transfer = NULL,
     .voice_recognition = NULL,
