@@ -664,6 +664,7 @@ static bt_status_t spp_connect_with_uuid(sal_spp_connection_t* spp_conn, bt_uuid
     }
 
     spp_client->sdp_discover.func = sdp_discovered_cb;
+    spp_client->sdp_discover.type = BT_SDP_DISCOVER_SERVICE_SEARCH_ATTR;
     spp_client->sdp_discover.pool = &spp_sdp_pool;
     spp_client->sdp_discover.uuid = (const struct bt_uuid*)&spp_client->uuid_128;
 
