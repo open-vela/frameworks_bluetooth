@@ -23,6 +23,10 @@
 #include "manager_service.h"
 #include "service_loop.h"
 
+#ifdef CONFIG_NET_RPMSG
+#include <netpacket/rpmsg.h>
+#endif
+
 bt_instance_t* bluetooth_create_instance(void)
 {
     bt_status_t status;
