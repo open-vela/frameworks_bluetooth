@@ -1356,6 +1356,7 @@ static void audio_on_exit(state_machine_t* sm)
 
     HF_DBG_EXIT(sm, &hfsm->addr);
 
+    bt_pm_busy(PROFILE_HFP_HF, &hfsm->addr);
     bt_pm_sco_close(PROFILE_HFP_HF, &hfsm->addr);
 
     /* TODO: set sco unavailable */

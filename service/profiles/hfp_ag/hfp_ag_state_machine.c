@@ -460,7 +460,7 @@ static void process_vendor_specific_at(bt_address_t* addr, const char* at_string
         if (strncmp(at_string + 2 /* "AT" */, prefix->at_prefix, prefix_size)) {
             continue;
         }
-        value = at_string + strlen(prefix->at_prefix) + 3;  /* The value is the string after "AT+XIAOMI=" */
+        value = at_string + strlen(prefix->at_prefix) + 3; /* The value is the string after "AT+XIAOMI=" */
         if (value[0] == '\r' || value[0] == '\n') {
             break;
         }
@@ -476,8 +476,9 @@ static void process_vendor_specific_at(bt_address_t* addr, const char* at_string
     bt_sal_hfp_ag_error_response(addr, HFP_ATCMD_RESULT_CMEERR_OPERATION_NOTSUPPORTED);
 }
 
-static void hfp_ag_send_vendor_specific_at_cmd(bt_address_t* addr, const char* command, const char* value) {
-    char at_command[HFP_AT_LEN_MAX+1] = "\r\n";
+static void hfp_ag_send_vendor_specific_at_cmd(bt_address_t* addr, const char* command, const char* value)
+{
+    char at_command[HFP_AT_LEN_MAX + 1] = "\r\n";
     if (!command || !value)
         return;
 
@@ -1152,6 +1153,7 @@ static void audio_on_exit(state_machine_t* sm)
 
     AG_DBG_EXIT(sm, &agsm->addr);
 
+    bt_pm_busy(PROFILE_HFP_AG, &agsm->addr);
     bt_pm_sco_close(PROFILE_HFP_AG, &agsm->addr);
     /* set sco device unavaliable */
     bt_media_set_sco_unavailable();
