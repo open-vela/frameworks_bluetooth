@@ -74,6 +74,10 @@ frameworkBluetooth_cc_library {
         "//apex_available:platform",
         "com.android.btservices",
     ],
+
+    header_libs: [
+        "kernel_modules_headers",
+    ],
 }
 
 frameworkBluetooth_cc_binary {
