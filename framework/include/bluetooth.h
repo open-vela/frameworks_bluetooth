@@ -226,11 +226,6 @@ typedef enum {
 
 typedef uint8_t bt_128key_t[16];
 
-typedef struct {
-    uint8_t hash[16];
-    uint8_t rand[16];
-} bt_oob_data_t;
-
 #define COD_SERVICE_BITS(c) (c & 0xFFE000) /* The major service classes field */
 #define COD_DEVICE_MAJOR_BITS(c) (c & 0x001F00) /* The major device classes field */
 #define COD_DEVICE_CLASS_BITS(c) (c & 0x001FFC) /* The device classes field, including major and minor */

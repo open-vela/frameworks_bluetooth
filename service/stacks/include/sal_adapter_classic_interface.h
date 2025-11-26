@@ -27,6 +27,11 @@
 #include "bluetooth_define.h"
 #include "power_manager.h"
 
+typedef struct {
+    uint8_t hash[16];
+    uint8_t rand[16];
+} bt_oob_data_t;
+
 /* service adapter layer for BREDR */
 // #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 bt_status_t bt_sal_init(const bt_vhal_interface* vhal);
