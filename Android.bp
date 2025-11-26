@@ -19,11 +19,11 @@ frameworkBluetooth_cc_library {
     srcs : [
         "framework/common/*.c",
         "framework/socket/*.c",
-        "service/common/bt_time.c",
         "service/common/index_allocator.c",
         "service/ipc/socket/src/bt_socket_client.c",
         "service/ipc/socket/src/bt_socket_adapter.c",
         "service/ipc/socket/src/bt_socket_advertiser.c",
+        "service/ipc/socket/src/bt_socket_avrcp_control.c",
         "service/ipc/socket/src/bt_socket_scan.c",
         "service/ipc/socket/src/bt_socket_gattc.c",
         "service/ipc/socket/src/bt_socket_gatts.c",
