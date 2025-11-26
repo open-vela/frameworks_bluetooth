@@ -25,7 +25,7 @@
 #include "service_loop.h"
 #include "uv_ext.h"
 
-#include "storage.h"
+#include "bt_storage.h"
 #include "storage_update.h"
 #include "storage_version_4.h"
 #include "storage_version_5.h"
