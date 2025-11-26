@@ -367,7 +367,7 @@ static void after_work_sync_cb(uv_work_t* req, int status)
 void thread_loop_work_sync(uv_loop_t* loop, void* user_data, thread_work_cb_t work_cb,
     thread_after_work_cb_t after_work_cb)
 {
-    signal_work_t* work = zalloc(sizeof(*work));
+    signal_work_t* work = (signal_work_t*)calloc(1, sizeof(signal_work_t));
     if (work == NULL)
         return;
 
