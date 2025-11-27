@@ -512,6 +512,49 @@ int bt_storage_load_le_bonded_device(load_storage_callback_t cb)
     return 0;
 }
 
+int bt_storage_properties_destory(void)
+{
+    uint16_t items = 0;
+    char* prop_name;
+    int ret = 0;
+
+    prop_name = (char*)malloc(PROP_NAME_MAX);
+    if (!prop_name) {
+        BT_LOGE("property_name malloc failed!");
+        return -ENOMEM;
+    }
+
+    /* remove all BLE bond device property */
+    property_list(callback_le_count, &items);
+    bt_storage_delete(BT_KVDB_BLEBOND, items, prop_name);
+
+    /* remove all whitelist device property */
+    items = 0;
+    property_list(callback_whitelist_count, &items);
+    bt_storage_delete(BT_KVDB_BLEWHITELIST, items, prop_name);
+
+    /* remove all BREDR bond device property */
+    items = 0;
+    property_list(callback_bt_count, &items);
+    bt_storage_delete(BT_KVDB_BTBOND, items, prop_name);
+
+    free(prop_name);
+    /* remove adapter info property */
+    ret |= property_delete(BT_KVDB_VERSION_KEY);
+    ret |= property_delete(BT_KVDB_ADAPTERINFO_NAME);
+    ret |= property_delete(BT_KVDB_ADAPTERINFO_COD);
+    ret |= property_delete(BT_KVDB_ADAPTERINFO_IOCAP);
+    ret |= property_delete(BT_KVDB_ADAPTERINFO_SCAN);
+    ret |= property_delete(BT_KVDB_ADAPTERINFO_BOND);
+    if (ret) {
+        BT_LOGE("property_delete failed!");
+        return ret;
+    }
+
+    property_commit();
+    return 0;
+}
+
 int bt_storage_init(void)
 {
     return 0;
