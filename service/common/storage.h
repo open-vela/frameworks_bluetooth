@@ -57,6 +57,7 @@ int bt_storage_load_le_bonded_device(load_storage_callback_t cb);
 #define BT_KVDB_BLEBOND "persist.bluetooth.blebonded."
 #define BT_KVDB_BLEWHITELIST "persist.bluetooth.whitelist."
 
+int bt_storage_properties_destory(void);
 void bt_storage_delete(char* key, uint16_t items, char* prop_name);
 #endif
 
