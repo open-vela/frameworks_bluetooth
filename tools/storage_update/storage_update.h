@@ -91,4 +91,6 @@ int bt_storage_load_le_bonded_device_unqlite(void** data, uint16_t* length);
 /* KVDB */
 bt_storage_update_properties_t* bt_storage_load_info_kvdb(int version);
 
+int bt_storage_save_item_kvdb(void* data, int items, int version, int storage_item);
+
 #endif /* __STORAGE_UPDATE_H__ */
