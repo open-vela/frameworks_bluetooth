@@ -427,6 +427,18 @@ uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_result* res
     int err;
     uint16_t port;
 
+    if (!result) {
+        bt_address_t bd_addr;
+        if (bt_sal_get_remote_address(conn, &bd_addr) != BT_STATUS_SUCCESS) {
+            return BT_SDP_DISCOVER_UUID_STOP;
+        }
+        BT_LOGE("%s, remote device does not support HFP HF feature", __func__);
+        bt_conn_unref(conn);
+
+        hfp_ag_on_connection_state_changed(&bd_addr, PROFILE_STATE_DISCONNECTED, 0, 0);
+        return BT_SDP_DISCOVER_UUID_STOP;
+    }
+
     if (result->resp_buf != NULL) {
         err = bt_sdp_get_proto_param(result->resp_buf, BT_SDP_PROTO_RFCOMM, &port);
 
