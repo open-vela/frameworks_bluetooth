@@ -663,6 +663,21 @@ static void zblue_on_clip(struct bt_hfp_hf_call *call, char *number, uint8_t typ
     hfp_hf_on_clip(&conn->addr, num, "");
 }
 
+static void zblue_on_vendor_specific(struct bt_hfp_hf *hf, const char *response)
+{
+    bt_hfp_hf_connection_t* conn = find_connection_by_hf(hf);
+    if (!conn) {
+        BT_LOGE("%s, Failed to find connection for vendor specific response", __func__);
+        return;
+    }
+
+    if (!response) {
+        return;
+    }
+
+    hfp_hf_on_received_at_cmd_resp(&conn->addr, (char*)response, strlen(response));
+}
+
 static void zblue_on_codec_negotiate(struct bt_hfp_hf* hf, uint8_t id)
 {
     bt_hfp_hf_connection_t* conn = find_connection_by_hf(hf);
@@ -799,6 +814,8 @@ static struct bt_hfp_hf_cb hf_callbacks = {
     .request_phone_number = NULL,
     .subscriber_number = zblue_on_subscriber_number,
     .query_call = zblue_on_current_call,
+    .vendor_specific = zblue_on_vendor_specific,
+    .at_cmd_complete = NULL,
 };
 
 bt_status_t bt_sal_hfp_hf_init(uint32_t hf_features, uint8_t max_connection)
@@ -1151,7 +1168,24 @@ bt_status_t bt_sal_hfp_hf_send_battery_level(bt_address_t* addr, uint8_t value)
 
 bt_status_t bt_sal_hfp_hf_send_at_cmd(bt_address_t* addr, const char* cmd, uint16_t len)
 {
-    return BT_STATUS_UNSUPPORTED;
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    if (!cmd || len == 0) {
+        BT_LOGE("%s, Invalid AT command", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    int ret = Z_API(bt_hfp_hf_send_vendor)(sal_conn->hf, cmd);
+    if (ret == -ENOTSUP) {
+        return BT_STATUS_UNSUPPORTED;
+    }
+
+    SAL_CHECK_RET(ret, 0);
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_hf_send_dtmf(bt_address_t* addr, char dtmf)
