@@ -227,7 +227,6 @@ static bt_status_t sal_send_async_req(sal_async_profile_req_t* req)
         return BT_STATUS_PARM_INVALID;
 
     if (!service_loop_work((void*)req, sal_invoke_async, NULL)) {
-        free(req);
         return BT_STATUS_FAIL;
     }
 
