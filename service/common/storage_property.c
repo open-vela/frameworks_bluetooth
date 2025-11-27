@@ -41,6 +41,7 @@ typedef struct {
 static void storage_save_adapter_info(service_work_t* work, void* userdata)
 {
     adapter_storage_t* adapter = (adapter_storage_t*)userdata;
+    property_set_binary(BT_KVDB_VERSION_KEY, BT_STORAGE_CURRENT_VERSION, strlen(BT_STORAGE_CURRENT_VERSION) + 1, false);
     property_set_binary(BT_KVDB_ADAPTERINFO_NAME, adapter->name, sizeof(adapter->name), false);
     property_set_int32(BT_KVDB_ADAPTERINFO_COD, adapter->class_of_device);
     property_set_int32(BT_KVDB_ADAPTERINFO_IOCAP, adapter->io_capability);
