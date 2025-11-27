@@ -15,6 +15,8 @@
  ***************************************************************************/
 #include "sal_hfp_ag_interface.h"
 #include "bt_debug.h"
+#include "bt_hfp.h"
+#include "bt_hfp_ag.h"
 #include "sal_connection_manager.h"
 #include "sal_interface.h"
 #include "sal_zblue.h"
@@ -27,6 +29,7 @@
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/classic/hfp_ag.h>
 #include <zephyr/bluetooth/classic/sdp.h>
+#include <zephyr/bluetooth/classic/at.h>
 
 static bt_list_t* g_sal_ag_conn_list = NULL;
 
@@ -521,6 +524,27 @@ static void zblue_on_ag_sco_disconnected(struct bt_conn* sco_conn, uint8_t reaso
     hfp_ag_on_audio_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_DISCONNECTED, 0xFFFF); // sco conn handle not supported
 }
 
+static int zblue_on_ag_vendor_at_cmd(struct bt_hfp_ag* ag, const char* cmd, uint8_t *cme_code)
+{
+    bt_hfp_ag_connection_t* sal_conn;
+
+    BT_LOGD("%s, cmd:%s", __func__, cmd ? cmd : "(null)");
+
+    if (!ag || !cmd) {
+        return -EINVAL;
+    }
+
+    sal_conn = find_connection_by_ag(ag);
+    if (!sal_conn) {
+        BT_LOGE("%s, connection not found for ag=%p", __func__, ag);
+        return -ENOTCONN;
+    }
+
+    hfp_ag_on_received_at_cmd(&sal_conn->addr, cmd, (uint16_t)strlen(cmd));
+
+    return -EINPROGRESS;
+}
+
 static int zblue_on_ag_get_ongoing_call(struct bt_hfp_ag* ag)
 {
     bt_hfp_ag_connection_t* sal_conn;
@@ -863,6 +887,7 @@ static struct bt_hfp_ag_cb g_hfp_ag_cb = {
     .transmit_dtmf_code = zblue_on_ag_transmit_dtmf_code,
     .subscriber_number = NULL,
     .hf_indicator_value = NULL,
+    .vendor_at_cmd = zblue_on_ag_vendor_at_cmd,
 };
 
 bt_status_t bt_sal_hfp_ag_init(uint32_t features, uint8_t max_connection)
@@ -1359,12 +1384,113 @@ bt_status_t bt_sal_hfp_ag_set_volume(bt_address_t* addr, hfp_volume_type_t type,
     return BT_STATUS_SUCCESS;
 }
 
+static enum bt_at_cme hfp_at_result_to_cme(hfp_atcmd_result_t result)
+{
+    switch (result) {
+    case HFP_ATCMD_RESULT_CMEERR_AGFAILURE:
+        return BT_AT_CME_ERROR_AG_FAILURE;
+    case HFP_ATCMD_RESULT_CMEERR_NOCONN2PHONE:
+        return BT_AT_CME_ERROR_NO_CONNECTION_TO_PHONE;
+    case HFP_ATCMD_RESULT_CMEERR_OPERATION_NOTALLOWED:
+        return BT_AT_CME_ERROR_OPERATION_NOT_ALLOWED;
+    case HFP_ATCMD_RESULT_CMEERR_OPERATION_NOTSUPPORTED:
+        return BT_AT_CME_ERROR_OPERATION_NOT_SUPPORTED;
+    case HFP_ATCMD_RESULT_CMEERR_PHSIMPIN_REQUIRED:
+        return BT_AT_CME_ERROR_PH_SIM_PIN_REQUIRED;
+    case HFP_ATCMD_RESULT_CMEERR_SIMNOT_INSERTED:
+        return BT_AT_CME_ERROR_SIM_NOT_INSERTED;
+    case HFP_ATCMD_RESULT_CMEERR_SIMPIN_REQUIRED:
+        return BT_AT_CME_ERROR_SIM_PIN_REQUIRED;
+    case HFP_ATCMD_RESULT_CMEERR_SIMPUK_REQUIRED:
+        return BT_AT_CME_ERROR_SIM_PUK_REQUIRED;
+    case HFP_ATCMD_RESULT_CMEERR_SIM_FAILURE:
+        return BT_AT_CME_ERROR_SIM_FAILURE;
+    case HFP_ATCMD_RESULT_CMEERR_SIM_BUSY:
+        return BT_AT_CME_ERROR_SIM_BUSY;
+    case HFP_ATCMD_RESULT_CMEERR_INCORRECT_PASSWORD:
+        return BT_AT_CME_ERROR_INCORRECT_PASSWORD;
+    case HFP_ATCMD_RESULT_CMEERR_SIMPIN2_REQUIRED:
+        return BT_AT_CME_ERROR_SIM_PIN2_REQUIRED;
+    case HFP_ATCMD_RESULT_CMEERR_SIMPUK2_REQUIRED:
+        return BT_AT_CME_ERROR_SIM_PUK2_REQUIRED;
+    case HFP_ATCMD_RESULT_CMEERR_MEMORY_FULL:
+        return BT_AT_CME_ERROR_MEMORY_FULL;
+    case HFP_ATCMD_RESULT_CMEERR_INVALID_INDEX:
+        return BT_AT_CME_ERROR_INVALID_INDEX;
+    case HFP_ATCMD_RESULT_CMEERR_MEMORY_FAILURE:
+        return BT_AT_CME_ERROR_MEMORY_FAILURE;
+    case HFP_ATCMD_RESULT_CMEERR_TEXTSTRING_TOOLONG:
+        return BT_AT_CME_ERROR_TEXT_STRING_TOO_LONG;
+    case HFP_ATCMD_RESULT_CMEERR_INVALID_CHARACTERS_INTEXTSTRING:
+        return BT_AT_CME_ERROR_INVALID_CHARS_IN_TEXT_STRING;
+    case HFP_ATCMD_RESULT_CMEERR_DIAL_STRING_TOOLONG:
+        return BT_AT_CME_ERROR_DIAL_STRING_TOO_LONG;
+    case HFP_ATCMD_RESULT_CMEERR_INVALID_CHARACTERS_INDIALSTRING:
+        return BT_AT_CME_ERROR_INVALID_CHARS_IN_DIAL_STRING;
+    case HFP_ATCMD_RESULT_CMEERR_NETWORK_NOSERVICE:
+        return BT_AT_CME_ERROR_NO_NETWORK_SERVICE;
+    case HFP_ATCMD_RESULT_CMEERR_NETWORK_TIMEOUT:
+        return BT_AT_CME_ERROR_NETWORK_TIMEOUT;
+    case HFP_ATCMD_RESULT_CMEERR_NETWORK_NOTALLOWED_EMERGENCYCALL_ONLY:
+        return BT_AT_CME_ERROR_NETWORK_NOT_ALLOWED;
+    default:
+        return BT_AT_CME_ERROR_UNKNOWN;
+    }
+}
+
 bt_status_t bt_sal_hfp_ag_send_at_cmd(bt_address_t* addr, const char* atcmd, uint16_t length)
 {
-    (void)addr;
-    (void)atcmd;
-    (void)length;
-    return BT_STATUS_UNSUPPORTED;
+    bt_hfp_ag_connection_t* sal_conn;
+    const char* start;
+    const char* end;
+    size_t line_len;
+    char* line = (char *)malloc(HFP_AT_LEN_MAX + 1);
+
+    if (!addr || !atcmd || length == 0) {
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    sal_conn = find_connection_by_addr(addr);
+    if (!sal_conn || !sal_conn->ag) {
+        BT_LOGE("%s, connection not found", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    start = atcmd;
+    end = atcmd + length;
+
+    while (start < end && (*start == '\r' || *start == '\n')) {
+        start++;
+    }
+
+    while (end > start && (end[-1] == '\r' || end[-1] == '\n')) {
+        end--;
+    }
+
+    line_len = (size_t)(end - start);
+    if (line_len > HFP_AT_LEN_MAX) {
+        line_len = HFP_AT_LEN_MAX;
+    }
+
+    if (line_len == 0) {
+        BT_LOGW("%s, empty AT payload after trimming", __func__);
+        free(line);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    strlcpy(line, start, line_len + 1);
+
+    BT_LOGD("%s, send vendor rsp: %s", __func__, line);
+
+    int ret = Z_API(bt_hfp_ag_send_vendor)(sal_conn->ag, line);
+
+    free(line);
+    if (ret == -ENOTSUP) {
+        return BT_STATUS_UNSUPPORTED;
+    }
+
+    SAL_CHECK_RET(ret, 0);
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hfp_ag_manufacture_id_response(bt_address_t* addr,
@@ -1387,7 +1513,35 @@ bt_status_t bt_sal_hfp_ag_model_id_response(bt_address_t* addr, const char* mode
 
 bt_status_t bt_sal_hfp_ag_error_response(bt_address_t* addr, hfp_atcmd_result_t result)
 {
-    (void)addr;
-    (void)result;
-    return BT_STATUS_UNSUPPORTED;
+    bt_hfp_ag_connection_t* sal_conn;
+    const char* line;
+    char buf[32] = { 0 };
+
+    if (!addr) {
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    sal_conn = find_connection_by_addr(addr);
+    if (!sal_conn || !sal_conn->ag) {
+        BT_LOGE("%s, connection not found", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    if (result >= HFP_ATCMD_RESULT_CMEERR) {
+        enum bt_at_cme cme = hfp_at_result_to_cme(result);
+        snprintf(buf, sizeof(buf), "+CME ERROR:%d", (int)cme);
+        line = buf;
+    } else if (result == HFP_ATCMD_RESULT_OK) {
+        line = NULL;
+    } else {
+        line = "ERROR";
+    }
+
+    int ret = Z_API(bt_hfp_ag_send_vendor)(sal_conn->ag, line);
+    if (ret == -ENOTSUP) {
+        return BT_STATUS_UNSUPPORTED;
+    }
+
+    SAL_CHECK_RET(ret, 0);
+    return BT_STATUS_SUCCESS;
 }

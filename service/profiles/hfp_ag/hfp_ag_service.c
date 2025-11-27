@@ -882,7 +882,7 @@ void hfp_ag_on_hangup_call(bt_address_t* addr)
     hfp_ag_send_event(addr, AG_STACK_EVENT_HANGUP_CALL);
 }
 
-void hfp_ag_on_received_at_cmd(bt_address_t* addr, char* at_string, uint16_t at_length)
+void hfp_ag_on_received_at_cmd(bt_address_t* addr, const char* at_string, uint16_t at_length)
 {
     hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_STACK_EVENT_AT_COMMAND, addr);
     if (!msg)
