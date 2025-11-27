@@ -49,6 +49,11 @@ static int bt_storage_update_item_size[BT_STORAGE_VERSION_MAX][BT_STORAGE_UPDATE
         sizeof(remote_device_properties_v5_0_0_t),
         sizeof(remote_device_le_properties_v5_0_0_t),
         sizeof(remote_device_le_properties_v5_0_0_t) },
+    /* version 5_0_1 */
+    { sizeof(adapter_storage_v5_0_1_t),
+        sizeof(remote_device_properties_v5_0_1_t),
+        sizeof(remote_device_le_properties_v5_0_1_t),
+        sizeof(remote_device_le_properties_v5_0_1_t) },
 #endif
     /*   Reserve for future version   */
 };
@@ -63,6 +68,9 @@ const static char* unqlite_item_key[BT_STORAGE_UNQLITE_ITEM] = {
 const static bt_storage_update_func_t verison_map[] = {
 #ifdef BLUETOOTH_STORAGE_VERSION_4
     bt_storage_update_v4_0_0_to_v5_0_0,
+#endif
+#ifdef BLUETOOTH_STORAGE_VERSION_5
+    bt_storage_update_v5_0_0_to_v5_0_1,
 #endif
     /*   Reserve for future version   */
 };
@@ -186,6 +194,8 @@ static int bt_storage_update_get_version_by_db(void)
         return BT_STORAGE_VERSION_4_0_0;
     } else if (tmp_value->key_length == (sizeof(remote_device_properties_v5_0_0_t) * tmp_value->items)) {
         return BT_STORAGE_VERSION_5_0_0;
+    } else if (tmp_value->key_length == (sizeof(remote_device_properties_v5_0_1_t) * tmp_value->items)) {
+        return BT_STORAGE_VERSION_5_0_1;
     } else {
         syslog(LOG_ERR, "%s unknown version\n", __func__);
         return -1;
@@ -200,8 +210,9 @@ load_adapter:
 
     if (tmp_value->key_length == (sizeof(adapter_storage_v4_0_0_t) * tmp_value->items)) {
         return BT_STORAGE_VERSION_4_0_0;
-    } else if (tmp_value->key_length == (sizeof(adapter_storage_v5_0_0_t) * tmp_value->items)) {
-        return BT_STORAGE_VERSION_5_0_0;
+    } else if (tmp_value->key_length == (sizeof(adapter_storage_v5_0_1_t) * tmp_value->items)) {
+        /* version 5_0_0 equal version 5_0_1, goto the latest version*/
+        return BT_STORAGE_VERSION_5_0_1;
     }
 
     syslog(LOG_ERR, "%s unknown version\n", __func__);
@@ -305,6 +316,9 @@ static bt_storage_update_properties_t* bt_storage_update_load_info(int storage_v
 #ifdef BLUETOOTH_STORAGE_VERSION_5
     case BT_STORAGE_VERSION_5_0_0:
         storage_info = bt_storage_load_info_v5_0_0();
+        break;
+    case BT_STORAGE_VERSION_5_0_1:
+        storage_info = bt_storage_load_info_v5_0_1();
         break;
 #endif
     default:
