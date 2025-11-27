@@ -60,7 +60,7 @@ void hfp_ag_on_remote_battery_level_update(bt_address_t* addr, uint8_t value);
 void hfp_ag_on_answer_call(bt_address_t* addr);
 void hfp_ag_on_reject_call(bt_address_t* addr);
 void hfp_ag_on_hangup_call(bt_address_t* addr);
-void hfp_ag_on_received_at_cmd(bt_address_t* addr, char* at_string, uint16_t at_length);
+void hfp_ag_on_received_at_cmd(bt_address_t* addr, const char* at_string, uint16_t at_length);
 void hfp_ag_on_audio_connect_request(bt_address_t* addr);
 void hfp_ag_on_dial_number(bt_address_t* addr, char* number, uint32_t length);
 void hfp_ag_on_dial_memory(bt_address_t* addr, uint32_t location);
