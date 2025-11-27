@@ -142,6 +142,11 @@ config BLUETOOTH_PM_MAX_TIMER_NUMBER
 	int "Bluetooth PM maximum number of timers"
 	default 16
 
+config BLUETOOTH_STORAGE_UPDATE
+	bool "Bluetooth Storage update"
+	default n
+	depends on BLUETOOTH_STORAGE_PROPERTY_SUPPORT
+
 config BLUETOOTH_UPGRADE
 	bool "Enable Bluetooth Storage transformation tool for upgrading OS"
 	default n
