@@ -49,7 +49,6 @@ typedef struct {
     int local_role;
     bt_address_t peer_addr;
     service_poll_t* poll_handle;
-    pthread_mutex_t pan_lock;
     callbacks_list_t* callbacks;
 } pan_global_t;
 
@@ -389,9 +388,8 @@ static void pan_service_event_process(void* data)
 {
     pan_msg_t* msg = data;
 
-    pthread_mutex_lock(&g_pan.pan_lock);
     if (!g_pan.enable) {
-        pthread_mutex_unlock(&g_pan.pan_lock);
+        free(data);
         return;
     }
 
@@ -412,7 +410,6 @@ static void pan_service_event_process(void* data)
     default:
         break;
     }
-    pthread_mutex_unlock(&g_pan.pan_lock);
 
     free(data);
 }
@@ -488,13 +485,6 @@ void pan_on_data_received(bt_address_t* addr, uint16_t protocol,
 
 static bt_status_t pan_init(void)
 {
-    pthread_mutexattr_t attr;
-
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    if (pthread_mutex_init(&g_pan.pan_lock, &attr) < 0)
-        return BT_STATUS_FAIL;
-
     g_pan.callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
 
     return BT_STATUS_SUCCESS;
@@ -504,14 +494,11 @@ static void pan_cleanup(void)
 {
     bt_callbacks_list_free(g_pan.callbacks);
     g_pan.callbacks = NULL;
-    pthread_mutex_destroy(&g_pan.pan_lock);
 }
 
 static bt_status_t pan_startup(profile_on_startup_t cb)
 {
-    pthread_mutex_lock(&g_pan.pan_lock);
     if (g_pan.enable) {
-        pthread_mutex_unlock(&g_pan.pan_lock);
         cb(PROFILE_PANU, true);
         return BT_STATUS_NOT_ENABLED;
     }
@@ -520,14 +507,12 @@ static bt_status_t pan_startup(profile_on_startup_t cb)
     g_pan.local_role = PAN_ROLE_PANU;
     list_initialize(&g_pan.conn_list);
     if (bt_sal_pan_init(PAN_MAX_CONNECTIONS, PAN_ROLE_PANU) != BT_STATUS_SUCCESS) {
-        pthread_mutex_unlock(&g_pan.pan_lock);
         list_delete(&g_pan.conn_list);
         cb(PROFILE_PANU, false);
         return BT_STATUS_FAIL;
     }
 
     g_pan.enable = true;
-    pthread_mutex_unlock(&g_pan.pan_lock);
     cb(PROFILE_PANU, true);
 
     return BT_STATUS_SUCCESS;
@@ -535,9 +520,7 @@ static bt_status_t pan_startup(profile_on_startup_t cb)
 
 static bt_status_t pan_shutdown(profile_on_shutdown_t cb)
 {
-    pthread_mutex_lock(&g_pan.pan_lock);
     if (!g_pan.enable) {
-        pthread_mutex_unlock(&g_pan.pan_lock);
         cb(PROFILE_PANU, true);
         return BT_STATUS_SUCCESS;
     }
@@ -545,7 +528,6 @@ static bt_status_t pan_shutdown(profile_on_shutdown_t cb)
     g_pan.enable = false;
     pan_close_all_conn();
     list_delete(&g_pan.conn_list);
-    pthread_mutex_unlock(&g_pan.pan_lock);
     bt_sal_pan_cleanup();
     cb(PROFILE_PANU, true);
 
@@ -590,7 +572,6 @@ static bt_status_t pan_connect(bt_address_t* addr, uint8_t dst_role, uint8_t src
     pan_conn_t* conn;
     bt_status_t status;
 
-    pthread_mutex_lock(&g_pan.pan_lock);
     if (!g_pan.enable) {
         status = BT_STATUS_NOT_ENABLED;
         goto exit;
@@ -611,7 +592,6 @@ static bt_status_t pan_connect(bt_address_t* addr, uint8_t dst_role, uint8_t src
     conn->state = PROFILE_STATE_CONNECTING;
 
 exit:
-    pthread_mutex_unlock(&g_pan.pan_lock);
     return status;
 }
 
@@ -620,7 +600,6 @@ static bt_status_t pan_disconnect(bt_address_t* addr)
     pan_conn_t* conn;
     bt_status_t status;
 
-    pthread_mutex_lock(&g_pan.pan_lock);
     if (!g_pan.enable) {
         status = BT_STATUS_NOT_ENABLED;
         goto exit;
@@ -639,7 +618,6 @@ static bt_status_t pan_disconnect(bt_address_t* addr)
     conn->state = PROFILE_STATE_DISCONNECTING;
 
 exit:
-    pthread_mutex_unlock(&g_pan.pan_lock);
     return status;
 }
 
