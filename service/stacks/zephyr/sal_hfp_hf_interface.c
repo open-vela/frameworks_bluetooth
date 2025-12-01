@@ -1079,6 +1079,16 @@ bt_status_t bt_sal_hfp_hf_hangup_call(bt_address_t* addr)
 bt_status_t bt_sal_hfp_hf_dial_number(bt_address_t* addr, const char* number)
 {
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    if (!number) {
+        SAL_CHECK_RET(Z_API(bt_hfp_hf_redial)(sal_conn->hf), 0);
+        return BT_STATUS_SUCCESS;
+    }
+
     SAL_CHECK_RET(Z_API(bt_hfp_hf_number_call)(sal_conn->hf, number), 0);
     return BT_STATUS_SUCCESS;
 }
