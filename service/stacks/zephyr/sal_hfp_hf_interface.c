@@ -418,7 +418,7 @@ static uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_resu
 
             CALL_IN_SERVICE(do_hf_connect, params);
 
-            bt_conn_unref(conn);
+            // bt_conn_unref(conn);
             params = NULL;
         }
     }
@@ -738,6 +738,7 @@ static void sal_hf_default_at_complete_handler(
     enum bt_at_result result,
     enum bt_at_cme err)
 {
+
     return;
 }
 
