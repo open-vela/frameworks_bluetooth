@@ -63,13 +63,28 @@ typedef struct _bt_hfp_hf_connection {
     hfp_callsetup_t callsetup_state;
     hfp_call_t call_state;
     hfp_callheld_t held_state;
+    bt_list_t* pending_completes;
 } bt_hfp_hf_connection_t;
+
+typedef void (*sal_hf_at_complete_handler_t)(
+    bt_hfp_hf_connection_t* conn,
+    enum bt_at_result result,
+    enum bt_at_cme err);
+
+typedef struct _sal_hf_at_complete_node {
+    sal_hf_at_complete_handler_t handler;
+} sal_hf_at_complete_node_t;
+
 
 static void free_connection(void* data)
 {
     bt_hfp_hf_connection_t* sal_conn = (bt_hfp_hf_connection_t*)data;
     if (sal_conn->calls) {
         bt_list_free(sal_conn->calls);
+    }
+    if (sal_conn->pending_completes) {
+        bt_list_free(sal_conn->pending_completes);
+        sal_conn->pending_completes = NULL;
     }
     if (sal_conn->conn) {
         bt_conn_unref(sal_conn->conn);
@@ -87,6 +102,12 @@ static void free_call(void* data)
 {
     bt_hfp_hf_call_info_t* sal_call = (bt_hfp_hf_call_info_t*)data;
     free(sal_call);
+}
+
+static void free_at_complete(void* data)
+{
+    sal_hf_at_complete_node_t* node = (sal_hf_at_complete_node_t*)data;
+    free(node);
 }
 
 static bool sal_conn_hf_cmp(void* data, void* context)
@@ -271,6 +292,7 @@ static bt_hfp_hf_connection_t* new_hf_connection(struct bt_conn* conn, struct bt
     sal_conn->hf = hf;
 
     sal_conn->calls = bt_list_new(free_call);
+    sal_conn->pending_completes = bt_list_new(free_at_complete);
 
     sal_conn->callsetup_state = HFP_CALLSETUP_NONE;
     sal_conn->call_state = HFP_CALL_NO_CALLS_IN_PROGRESS;
@@ -279,6 +301,39 @@ static bt_hfp_hf_connection_t* new_hf_connection(struct bt_conn* conn, struct bt
     bt_list_add_tail(g_sal_hf_conn_list, sal_conn);
 
     return sal_conn;
+}
+
+static bool enqueue_at_complete(bt_hfp_hf_connection_t* conn, sal_hf_at_complete_handler_t handler)
+{
+    if (!conn || !conn->pending_completes) {
+        return false;
+    }
+
+    sal_hf_at_complete_node_t* item = (sal_hf_at_complete_node_t*)zalloc(sizeof(sal_hf_at_complete_node_t));
+    if (!item) {
+        BT_LOGE("%s, Failed to allocate at_complete node", __func__);
+        return false;
+    }
+
+    item->handler = handler;
+    bt_list_add_tail(conn->pending_completes, item);
+    return true;
+}
+
+static sal_hf_at_complete_node_t* dequeue_at_complete(bt_hfp_hf_connection_t* conn)
+{
+    if (!conn || !conn->pending_completes) {
+        return NULL;
+    }
+
+    bt_list_node_t* node = bt_list_head(conn->pending_completes);
+    if (!node) {
+        return NULL;
+    }
+
+    sal_hf_at_complete_node_t* item = (sal_hf_at_complete_node_t*)bt_list_node(node);
+    bt_list_remove(conn->pending_completes, item);
+    return item;
 }
 
 static void set_call_state(
@@ -678,6 +733,36 @@ static void zblue_on_vendor_specific(struct bt_hfp_hf *hf, const char *response)
     hfp_hf_on_received_at_cmd_resp(&conn->addr, (char*)response, strlen(response));
 }
 
+static void sal_hf_default_at_complete_handler(
+    bt_hfp_hf_connection_t* conn,
+    enum bt_at_result result,
+    enum bt_at_cme err)
+{
+    return;
+}
+
+static void zblue_on_at_cmd_complete(struct bt_hfp_hf *hf,
+    enum bt_at_result result, enum bt_at_cme err)
+{
+    bt_hfp_hf_connection_t* conn = find_connection_by_hf(hf);
+    if (!conn) {
+        BT_LOGE("%s, Failed to find connection for AT cmd complete", __func__);
+        return;
+    }
+
+    sal_hf_at_complete_node_t* pending = dequeue_at_complete(conn);
+    if (!pending) {
+        return;
+    }
+
+    sal_hf_at_complete_handler_t handler = pending->handler;
+    free(pending);
+
+    if (handler) {
+        handler(conn, result, err);
+    }
+}
+
 static void zblue_on_codec_negotiate(struct bt_hfp_hf* hf, uint8_t id)
 {
     bt_hfp_hf_connection_t* conn = find_connection_by_hf(hf);
@@ -815,7 +900,7 @@ static struct bt_hfp_hf_cb hf_callbacks = {
     .subscriber_number = zblue_on_subscriber_number,
     .query_call = zblue_on_current_call,
     .vendor_specific = zblue_on_vendor_specific,
-    .at_cmd_complete = NULL,
+    .at_cmd_complete = zblue_on_at_cmd_complete,
 };
 
 bt_status_t bt_sal_hfp_hf_init(uint32_t hf_features, uint8_t max_connection)
@@ -1177,6 +1262,10 @@ bt_status_t bt_sal_hfp_hf_send_at_cmd(bt_address_t* addr, const char* cmd, uint1
     if (!cmd || len == 0) {
         BT_LOGE("%s, Invalid AT command", __func__);
         return BT_STATUS_PARM_INVALID;
+    }
+
+    if (!enqueue_at_complete(sal_conn, sal_hf_default_at_complete_handler)) {
+        return BT_STATUS_NOMEM;
     }
 
     int ret = Z_API(bt_hfp_hf_send_vendor)(sal_conn->hf, cmd);
