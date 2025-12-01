@@ -96,6 +96,12 @@ struct add_characteristic {
     gatt_element_t* element;
 };
 
+struct gatt_user_data {
+    gatt_element_t* element;
+    uint16_t len;
+    uint8_t value[];
+};
+
 struct gatt_ccc_wrapper {
     /**
      * NOTE: `ccc` must be the first member!
@@ -154,13 +160,20 @@ static ssize_t read_value(struct bt_conn* conn, const struct bt_gatt_attr* attr,
     bt_address_t addr;
     gatt_element_t* element;
     uint32_t request_id;
+    struct gatt_user_data* user_data;
 
     if (!attr || !attr->user_data) {
-        BT_LOGE("%s, user_data is NULL", __func__);
+        BT_LOGE("%s, user_data or context is NULL", __func__);
         return BT_GATT_ERR(BT_ATT_ERR_UNLIKELY);
     }
 
-    element = (gatt_element_t*)attr->user_data;
+    user_data = (struct gatt_user_data*)attr->user_data;
+
+    element = (gatt_element_t*)user_data->element;
+    if (!element) {
+        BT_LOGE("%s, element is NULL", __func__);
+        return BT_GATT_ERR(BT_ATT_ERR_UNLIKELY);
+    }
 
     get_le_addr_from_conn(conn, &addr);
 
@@ -177,13 +190,20 @@ static ssize_t write_value(struct bt_conn* conn, const struct bt_gatt_attr* attr
     gatt_element_t* element;
     uint32_t request_id;
     int ret;
+    struct gatt_user_data* user_data;
 
     if (!attr || !attr->user_data) {
-        BT_LOGE("%s, user_data is NULL", __func__);
+        BT_LOGE("%s, user_data or context is NULL", __func__);
         return BT_GATT_ERR(BT_ATT_ERR_UNLIKELY);
     }
 
-    element = (gatt_element_t*)attr->user_data;
+    user_data = (struct gatt_user_data*)attr->user_data;
+
+    element = (gatt_element_t*)user_data->element;
+    if (!element) {
+        BT_LOGE("%s, element is NULL", __func__);
+        return BT_GATT_ERR(BT_ATT_ERR_UNLIKELY);
+    }
 
     if (flags & GATT_WRITE_FLAGS_RELIABLE_WRITE) {
         BT_LOGE("%s, reliable write is not supported", __func__);
@@ -308,6 +328,7 @@ static int alloc_characteristic(struct add_characteristic* ch)
 {
     struct bt_gatt_attr *attr_chrc, *attr_value;
     struct bt_gatt_chrc* chrc_data;
+    struct gatt_user_data user_data = { 0 };
 
     /* Add Characteristic Declaration */
     attr_chrc = gatt_db_add(&(struct bt_gatt_attr)BT_GATT_ATTRIBUTE(BT_UUID_GATT_CHRC, BT_GATT_PERM_READ, bt_gatt_attr_read_chrc, NULL, (&(struct bt_gatt_chrc) {})), sizeof(*chrc_data));
@@ -320,7 +341,9 @@ static int alloc_characteristic(struct add_characteristic* ch)
         return -EINVAL;
     }
 
-    attr_value = gatt_db_add(&(struct bt_gatt_attr)BT_GATT_ATTRIBUTE(ch->uuid, ch->permissions & GATT_PERM_MASK, read_value, write_value, ch->element), 0);
+    user_data.element = ch->element;
+
+    attr_value = gatt_db_add(&(struct bt_gatt_attr)BT_GATT_ATTRIBUTE(ch->uuid, ch->permissions & GATT_PERM_MASK, read_value, write_value, &user_data), sizeof(user_data));
     if (!attr_value) {
         BT_LOGE("%s, attr_value allocation failed", __func__);
         return -EINVAL;
@@ -963,6 +986,7 @@ static void send_indication_destory(struct bt_gatt_indicate_params* params)
 
 static void send_indication_result(struct bt_conn* conn, struct bt_gatt_indicate_params* params, uint8_t err)
 {
+    struct gatt_user_data* user_data;
     gatt_element_t* element;
     bt_address_t addr;
     bt_status_t status = GATT_STATUS_SUCCESS;
@@ -972,7 +996,8 @@ static void send_indication_result(struct bt_conn* conn, struct bt_gatt_indicate
         return;
     }
 
-    element = (gatt_element_t*)params->attr->user_data;
+    user_data = (struct gatt_user_data*)params->attr->user_data;
+    element = (gatt_element_t*)user_data->element;
 
     if (!element) {
         BT_LOGE("%s, element is NULL", __func__);
