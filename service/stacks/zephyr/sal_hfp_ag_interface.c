@@ -420,6 +420,7 @@ static void do_ag_connect(ag_connect_params_t* params)
     hfp_ag_on_connection_state_changed(&bd_addr, PROFILE_STATE_CONNECTING, 0, 0);
 
     BT_LOGD("%s, HFP AG connecting", __func__);
+    bt_conn_unref(conn);
 }
 
 uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_result* result, const struct bt_sdp_discover_params* ignore)
@@ -1251,6 +1252,7 @@ bt_status_t bt_sal_hfp_ag_cind_response(bt_address_t* addr, hfp_ag_cind_resopnse
 {
     bt_hfp_ag_connection_t* sal_conn;
     struct bt_hfp_ag_ongoing_call calls[HFP_CALL_LIST_MAX];
+    struct bt_hfp_ag_indicator_value indicators[4] = {0};
     size_t count = 0;
 
     if (!addr || !response) {
@@ -1263,10 +1265,14 @@ bt_status_t bt_sal_hfp_ag_cind_response(bt_address_t* addr, hfp_ag_cind_resopnse
         return BT_STATUS_FAIL;
     }
 
-    SAL_CHECK_RET(Z_API(bt_hfp_ag_service_availability)(sal_conn->ag, response->network ? true : false), 0);
-    SAL_CHECK_RET(Z_API(bt_hfp_ag_roaming_status)(sal_conn->ag, response->roam ? 1 : 0), 0);
-    SAL_CHECK_RET(Z_API(bt_hfp_ag_signal_strength)(sal_conn->ag, response->signal > 5 ? 5 : response->signal), 0);
-    SAL_CHECK_RET(Z_API(bt_hfp_ag_battery_level)(sal_conn->ag, response->battery > 5 ? 5 : response->battery), 0);
+    indicators[0].indicator = BT_HFP_AG_SERVICE_IND;
+    indicators[0].value = response->network ? 1 : 0;
+    indicators[1].indicator = BT_HFP_AG_ROAM_IND;
+    indicators[1].value = response->roam ? 1 : 0;
+    indicators[2].indicator = BT_HFP_AG_SIGNAL_IND;
+    indicators[2].value = response->signal > 5 ? 5 : response->signal;
+    indicators[3].indicator = BT_HFP_AG_BATTERY_IND;
+    indicators[3].value = response->battery > 5 ? 5 : response->battery;
 
     memset(calls, 0, sizeof(calls));
 
@@ -1283,7 +1289,7 @@ bt_status_t bt_sal_hfp_ag_cind_response(bt_address_t* addr, hfp_ag_cind_resopnse
         BT_LOGW("%s, reached max call list size", __func__);
     }
 
-    SAL_CHECK_RET(Z_API(bt_hfp_ag_ongoing_calls)(sal_conn->ag, calls, count), 0);
+    SAL_CHECK_RET(Z_API(bt_hfp_ag_ongoing_calls)(sal_conn->ag, calls, count, indicators, 4), 0);
     return BT_STATUS_SUCCESS;
 }
 
