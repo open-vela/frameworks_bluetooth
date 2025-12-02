@@ -1640,7 +1640,7 @@ static void feature_gattc_destroy(FeatureInterfaceHandle handle)
             bt_gattc_feature_disconnect_async(gattc_info->gattc->handle, NULL, NULL);
         }
 
-        bt_gattc_feature_delete_client_async(bluetooth_instance, &gattc_info->gattc->remote_address, NULL, NULL);
+        bt_gattc_feature_delete_client_async(bluetooth_instance, gattc_info->gattc->handle, NULL, NULL);
     }
 
     free(gattc_info->gattc);
