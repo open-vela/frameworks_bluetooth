@@ -233,13 +233,13 @@ bt_status_t bt_gattc_feature_create_client_async(bt_instance_t* ins, bt_address_
 
 /**
  * @brief Delete GATT client.
- * @param ins        Bluetooth instance.
- * @param addr       Remote device address.
- * @param cb         Delete completion callback.
- * @param userdata   User context.
+ * @param ins         Bluetooth instance.
+ * @param conn_handle Connection handle (from create).
+ * @param cb          Async call status callback.
+ * @param userdata    User context.
  * @return bt_status_t
  */
-bt_status_t bt_gattc_feature_delete_client_async(bt_instance_t* ins, bt_address_t* addr,
+bt_status_t bt_gattc_feature_delete_client_async(bt_instance_t* ins, gattc_handle_t conn_handle,
     bt_gattc_feature_delete_client_cb_t cb, void* userdata);
 
 /**

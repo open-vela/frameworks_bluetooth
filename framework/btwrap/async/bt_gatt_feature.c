@@ -53,7 +53,6 @@ typedef struct {
 
 struct gatt_client {
     gattc_handle_t conn;
-    bt_address_t addr;
     bt_gattc_feature_callbacks_t callbacks;
     bool connected;
     bool services_discovering;
@@ -156,25 +155,6 @@ void discovery_database_destroy(gatt_client_t* client)
         bt_list_free(client->temp_attrs);
         client->temp_attrs = NULL;
     }
-}
-
-static bool match_client_by_addr(void* element, void* context)
-{
-    bt_address_t* target_addr;
-    gatt_client_t* client;
-
-    target_addr = (bt_address_t*)context;
-    client = (gatt_client_t*)element;
-
-    return memcmp(&client->addr, target_addr, sizeof(bt_address_t)) == 0;
-}
-
-static gatt_client_t* find_client_by_addr(bt_address_t* addr)
-{
-    if (!g_gatt_client_list || !addr)
-        return NULL;
-
-    return (gatt_client_t*)bt_list_find(g_gatt_client_list, match_client_by_addr, (void*)addr);
 }
 
 static gatt_client_t* find_client_by_conn(gattc_handle_t conn)
@@ -451,7 +431,6 @@ static void feature_on_connected(void* conn_handle, bt_address_t* addr)
         return;
 
     client->connected = true;
-    memcpy(&client->addr, addr, sizeof(bt_address_t));
 
     BT_FEATURE_LOG("connected: conn=%p", conn_handle);
 
@@ -811,7 +790,6 @@ bt_status_t bt_gattc_feature_create_client_async(bt_instance_t* ins, bt_address_
         goto fail;
     }
 
-    memcpy(&client->addr, addr, sizeof(bt_address_t));
     client->ins = ins;
 
     memcpy(&client->callbacks, callbacks, callbacks->size);
@@ -875,15 +853,15 @@ static void delete_client_cb(bt_instance_t* ins, bt_status_t status, void* userd
         user_cb(ins, status, conn_handle, user_ud);
 }
 
-bt_status_t bt_gattc_feature_delete_client_async(bt_instance_t* ins, bt_address_t* addr,
+bt_status_t bt_gattc_feature_delete_client_async(bt_instance_t* ins, gattc_handle_t conn_handle,
     bt_gattc_feature_delete_client_cb_t cb, void* userdata)
 {
     gatt_client_t* client;
 
-    if (!ins || !addr)
+    if (!ins || !conn_handle)
         return BT_STATUS_PARM_INVALID;
 
-    client = find_client_by_addr(addr);
+    client = find_client_by_conn(conn_handle);
     if (!client)
         return BT_STATUS_PARM_INVALID;
 
