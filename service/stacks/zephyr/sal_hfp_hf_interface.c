@@ -86,14 +86,7 @@ static void free_connection(void* data)
         bt_list_free(sal_conn->pending_completes);
         sal_conn->pending_completes = NULL;
     }
-    if (sal_conn->conn) {
-        bt_conn_unref(sal_conn->conn);
-        sal_conn->conn = NULL;
-    }
-    if (sal_conn->sco_conn) {
-        bt_conn_unref(sal_conn->sco_conn);
-        sal_conn->sco_conn = NULL;
-    }
+
     free(sal_conn);
     return;
 }
@@ -394,7 +387,6 @@ static uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_resu
             return BT_SDP_DISCOVER_UUID_STOP;
         }
         BT_LOGE("%s, remote device does not support HFP AG feature", __func__);
-        bt_conn_unref(conn);
 
         hfp_hf_on_connection_state_changed(&bd_addr, PROFILE_STATE_DISCONNECTED, 0, 0);
         return BT_SDP_DISCOVER_UUID_STOP;
@@ -418,7 +410,6 @@ static uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_resu
 
             CALL_IN_SERVICE(do_hf_connect, params);
 
-            // bt_conn_unref(conn);
             params = NULL;
         }
     }
@@ -483,6 +474,8 @@ static void zblue_on_sco_disconnected(struct bt_conn *sco_conn, uint8_t reason)
     }
 
     hfp_hf_on_audio_connection_state_changed(&conn->addr, HFP_AUDIO_STATE_DISCONNECTED, 0);
+
+    conn->sco_conn = NULL;
 }
 
 static void zblue_on_outgoing_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_call* call)
