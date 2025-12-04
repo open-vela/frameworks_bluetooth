@@ -257,6 +257,7 @@ int bt_socket_client_avrcp_control_callback(service_poll_t* poll,
                 attrs[i].text = NULL;
                 break;
             default:
+                attrs[i].text = NULL;
                 break;
             }
         }
