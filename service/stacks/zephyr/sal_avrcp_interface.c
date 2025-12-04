@@ -949,7 +949,7 @@ static void zblue_on_ct_get_element_attrs_rsp(struct bt_avrcp_ct* ct, uint8_t ti
     memset(&msg->data.attrs, 0, sizeof(rc_element_attrs_t));
     msg->data.attrs.count = rsp->num_attrs;
 
-    for (int i = 0; i < rsp->num_attrs && rsp->num_attrs <= AVRCP_MAX_ATTR_COUNT; i++) {
+    for (int i = 0; i < rsp->num_attrs && i < AVRCP_MAX_ATTR_COUNT; i++) {
         if (buf->len < sizeof(struct bt_avrcp_media_attr)) {
             BT_LOGW("incompleted message");
             break;
@@ -960,9 +960,11 @@ static void zblue_on_ct_get_element_attrs_rsp(struct bt_avrcp_ct* ct, uint8_t ti
         msg->data.attrs.types[i] = sys_be32_to_cpu(attr->attr_id);
         msg->data.attrs.chr_sets[i] = sys_be16_to_cpu(attr->charset_id);
         uint16_t attr_len = sys_be16_to_cpu(attr->attr_len);
-        if (buf->len < attr_len || attr_len <= 0) {
+        if (buf->len < attr_len)
             break;
-        }
+
+        if (attr_len == 0)
+            continue;
 
         msg->data.attrs.attrs[i] = (char*)malloc(attr_len + 1);
         net_buf_pull_mem(buf, attr_len);
