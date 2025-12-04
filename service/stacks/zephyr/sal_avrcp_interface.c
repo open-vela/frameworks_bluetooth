@@ -674,12 +674,14 @@ static uint8_t get_next_ct_tid(zblue_avrcp_info_t* avrcp_info)
 
 static void bt_list_remove_avrcp_info(zblue_avrcp_info_t* avrcp_info)
 {
+    bool is_cleanup = avrcp_info->is_cleanup;
+
     if (!avrcp_info->ct && !avrcp_info->tg && bt_avrcp_conn) {
         bt_list_free(avrcp_info->tg_tid);
         bt_list_remove(bt_avrcp_conn, avrcp_info);
     }
 
-    if (avrcp_info->is_cleanup && bt_list_length(bt_avrcp_conn) == 0) {
+    if (is_cleanup && bt_list_length(bt_avrcp_conn) == 0) {
         bt_list_free(bt_avrcp_conn);
         bt_avrcp_conn = NULL;
     }
