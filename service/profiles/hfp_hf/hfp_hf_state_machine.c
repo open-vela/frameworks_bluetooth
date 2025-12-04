@@ -20,6 +20,10 @@
 #include <string.h>
 #include <sys/types.h>
 
+#include "sal_hfp_hf_interface.h"
+#include "sal_interface.h"
+
+#include "audio_control.h"
 #include "bt_addr.h"
 #include "bt_dfx.h"
 #include "bt_hfp_hf.h"
@@ -33,8 +37,6 @@
 #include "hfp_hf_state_machine.h"
 #include "media_system.h"
 #include "power_manager.h"
-#include "sal_hfp_hf_interface.h"
-#include "sal_interface.h"
 #include "service_loop.h"
 #include "utils/log.h"
 

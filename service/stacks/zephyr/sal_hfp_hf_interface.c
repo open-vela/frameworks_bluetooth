@@ -15,11 +15,12 @@
  ***************************************************************************/
 
 #include "sal_hfp_hf_interface.h"
-#include "bt_debug.h"
-#include "bt_list.h"
 #include "sal_connection_manager.h"
 #include "sal_interface.h"
 #include "sal_zblue.h"
+
+#include "bt_debug.h"
+#include "bt_list.h"
 #include "service_loop.h"
 #include <errno.h>
 #include <inttypes.h>
