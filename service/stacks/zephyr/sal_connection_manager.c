@@ -344,9 +344,9 @@ static void remove_from_connection_manager_list(bt_list_t* list, bt_address_t* a
 
         if (try_acl_disconnect) {
             bt_try_disconnect_acl(manager);
+        } else {
+            bt_list_remove(list, manager);
         }
-
-        bt_list_remove(list, manager);
     }
 }
 
