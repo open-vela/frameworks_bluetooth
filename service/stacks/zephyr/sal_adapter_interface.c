@@ -260,12 +260,12 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
     if (err) {
         state.connection_state = CONNECTION_STATE_DISCONNECTED;
         state.status = err;
-        bt_sal_cm_acl_disconnected_callback(cm_data_new(&state.addr, PROFILE_UNKOWN));
+        bt_sal_cm_acl_disconnected_callback(cm_data_new(&state.addr, PROFILE_UNKOWN, 0));
         goto error;
     }
 
     bt_sal_get_remote_name(BT_TRANSPORT_BREDR, &state.addr);
-    bt_sal_cm_acl_connected_callback(cm_data_new(&state.addr, PROFILE_UNKOWN));
+    bt_sal_cm_acl_connected_callback(cm_data_new(&state.addr, PROFILE_UNKOWN, 0));
 
 error:
     adapter_on_connection_state_changed(&state);
@@ -285,7 +285,7 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
 
     zblue_conn_get_addr(conn, &state.addr);
     adapter_on_connection_state_changed(&state);
-    bt_sal_cm_acl_disconnected_callback(cm_data_new(&state.addr, PROFILE_UNKOWN));
+    bt_sal_cm_acl_disconnected_callback(cm_data_new(&state.addr, PROFILE_UNKOWN, 0));
 }
 
 static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
