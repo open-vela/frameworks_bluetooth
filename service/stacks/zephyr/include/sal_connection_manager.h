@@ -20,32 +20,36 @@
 typedef struct {
     bt_address_t addr;
     uint8_t profile_id;
+    uint16_t conn_id;
 } cm_data_t;
 
 typedef bt_status_t (*bt_profile_conn_handler_t)(
-    bt_controller_id_t id, bt_address_t* addr);
+    bt_controller_id_t id, bt_address_t* addr, void* user_data);
 
 typedef struct {
     bt_profile_conn_handler_t handler;
     uint8_t profile_id;
+    uint16_t conn_id;
+    bool is_busy;
     bt_controller_id_t id;
+    void* user_data;
 } bt_profile_conn_handler_node_t;
 
 bt_status_t bt_sal_profile_connect_request(bt_address_t* addr,
-    uint8_t profile_id, bt_controller_id_t id,
-    bt_profile_conn_handler_t handler);
+    uint8_t profile_id, uint16_t conn_id, bt_controller_id_t id,
+    bt_profile_conn_handler_t handler, void* user_data);
 bt_status_t bt_sal_profile_disconnect_register(bt_address_t* addr,
-    uint8_t profile_id, bt_controller_id_t id,
-    bt_profile_conn_handler_t handler);
+    uint8_t profile_id, uint16_t conn_id, bt_controller_id_t id,
+    bt_profile_conn_handler_t handler, void* user_data);
 bt_status_t bt_sal_profile_disconnect_request(bt_address_t* addr,
-    uint8_t profile_id, bt_controller_id_t id,
-    bt_profile_conn_handler_t handler);
+    uint8_t profile_id, uint16_t conn_id, bt_controller_id_t id,
+    bt_profile_conn_handler_t handler, void* user_data);
 bt_status_t bt_sal_remove_bond_internal(bt_controller_id_t id,
     bt_address_t* addr);
 bt_status_t bt_sal_disconnect_internal(bt_controller_id_t id,
     bt_address_t* addr, uint8_t reason);
 
-cm_data_t* cm_data_new(bt_address_t* addr, uint8_t profile_id);
+cm_data_t* cm_data_new(bt_address_t* addr, uint8_t profile_id, uint16_t conn_id);
 void bt_sal_cm_profile_connected_callback(cm_data_t* data);
 void bt_sal_cm_profile_disconnected_callback(cm_data_t* data);
 void bt_sal_cm_acl_connected_callback(cm_data_t* data);
