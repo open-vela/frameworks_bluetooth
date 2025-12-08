@@ -22,15 +22,8 @@
 
 #include "utils/log.h"
 
-#define FLAG_NONE (0)
-#define FLAG_A2DP_SINK (1ULL << (PROFILE_A2DP_SINK))
-#define FLAG_A2DP_SOURCE (1ULL << (PROFILE_A2DP))
-#define FLAG_AVRCP_TARGET (1ULL << (PROFILE_AVRCP_TG))
-#define FLAG_AVRCP_CONTROL (1ULL << (PROFILE_AVRCP_CT))
-
 typedef struct {
     bt_address_t device_addr;
-    uint64_t profile_flags;
     bool is_unpair;
     bt_list_t* profile_conn_handler_list;
 } bt_profile_connection_manager_t;
@@ -38,8 +31,10 @@ typedef struct {
 typedef struct {
     bt_address_t device_addr;
     uint8_t profile_id;
+    uint16_t conn_id;
     bt_profile_conn_handler_t handler;
     bt_controller_id_t id;
+    bt_list_t* manager_list;
     void* user_data;
 } sal_async_profile_req_t;
 
@@ -47,46 +42,39 @@ static bt_list_t* bt_sal_connecting_list = NULL;
 static bt_list_t* bt_sal_disconnecting_list = NULL;
 
 static bt_status_t bt_sal_trigger_profile_conn_act(bt_profile_connection_manager_t* manager, bt_list_t* manager_list);
+static void remove_from_connection_manager_list(bt_list_t* list, bt_address_t* addr, uint8_t profile_id,
+    uint16_t conn_id, bool try_acl_disconnect);
 
-static void flags_set(uint64_t* profile_flags, uint64_t flags)
-{
-    *profile_flags |= flags;
-}
-
-static void flags_clear(uint64_t* profile_flags, uint64_t flags)
-{
-    *profile_flags &= ~flags;
-}
-
-static inline uint64_t profile_id_to_flag(uint8_t profile_id)
-{
-    SAL_ASSERT(profile_id <= PROFILE_MAX);
-
-    return (1ULL << (profile_id));
-}
-
-static bool match_profile_func(void* data, void* context)
+static bool match_profile_id_and_conn_id(void* data, void* context)
 {
     bt_profile_conn_handler_node_t* handler_node = (bt_profile_conn_handler_node_t*)data;
-    bt_profile_conn_handler_t* target_func = (bt_profile_conn_handler_t*)context;
+    uint32_t key = (uint32_t)(uintptr_t)context;
+    uint8_t profile_id = (key >> 16) & 0xFF;
+    uint16_t conn_id = key & 0xFFFF;
 
-    if (!handler_node || !target_func) {
+    if (!handler_node) {
         return false;
     }
 
-    return handler_node->handler == *target_func;
+    return handler_node->profile_id == profile_id && handler_node->conn_id == conn_id;
 }
 
-static bool match_profile_id(void* data, void* context)
+static bt_profile_conn_handler_node_t* find_handler_node(
+    bt_profile_connection_manager_t* manager,
+    uint8_t profile_id,
+    uint16_t conn_id)
 {
-    bt_profile_conn_handler_node_t* handler_node = (bt_profile_conn_handler_node_t*)data;
-    uint8_t* profile_id = (uint8_t*)context;
+    uint32_t key;
 
-    if (!handler_node || !profile_id) {
-        return false;
+    if (!manager || !manager->profile_conn_handler_list) {
+        return NULL;
     }
 
-    return handler_node->profile_id == *profile_id;
+    key = (((uint32_t)profile_id) << 16) | (uint32_t)conn_id;
+
+    return bt_list_find(manager->profile_conn_handler_list,
+        match_profile_id_and_conn_id,
+        (void*)(uintptr_t)key);
 }
 
 static void bt_connection_manager_destory(void* data)
@@ -152,14 +140,16 @@ static bt_profile_connection_manager_t* find_or_create_connection_manager(bt_lis
 }
 
 static sal_async_profile_req_t* sal_async_profile_req(bt_address_t* addr, bt_profile_conn_handler_t handler,
-    uint8_t profile_id, bt_controller_id_t id, void* user_data)
+    uint8_t profile_id, uint16_t conn_id, bt_controller_id_t id, bt_list_t* manager_list, void* user_data)
 {
     sal_async_profile_req_t* req = calloc(sizeof(sal_async_profile_req_t), 1);
 
     if (req) {
         req->profile_id = profile_id;
+        req->conn_id = conn_id;
         req->id = id;
         req->handler = handler;
+        req->manager_list = manager_list;
         req->user_data = user_data;
         if (addr)
             memcpy(&req->device_addr, addr, sizeof(bt_address_t));
@@ -178,14 +168,14 @@ static void sal_invoke_async(service_work_t* work, void* userdata)
 
     SAL_ASSERT(req);
 
-    if (!req->user_data) {
+    if (!req->manager_list) {
         /* !req->user_data means a direct profile "disconnection" */
-        req->handler(req->id, &req->device_addr);
+        req->handler(req->id, &req->device_addr, req->user_data);
         free(req);
         return;
     }
 
-    manager_list = (bt_list_t*)req->user_data;
+    manager_list = (bt_list_t*)req->manager_list;
 
     manager = (bt_profile_connection_manager_t*)bt_list_find(manager_list,
         bt_connection_manager_find, &req->device_addr);
@@ -196,26 +186,18 @@ static void sal_invoke_async(service_work_t* work, void* userdata)
         return;
     }
 
-    if (!bt_list_find(manager->profile_conn_handler_list, match_profile_func, (void*)&req->handler)) {
-        BT_LOGW("%s, handler_node handler not found.", __func__);
-        flags_clear(&manager->profile_flags, profile_id_to_flag(req->profile_id));
-        free(req);
-        return;
-    }
-
-    handler_node = bt_list_find(manager->profile_conn_handler_list, match_profile_id, (void*)&req->profile_id);
+    handler_node = find_handler_node(manager, req->profile_id, req->conn_id);
 
     if (!handler_node) {
         BT_LOGW("%s, handler_node not found.", __func__);
-        flags_clear(&manager->profile_flags, profile_id_to_flag(req->profile_id));
         free(req);
         return;
     }
 
-    status = req->handler(req->id, &req->device_addr);
+    status = req->handler(req->id, &req->device_addr, req->user_data);
 
     if (status != BT_STATUS_SUCCESS) {
-        flags_clear(&manager->profile_flags, profile_id_to_flag(req->profile_id));
+        remove_from_connection_manager_list(manager_list, &req->device_addr, req->profile_id, req->conn_id, false);
     }
 
     free(req);
@@ -227,13 +209,14 @@ static bt_status_t sal_send_async_req(sal_async_profile_req_t* req)
         return BT_STATUS_PARM_INVALID;
 
     if (!service_loop_work((void*)req, sal_invoke_async, NULL)) {
+        free(req);
         return BT_STATUS_FAIL;
     }
 
     return BT_STATUS_SUCCESS;
 }
 
-cm_data_t* cm_data_new(bt_address_t* addr, uint8_t profile_id)
+cm_data_t* cm_data_new(bt_address_t* addr, uint8_t profile_id, uint16_t conn_id)
 {
     cm_data_t* data = (cm_data_t*)zalloc(sizeof(cm_data_t));
     if (!data)
@@ -243,6 +226,7 @@ cm_data_t* cm_data_new(bt_address_t* addr, uint8_t profile_id)
         memcpy(&data->addr, addr, sizeof(bt_address_t));
 
     data->profile_id = profile_id;
+    data->conn_id = conn_id;
     return data;
 }
 
@@ -260,8 +244,7 @@ void cm_data_destory(cm_data_t* data)
 static bt_status_t bt_sal_trigger_profile_conn_act(bt_profile_connection_manager_t* manager, bt_list_t* manager_list)
 {
     bt_list_node_t* node;
-    bt_profile_conn_handler_node_t* entry_node;
-    uint64_t bit_flag;
+    bt_profile_conn_handler_node_t* handler_node;
     bt_address_t* addr;
     bt_list_t* list;
     sal_async_profile_req_t* req;
@@ -279,43 +262,33 @@ static bt_status_t bt_sal_trigger_profile_conn_act(bt_profile_connection_manager
     addr = &manager->device_addr;
 
     for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
-        entry_node = (bt_profile_conn_handler_node_t*)bt_list_node(node);
+        handler_node = (bt_profile_conn_handler_node_t*)bt_list_node(node);
 
-        if (!entry_node || !entry_node->handler)
+        if (!handler_node || !handler_node->handler)
             continue;
 
-        bit_flag = profile_id_to_flag(entry_node->profile_id);
-        if (bit_flag && (manager->profile_flags & bit_flag)) {
+        if (handler_node->is_busy) {
             continue;
         }
 
         /* async invoke to service_worker thread */
-        req = sal_async_profile_req(addr, entry_node->handler, entry_node->profile_id, entry_node->id, manager_list);
+        req = sal_async_profile_req(addr, handler_node->handler, handler_node->profile_id, handler_node->conn_id,
+            handler_node->id, manager_list, handler_node->user_data);
 
         if (sal_send_async_req(req) != BT_STATUS_SUCCESS) {
-            BT_LOGE("%s, profile_id: %u", __func__, entry_node->profile_id);
+            BT_LOGE("%s, profile_id: %u", __func__, handler_node->profile_id);
             free(req);
             continue;
         }
 
-        flags_set(&manager->profile_flags, profile_id_to_flag(entry_node->profile_id));
+        handler_node->is_busy = true;
     }
 
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bt_try_disconnect_acl(bt_profile_connection_manager_t* manager)
-{
-    if (manager->profile_flags != FLAG_NONE) {
-        BT_LOGD("%s, Disconnecting profile.", __func__);
-        return BT_STATUS_BUSY;
-    }
-
-    return bt_sal_disconnect_internal(PRIMARY_ADAPTER, &manager->device_addr, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
-}
-
 static void remove_from_connection_manager_list(bt_list_t* list, bt_address_t* addr, uint8_t profile_id,
-    bool try_acl_disconnect)
+    uint16_t conn_id, bool try_acl_disconnect)
 {
     if (list == NULL) {
         return;
@@ -329,21 +302,16 @@ static void remove_from_connection_manager_list(bt_list_t* list, bt_address_t* a
         return;
     }
 
-    flags_clear(&manager->profile_flags, profile_id_to_flag(profile_id));
-    handler_node = bt_list_find(manager->profile_conn_handler_list, match_profile_id,
-        (void*)&profile_id);
+    handler_node = find_handler_node(manager, profile_id, conn_id);
 
-    if (handler_node == NULL) {
-        BT_LOGW("%s, handler_node not found.", __func__);
-        return;
+    if (handler_node) {
+        bt_list_remove(manager->profile_conn_handler_list, handler_node);
     }
-
-    bt_list_remove(manager->profile_conn_handler_list, handler_node);
 
     if (bt_list_is_empty(manager->profile_conn_handler_list)) {
 
         if (try_acl_disconnect) {
-            bt_try_disconnect_acl(manager);
+            bt_sal_disconnect_internal(PRIMARY_ADAPTER, addr, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
         } else {
             bt_list_remove(list, manager);
         }
@@ -361,11 +329,13 @@ static void bt_sal_cm_profile_disconnected(void* data)
     remove_from_connection_manager_list(bt_sal_connecting_list,
         &cm_data->addr,
         cm_data->profile_id,
+        cm_data->conn_id,
         false);
 
     remove_from_connection_manager_list(bt_sal_disconnecting_list,
         &cm_data->addr,
         cm_data->profile_id,
+        cm_data->conn_id,
         true);
 
     cm_data_destory(cm_data);
@@ -513,7 +483,7 @@ bt_status_t bt_sal_cm_try_disconnect_profiles(bt_address_t* addr, bool is_unpair
         }
 
         if (bt_list_is_empty(manager->profile_conn_handler_list)) {
-            return bt_try_disconnect_acl(manager);
+            return bt_sal_disconnect_internal(PRIMARY_ADAPTER, addr, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
         }
 
         return bt_sal_trigger_profile_conn_act(manager, bt_sal_disconnecting_list);
@@ -529,7 +499,7 @@ bt_status_t bt_sal_cm_try_disconnect_profiles(bt_address_t* addr, bool is_unpair
     manager->is_unpair = is_unpair;
     bt_list_add_tail(bt_sal_disconnecting_list, manager);
 
-    return bt_try_disconnect_acl(manager);
+    return bt_sal_disconnect_internal(PRIMARY_ADAPTER, addr, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
 }
 
 static bt_status_t bt_sal_try_profile_connect(bt_address_t* addr)
@@ -571,11 +541,11 @@ static bt_status_t bt_sal_try_profile_connect(bt_address_t* addr)
     return bt_sal_trigger_profile_conn_act(manager, bt_sal_connecting_list);
 }
 
-bt_status_t bt_sal_profile_connect_request(bt_address_t* addr, uint8_t profile_id, bt_controller_id_t id,
-    bt_profile_conn_handler_t handler)
+bt_status_t bt_sal_profile_connect_request(bt_address_t* addr, uint8_t profile_id, uint16_t conn_id, bt_controller_id_t id,
+    bt_profile_conn_handler_t handler, void* user_data)
 {
     bt_profile_connection_manager_t* manager;
-    bt_profile_conn_handler_node_t* entry_node;
+    bt_profile_conn_handler_node_t* handler_node;
 
     if (!addr || !handler)
         return BT_STATUS_PARM_INVALID;
@@ -585,28 +555,30 @@ bt_status_t bt_sal_profile_connect_request(bt_address_t* addr, uint8_t profile_i
         return BT_STATUS_NOMEM;
     }
 
-    if (bt_list_find(manager->profile_conn_handler_list, match_profile_func, (void*)&handler)) {
+    if (find_handler_node(manager, profile_id, conn_id)) {
         return BT_STATUS_SUCCESS;
     }
 
-    entry_node = (bt_profile_conn_handler_node_t*)zalloc(sizeof(bt_profile_conn_handler_node_t));
-    if (!entry_node) {
+    handler_node = (bt_profile_conn_handler_node_t*)zalloc(sizeof(bt_profile_conn_handler_node_t));
+    if (!handler_node) {
         return BT_STATUS_NOMEM;
     }
 
-    entry_node->handler = handler;
-    entry_node->profile_id = profile_id;
-    entry_node->id = id;
-    bt_list_add_tail(manager->profile_conn_handler_list, entry_node);
+    handler_node->handler = handler;
+    handler_node->profile_id = profile_id;
+    handler_node->conn_id = conn_id;
+    handler_node->id = id;
+    handler_node->user_data = user_data;
+    bt_list_add_tail(manager->profile_conn_handler_list, handler_node);
 
     return bt_sal_try_profile_connect(addr);
 }
 
-bt_status_t bt_sal_profile_disconnect_register(bt_address_t* addr, uint8_t profile_id, bt_controller_id_t id,
-    bt_profile_conn_handler_t handler)
+bt_status_t bt_sal_profile_disconnect_register(bt_address_t* addr, uint8_t profile_id, uint16_t conn_id, bt_controller_id_t id,
+    bt_profile_conn_handler_t handler, void* user_data)
 {
     bt_profile_connection_manager_t* manager;
-    bt_profile_conn_handler_node_t* entry_node;
+    bt_profile_conn_handler_node_t* handler_node;
 
     if (!addr || !handler)
         return BT_STATUS_PARM_INVALID;
@@ -616,30 +588,32 @@ bt_status_t bt_sal_profile_disconnect_register(bt_address_t* addr, uint8_t profi
         return BT_STATUS_NOMEM;
     }
 
-    if (bt_list_find(manager->profile_conn_handler_list, match_profile_func, (void*)&handler)) {
+    if (find_handler_node(manager, profile_id, conn_id)) {
         return BT_STATUS_SUCCESS;
     }
 
-    entry_node = (bt_profile_conn_handler_node_t*)zalloc(sizeof(bt_profile_conn_handler_node_t));
-    if (!entry_node) {
+    handler_node = (bt_profile_conn_handler_node_t*)zalloc(sizeof(bt_profile_conn_handler_node_t));
+    if (!handler_node) {
         return BT_STATUS_NOMEM;
     }
 
-    entry_node->handler = handler;
-    entry_node->profile_id = profile_id;
-    entry_node->id = id;
-    bt_list_add_tail(manager->profile_conn_handler_list, entry_node);
+    handler_node->handler = handler;
+    handler_node->profile_id = profile_id;
+    handler_node->conn_id = conn_id;
+    handler_node->id = id;
+    handler_node->user_data = user_data;
+    bt_list_add_tail(manager->profile_conn_handler_list, handler_node);
 
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_profile_disconnect_request(bt_address_t* addr, uint8_t profile_id, bt_controller_id_t id,
-    bt_profile_conn_handler_t handler)
+bt_status_t bt_sal_profile_disconnect_request(bt_address_t* addr, uint8_t profile_id, uint16_t conn_id, bt_controller_id_t id,
+    bt_profile_conn_handler_t handler, void* user_data)
 {
     sal_async_profile_req_t* req;
 
     /* async invoke to service_worker thread */
-    req = sal_async_profile_req(addr, handler, profile_id, id, NULL);
+    req = sal_async_profile_req(addr, handler, profile_id, conn_id, id, NULL, user_data);
 
     if (sal_send_async_req(req) != BT_STATUS_SUCCESS) {
         BT_LOGE("%s, profile_id: %u", __func__, profile_id);
