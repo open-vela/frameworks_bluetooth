@@ -469,6 +469,8 @@ static void zblue_on_sco_connected(struct bt_hfp_hf* hf, struct bt_conn* sco_con
         return;
     }
 
+    conn->sco_conn = sco_conn;
+
     hfp_hf_on_audio_connection_state_changed(&conn->addr, HFP_AUDIO_STATE_CONNECTED, 0);
 }
 
