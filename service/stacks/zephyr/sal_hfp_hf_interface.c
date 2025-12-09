@@ -156,6 +156,15 @@ static bt_hfp_hf_call_info_t* find_call_by_index(bt_hfp_hf_connection_t* conn, u
     return NULL;
 }
 
+static int count_call(bt_hfp_hf_connection_t* conn)
+{
+    if (!conn || !conn->calls) {
+        return -EINVAL;
+    }
+
+    return bt_list_length(conn->calls);
+}
+
 static bt_hfp_hf_call_info_t* new_call()
 {
     bt_hfp_hf_call_info_t* call = (bt_hfp_hf_call_info_t*)zalloc(sizeof(bt_hfp_hf_call_info_t));
@@ -1070,7 +1079,12 @@ bt_status_t bt_sal_hfp_hf_hangup_call(bt_address_t* addr)
         return BT_STATUS_FAIL;
     }
 
-    SAL_CHECK_RET(Z_API(bt_hfp_hf_terminate)(target->context), 0);
+    if(count_call(sal_conn) == 1) {
+        SAL_CHECK_RET(Z_API(bt_hfp_hf_terminate)(target->context), 0);
+    } else {
+        SAL_CHECK_RET(Z_API(bt_hfp_hf_release_active_accept_other)(sal_conn->hf), 0);
+    }
+
     return BT_STATUS_SUCCESS;
 }
 
