@@ -577,6 +577,17 @@ void bt_sal_cleanup(void)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     bt_sal_cm_conn_cleanup();
+
+    sal_adapter_req_t* req;
+
+    if (bt_is_ready()) {
+        req = sal_adapter_req(PRIMARY_ADAPTER, NULL, STACK_CALL(brder_disable));
+        if (!req) {
+            return BT_STATUS_NOMEM;
+        }
+        sal_send_req(req);
+    }
+
 #endif
 
     bt_sal_hci_transport_cleanup();

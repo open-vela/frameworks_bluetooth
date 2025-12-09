@@ -760,6 +760,19 @@ bt_status_t bt_sal_le_init(const bt_vhal_interface* vhal)
 
 void bt_sal_le_cleanup(void)
 {
+    sal_adapter_req_t* req;
+
+    if (!bt_is_ready()) {
+        return;
+    }
+
+    req = sal_adapter_req(PRIMARY_ADAPTER, NULL, STACK_CALL(le_disable));
+    if (!req) {
+        return BT_STATUS_NOMEM;
+    }
+    sal_send_req(req);
+
+    bt_sal_hci_transport_cleanup();
 }
 
 bt_status_t bt_sal_le_enable(bt_controller_id_t id)
