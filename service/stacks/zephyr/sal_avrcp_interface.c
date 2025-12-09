@@ -239,6 +239,8 @@ static struct bt_sdp_record avrcp_tg_rec = BT_SDP_RECORD(avrcp_tg_attrs);
 #endif
 
 static bt_list_t* bt_avrcp_conn = NULL;
+static bool avrcp_ct_registered = false;
+static bool avrcp_tg_registered = false;
 
 NET_BUF_POOL_DEFINE(bt_avrcp_tx_pool, CONFIG_BT_MAX_CONN,
     BT_L2CAP_BUF_SIZE(CONFIG_BT_L2CAP_TX_MTU),
@@ -1923,11 +1925,15 @@ bt_status_t bt_sal_avrcp_control_get_subunit_info(bt_controller_id_t id,
 bt_status_t bt_sal_avrcp_control_init(void)
 {
 #if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME)
+    if (avrcp_ct_registered)
+        return BT_STATUS_SUCCESS;
+
 #ifdef AVRCP_SDP_BY_APP
     bt_sdp_register_service(&avrcp_ct_rec);
 #endif
 
     bt_avrcp_ct_register_cb(&avrcp_ct_cbks);
+    avrcp_ct_registered = true;
 
     if (!bt_avrcp_conn)
         bt_avrcp_conn = bt_list_new(free);
@@ -1941,11 +1947,15 @@ bt_status_t bt_sal_avrcp_control_init(void)
 bt_status_t bt_sal_avrcp_target_init(void)
 {
 #if defined(CONFIG_BLUETOOTH_AVRCP_TARGET) || defined(CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME)
+    if (avrcp_tg_registered)
+        return BT_STATUS_SUCCESS;
+
 #ifdef AVRCP_SDP_BY_APP
     bt_sdp_register_service(&avrcp_tg_rec);
 #endif
 
     bt_avrcp_tg_register_cb(&avrcp_tg_cbks);
+    avrcp_tg_registered = true;
 
     if (!bt_avrcp_conn)
         bt_avrcp_conn = bt_list_new(free);
@@ -1962,7 +1972,7 @@ void bt_sal_avrcp_control_cleanup(void)
     bt_list_t* list = bt_avrcp_conn;
     bt_list_node_t* node;
 
-    if (!list)
+    if (!avrcp_ct_registered)
         return;
 
 #ifdef AVRCP_SDP_BY_APP
@@ -1970,6 +1980,10 @@ void bt_sal_avrcp_control_cleanup(void)
 #endif
 
     bt_avrcp_ct_unregister_cb(&avrcp_ct_cbks);
+    avrcp_ct_registered = false;
+
+    if (!list)
+        return;
 
     for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
         zblue_avrcp_info_t* avrcp_info = bt_list_node(node);
@@ -1992,7 +2006,7 @@ void bt_sal_avrcp_target_cleanup(void)
     bt_list_t* list = bt_avrcp_conn;
     bt_list_node_t* node;
 
-    if (!list)
+    if (!avrcp_tg_registered)
         return;
 
 #ifdef AVRCP_SDP_BY_APP
@@ -2000,6 +2014,10 @@ void bt_sal_avrcp_target_cleanup(void)
 #endif
 
     bt_avrcp_tg_unregister_cb(&avrcp_tg_cbks);
+    avrcp_tg_registered = false;
+
+    if (!list)
+        return;
 
     for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
         zblue_avrcp_info_t* avrcp_info = bt_list_node(node);
