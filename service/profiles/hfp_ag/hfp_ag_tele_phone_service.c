@@ -110,26 +110,34 @@ static void update_call_state(tapi_call_info* call)
 {
     uint8_t active_call_nums = get_nums_of_call_state(CALL_STATUS_ACTIVE);
     uint8_t held_call_nums = get_nums_of_call_state(CALL_STATUS_HELD);
+    hfp_ag_call_state_t state;
 
-    BT_LOGD("%s,state: %d", __func__, call->state);
-    if (!call)
+    if (!call) {
+        BT_LOGD("%s:call is NULL", __func__);
         return;
+    }
+    state = call->state;
+    if (call->state == CALL_STATUS_DISCONNECTED) {
+        state = HFP_AG_CALL_STATE_DISCONNECTED;
+    }
+    BT_LOGD("%s,state: %d", __func__, state);
 
-    switch (call->state) {
-    case CALL_STATUS_INCOMING:
-    case CALL_STATUS_WAITING:
+    switch (state) {
+    case HFP_AG_CALL_STATE_INCOMING:
+    case HFP_AG_CALL_STATE_WAITING:
         call->is_incoming = true;
         break;
-    case CALL_STATUS_DIALING:
-    case CALL_STATUS_ALERTING:
-    case CALL_STATUS_DISCONNECTED:
+    case HFP_AG_CALL_STATE_DIALING:
+    case HFP_AG_CALL_STATE_ALERTING:
+    case HFP_AG_CALL_STATE_IDLE:
+    case HFP_AG_CALL_STATE_DISCONNECTED:
         call->is_incoming = false;
         break;
     default:
         break;
     }
 
-    phone_state_change(active_call_nums, held_call_nums, call->state,
+    phone_state_change(active_call_nums, held_call_nums, state,
         NULL, HFP_CALL_ADDRTYPE_UNKNOWN, call->lineIdentification);
 }
 
@@ -231,16 +239,19 @@ static void call_state_changed(tapi_call_info call_info)
 
     BT_LOGD("%s\n", __func__);
 
+    dump_call(&call_info);
+
     if (exist_call != NULL)
         bt_list_remove(g_current_calls, exist_call);
+
+    if (bt_list_is_empty(g_current_calls) && call_info.state == CALL_STATUS_DISCONNECTED) {
+        update_call_state(&call_info);
+    }
 
     if (call_info.state != CALL_STATUS_DISCONNECTED) {
         call = (tapi_call_info*)calloc(1, sizeof(tapi_call_info));
         memcpy(call, &call_info, sizeof(tapi_call_info));
         bt_list_add_tail(g_current_calls, call);
-    }
-    if (call != NULL) {
-        dump_call(call);
         update_call_state(call);
     }
 }
@@ -262,7 +273,7 @@ static tapi_call_info* get_call_by_state(uint8_t call_state)
 
 static void dial_number_callback(tapi_async_result* ar)
 {
-    uint8_t result = ar->status == 0? HFP_ATCMD_RESULT_OK : HFP_ATCMD_RESULT_ERROR;
+    uint8_t result = ar->status == 0 ? HFP_ATCMD_RESULT_OK : HFP_ATCMD_RESULT_ERROR;
 
     BT_LOGD("Dial result:%d", ar->status);
     hfp_ag_dial_result(result);
