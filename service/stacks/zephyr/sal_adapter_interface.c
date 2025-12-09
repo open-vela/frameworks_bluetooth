@@ -292,23 +292,40 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
     enum bt_security_err err)
 {
     bt_address_t addr;
+    struct bt_conn_info info;
+    int ret;
     bool encrypted = false;
 
-    if (!bt_conn_get_dst_br(conn)) {
+    if (bt_conn_get_info(conn, &info) < 0) {
         return;
     }
 
-    zblue_conn_get_addr(conn, &addr);
+    if (info.type != BT_CONN_TYPE_BR) {
+        return;
+    }
+
+    if (info.state != BT_CONN_STATE_CONNECTED) {
+        BT_LOGD("%s, not CONNECTED", __func__);
+        return;
+    }
+
+    bt_addr_set(&addr, info.br.dst->val);
 
     BT_LOGD("%s, level: %d, required level: %d, err: %d", __func__, level, g_security_level, err);
 
-    if (err) {
-        adapter_on_bond_state_changed(&addr, BOND_STATE_NONE, BT_TRANSPORT_BREDR, BT_STATUS_FAIL, false);
-    }
-
     if (level >= g_security_level && err == BT_SECURITY_ERR_SUCCESS) {
         encrypted = true;
-    } else {
+        adapter_on_encryption_state_changed(&addr, encrypted, BT_TRANSPORT_BREDR);
+        return;
+    }
+
+    adapter_on_bond_state_changed(&addr, BOND_STATE_NONE, BT_TRANSPORT_BREDR, BT_STATUS_FAIL, false);
+    ret = bt_br_unpair((bt_addr_t*)info.br.dst);
+    if (ret < 0) {
+        BT_LOGE("%s, Failed to remove old BR key: %d", __func__, ret);
+    }
+
+    if (err == BT_SECURITY_ERR_AUTH_FAIL || (err == BT_SECURITY_ERR_SUCCESS && level < g_security_level)) {
         bt_conn_disconnect(conn, BT_HCI_ERR_AUTH_FAIL);
         return;
     }
