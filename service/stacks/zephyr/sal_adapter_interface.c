@@ -556,22 +556,26 @@ static bool zblue_inquiry_eir_name(const uint8_t* eir, int len, char* name)
 {
     while (len) {
         if (len < 2) {
-            false;
+            return false;
         }
 
         /* Look for early termination */
         if (!eir[0]) {
-            false;
+            return false;
         }
 
         /* Check if field length is correct */
         if (eir[0] > len - 1) {
-            false;
+            return false;
         }
 
         switch (eir[1]) {
         case BT_DATA_NAME_SHORTENED:
         case BT_DATA_NAME_COMPLETE:
+            if (eir[0] <= 1) {
+                return false;
+            }
+
             memset(name, 0, BT_REM_NAME_MAX_LEN);
             if (eir[0] > BT_REM_NAME_MAX_LEN - 1) {
                 memcpy(name, &eir[2], BT_REM_NAME_MAX_LEN - 1);
