@@ -89,7 +89,7 @@ typedef struct {
 
 extern struct net_buf_pool sdp_pool;
 
-NET_BUF_POOL_FIXED_DEFINE(spp_tx_pool, SPP_DEFAULT_CREDITS,
+NET_BUF_POOL_FIXED_DEFINE(rfcomm_tx_pool, SPP_DEFAULT_CREDITS,
     SAL_SPP_RFCOMM_MFS + SPP_MFS_EXTRA_SIZE, CONFIG_BT_CONN_TX_USER_DATA_SIZE, NULL);
 
 static struct bt_sdp_attribute spp_attrs_template[] = {
@@ -904,7 +904,7 @@ bt_status_t bt_sal_spp_write(uint16_t conn_port, uint8_t* buf, uint16_t size)
 
     spp_conn_unlock();
 
-    nbuf = bt_rfcomm_create_pdu(&spp_tx_pool);
+    nbuf = bt_rfcomm_create_pdu(&rfcomm_tx_pool);
     net_buf_add_mem(nbuf, buf, size);
 
     ret = bt_rfcomm_dlc_send(&spp_conn->rfcomm_dlc, nbuf);
