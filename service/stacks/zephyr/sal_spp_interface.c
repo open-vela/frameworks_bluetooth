@@ -54,6 +54,7 @@ typedef struct {
     struct bt_sdp_discover_params sdp_discover;
     uint16_t scn;
     struct bt_uuid_128 uuid_128;
+    bool discovered;
 } sal_spp_client_t;
 
 typedef struct {
@@ -683,12 +684,35 @@ static uint8_t sdp_discovered_cb(struct bt_conn* conn, struct bt_sdp_client_resu
         goto fail;
     }
 
+    spp_conn->spp_client->discovered = true;
     return BT_SDP_DISCOVER_UUID_STOP;
 
 fail:
-    spp_on_connection_state_changed(&spp_conn->addr, spp_conn->conn_port, PROFILE_STATE_DISCONNECTED);
-    spp_connection_free(spp_conn);
+    spp_conn->spp_client->discovered = false;
     return ret;
+}
+
+static void sdp_disconnected_cb(struct bt_conn* conn, const struct bt_sdp_discover_params* param)
+{
+    sal_spp_connection_t* spp_conn;
+    sal_spp_client_t* spp_client;
+
+    spp_conn = spp_find_connection_by_sdp_param(conn, param);
+    if (!spp_conn) {
+        BT_LOGE("SPP connection not found for conn");
+        return;
+    }
+
+    BT_LOGD("SPP SDP discover disconnected");
+    spp_client = spp_conn->spp_client;
+    if (!spp_client) {
+        BT_LOGE("SPP client not found for conn");
+        return;
+    }
+
+    if (spp_client->discovered == false) {
+        spp_rfcomm_disconnected(&spp_conn->rfcomm_dlc);
+    }
 }
 
 static bt_status_t spp_connect_with_uuid(sal_spp_connection_t* spp_conn, bt_uuid_t* uuid)
@@ -711,6 +735,7 @@ static bt_status_t spp_connect_with_uuid(sal_spp_connection_t* spp_conn, bt_uuid
     }
 
     spp_client->sdp_discover.func = sdp_discovered_cb;
+    spp_client->sdp_discover.disconnected = sdp_disconnected_cb;
     spp_client->sdp_discover.type = BT_SDP_DISCOVER_SERVICE_SEARCH_ATTR;
     spp_client->sdp_discover.pool = &sdp_pool;
     spp_client->sdp_discover.uuid = (const struct bt_uuid*)&spp_client->uuid_128;
