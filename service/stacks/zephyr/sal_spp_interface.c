@@ -546,19 +546,29 @@ bt_status_t bt_sal_spp_init(void)
 void bt_sal_spp_cleanup(void)
 {
     sal_spp_manager_t* spp_mgr = &g_spp_manager;
+    bt_list_t* connections;
+    bt_list_t* servers;
+    bt_list_node_t* node;
 
     spp_conn_lock();
-    if (spp_mgr->connections) {
-        bt_list_free(spp_mgr->connections);
-        spp_mgr->connections = NULL;
+
+    connections = spp_mgr->connections;
+    for (node = bt_list_head(connections); node != NULL;
+         node = bt_list_next(connections, node)) {
+        sal_spp_connection_t* spp_conn = bt_list_node(node);
+
+        bt_rfcomm_dlc_disconnect(&spp_conn->rfcomm_dlc);
+    }
+
+    servers = spp_mgr->servers;
+    for (node = bt_list_head(servers); node != NULL;
+         node = bt_list_next(servers, node)) {
+        sal_spp_server_t* spp_server = bt_list_node(node);
+
+        bt_sal_spp_server_stop(STACK_SVR_PORT(spp_server->scn));
     }
 
     spp_conn_unlock();
-
-    if (spp_mgr->servers) {
-        bt_list_free(spp_mgr->servers);
-        spp_mgr->servers = NULL;
-    }
 }
 
 bt_status_t bt_sal_spp_server_start(uint16_t port, bt_uuid_t* uuid, uint8_t max_connection)
