@@ -86,7 +86,8 @@ typedef struct {
     pthread_mutex_t mutex;
 } sal_spp_manager_t;
 
-NET_BUF_POOL_FIXED_DEFINE(spp_sdp_pool, CONFIG_BT_MAX_CONN, SDP_CLIENT_BUF_LEN, 8, NULL);
+extern struct net_buf_pool sdp_pool;
+
 NET_BUF_POOL_FIXED_DEFINE(spp_tx_pool, SPP_DEFAULT_CREDITS,
     SAL_SPP_RFCOMM_MFS + SPP_MFS_EXTRA_SIZE, CONFIG_BT_CONN_TX_USER_DATA_SIZE, NULL);
 
@@ -665,7 +666,7 @@ static bt_status_t spp_connect_with_uuid(sal_spp_connection_t* spp_conn, bt_uuid
 
     spp_client->sdp_discover.func = sdp_discovered_cb;
     spp_client->sdp_discover.type = BT_SDP_DISCOVER_SERVICE_SEARCH_ATTR;
-    spp_client->sdp_discover.pool = &spp_sdp_pool;
+    spp_client->sdp_discover.pool = &sdp_pool;
     spp_client->sdp_discover.uuid = (const struct bt_uuid*)&spp_client->uuid_128;
 
     err = bt_sdp_discover(spp_conn->conn, &spp_client->sdp_discover);
