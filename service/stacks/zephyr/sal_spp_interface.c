@@ -163,10 +163,9 @@ static sal_spp_connection_t* spp_find_connection_by_port(uint16_t conn_port)
     return NULL;
 }
 
-static sal_spp_connection_t* spp_find_connection_by_conn(struct bt_conn* conn)
+static sal_spp_connection_t* spp_find_connection_by_sdp_param(struct bt_conn* conn, const struct bt_sdp_discover_params* param)
 {
     sal_spp_manager_t* spp_mgr = &g_spp_manager;
-    sal_spp_connection_t* spp_conn;
     bt_list_node_t* node;
 
     if (!conn) {
@@ -175,8 +174,12 @@ static sal_spp_connection_t* spp_find_connection_by_conn(struct bt_conn* conn)
 
     for (node = bt_list_head(spp_mgr->connections); node != NULL;
          node = bt_list_next(spp_mgr->connections, node)) {
+        sal_spp_connection_t* spp_conn;
+        sal_spp_client_t* spp_client;
+
         spp_conn = bt_list_node(node);
-        if (spp_conn->conn == conn) {
+        spp_client = spp_conn->spp_client;
+        if ((spp_conn && (spp_conn->conn == conn)) && (spp_client && (&spp_client->sdp_discover == param))) {
             return spp_conn;
         }
     }
@@ -609,7 +612,7 @@ static uint8_t sdp_discovered_cb(struct bt_conn* conn, struct bt_sdp_client_resu
     uint16_t scn;
     sal_spp_connection_t* spp_conn;
 
-    spp_conn = spp_find_connection_by_conn(conn);
+    spp_conn = spp_find_connection_by_sdp_param(conn, param);
     if (!spp_conn) {
         BT_LOGE("SPP connection not found for conn");
         return BT_SDP_DISCOVER_UUID_STOP;
