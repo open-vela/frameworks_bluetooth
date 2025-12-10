@@ -25,6 +25,7 @@
 #include <zephyr/sys/byteorder.h>
 
 #include "bt_addr.h"
+#include "service_loop.h"
 #include "spp_service.h"
 #include "utils/log.h"
 
@@ -332,9 +333,27 @@ static void spp_rfcomm_connected(struct bt_rfcomm_dlc* rfcomm_dlc)
     spp_conn_unlock();
 }
 
-static void spp_rfcomm_disconnected(struct bt_rfcomm_dlc* rfcomm_dlc)
+static void spp_disconnected_defer_handler(void* context)
 {
     sal_spp_manager_t* spp_mgr = &g_spp_manager;
+    struct bt_rfcomm_dlc* rfcomm_dlc = (struct bt_rfcomm_dlc*)context;
+    sal_spp_connection_t* spp_conn;
+
+    spp_conn_lock();
+    spp_conn = spp_find_connection_by_dlc(rfcomm_dlc);
+    if (!spp_conn) {
+        spp_conn_unlock();
+        BT_LOGE("SPP connection not found for rfcomm_dlc");
+        return;
+    }
+
+    BT_LOGD("%s, conn_port: %d", __func__, spp_conn->conn_port);
+    bt_list_remove(spp_mgr->connections, spp_conn);
+    spp_conn_unlock();
+}
+
+static void spp_rfcomm_disconnected(struct bt_rfcomm_dlc* rfcomm_dlc)
+{
     sal_spp_connection_t* spp_conn;
 
     BT_LOGD("%s, rfcomm_dlc: %p", __func__, rfcomm_dlc);
@@ -348,7 +367,7 @@ static void spp_rfcomm_disconnected(struct bt_rfcomm_dlc* rfcomm_dlc)
     }
 
     spp_on_connection_state_changed(&spp_conn->addr, spp_conn->conn_port, PROFILE_STATE_DISCONNECTED);
-    bt_list_remove(spp_mgr->connections, spp_conn);
+    do_in_service_loop_deffered(spp_disconnected_defer_handler, rfcomm_dlc, false);
     spp_conn_unlock();
 }
 
@@ -428,8 +447,6 @@ static void spp_connection_free(void* data)
     if (!data) {
         return;
     }
-
-    bt_rfcomm_dlc_disconnect(&spp_conn->rfcomm_dlc);
 
     if (spp_conn->tx_list) {
         bt_list_free(spp_conn->tx_list);
