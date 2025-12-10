@@ -618,7 +618,7 @@ bt_status_t bt_sal_spp_server_stop(uint16_t port)
     bt_sdp_unregister_service(server->sdp_record);
     spp_sdp_remove_record((void*)server->sdp_record);
 
-    // bt_rfcomm_server_unregister(&server->rfcomm_server);
+    bt_rfcomm_server_unregister(&server->rfcomm_server);
 
     bt_list_remove(spp_mgr->servers, server);
     free(server);
