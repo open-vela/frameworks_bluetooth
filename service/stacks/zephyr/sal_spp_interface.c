@@ -163,6 +163,23 @@ static sal_spp_connection_t* spp_find_connection_by_port(uint16_t conn_port)
     return NULL;
 }
 
+static sal_spp_connection_t* spp_find_connection_by_dlc(struct bt_rfcomm_dlc* rfcomm_dlc)
+{
+    sal_spp_manager_t* spp_mgr = &g_spp_manager;
+    sal_spp_connection_t* spp_conn;
+    bt_list_node_t* node;
+
+    for (node = bt_list_head(spp_mgr->connections); node != NULL;
+         node = bt_list_next(spp_mgr->connections, node)) {
+        spp_conn = bt_list_node(node);
+        if (&spp_conn->rfcomm_dlc == rfcomm_dlc) {
+            return spp_conn;
+        }
+    }
+
+    return NULL;
+}
+
 static sal_spp_connection_t* spp_find_connection_by_sdp_param(struct bt_conn* conn, const struct bt_sdp_discover_params* param)
 {
     sal_spp_manager_t* spp_mgr = &g_spp_manager;
@@ -297,11 +314,18 @@ void spp_sdp_remove_record(struct bt_sdp_record* record)
 
 static void spp_rfcomm_connected(struct bt_rfcomm_dlc* rfcomm_dlc)
 {
-    sal_spp_connection_t* spp_conn = CONTAINER_OF(rfcomm_dlc, sal_spp_connection_t, rfcomm_dlc);
+    sal_spp_connection_t* spp_conn;
 
     BT_LOGD("%s, rfcomm_dlc: %p", __func__, rfcomm_dlc);
 
     spp_conn_lock();
+    spp_conn = spp_find_connection_by_dlc(rfcomm_dlc);
+    if (!spp_conn) {
+        spp_conn_unlock();
+        BT_LOGE("SPP connection not found for rfcomm_dlc");
+        return;
+    }
+
     spp_on_connection_state_changed(&spp_conn->addr, spp_conn->conn_port, PROFILE_STATE_CONNECTED);
     spp_on_connection_mfs_update(spp_conn->conn_port, rfcomm_dlc->mtu);
     spp_conn_unlock();
@@ -310,11 +334,18 @@ static void spp_rfcomm_connected(struct bt_rfcomm_dlc* rfcomm_dlc)
 static void spp_rfcomm_disconnected(struct bt_rfcomm_dlc* rfcomm_dlc)
 {
     sal_spp_manager_t* spp_mgr = &g_spp_manager;
-    sal_spp_connection_t* spp_conn = CONTAINER_OF(rfcomm_dlc, sal_spp_connection_t, rfcomm_dlc);
+    sal_spp_connection_t* spp_conn;
 
     BT_LOGD("%s, rfcomm_dlc: %p", __func__, rfcomm_dlc);
 
     spp_conn_lock();
+    spp_conn = spp_find_connection_by_dlc(rfcomm_dlc);
+    if (!spp_conn) {
+        spp_conn_unlock();
+        BT_LOGE("SPP connection not found for rfcomm_dlc");
+        return;
+    }
+
     spp_on_connection_state_changed(&spp_conn->addr, spp_conn->conn_port, PROFILE_STATE_DISCONNECTED);
     bt_list_remove(spp_mgr->connections, spp_conn);
     spp_conn_unlock();
@@ -322,11 +353,18 @@ static void spp_rfcomm_disconnected(struct bt_rfcomm_dlc* rfcomm_dlc)
 
 static void spp_rfcomm_recv(struct bt_rfcomm_dlc* rfcomm_dlc, struct net_buf* buf)
 {
-    sal_spp_connection_t* spp_conn = CONTAINER_OF(rfcomm_dlc, sal_spp_connection_t, rfcomm_dlc);
+    sal_spp_connection_t* spp_conn;
 
     BT_DUMPBUFFER("SPP RX:", buf->data, buf->len);
 
     spp_conn_lock();
+    spp_conn = spp_find_connection_by_dlc(rfcomm_dlc);
+    if (!spp_conn) {
+        spp_conn_unlock();
+        BT_LOGE("SPP connection not found for rfcomm_dlc");
+        return;
+    }
+
     bt_list_add_tail(spp_conn->rx_list, net_buf_ref(buf));
     spp_on_data_received(&spp_conn->addr, spp_conn->conn_port, buf->data, buf->len);
     spp_conn_unlock();
@@ -334,16 +372,21 @@ static void spp_rfcomm_recv(struct bt_rfcomm_dlc* rfcomm_dlc, struct net_buf* bu
 
 static void spp_rfcomm_sent(struct bt_rfcomm_dlc* rfcomm_dlc, int err)
 {
-    sal_spp_connection_t* spp_conn = CONTAINER_OF(rfcomm_dlc, sal_spp_connection_t, rfcomm_dlc);
+    sal_spp_connection_t* spp_conn;
 
     if (err < 0) {
         BT_LOGE("Failed to send data on RFCOMM rfcomm_dlc %p, error: %d", rfcomm_dlc, err);
         return;
     }
 
-    BT_LOGD("%s, rfcomm_dlc: %p", __func__, rfcomm_dlc);
-
     spp_conn_lock();
+    spp_conn = spp_find_connection_by_dlc(rfcomm_dlc);
+    if (!spp_conn) {
+        spp_conn_unlock();
+        BT_LOGE("SPP connection not found for rfcomm_dlc");
+        return;
+    }
+
     bt_list_remove_node(spp_conn->tx_list, bt_list_head(spp_conn->tx_list));
     spp_conn_unlock();
 }
