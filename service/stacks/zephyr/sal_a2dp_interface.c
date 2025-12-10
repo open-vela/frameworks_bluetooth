@@ -1830,7 +1830,7 @@ bt_status_t bt_sal_a2dp_source_send_data(bt_controller_id_t id, bt_address_t* re
         return BT_STATUS_PARM_INVALID;
     }
 
-    media_packet_buf = bt_a2dp_stream_create_pdu(&bt_a2dp_tx_pool, K_FOREVER);
+    media_packet_buf = bt_a2dp_stream_create_pdu(&bt_a2dp_tx_pool, K_NO_WAIT);
     if (!media_packet_buf) {
         BT_LOGI("%s, fail to allocate buffer", __func__);
         return BT_STATUS_NOMEM;
