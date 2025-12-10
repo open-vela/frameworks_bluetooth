@@ -60,6 +60,13 @@ typedef struct _bt_hfp_ag_connection {
     bt_list_t* calls;
 } bt_hfp_ag_connection_t;
 
+typedef struct _ag_connect_params {
+    struct bt_conn* conn;
+    uint8_t channel;
+} ag_connect_params_t;
+
+static ag_connect_params_t* g_conn_params = NULL;
+
 static bt_hfp_ag_connection_t* g_sal_ag_sync_conn = NULL;
 
 static void free_connection(void* data)
@@ -393,75 +400,133 @@ static void __attribute__((unused)) set_call_state(
     }
 }
 
-typedef struct _ag_connect_params {
-    struct bt_conn* conn;
-    uint8_t channel;
-} ag_connect_params_t;
-
-static void do_ag_connect(ag_connect_params_t* params)
+static bt_status_t do_ag_connect(bt_controller_id_t id, bt_address_t* addr)
 {
-    bt_address_t bd_addr;
-    struct bt_conn* conn = params->conn;
-    uint8_t channel = params->channel;
     struct bt_hfp_ag* ag = NULL;
+    uint8_t channel;
 
-    free(params);
-
-    if (bt_sal_get_remote_address(conn, &bd_addr) != BT_STATUS_SUCCESS) {
-        return;
+    /** It is assumed that ACL is established hereafter */
+    if (!addr) {
+        BT_LOGE("%s, addr is NULL", __func__);
+        return BT_STATUS_PARM_INVALID;
     }
 
+    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
+    /** Remember to unref @p conn once SLC is initiated or cancelled */
+    if (!conn) {
+        BT_LOGE("%s, Failed to lookup connection", __func__);
+        return BT_STATUS_NOT_FOUND;
+    }
+
+    /** Step 1: SDP discovery */
+    if (g_conn_params == NULL) {
+        BT_LOGD("%s, SDP not discovered", __func__);
+        if (bt_sdp_discover(conn, &sdp_discover) < 0) {
+            BT_LOGE("%s, Failed to start a SDP discovery", __func__);
+            bt_conn_unref(conn);
+            return BT_STATUS_FAIL;
+        }
+
+        bt_conn_unref(conn);
+        return BT_STATUS_SUCCESS;
+    }
+
+    /** Step 2: SLC initiating */
+    channel = g_conn_params->channel;
+    free(g_conn_params);
+    g_conn_params = NULL;
+
+    BT_LOGD("%s, SLC initiating", __func__);
     if (Z_API(bt_hfp_ag_connect)(conn, &ag, channel)) {
-        BT_LOGE("%s, Failed to initiate HFP AG connection", __func__);
-        return;
+        BT_LOGE("%s, Failed to initiate HFP ag connection", __func__);
+        bt_conn_unref(conn);
+        return BT_STATUS_FAIL;
     }
 
-    new_sal_connection(conn, ag);
-    hfp_ag_on_connection_state_changed(&bd_addr, PROFILE_STATE_CONNECTING, 0, 0);
+    if(new_sal_connection(conn, ag) == NULL) {
+        BT_LOGE("%s, Failed to create HFP AG connection", __func__);
+        Z_API(bt_hfp_ag_disconnect)(ag);
+        bt_conn_unref(conn);
+        return BT_STATUS_NOMEM;
+    }
+
+    hfp_ag_on_connection_state_changed(addr, PROFILE_STATE_CONNECTING, 0, 0);
+    bt_conn_unref(conn);
 
     BT_LOGD("%s, HFP AG connecting", __func__);
-    bt_conn_unref(conn);
+    return BT_STATUS_SUCCESS;
 }
 
-uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_result* result, const struct bt_sdp_discover_params* ignore)
+bt_status_t do_ag_disconnect(bt_controller_id_t id, bt_address_t* addr)
+{
+    bt_hfp_ag_connection_t* sal_conn = find_connection_by_addr(addr);
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return BT_STATUS_FAIL;
+    }
+    if (!sal_conn->ag) {
+        BT_LOGE("%s, HFP AG not connected", __func__);
+        return BT_STATUS_FAIL;
+    }
+
+    SAL_CHECK_RET(Z_API(bt_hfp_ag_disconnect)(sal_conn->ag), 0);
+    return BT_STATUS_SUCCESS;
+}
+
+static uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_result* result,
+    const struct bt_sdp_discover_params* ignore)
 {
     int err;
     uint16_t port;
 
-    if (!result) {
-        bt_address_t bd_addr;
-        if (bt_sal_get_remote_address(conn, &bd_addr) != BT_STATUS_SUCCESS) {
-            return BT_SDP_DISCOVER_UUID_STOP;
-        }
-        BT_LOGE("%s, remote device does not support HFP HF feature", __func__);
-        bt_conn_unref(conn);
-
-        hfp_ag_on_connection_state_changed(&bd_addr, PROFILE_STATE_DISCONNECTED, 0, 0);
+    bt_address_t bd_addr;
+    if (bt_sal_get_remote_address(conn, &bd_addr) != BT_STATUS_SUCCESS) {
         return BT_SDP_DISCOVER_UUID_STOP;
     }
 
-    if (result->resp_buf != NULL) {
-        err = bt_sdp_get_proto_param(result->resp_buf, BT_SDP_PROTO_RFCOMM, &port);
-
-        if (err != 0) {
-            BT_LOGE("Fail to parse HF RFCOMM port!");
-        } else {
-            BT_LOGD("%s, SDP discovery done for HFP HF, HF RFCOMM port: %u", __func__, port);
-            ag_connect_params_t* params = (ag_connect_params_t*)zalloc(sizeof(ag_connect_params_t));
-            if (params == NULL) {
-                BT_LOGE("%s, Failed to allocate memory for new HFP AG connection", __func__);
-                return BT_SDP_DISCOVER_UUID_STOP;
-            }
-
-            params->conn = conn;
-            params->channel = (uint8_t)port;
-
-            CALL_IN_SERVICE(do_ag_connect, params);
-
-            // bt_conn_unref(conn);
-            params = NULL;
-        }
+    if (!result) {
+        BT_LOGE("%s, remote device does not support HFP AG feature", __func__);
+        goto error;
     }
+
+    if (!result->resp_buf) {
+        BT_LOGE("%s, resp_buf is null", __func__);
+        goto error;
+    }
+
+    err = bt_sdp_get_proto_param(result->resp_buf, BT_SDP_PROTO_RFCOMM, &port);
+
+    if (err) {
+        BT_LOGE("Fail to parse AG RFCOMM port!");
+        goto error;
+    }
+
+    BT_LOGD("%s, SDP discovery done for HFP AG, AG RFCOMM port: %u", __func__, port);
+    if (g_conn_params != NULL) {
+        BT_LOGE("%s, Previous connection ongoing", __func__);
+        goto error;
+    }
+
+    /** TODO: remove @p g_conn_params, send @p port as a context to 
+     *        @ref bt_sal_profile_connect_request */
+    g_conn_params = (ag_connect_params_t*)zalloc(sizeof(ag_connect_params_t));
+    if (g_conn_params == NULL) {
+        BT_LOGE("%s, Failed to allocate memory for new HFP AG connection", __func__);
+        goto error;
+    }
+
+    g_conn_params->channel = (uint8_t)port;
+
+    if (do_ag_connect(0 /* bt_controller_id_t */, &bd_addr) != BT_STATUS_SUCCESS) {
+        free(g_conn_params);
+        g_conn_params = NULL;
+        goto error;
+    }
+
+    return BT_SDP_DISCOVER_UUID_STOP;
+
+error:
+    hfp_ag_on_connection_state_changed(&bd_addr, PROFILE_STATE_DISCONNECTED, 0, 0);
     return BT_SDP_DISCOVER_UUID_STOP;
 }
 
@@ -482,6 +547,9 @@ static void zblue_on_ag_connected(struct bt_conn* conn, struct bt_hfp_ag* ag)
         }
         hfp_ag_on_connection_state_changed(&bd_addr, PROFILE_STATE_CONNECTING, 0, 0);
     }
+
+    bt_sal_cm_profile_connected_callback(cm_data_new(&bd_addr, PROFILE_HFP_AG));
+    bt_sal_profile_disconnect_register(&bd_addr, PROFILE_HFP_AG, PRIMARY_ADAPTER, do_ag_disconnect);
 
     hfp_ag_on_connection_state_changed(&bd_addr, PROFILE_STATE_CONNECTED, 0, 0);
 }
@@ -921,16 +989,13 @@ void bt_sal_hfp_ag_cleanup(void)
 
 bt_status_t bt_sal_hfp_ag_connect(bt_address_t* addr)
 {
-    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
-
-    if (!conn) {
-        BT_LOGE("%s, acl not connected.", __func__);
-        return BT_STATUS_PARM_INVALID;
+    /** FIXME: @p g_conn_params might be NULL even when the previous ACL is connecting */
+    if (g_conn_params != NULL) {
+        BT_LOGE("%s, Previous connection ongoing", __func__);
+        return BT_STATUS_BUSY;
     }
 
-    SAL_CHECK_RET(bt_sdp_discover(conn, &sdp_discover), 0);
-
-    return BT_STATUS_SUCCESS;
+    return bt_sal_profile_connect_request(addr, PROFILE_HFP_AG, 0, do_ag_connect);
 }
 
 bt_status_t bt_sal_hfp_ag_disconnect(bt_address_t* addr)
@@ -941,9 +1006,7 @@ bt_status_t bt_sal_hfp_ag_disconnect(bt_address_t* addr)
         return BT_STATUS_PARM_INVALID;
     }
 
-    hfp_ag_on_connection_state_changed(addr, PROFILE_STATE_DISCONNECTING, 0, 0);
-
-    SAL_CHECK_RET(Z_API(bt_hfp_ag_disconnect)(conn->ag), 0);
+    bt_sal_profile_disconnect_request(addr, PROFILE_HFP_AG, 0, do_ag_disconnect);
     return BT_STATUS_SUCCESS;
 }
 
