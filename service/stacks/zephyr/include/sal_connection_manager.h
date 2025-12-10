@@ -17,6 +17,8 @@
 #include "bt_addr.h"
 #include "bt_profile.h"
 
+#define CONN_ID_DEFAULT 0x0001
+
 typedef struct {
     bt_address_t addr;
     uint8_t profile_id;
