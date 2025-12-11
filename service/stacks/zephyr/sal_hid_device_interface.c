@@ -25,6 +25,7 @@
 #include "hid_device_service.h"
 #include "utils/log.h"
 
+#include "sal_connection_manager.h"
 #include "sal_hid_device_interface.h"
 #include "sal_interface.h"
 #include "sal_zblue.h"
@@ -173,6 +174,8 @@ static sal_bt_hid_device_mgr_t g_hid_device_mgr = {
     .mutex = PTHREAD_MUTEX_INITIALIZER,
     .connections = NULL
 };
+
+static bt_status_t hid_disconnect_handler(bt_controller_id_t id, bt_address_t* bd_addr, void* user_data);
 
 static inline void hid_conn_lock(void)
 {
@@ -422,6 +425,9 @@ static void hid_connect_callback(struct bt_hid_device* hid)
 
     hid_conn_unlock();
     hid_device_on_connection_state_changed(&hid_conn->addr, false, PROFILE_STATE_CONNECTED);
+
+    bt_sal_cm_profile_connected_callback(cm_data_new(&hid_conn->addr, PROFILE_HID_DEV, CONN_ID_DEFAULT));
+    bt_sal_profile_disconnect_register(&hid_conn->addr, PROFILE_HID_DEV, CONN_ID_DEFAULT, PRIMARY_ADAPTER, hid_disconnect_handler, hid_conn);
 }
 
 static void hid_disconnected_callback(struct bt_hid_device* hid)
@@ -610,31 +616,20 @@ bt_status_t bt_sal_hid_device_unregister_app(void)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hid_device_connect(bt_address_t* addr)
+static bt_status_t hid_connect_handler(bt_controller_id_t id, bt_address_t* addr, void* user_data)
 {
     sal_bt_hid_device_mgr_t* hid_mgr = &g_hid_device_mgr;
+    struct bt_conn* conn;
     sal_hid_connection_t* hid_conn;
     struct bt_hid_device* hid_device;
-    struct bt_conn* conn;
-    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+    bt_status_t status;
 
-    bt_addr_ba2str(addr, addr_str);
-    BT_LOGD("%s, addr:%s", __func__, addr_str);
-
-    hid_conn_lock();
-    hid_conn = hid_find_connection_by_address(addr);
-    if (hid_conn) {
-        BT_LOGE("HID connection already exists for addr: %s", addr_str);
-        hid_conn_unlock();
-        return BT_STATUS_FAIL;
-    }
-
-    hid_conn_unlock();
+    hid_device_on_connection_state_changed(addr, false, PROFILE_STATE_CONNECTING);
 
     conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
     if (!conn) {
-        BT_LOGD("No existing connection for address: %s", addr_str);
-        return BT_STATUS_FAIL;
+        status = BT_STATUS_FAIL;
+        goto out;
     }
 
     hid_conn = hid_connection_new(addr, conn);
@@ -642,14 +637,16 @@ bt_status_t bt_sal_hid_device_connect(bt_address_t* addr)
 
     if (!hid_conn) {
         BT_LOGE("Failed to allocate memory for HID connection");
-        return BT_STATUS_NOMEM;
+        status = BT_STATUS_NOMEM;
+        goto out;
     }
 
-    hid_device = Z_API(bt_hid_device_connect)(conn);
+    BT_LOGD("HID device Connecting, addr:%s", bt_addr_bastr(addr));
+    hid_device = Z_API(bt_hid_device_connect)(hid_conn->conn);
     if (!hid_device) {
         BT_LOGE("Failed to connect HID device");
-        hid_connection_free(hid_conn);
-        return BT_STATUS_FAIL;
+        status = BT_STATUS_FAIL;
+        goto out_con;
     }
 
     hid_conn->hid_device = hid_device;
@@ -658,14 +655,69 @@ bt_status_t bt_sal_hid_device_connect(bt_address_t* addr)
     bt_list_add_tail(hid_mgr->connections, hid_conn);
     hid_conn_unlock();
 
-    hid_device_on_connection_state_changed(&hid_conn->addr, false, PROFILE_STATE_CONNECTING);
+    return BT_STATUS_SUCCESS;
+
+out_con:
+    hid_connection_free(hid_conn);
+
+out:
+    hid_device_on_connection_state_changed(addr, false, PROFILE_STATE_DISCONNECTED);
+    return status;
+}
+
+bt_status_t bt_sal_hid_device_connect(bt_address_t* addr)
+{
+    sal_hid_connection_t* hid_conn;
+    bt_status_t status;
+    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+
+    bt_addr_ba2str(addr, addr_str);
+    BT_LOGD("%s, addr:%s", __func__, addr_str);
+
+    hid_conn_lock();
+    hid_conn = hid_find_connection_by_address(addr);
+    if (hid_conn) {
+        hid_conn_unlock();
+        BT_LOGE("HID connection already exists for addr: %s", addr_str);
+        return BT_STATUS_FAIL;
+    }
+
+    hid_conn_unlock();
+
+    status = bt_sal_profile_connect_request(addr, PROFILE_HID_DEV, CONN_ID_DEFAULT, PRIMARY_ADAPTER, hid_connect_handler, NULL);
+    if (status != BT_STATUS_SUCCESS) {
+        BT_LOGE("Failed to connect HID profile: %d", status);
+        return BT_STATUS_FAIL;
+    }
+
+    return BT_STATUS_SUCCESS;
+}
+
+static bt_status_t hid_disconnect_handler(bt_controller_id_t id, bt_address_t* bd_addr, void* user_data)
+{
+    sal_hid_connection_t* hid_conn;
+    int ret;
+
+    hid_conn = hid_find_connection_by_address(bd_addr);
+    if (!hid_conn) {
+        BT_LOGE("No HID connection found for addr");
+        return BT_STATUS_FAIL;
+    }
+
+    BT_LOGD("HID disconnect handler, addr:%s", bt_addr_bastr(bd_addr));
+
+    ret = Z_API(bt_hid_device_disconnect)(hid_conn->hid_device);
+    if (ret < 0) {
+        BT_LOGE("Failed to disconnect HID device: %d", ret);
+        return BT_STATUS_FAIL;
+    }
+
     return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_hid_device_disconnect(bt_address_t* addr)
 {
     sal_hid_connection_t* hid_conn;
-    int ret;
 
     hid_conn_lock();
     hid_conn = hid_find_connection_by_address(addr);
@@ -677,14 +729,7 @@ bt_status_t bt_sal_hid_device_disconnect(bt_address_t* addr)
 
     hid_conn_unlock();
 
-    /* Disconnect the HID device */
-    ret = Z_API(bt_hid_device_disconnect)(hid_conn->hid_device);
-    if (ret < 0) {
-        BT_LOGE("Failed to disconnect HID device: %d", ret);
-        return BT_STATUS_FAIL;
-    }
-
-    return BT_STATUS_SUCCESS;
+    return bt_sal_profile_disconnect_request(&hid_conn->addr, PROFILE_HID_DEV, CONN_ID_DEFAULT, PRIMARY_ADAPTER, hid_disconnect_handler, NULL);
 }
 
 void bt_sal_hid_device_cleanup()
