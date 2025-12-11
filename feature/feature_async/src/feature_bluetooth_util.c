@@ -149,6 +149,9 @@ bt_instance_t* feature_bluetooth_get_bt_ins(FeatureInstanceHandle feature)
 
 FeatureErrorCode bt_status_to_feature_error(uint8_t status)
 {
+#ifndef FEATURE_ERROR_CODE_CONVERT
+    return FT_ERR_GENERAL;
+#else
     switch (status) {
     case BT_STATUS_FAIL:
         return FT_ERR_GENERAL;
@@ -175,4 +178,5 @@ FeatureErrorCode bt_status_to_feature_error(uint8_t status)
     default:
         return FT_ERR_GENERAL;
     }
+#endif
 }
