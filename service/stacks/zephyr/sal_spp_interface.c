@@ -789,21 +789,8 @@ static bt_status_t spp_connect_with_uuid(sal_spp_connection_t* spp_conn, bt_uuid
 static bt_status_t spp_connect_handler(bt_controller_id_t id, bt_address_t* addr, void* user_data)
 {
     sal_spp_manager_t* spp_mgr = &g_spp_manager;
-    struct bt_rfcomm_dlc* rfcomm_dlc = (struct bt_rfcomm_dlc*)user_data;
-    sal_spp_connection_t* spp_conn;
+    sal_spp_connection_t* spp_conn = (sal_spp_connection_t*)user_data;
     struct bt_conn* conn;
-
-    BT_LOGD("%s, rfcomm_dlc: %p", __func__, rfcomm_dlc);
-
-    spp_conn_lock();
-    spp_conn = spp_find_connection_by_dlc(rfcomm_dlc);
-    if (!spp_conn) {
-        spp_conn_unlock();
-        BT_LOGE("SPP connection not found for rfcomm_dlc");
-        return BT_STATUS_FAIL;
-    }
-
-    spp_conn_unlock();
 
     BT_LOGD("Initiating SPP connection to addr:%s", bt_addr_str(addr));
     spp_on_connection_state_changed(addr, spp_conn->conn_port, PROFILE_STATE_CONNECTING);
@@ -896,7 +883,7 @@ bt_status_t bt_sal_spp_connect(bt_address_t* addr, uint16_t conn_port, bt_uuid_t
     spp_conn->spp_client = spp_client;
     memcpy(&spp_conn->uuid, uuid, sizeof(bt_uuid_t));
 
-    status = bt_sal_profile_connect_request(&spp_conn->addr, PROFILE_SPP, spp_conn->conn_port, PRIMARY_ADAPTER, spp_connect_handler, &spp_conn->rfcomm_dlc);
+    status = bt_sal_profile_connect_request(&spp_conn->addr, PROFILE_SPP, spp_conn->conn_port, PRIMARY_ADAPTER, spp_connect_handler, spp_conn);
     if (status != BT_STATUS_SUCCESS) {
         BT_LOGE("Failed to connect SPP, status: %d", status);
         spp_connection_free(spp_conn);
