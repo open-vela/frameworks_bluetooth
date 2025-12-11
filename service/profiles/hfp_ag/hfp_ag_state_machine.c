@@ -20,6 +20,9 @@
 #include <string.h>
 #include <sys/types.h>
 
+#include "sal_hfp_ag_interface.h"
+#include "sal_interface.h"
+
 #include "audio_control.h"
 #include "bluetooth.h"
 #include "bt_addr.h"
@@ -35,8 +38,6 @@
 #include "hfp_ag_tele_service.h"
 #include "media_system.h"
 #include "power_manager.h"
-#include "sal_hfp_ag_interface.h"
-#include "sal_interface.h"
 #include "utils/log.h"
 
 #define HFP_AG_RETRY_MAX 1

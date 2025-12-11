@@ -445,7 +445,9 @@ static bt_status_t do_ag_connect(bt_controller_id_t id, bt_address_t* addr)
 
     if(new_sal_connection(conn, ag) == NULL) {
         BT_LOGE("%s, Failed to create HFP AG connection", __func__);
-        Z_API(bt_hfp_ag_disconnect)(ag);
+        if (Z_API(bt_hfp_ag_disconnect)(ag)) {
+            BT_LOGE("%s, Failed disconnect HFP", __func__);
+        }
         bt_conn_unref(conn);
         return BT_STATUS_NOMEM;
     }
