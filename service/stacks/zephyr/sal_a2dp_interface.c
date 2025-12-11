@@ -942,8 +942,9 @@ static void bt_sal_a2dp_notify_disconnected(struct zblue_a2dp_info_t* a2dp_info)
     }
 }
 
-static void bt_a2dp_stream_released(struct bt_a2dp_stream* stream)
+static void zblue_on_stream_released(struct bt_a2dp_stream* stream)
 {
+    BT_LOGI("%s, stream released", __func__);
     struct zblue_a2dp_info_t* a2dp_info;
 
     if (bt_a2dp_conn == NULL) {
@@ -982,12 +983,6 @@ static void bt_a2dp_stream_released(struct bt_a2dp_stream* stream)
         bt_sal_a2dp_notify_disconnected(a2dp_info);
         bt_list_remove_a2dp_info(a2dp_info);
     }
-}
-
-static void zblue_on_stream_released(struct bt_a2dp_stream* stream)
-{
-    BT_LOGI("%s, stream released", __func__);
-    bt_a2dp_stream_released(stream);
 }
 
 static void zblue_on_stream_started(struct bt_a2dp_stream* stream)
@@ -1468,8 +1463,6 @@ static void zblue_on_release_rsp(struct bt_a2dp_stream* stream, uint8_t rsp_err_
         return;
 
     BT_LOGE("%s, close fail: %d", __func__, rsp_err_code);
-
-    bt_a2dp_stream_released(stream);
 }
 
 static int zblue_on_start_req(struct bt_a2dp_stream* stream, uint8_t* rsp_err_code)
