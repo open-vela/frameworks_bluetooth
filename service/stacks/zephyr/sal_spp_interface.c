@@ -29,6 +29,7 @@
 #include "spp_service.h"
 #include "utils/log.h"
 
+#include "sal_connection_manager.h"
 #include "sal_interface.h"
 #include "sal_spp_interface.h"
 #include "sal_zblue.h"
@@ -66,6 +67,7 @@ typedef struct {
     bt_address_t addr;
     uint16_t scn;
     uint16_t conn_port;
+    bt_uuid_t uuid;
     bt_list_t* tx_list;
     bt_list_t* rx_list;
 } sal_spp_connection_t;
@@ -137,6 +139,8 @@ sal_spp_manager_t g_spp_manager = {
     .connections = NULL,
     .mutex = PTHREAD_MUTEX_INITIALIZER,
 };
+
+static bt_status_t spp_disconnect_handler(bt_controller_id_t id, bt_address_t* bd_addr, void* user_data);
 
 static inline void spp_conn_lock(void)
 {
@@ -330,6 +334,10 @@ static void spp_rfcomm_connected(struct bt_rfcomm_dlc* rfcomm_dlc)
 
     spp_on_connection_state_changed(&spp_conn->addr, spp_conn->conn_port, PROFILE_STATE_CONNECTED);
     spp_on_connection_mfs_update(spp_conn->conn_port, rfcomm_dlc->mtu);
+
+    bt_sal_cm_profile_connected_callback(cm_data_new(&spp_conn->addr, PROFILE_SPP, spp_conn->conn_port));
+    bt_sal_profile_disconnect_register(&spp_conn->addr, PROFILE_SPP, spp_conn->conn_port, PRIMARY_ADAPTER, spp_disconnect_handler, spp_conn);
+
     spp_conn_unlock();
 }
 
@@ -367,6 +375,8 @@ static void spp_rfcomm_disconnected(struct bt_rfcomm_dlc* rfcomm_dlc)
     }
 
     spp_on_connection_state_changed(&spp_conn->addr, spp_conn->conn_port, PROFILE_STATE_DISCONNECTED);
+    bt_sal_cm_profile_disconnected_callback(cm_data_new(&spp_conn->addr, PROFILE_SPP, spp_conn->conn_port));
+
     do_in_service_loop_deffered(spp_disconnected_defer_handler, rfcomm_dlc, false);
     spp_conn_unlock();
 }
@@ -776,16 +786,74 @@ static bt_status_t spp_connect_with_uuid(sal_spp_connection_t* spp_conn, bt_uuid
     return 0;
 }
 
-bt_status_t bt_sal_spp_connect(bt_address_t* addr, uint16_t conn_port, bt_uuid_t* uuid)
+static bt_status_t spp_connect_handler(bt_controller_id_t id, bt_address_t* addr, void* user_data)
 {
     sal_spp_manager_t* spp_mgr = &g_spp_manager;
+    struct bt_rfcomm_dlc* rfcomm_dlc = (struct bt_rfcomm_dlc*)user_data;
     sal_spp_connection_t* spp_conn;
     struct bt_conn* conn;
+
+    BT_LOGD("%s, rfcomm_dlc: %p", __func__, rfcomm_dlc);
+
+    spp_conn_lock();
+    spp_conn = spp_find_connection_by_dlc(rfcomm_dlc);
+    if (!spp_conn) {
+        spp_conn_unlock();
+        BT_LOGE("SPP connection not found for rfcomm_dlc");
+        return BT_STATUS_FAIL;
+    }
+
+    spp_conn_unlock();
+
+    BT_LOGD("Initiating SPP connection to addr:%s", bt_addr_str(addr));
+    spp_on_connection_state_changed(addr, spp_conn->conn_port, PROFILE_STATE_CONNECTING);
+
+    conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
+    if (!conn) {
+        BT_LOGE("No ACL connection found for address: %s", bt_addr_str(addr));
+        goto fail;
+    }
+
+    spp_conn->conn = conn;
+
+    if (spp_conn->conn_port & 0x3F) {
+        int err;
+
+        err = spp_connect_with_channel(spp_conn, spp_conn->scn);
+        if (err < 0) {
+            BT_LOGE("Failed to connect with scn: %d", err);
+            goto fail;
+        }
+    } else {
+        int err;
+
+        err = spp_connect_with_uuid(spp_conn, &spp_conn->uuid);
+        if (err < 0) {
+            BT_LOGE("Failed to connect with uuid, err: %d", err);
+            goto fail;
+        }
+    }
+
+    spp_conn_lock();
+    bt_list_add_tail(spp_mgr->connections, spp_conn);
+    spp_conn_unlock();
+
+    return BT_STATUS_SUCCESS;
+
+fail:
+    spp_on_connection_state_changed(addr, spp_conn->conn_port, PROFILE_STATE_DISCONNECTED);
+    spp_connection_free(spp_conn);
+    return BT_STATUS_FAIL;
+}
+
+bt_status_t bt_sal_spp_connect(bt_address_t* addr, uint16_t conn_port, bt_uuid_t* uuid)
+{
+    sal_spp_connection_t* spp_conn;
     uint16_t scn = PORT2SCN(conn_port);
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
     char uuid_str[40] = { 0 };
     sal_spp_client_t* spp_client;
-    int err;
+    bt_status_t status;
 
     if (!addr || scn > 30) {
         BT_LOGE("Invalid parameters: addr=%p, scn=%d", addr, scn);
@@ -825,57 +893,33 @@ bt_status_t bt_sal_spp_connect(bt_address_t* addr, uint16_t conn_port, bt_uuid_t
         return BT_STATUS_NOMEM;
     }
 
-    conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
-    if (!conn) {
-        BT_LOGE("No ACL connection found for address: %s", addr_str);
-        free(spp_client);
+    spp_conn->spp_client = spp_client;
+    memcpy(&spp_conn->uuid, uuid, sizeof(bt_uuid_t));
+
+    status = bt_sal_profile_connect_request(&spp_conn->addr, PROFILE_SPP, spp_conn->conn_port, PRIMARY_ADAPTER, spp_connect_handler, &spp_conn->rfcomm_dlc);
+    if (status != BT_STATUS_SUCCESS) {
+        BT_LOGE("Failed to connect SPP, status: %d", status);
         spp_connection_free(spp_conn);
         return BT_STATUS_FAIL;
     }
 
-    spp_conn->spp_client = spp_client;
-    spp_conn->conn = conn;
-    bt_conn_ref(spp_conn->conn);
-
-    spp_on_connection_state_changed((bt_address_t*)addr, conn_port, PROFILE_STATE_CONNECTING);
-
-    if (conn_port & 0x3F) {
-        err = spp_connect_with_channel(spp_conn, scn);
-        if (err < 0) {
-            BT_LOGE("Failed to connect with scn: %d", err);
-            goto fail;
-        }
-    } else {
-        err = spp_connect_with_uuid(spp_conn, uuid);
-        if (err < 0) {
-            BT_LOGE("Failed to connect with uuid, err: %d", err);
-            goto fail;
-        }
-    }
-
-    spp_conn_lock();
-    bt_list_add_tail(spp_mgr->connections, spp_conn);
-    spp_conn_unlock();
-
     return BT_STATUS_SUCCESS;
-
-fail:
-    spp_on_connection_state_changed((bt_address_t*)addr, conn_port, PROFILE_STATE_DISCONNECTED);
-    spp_connection_free(spp_conn);
-    return BT_STATUS_FAIL;
 }
 
-bt_status_t bt_sal_spp_disconnect(uint16_t conn_port)
+static bt_status_t spp_disconnect_handler(bt_controller_id_t id, bt_address_t* bd_addr, void* user_data)
 {
+    struct bt_rfcomm_dlc* rfcomm_dlc = (struct bt_rfcomm_dlc*)user_data;
     sal_spp_connection_t* spp_conn;
     int ret;
 
+    BT_LOGD("%s, rfcomm_dlc: %p", __func__, rfcomm_dlc);
+
     spp_conn_lock();
-    spp_conn = spp_find_connection_by_port(conn_port);
+    spp_conn = spp_find_connection_by_dlc(rfcomm_dlc);
     if (!spp_conn) {
         spp_conn_unlock();
-        BT_LOGE("No SPP connection found for port %d", conn_port);
-        return BT_STATUS_PARM_INVALID;
+        BT_LOGE("SPP connection not found for rfcomm_dlc");
+        return BT_STATUS_FAIL;
     }
 
     spp_conn_unlock();
@@ -887,8 +931,24 @@ bt_status_t bt_sal_spp_disconnect(uint16_t conn_port)
         return BT_STATUS_FAIL;
     }
 
-    BT_LOGD("SPP connection on port %d disconnecting", conn_port);
     return BT_STATUS_SUCCESS;
+}
+
+bt_status_t bt_sal_spp_disconnect(uint16_t conn_port)
+{
+    sal_spp_connection_t* spp_conn;
+
+    spp_conn_lock();
+    spp_conn = spp_find_connection_by_port(conn_port);
+    if (!spp_conn) {
+        spp_conn_unlock();
+        BT_LOGE("No SPP connection found for port %d", conn_port);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    spp_conn_unlock();
+
+    return bt_sal_profile_disconnect_request(&spp_conn->addr, PROFILE_SPP, spp_conn->conn_port, PRIMARY_ADAPTER, spp_disconnect_handler, &spp_conn->rfcomm_dlc);
 }
 
 bt_status_t bt_sal_spp_data_received_response(uint16_t conn_port, uint8_t* buf)
