@@ -81,6 +81,10 @@ endchoice
 
 endif #BLUETOOTH_FRAMEWORK
 
+config FEATURE_ERROR_CODE_CONVERT
+	bool "FEATURE error code conversion"
+	default n
+
 menu "Core"
 config BLUETOOTH_BREDR_SUPPORT
 	bool "Bluetooth BREDR"
