@@ -346,7 +346,9 @@ static bt_status_t do_hf_connect(bt_controller_id_t id, bt_address_t* addr)
 
     if (new_hf_connection(conn, hf) == NULL) {
         BT_LOGE("%s, Failed to create HFP HF connection", __func__);
-        Z_API(bt_hfp_hf_disconnect)(hf);
+        if (Z_API(bt_hfp_hf_disconnect)(hf)) {
+            BT_LOGE("%s, Failed to disconnect HFP HF connection", __func__);
+        }
         bt_conn_unref(conn);
         return BT_STATUS_NOMEM;
     }
@@ -443,7 +445,9 @@ static void zblue_on_connected(struct bt_conn* conn, struct bt_hfp_hf* hf)
     if (!find_connection_by_addr(&bd_addr)) {
         if (!new_hf_connection(conn, hf)) {
             BT_LOGE("%s, Failed to create HFP HF connection", __func__);
-            Z_API(bt_hfp_hf_disconnect)(hf);
+            if (Z_API(bt_hfp_hf_disconnect)(hf)) {
+                BT_LOGE("%s, Failed to disconnect HFP HF connection", __func__);
+            }
             return;
         }
 
@@ -902,7 +906,6 @@ static struct bt_hfp_hf_cb hf_callbacks = {
     .vgm = zblue_on_vgm,
     .vgs = zblue_on_vgs,
     .inband_ring = NULL,
-    .operator = NULL,
     .codec_negotiate = zblue_on_codec_negotiate,
     .ecnr_turn_off = NULL,
     .call_waiting = NULL,
@@ -936,7 +939,10 @@ bt_status_t bt_sal_hfp_hf_init(uint32_t hf_features, uint8_t max_connection)
 
 void bt_sal_hfp_hf_cleanup(void)
 {
-    Z_API(bt_hfp_hf_unregister)();
+    if (Z_API(bt_hfp_hf_unregister)()) {
+        BT_LOGE("%s, Failed to unregister HFP HF callbacks", __func__);
+    }
+
     if (g_sal_hf_conn_list) {
         bt_list_free(g_sal_hf_conn_list);
         g_sal_hf_conn_list = NULL;
@@ -1080,7 +1086,7 @@ bt_status_t bt_sal_hfp_hf_hangup_call(bt_address_t* addr)
         return BT_STATUS_FAIL;
     }
 
-    if(count_call(sal_conn) == 1) {
+    if (count_call(sal_conn) == 1) {
         SAL_CHECK_RET(Z_API(bt_hfp_hf_terminate)(target->context), 0);
     } else {
         SAL_CHECK_RET(Z_API(bt_hfp_hf_release_active_accept_other)(sal_conn->hf), 0);
