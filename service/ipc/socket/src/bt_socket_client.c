@@ -791,7 +791,8 @@ void bt_socket_async_client_deinit(bt_instance_t* ins)
     if (priv == NULL)
         return;
 
-    uv_read_stop((uv_stream_t*)priv->pipe);
+    if (priv->pipe)
+        uv_read_stop((uv_stream_t*)priv->pipe);
 
     if (priv->pending_queue) {
         bt_socket_invoke_async_cb(ins, priv->pending_queue);
