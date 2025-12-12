@@ -24,12 +24,12 @@
 #include "bt_addr.h"
 #include "bt_debug.h"
 #include "bt_device.h"
+#include "bt_dfx.h"
+#include "bt_list.h"
 #include "bt_profile.h"
 #include "bt_uuid.h"
-#include "euv_pty.h"
+#include "euv_pipe.h"
 #include "index_allocator.h"
-#include "list.h"
-#include "openpty.h"
 #include "power_manager.h"
 #include "sal_spp_interface.h"
 #include "service_loop.h"
@@ -63,6 +63,8 @@
 #ifdef CONFIG_RPMSG_UART
 #define SPP_UART_DEV "/dev/ttyDROID"
 #endif
+
+#define SPP_PROXY_SERVER_PREF "btspp-srv"
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -75,14 +77,12 @@ struct spp_service_global {
     struct list_node devices;
     struct list_node servers;
     struct list_node apps;
-    pthread_mutex_t spp_lock;
 };
 
 typedef struct spp_handle {
     struct list_node node;
     bt_instance_t* ins;
     char name[64];
-    int port_type;
     void* remote;
     const spp_callbacks_t* cbs;
 } spp_handle_t;
@@ -99,12 +99,20 @@ typedef struct {
     spp_handle_t* app_handle;
 } spp_server_t;
 
+typedef struct
+{
+    struct list_node node;
+    uint8_t* buffer;
+    uint16_t length;
+} spp_rx_buf_t;
+
 typedef struct {
     struct list_node node;
     spp_server_t* server;
-    euv_pty_t* handle;
+    euv_pipe_t* handle;
     service_timer_t* timer;
     cache_buf_t cache_buf;
+    struct list_node rx_list;
     bool accept;
     bt_address_t addr;
     int16_t scn;
@@ -113,15 +121,15 @@ typedef struct {
     bt_uuid_t uuid;
     uint16_t mfs;
     uint16_t next_to_read;
-    int mfd;
-    char pty_name[20];
+    char proxy_name[20];
     uint8_t remaining_quota;
     uint32_t rx_bytes;
     uint32_t tx_bytes;
     spp_handle_t* app_handle;
     /* connection state */
     profile_connection_state_t state;
-} spp_pty_device_t;
+    spp_proxy_state_t proxy_state;
+} spp_device_t;
 
 typedef struct {
     enum {
@@ -143,8 +151,11 @@ typedef struct {
 /****************************************************************************
  * Private Function Prototypes
  ****************************************************************************/
-static int do_spp_write(spp_pty_device_t* device, uint8_t* buffer, uint16_t length);
+static int do_spp_write(spp_device_t* device, uint8_t* buffer, uint16_t length);
 static void spp_server_cleanup_devices(spp_server_t* server);
+static void spp_proxy_connection_callback(euv_pipe_t* handle, int status, void* user_data);
+static bt_status_t spp_unregister_app(void** remote, void* handle);
+static bool spp_rx_buffer_empty(spp_device_t* device);
 
 /****************************************************************************
  * Private Data
@@ -169,7 +180,7 @@ static const char* spp_event_to_string(uint8_t event)
 }
 #endif
 
-static void spp_notify_connection_state(spp_pty_device_t* device, profile_connection_state_t state)
+static void spp_notify_connection_state(spp_device_t* device, profile_connection_state_t state)
 {
     assert(device);
     if (!device->app_handle)
@@ -182,7 +193,7 @@ static void spp_notify_connection_state(spp_pty_device_t* device, profile_connec
             device->scn, device->conn_id, state);
 }
 
-static void spp_notify_pty_opened(spp_pty_device_t* device)
+static void spp_notify_proxy_state(spp_device_t* device, spp_proxy_state_t state)
 {
     assert(device);
     if (!device->app_handle)
@@ -190,9 +201,9 @@ static void spp_notify_pty_opened(spp_pty_device_t* device)
 
     void* handle = device->app_handle->remote ? device->app_handle->remote : device->app_handle;
 
-    if (device->app_handle->cbs && device->app_handle->cbs->pty_open_cb)
-        device->app_handle->cbs->pty_open_cb(handle, &device->addr, device->scn,
-            device->conn_id, device->pty_name);
+    if (device->app_handle->cbs && device->app_handle->cbs->proxy_state_cb)
+        device->app_handle->cbs->proxy_state_cb(handle, &device->addr, state, device->scn,
+            device->conn_id, device->proxy_name);
 }
 
 static int scn_bit_check(uint16_t scn)
@@ -227,12 +238,16 @@ static int scn_bit_free(uint16_t scn)
 
 static spp_server_t* alloc_new_server(uint16_t scn, bt_uuid_t* uuid, spp_handle_t* handle)
 {
-    if (scn_bit_alloc(scn) != 0)
+    if (scn_bit_alloc(scn) != 0) {
+        BT_LOGW("No available scn");
         return NULL;
+    }
 
     spp_server_t* server = malloc(sizeof(spp_server_t));
-    if (!server)
+    if (!server) {
+        BT_LOGE("No memory for spp server");
         return NULL;
+    }
 
     server->scn = scn;
     bt_uuid_to_uuid128(uuid, &server->uuid);
@@ -244,6 +259,7 @@ static spp_server_t* alloc_new_server(uint16_t scn, bt_uuid_t* uuid, spp_handle_
 
 static void free_server_resource(spp_server_t* server)
 {
+    BT_LOGD("%s, scn: %" PRIu16, __func__, server->scn);
     spp_server_cleanup_devices(server);
     scn_bit_free(server->scn);
     list_delete(&server->node);
@@ -266,43 +282,48 @@ static spp_server_t* find_server(uint16_t scn)
     return NULL;
 }
 
-static spp_pty_device_t* alloc_new_device(bt_address_t* addr, int16_t scn,
+static spp_device_t* alloc_new_device(bt_address_t* addr, int16_t scn,
     bt_uuid_t* uuid, bool accept,
     spp_handle_t* handle)
 {
     int conn_id;
-    spp_pty_device_t* device;
+    spp_device_t* device;
 
     conn_id = index_alloc(g_spp_handle.allocator);
-    if (conn_id < 0)
+    if (conn_id < 0) {
+        BT_LOGW("No available conn_id");
         return NULL;
+    }
 
-    device = malloc(sizeof(spp_pty_device_t));
-    if (device == NULL)
+    device = malloc(sizeof(spp_device_t));
+    if (device == NULL) {
+        BT_LOGE("No memory for spp device");
         return NULL;
+    }
 
-    memset(device, 0, sizeof(spp_pty_device_t));
+    memset(device, 0, sizeof(spp_device_t));
     device->conn_id = conn_id;
     device->scn = scn;
     device->app_handle = handle;
     device->conn_port = STACK_CONN_PORT(scn, device->conn_id, accept);
     device->accept = accept;
     device->mfs = DEFAULT_PACKET_SIZE;
-    device->mfd = INVALID_FD;
     bt_uuid_to_uuid128(uuid, &device->uuid);
     device->tx_bytes = 0;
     device->rx_bytes = 0;
     device->remaining_quota = SENDING_BUFS_QUOTA;
     device->state = PROFILE_STATE_DISCONNECTED;
+    device->proxy_state = SPP_PROXY_STATE_DISCONNECTED;
     memcpy(&device->addr, addr, sizeof(bt_address_t));
+    list_initialize(&device->rx_list);
     list_add_tail(&g_spp_handle.devices, &device->node);
 
     return device;
 }
 
-static spp_pty_device_t* find_pty_device(uint16_t conn_id)
+static spp_device_t* find_spp_device_by_conn(uint16_t conn_id)
 {
-    spp_pty_device_t* device;
+    spp_device_t* device;
     struct list_node* node;
 
     if (!g_spp_handle.started)
@@ -310,7 +331,7 @@ static spp_pty_device_t* find_pty_device(uint16_t conn_id)
 
     list_for_every(&g_spp_handle.devices, node)
     {
-        device = (spp_pty_device_t*)node;
+        device = (spp_device_t*)node;
         if (conn_id == device->conn_id)
             return device;
     }
@@ -319,9 +340,9 @@ static spp_pty_device_t* find_pty_device(uint16_t conn_id)
     return NULL;
 }
 
-static spp_pty_device_t* find_pty_device_by_handle(euv_pty_t* handle)
+static spp_device_t* find_spp_device_by_handle(euv_pipe_t* handle)
 {
-    spp_pty_device_t* device;
+    spp_device_t* device;
     struct list_node* node;
 
     if (!g_spp_handle.started)
@@ -329,7 +350,7 @@ static spp_pty_device_t* find_pty_device_by_handle(euv_pty_t* handle)
 
     list_for_every(&g_spp_handle.devices, node)
     {
-        device = (spp_pty_device_t*)node;
+        device = (spp_device_t*)node;
         if (device->handle == handle)
             return device;
     }
@@ -338,7 +359,7 @@ static spp_pty_device_t* find_pty_device_by_handle(euv_pty_t* handle)
     return NULL;
 }
 
-static void remove_pty_device(spp_pty_device_t* device)
+static void remove_spp_device(spp_device_t* device)
 {
     BT_LOGI("spp device remove, conn_id: %d", device->conn_id);
     index_free(g_spp_handle.allocator, device->conn_id);
@@ -360,37 +381,29 @@ static bool spp_app_is_exist(void* handle)
     return false;
 }
 
-static spp_pty_device_t* spp_pty_device_open(spp_pty_device_t* device)
+static spp_device_t* spp_device_open(spp_device_t* device)
 {
-    int ret;
-
-    if (device->app_handle->port_type == SPP_PORT_TYPE_TTY) {
-        ret = open_pty(&device->mfd, device->pty_name);
-        if (ret != 0) {
-            BT_LOGE("pty create failed");
-            goto error;
-        }
-    } else if (device->app_handle->port_type == SPP_PORT_TYPE_RPMSG_UART) {
-#ifdef CONFIG_RPMSG_UART
-        device->mfd = open(SPP_UART_DEV, O_RDWR);
-        assert((sizeof(device->pty_name) - 1) > strlen(SPP_UART_DEV));
-        strlcpy(device->pty_name, SPP_UART_DEV, sizeof(device->pty_name));
-#endif
+    if (!device) {
+        BT_LOGE("%s, device null", __func__);
+        return NULL;
     }
 
-    device->handle = euv_pty_init(get_service_uv_loop(), device->mfd, UV_TTY_MODE_IO);
-    if (!device->handle)
+    sprintf(device->proxy_name, "%s-%d", SPP_PROXY_SERVER_PREF, device->conn_id);
+    device->handle = euv_pipe_open(get_service_uv_loop(), device->proxy_name, spp_proxy_connection_callback, device);
+    if (!device->handle) {
+        BT_LOGE("spp proxy open fail, proxy_name: %s", device->proxy_name);
         goto error;
+    }
 
-    BT_LOGD("pty create success, name: %s, master: %d", device->pty_name, device->mfd);
+    BT_LOGD("spp proxy open success, name: %s, handle: %p", device->proxy_name, device->handle);
     return device;
+
 error:
-    close(device->mfd);
-    remove_pty_device(device);
+    remove_spp_device(device);
     return NULL;
 }
 
-static void spp_pty_device_close(spp_pty_device_t* device)
+static void spp_device_close(spp_device_t* device)
 {
     if (device->timer != NULL) {
         service_loop_cancel_timer(device->timer);
@@ -401,34 +414,54 @@ static void spp_pty_device_close(spp_pty_device_t* device)
         bt_sal_spp_disconnect(device->conn_port);
 
     if (device->handle) {
-        euv_pty_close(device->handle);
+        euv_pipe_close(device->handle);
         device->handle = NULL;
-        device->mfd = INVALID_FD;
+    }
+
+    if (device->cache_buf.length > 0) {
+        BT_LOGD("%s, free cache buf, length: %d", __func__, device->cache_buf.length);
+        free(device->cache_buf.buffer_head);
+        device->cache_buf.length = 0;
+    }
+
+    if (!spp_rx_buffer_empty(device)) {
+        BT_LOGD("%s, free rx cache list, list_length: %zu", __func__, list_length(&device->rx_list));
+        struct list_node *node, *tmp;
+
+        list_for_every_safe(&device->rx_list, node, tmp)
+        {
+            /* The memory pointed to by buf->buffer must be released prior to the protocol stack
+            reporting status. */
+            list_delete(node);
+            free(node);
+        }
     }
 
     device->app_handle = NULL;
 }
 
-static void spp_device_cleanup(spp_pty_device_t* device, bool notify)
+static void spp_device_cleanup(spp_device_t* device, bool notify)
 {
     if (notify)
         spp_notify_connection_state(device, PROFILE_STATE_DISCONNECTED);
 
-    spp_pty_device_close(device);
-    remove_pty_device(device);
+    spp_device_close(device);
+    remove_spp_device(device);
 }
 
 static void spp_server_cleanup_devices(spp_server_t* server)
 {
-    spp_pty_device_t* device;
+    spp_device_t* device;
     struct list_node* node;
     struct list_node* tmp;
 
     list_for_every_safe(&g_spp_handle.devices, node, tmp)
     {
-        device = (spp_pty_device_t*)node;
-        if (device->server == server)
+        device = (spp_device_t*)node;
+        if (device->server == server) {
+            BT_LOGD("%s, close spp conn: %" PRIu16, __func__, device->conn_id);
             spp_device_cleanup(device, true);
+        }
     }
 }
 
@@ -441,23 +474,28 @@ static void spp_app_cleanup_servers(spp_handle_t* app)
     list_for_every_safe(&g_spp_handle.servers, node, tmp)
     {
         server = (spp_server_t*)node;
-        if (server->app_handle == app)
+        if (server->app_handle == app) {
+            bt_sal_spp_server_stop(STACK_SVR_PORT(server->scn));
             free_server_resource(server);
+        }
     }
 }
 
 static void spp_app_cleanup_devices(spp_handle_t* app)
 {
-    spp_pty_device_t* device;
+    spp_device_t* device;
     struct list_node* node;
     struct list_node* tmp;
+
+    BT_LOGD("%s, app_handle: %p", __func__, app);
 
     // cleanup all device
     list_for_every_safe(&g_spp_handle.devices, node, tmp)
     {
-        device = (spp_pty_device_t*)node;
+        device = (spp_device_t*)node;
         if (device->app_handle == app) {
             bt_pm_conn_close(PROFILE_SPP, &device->addr);
+            BT_LOGD("%s, close spp conn: %" PRIu16, __func__, device->conn_id);
             spp_device_cleanup(device, true);
         }
     }
@@ -486,15 +524,14 @@ static void spp_cleanup_all_apps(void)
     }
 }
 
-static void euv_alloc_buffer(euv_pty_t* handle, uint8_t** buf, size_t* len)
+static void euv_alloc_buffer(euv_pipe_t* handle, uint8_t** buf, size_t* len)
 {
-    spp_pty_device_t* device;
+    spp_device_t* device;
 
-    pthread_mutex_lock(&g_spp_handle.spp_lock);
-    device = find_pty_device_by_handle(handle);
+    device = find_spp_device_by_handle(handle);
     if (!device || buf == NULL) {
         *len = 0;
-        goto unlock;
+        return;
     }
 
     if (device->cache_buf.length > 0) {
@@ -504,72 +541,136 @@ static void euv_alloc_buffer(euv_pty_t* handle, uint8_t** buf, size_t* len)
         *len = device->mfs;
         *buf = malloc(*len);
     }
-
-unlock:
-    pthread_mutex_unlock(&g_spp_handle.spp_lock);
 }
 
-static void euv_read_complete(euv_pty_t* handle, const uint8_t* buf, ssize_t size)
+static void euv_read_complete(euv_pipe_t* handle, const uint8_t* buf, ssize_t size)
 {
-    spp_pty_device_t* device;
+    spp_device_t* device;
 
-    pthread_mutex_lock(&g_spp_handle.spp_lock);
-    device = find_pty_device_by_handle(handle);
+    device = find_spp_device_by_handle(handle);
     if (!device || buf == NULL)
-        goto unlock;
+        return;
 
     if (size <= 0) {
         if (buf && (device->cache_buf.length == 0))
             free((void*)buf);
 
         if (size < 0)
-            spp_pty_device_close(device);
+            spp_device_close(device);
 
-        goto unlock;
+        return;
     }
 
     spp_dumpbuffer("master read:", buf, size);
     do_spp_write(device, (uint8_t*)buf, size);
-
-unlock:
-    pthread_mutex_unlock(&g_spp_handle.spp_lock);
 }
 
-static void euv_write_complete(euv_pty_t* handle, uint8_t* buf, int status)
+static void euv_write_complete(euv_pipe_t* handle, uint8_t* buf, int status)
 {
-    spp_pty_device_t* device;
+    spp_device_t* device;
 
-    pthread_mutex_lock(&g_spp_handle.spp_lock);
-    device = find_pty_device_by_handle(handle);
+    device = find_spp_device_by_handle(handle);
     if (!device || buf == NULL)
-        goto unlock;
+        return;
 
     bt_sal_spp_data_received_response(device->conn_port, buf);
     if (status != 0)
-        spp_pty_device_close(device);
+        spp_device_close(device);
+}
 
-unlock:
-    pthread_mutex_unlock(&g_spp_handle.spp_lock);
+static void spp_rx_buffer_send(spp_device_t* device)
+{
+    struct list_node *node, *tmp;
+    spp_rx_buf_t* buf;
+
+    BT_LOGD("spp_rx_buffer_send, rx_list: %zu, rx_bytes: %" PRIu32 "", list_length(&device->rx_list), device->rx_bytes);
+    list_for_every_safe(&device->rx_list, node, tmp)
+    {
+        buf = (spp_rx_buf_t*)node;
+        device->rx_bytes += buf->length;
+        if (euv_pipe_write(device->handle, buf->buffer, buf->length, euv_write_complete) != 0) {
+            BT_LOGE("Spp write to slave port %d failed", device->conn_port);
+            break;
+        }
+        spp_dumpbuffer("master buffer write:", buf->buffer, buf->length);
+        list_delete(node);
+        free(node);
+    }
+}
+
+static bool spp_rx_buffer_empty(spp_device_t* device)
+{
+    return list_is_empty(&device->rx_list);
+}
+
+static void spp_rx_buffer_cache(spp_device_t* device, uint8_t* buffer, uint16_t length)
+{
+    spp_rx_buf_t* rx_buf = (spp_rx_buf_t*)malloc(sizeof(spp_rx_buf_t));
+
+    if (!rx_buf) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return;
+    }
+
+    rx_buf->buffer = buffer;
+    rx_buf->length = length;
+    list_add_tail(&device->rx_list, &rx_buf->node);
+}
+
+static void spp_proxy_connection_callback(euv_pipe_t* handle, int status, void* user_data)
+{
+    spp_device_t* device;
+    int ret;
+
+    if (status < 0) {
+        BT_LOGE("%s,uv listen error: %d", __func__, status);
+        BT_DFX_IPC_CONN_ERROR(BT_DFXE_SPP_CONN_FAIL, "");
+        return;
+    }
+
+#ifdef CONFIG_NET_RPMSG
+    /* close unused pipe */
+    euv_pipe_close2(handle);
+#endif
+
+    device = find_spp_device_by_handle(handle);
+    if (!device || !device->handle) {
+        BT_LOGE("%s, device or handle null", __func__);
+        return;
+    }
+
+    BT_LOGD("%s, connection port %" PRIu16 ", proxy state: %d", __func__, device->conn_id, device->proxy_state);
+    if (device->proxy_state == SPP_PROXY_STATE_CLOSING) {
+        spp_device_cleanup(device, false);
+        return;
+    }
+
+    BT_LOGD("spp proxy connected, status: %d", status);
+    device->proxy_state = SPP_PROXY_STATE_CONNECTED;
+    spp_rx_buffer_send(device);
+
+    ret = euv_pipe_read_start(device->handle, device->next_to_read, euv_read_complete, euv_alloc_buffer);
+    if (ret != 0) {
+        BT_LOGE("%s, read start fail", __func__);
+        spp_device_close(device);
+    }
 }
 
 static void spp_cache_timeout(service_timer_t* timer, void* data)
 {
-    spp_pty_device_t* device;
+    spp_device_t* device;
 
-    pthread_mutex_lock(&g_spp_handle.spp_lock);
-    device = find_pty_device_by_handle((euv_pty_t*)data);
+    device = find_spp_device_by_handle((euv_pipe_t*)data);
     if (!device)
-        goto unlock;
+        return;
 
     if (device->cache_buf.length == 0)
-        goto unlock;
+        return;
 
     do_spp_write(device, NULL, 0);
-unlock:
-    pthread_mutex_unlock(&g_spp_handle.spp_lock);
 }
 
-static void spp_cache_fragement(spp_pty_device_t* device, uint8_t* buffer, uint16_t length)
+static void spp_cache_fragement(spp_device_t* device, uint8_t* buffer, uint16_t length)
 {
     device->cache_buf.buffer_head = buffer;
     device->cache_buf.length = length;
@@ -580,14 +681,14 @@ static void spp_cache_fragement(spp_pty_device_t* device, uint8_t* buffer, uint1
     device->next_to_read = device->mfs - length;
 }
 
-static void spp_cache_stop(spp_pty_device_t* device)
+static void spp_cache_stop(spp_device_t* device)
 {
     service_loop_cancel_timer(device->timer);
     device->timer = NULL;
     device->next_to_read = device->mfs;
 }
 
-static int do_spp_write(spp_pty_device_t* device, uint8_t* buffer, uint16_t length)
+static int do_spp_write(spp_device_t* device, uint8_t* buffer, uint16_t length)
 {
     bt_status_t status;
     uint16_t remaining;
@@ -629,7 +730,7 @@ static int do_spp_write(spp_pty_device_t* device, uint8_t* buffer, uint16_t leng
         device->tx_bytes += size;
 
         if (!(--device->remaining_quota)) {
-            euv_pty_read_stop(device->handle);
+            euv_pipe_read_stop(device->handle);
         }
 
         remaining -= size;
@@ -643,10 +744,10 @@ static int do_spp_write(spp_pty_device_t* device, uint8_t* buffer, uint16_t leng
 static void spp_on_connection_state_chaneged(bt_address_t* addr, uint16_t port,
     profile_connection_state_t state)
 {
-    spp_pty_device_t* device;
+    spp_device_t* device;
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
-    device = find_pty_device(SERVICE_CONN_ID(port));
+    device = find_spp_device_by_conn(SERVICE_CONN_ID(port));
     if (device == NULL || memcmp(addr, &device->addr, 6) != 0) {
         BT_LOGE("%s, port or address mismatch", __func__);
         return;
@@ -664,51 +765,85 @@ static void spp_on_connection_state_chaneged(bt_address_t* addr, uint16_t port,
     spp_notify_connection_state(device, state);
 
     if (state == PROFILE_STATE_CONNECTED) {
-        device = spp_pty_device_open(device);
+        device = spp_device_open(device);
         if (device == NULL) {
-            BT_LOGE("pty device open fail, disconnect port:%d", port);
+            BT_LOGE("spp device open fail, disconnect port:%d", port);
             bt_sal_spp_disconnect(port);
             return;
         }
 
-        spp_notify_pty_opened(device);
+        device->proxy_state = SPP_PROXY_STATE_CONNECTING; // waiting for proxy connection
+        spp_notify_proxy_state(device, SPP_PROXY_STATE_CONNECTED);
         bt_pm_conn_open(PROFILE_SPP, &device->addr);
     } else if (state == PROFILE_STATE_DISCONNECTED) {
         bt_pm_conn_close(PROFILE_SPP, &device->addr);
-        spp_device_cleanup(device, false);
+        spp_notify_proxy_state(device, SPP_PROXY_STATE_DISCONNECTED);
+        BT_LOGD("spp proxy state: %d", device->proxy_state);
+        if (device->proxy_state == SPP_PROXY_STATE_CONNECTING) {
+            BT_LOGI("spp proxy is waiting for connection, connection port: %" PRIu16 " release later", device->conn_id);
+            device->proxy_state = SPP_PROXY_STATE_CLOSING;
+        } else {
+            spp_device_cleanup(device, false);
+        }
     }
 }
 
 static void spp_on_incoming_data_received(bt_address_t* addr, uint16_t port,
     uint8_t* buffer, uint16_t length)
 {
-    spp_pty_device_t* device;
+    spp_device_t* device;
     int ret;
 
-    device = find_pty_device(SERVICE_CONN_ID(port));
-    if (!device || buffer == NULL)
+    if (buffer == NULL) {
+        BT_LOGE("%s, buffer is NULL", __func__);
         return;
+    }
+
+    device = find_spp_device_by_conn(SERVICE_CONN_ID(port));
+    if (!device) {
+        BT_LOGE("%s, port or address mismatch", __func__);
+        goto error;
+    }
+
+    if (device->proxy_state != SPP_PROXY_STATE_CONNECTED) {
+        BT_LOGW("spp proxy cache, port: %d, buf:%p, length:%d", port, buffer, length);
+        spp_rx_buffer_cache(device, buffer, length);
+        return;
+    }
+
+    if (!spp_rx_buffer_empty(device)) {
+        BT_LOGW("spp proxy handle cache, port: %d, buf:%p, length:%d", port, buffer, length);
+        spp_rx_buffer_cache(device, buffer, length);
+        spp_rx_buffer_send(device);
+        return;
+    }
 
     spp_dumpbuffer("master write:", buffer, length);
     device->rx_bytes += length;
-    ret = euv_pty_write(device->handle, buffer, length, euv_write_complete);
+    ret = euv_pipe_write(device->handle, buffer, length, euv_write_complete);
     if (ret != 0) {
-        BT_LOGE("Spp write to slave port %d failed", device->mfd);
-        spp_pty_device_close(device);
+        BT_LOGE("Spp write to slave port %d failed", device->conn_port);
+        spp_device_close(device);
+        goto error;
     }
+
+    return;
+
+error:
+    free(buffer);
 }
 
 static void spp_on_outgoing_complete(uint16_t port, uint8_t* buffer, uint16_t length)
 {
-    spp_pty_device_t* device;
+    spp_device_t* device;
 
     free(buffer);
-    device = find_pty_device(SERVICE_CONN_ID(port));
+    device = find_spp_device_by_conn(SERVICE_CONN_ID(port));
     if (!device)
         return;
 
     if (!device->remaining_quota && device->handle != NULL) {
-        euv_pty_read_start2(device->handle, device->next_to_read, euv_read_complete, euv_alloc_buffer);
+        euv_pipe_read_start(device->handle, device->next_to_read, euv_read_complete, euv_alloc_buffer);
     }
     device->remaining_quota++;
 }
@@ -716,7 +851,7 @@ static void spp_on_outgoing_complete(uint16_t port, uint8_t* buffer, uint16_t le
 static void spp_on_connect_request_received(bt_address_t* addr, uint16_t port)
 {
     spp_server_t* server;
-    spp_pty_device_t* device;
+    spp_device_t* device;
 
     server = find_server(SERVICE_SCN(port));
     if (!server)
@@ -737,20 +872,14 @@ static void spp_on_connect_request_received(bt_address_t* addr, uint16_t port)
 
 static void spp_on_connection_update_mfs(uint16_t port, uint16_t mfs)
 {
-    int ret;
-    spp_pty_device_t* device;
+    spp_device_t* device;
 
-    device = find_pty_device(SERVICE_CONN_ID(port));
+    device = find_spp_device_by_conn(SERVICE_CONN_ID(port));
     if (!device)
         return;
 
     device->mfs = mfs;
     device->next_to_read = mfs;
-    if (device->handle) {
-        ret = euv_pty_read_start2(device->handle, device->next_to_read, euv_read_complete, euv_alloc_buffer);
-        if (ret != 0)
-            spp_pty_device_close(device);
-    }
 }
 
 static void spp_service_event_process(void* data)
@@ -758,9 +887,8 @@ static void spp_service_event_process(void* data)
     if (!data)
         return;
 
-    pthread_mutex_lock(&g_spp_handle.spp_lock);
     if (!g_spp_handle.started) {
-        pthread_mutex_unlock(&g_spp_handle.spp_lock);
+        free(data);
         return;
     }
 
@@ -788,21 +916,14 @@ static void spp_service_event_process(void* data)
         break;
     }
 
-    pthread_mutex_unlock(&g_spp_handle.spp_lock);
     free(data);
 }
 
 static bt_status_t spp_init(void)
 {
-    pthread_mutexattr_t attr;
 
     memset(&g_spp_handle, 0, sizeof(g_spp_handle));
     g_spp_handle.started = 0;
-
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    if (pthread_mutex_init(&g_spp_handle.spp_lock, &attr) < 0)
-        return BT_STATUS_FAIL;
 
     return BT_STATUS_SUCCESS;
 }
@@ -811,28 +932,25 @@ static bt_status_t spp_startup(profile_on_startup_t cb)
 {
     bt_status_t status;
 
-    pthread_mutex_lock(&g_spp_handle.spp_lock);
     if (g_spp_handle.started) {
-        pthread_mutex_unlock(&g_spp_handle.spp_lock);
         cb(PROFILE_SPP, true);
         return BT_STATUS_SUCCESS;
     }
 
     g_spp_handle.server_channel_map = 0;
+    g_spp_handle.registered = 0;
     g_spp_handle.allocator = index_allocator_create(CONNECTIONS_MAX);
     list_initialize(&g_spp_handle.devices);
     list_initialize(&g_spp_handle.servers);
     list_initialize(&g_spp_handle.apps);
     status = bt_sal_spp_init();
     if (status != BT_STATUS_SUCCESS) {
-        pthread_mutex_unlock(&g_spp_handle.spp_lock);
         list_delete(&g_spp_handle.devices);
         cb(PROFILE_SPP, false);
         return BT_STATUS_FAIL;
     }
 
     g_spp_handle.started = 1;
-    pthread_mutex_unlock(&g_spp_handle.spp_lock);
     cb(PROFILE_SPP, true);
 
     return BT_STATUS_SUCCESS;
@@ -840,19 +958,18 @@ static bt_status_t spp_startup(profile_on_startup_t cb)
 
 static bt_status_t spp_shutdown(profile_on_shutdown_t cb)
 {
-    pthread_mutex_lock(&g_spp_handle.spp_lock);
     if (!g_spp_handle.started) {
-        pthread_mutex_unlock(&g_spp_handle.spp_lock);
         cb(PROFILE_SPP, false);
         return BT_STATUS_NOT_ENABLED;
     }
 
     g_spp_handle.started = 0;
+    g_spp_handle.registered = 0;
+    g_spp_handle.server_channel_map = 0;
     spp_cleanup_all_apps();
     index_allocator_delete(&g_spp_handle.allocator);
     list_delete(&g_spp_handle.devices);
     list_delete(&g_spp_handle.servers);
-    pthread_mutex_unlock(&g_spp_handle.spp_lock);
     /* cleanup spp stack */
     bt_sal_spp_cleanup();
     cb(PROFILE_SPP, true);
@@ -860,43 +977,57 @@ static bt_status_t spp_shutdown(profile_on_shutdown_t cb)
     return BT_STATUS_SUCCESS;
 }
 
+static void spp_process_msg(profile_msg_t* msg)
+{
+    switch (msg->event) {
+    case PROFILE_EVT_REMOTE_DETACH: {
+        bt_instance_t* ins = msg->data.data;
+
+        if (ins->spp_cookie) {
+            BT_LOGD("%s PROFILE_EVT_REMOTE_DETACH", __func__);
+            void* handle = NULL;
+            spp_unregister_app(&handle, ins->spp_cookie);
+            ins->spp_cookie = NULL;
+        }
+        break;
+    }
+    default:
+        break;
+    }
+}
+
 static int spp_get_state(void)
 {
     return 1;
 }
 
-static void* spp_register_app(void* remote, const char* name, int port_type, const spp_callbacks_t* callbacks)
+static void* spp_register_app(void* remote, const char* name, const spp_callbacks_t* callbacks)
 {
     spp_handle_t* hdl = NULL;
 
-    pthread_mutex_lock(&g_spp_handle.spp_lock);
     if (!g_spp_handle.started) {
-        pthread_mutex_unlock(&g_spp_handle.spp_lock);
+        BT_LOGE("%s, SPP not started", __func__);
         return NULL;
     }
 
     if (g_spp_handle.registered == REGISTER_MAX) {
-        pthread_mutex_unlock(&g_spp_handle.spp_lock);
+        BT_LOGE("%s, spp register reach MAX number: %d", __func__, REGISTER_MAX);
         return NULL;
     }
 
     hdl = zalloc(sizeof(spp_handle_t));
     if (hdl == NULL) {
-        pthread_mutex_unlock(&g_spp_handle.spp_lock);
+        BT_LOGE("%s, spp handle malloc error", __func__);
         return NULL;
     }
 
     if (name)
         strlcpy(hdl->name, name, sizeof(hdl->name));
-
-    hdl->port_type = port_type;
     hdl->ins = NULL;
     hdl->remote = remote;
     hdl->cbs = callbacks;
     g_spp_handle.registered++;
     list_add_tail(&g_spp_handle.apps, &hdl->node);
-
-    pthread_mutex_unlock(&g_spp_handle.spp_lock);
 
     return hdl;
 }
@@ -908,9 +1039,7 @@ static bt_status_t spp_unregister_app(void** remote, void* handle)
     if (!app || !spp_app_is_exist(handle))
         return BT_STATUS_FAIL;
 
-    pthread_mutex_lock(&g_spp_handle.spp_lock);
     if (!g_spp_handle.started) {
-        pthread_mutex_unlock(&g_spp_handle.spp_lock);
         return BT_STATUS_NOT_ENABLED;
     }
 
@@ -922,7 +1051,6 @@ static bt_status_t spp_unregister_app(void** remote, void* handle)
     spp_cleanup_app(app);
     list_delete(&app->node);
     free(app);
-    pthread_mutex_unlock(&g_spp_handle.spp_lock);
 
     return BT_STATUS_SUCCESS;
 }
@@ -937,10 +1065,10 @@ static bt_status_t spp_server_start(void* handle, uint16_t scn, bt_uuid_t* uuid,
     if (!handle)
         return BT_STATUS_FAIL;
 
-    pthread_mutex_lock(&g_spp_handle.spp_lock);
     if (!g_spp_handle.started) {
         ret = BT_STATUS_NOT_ENABLED;
-        goto unlock_exit;
+        BT_DFX_SPP_CONN_ERROR(BT_DFXE_SPP_NOT_STARTUP);
+        return ret;
     }
 
     /* uuid any to uuid128 */
@@ -950,7 +1078,8 @@ static bt_status_t spp_server_start(void* handle, uint16_t scn, bt_uuid_t* uuid,
     server = alloc_new_server(scn, uuid, handle);
     if (!server) {
         ret = BT_STATUS_NO_RESOURCES;
-        goto unlock_exit;
+        BT_DFX_SPP_CONN_ERROR(BT_DFXE_SPP_SCN_ALLOC_FAIL);
+        return ret;
     }
 
     char uuid_str[40] = { 0 };
@@ -958,8 +1087,6 @@ static bt_status_t spp_server_start(void* handle, uint16_t scn, bt_uuid_t* uuid,
     BT_LOGI("%s, scn:%d, uuid:%s", __func__, scn, uuid_str);
     bt_sal_spp_server_start(STACK_SVR_PORT(scn), &uuid_128_dst, MIN(max_connection, SERVER_CONNECTION_MAX));
 
-unlock_exit:
-    pthread_mutex_unlock(&g_spp_handle.spp_lock);
     return ret;
 }
 
@@ -972,40 +1099,36 @@ static bt_status_t spp_server_stop(void* handle, uint16_t scn)
     if (!handle)
         return BT_STATUS_FAIL;
 
-    pthread_mutex_lock(&g_spp_handle.spp_lock);
     if (!g_spp_handle.started) {
         ret = BT_STATUS_NOT_ENABLED;
-        goto unlock_exit;
+        return ret;
     }
 
     server = find_server(scn);
     if (!server) {
         ret = BT_STATUS_FAIL;
-        goto unlock_exit;
+        return ret;
     }
 
     bt_sal_spp_server_stop(STACK_SVR_PORT(scn));
     free_server_resource(server);
 
-unlock_exit:
-    pthread_mutex_unlock(&g_spp_handle.spp_lock);
     return ret;
 }
 
 static bt_status_t spp_connect(void* handle, bt_address_t* addr, int16_t scn, bt_uuid_t* uuid, uint16_t* port)
 {
     bt_status_t status = BT_STATUS_SUCCESS;
-    spp_pty_device_t* device;
+    spp_device_t* device;
     bt_uuid_t uuid_128_dst;
 
     /* TODO: check handle are valid */
     if (!handle)
         return BT_STATUS_FAIL;
 
-    pthread_mutex_lock(&g_spp_handle.spp_lock);
     if (!g_spp_handle.started) {
         status = BT_STATUS_NOT_ENABLED;
-        goto unlock_exit;
+        return status;
     }
 
     bt_uuid_to_uuid128(uuid, &uuid_128_dst);
@@ -1013,63 +1136,64 @@ static bt_status_t spp_connect(void* handle, bt_address_t* addr, int16_t scn, bt
         uuid, false, handle);
     if (!device) {
         status = BT_STATUS_NO_RESOURCES;
-        goto unlock_exit;
+        BT_DFX_SPP_CONN_ERROR(BT_DFXE_SPP_NO_RESOURCES);
+        return status;
     }
 
     status = bt_sal_spp_connect(addr, device->conn_port, &uuid_128_dst);
     if (status != BT_STATUS_SUCCESS) {
         // spp_notify_connection_state(device, SPP_CONNECTION_STATE_DISCONNECTED);
-        remove_pty_device(device);
+        remove_spp_device(device);
         status = BT_STATUS_FAIL;
-        goto unlock_exit;
+        return status;
     }
 
     // todo: start connect timer, release device if timeout
     *port = device->conn_id;
     device->state = PROFILE_STATE_CONNECTING;
+    BT_LOGD("%s, return port: %" PRIu16, __func__, device->conn_id);
 
-unlock_exit:
-    pthread_mutex_unlock(&g_spp_handle.spp_lock);
     return status;
 }
 
 static bt_status_t spp_disconnect(void* handle, bt_address_t* addr, uint16_t port)
 {
-    spp_pty_device_t* device;
+    spp_device_t* device;
     bt_status_t ret = BT_STATUS_SUCCESS;
 
     /* TODO: check handle are valid */
     if (!handle)
         return BT_STATUS_FAIL;
 
-    pthread_mutex_lock(&g_spp_handle.spp_lock);
     if (!g_spp_handle.started) {
-        pthread_mutex_unlock(&g_spp_handle.spp_lock);
         return BT_STATUS_NOT_ENABLED;
     }
 
-    device = find_pty_device(port);
+    device = find_spp_device_by_conn(port);
     if (device == NULL) {
         ret = BT_STATUS_DEVICE_NOT_FOUND;
-        goto unlock_exit;
+        return ret;
+    }
+
+    if (bt_addr_compare(&device->addr, addr)) {
+        ret = BT_STATUS_DEVICE_NOT_FOUND;
+        BT_LOGE("%s, addr not match", __func__);
+        return ret;
     }
 
     device->state = PROFILE_STATE_DISCONNECTING;
     bt_sal_spp_disconnect(device->conn_port);
 
-unlock_exit:
-    pthread_mutex_unlock(&g_spp_handle.spp_lock);
     return ret;
 }
 
 static void spp_cleanup(void)
 {
-    pthread_mutex_destroy(&g_spp_handle.spp_lock);
 }
 
 static int spp_dump(void)
 {
-    spp_pty_device_t* device;
+    spp_device_t* device;
     spp_server_t* server = NULL;
     struct list_node* node;
     int i = 0;
@@ -1079,7 +1203,6 @@ static int spp_dump(void)
     if (!g_spp_handle.started)
         return 0;
 
-    pthread_mutex_lock(&g_spp_handle.spp_lock);
     list_for_every(&g_spp_handle.servers, node)
     {
         i++;
@@ -1094,18 +1217,17 @@ static int spp_dump(void)
     list_for_every(&g_spp_handle.devices, node)
     {
         i++;
-        device = (spp_pty_device_t*)node;
+        device = (spp_device_t*)node;
         bt_addr_ba2str(&device->addr, addr_str);
         if (server)
             bt_uuid_to_string(&server->uuid, uuid_str, 40);
         printf("\tDevice[%d]: ID:%d, Addr:%s, State:%d, Scn:%d, UUID:%s" PRIx16
-               ", MFS:%d, Pty:[%d,%s], Rx:%" PRIu32 ", Tx:%" PRIu32 "\n",
+               ", MFS:%d, Proxy:[%d,%s], Rx:%" PRIu32 ", Tx:%" PRIu32 "\n",
             i, device->conn_id, addr_str, device->state,
-            device->scn, uuid_str, device->mfs, device->mfd,
-            device->pty_name, device->rx_bytes, device->tx_bytes);
+            device->scn, uuid_str, device->mfs, device->conn_port,
+            device->proxy_name, device->rx_bytes, device->tx_bytes);
     }
 
-    pthread_mutex_unlock(&g_spp_handle.spp_lock);
     if (i == 0)
         printf("\tNo spp device found\n");
 
@@ -1151,10 +1273,10 @@ void spp_on_connection_state_changed(bt_address_t* addr, uint16_t conn_port,
 void spp_on_data_sent(uint16_t conn_port, uint8_t* buffer, uint16_t length,
     uint16_t sent_length)
 {
-    spp_pty_device_t* device;
+    spp_device_t* device;
     spp_msg_t* msg;
 
-    device = find_pty_device(SERVICE_CONN_ID(conn_port));
+    device = find_spp_device_by_conn(SERVICE_CONN_ID(conn_port));
     if (!device) {
         BT_LOGE("%s port:%d not exist", __func__, conn_port);
         return;
@@ -1233,7 +1355,7 @@ static const profile_service_t spp_service = {
     .init = spp_init,
     .startup = spp_startup,
     .shutdown = spp_shutdown,
-    .process_msg = NULL,
+    .process_msg = spp_process_msg,
     .get_state = spp_get_state,
     .get_profile_interface = get_spp_profile_interface,
     .cleanup = spp_cleanup,
