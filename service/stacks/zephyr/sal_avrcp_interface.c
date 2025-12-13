@@ -727,7 +727,7 @@ static void zblue_on_ct_connected(struct bt_conn* conn, struct bt_avrcp_ct* ct)
     msg->data.conn_state.conn_state = PROFILE_STATE_CONNECTED;
     msg->data.conn_state.reason = PROFILE_REASON_UNSPECIFIED;
     bt_sal_avrcp_control_event_callback(msg);
-    bt_sal_cm_profile_connected_callback(cm_data_new(&avrcp_info->bd_addr, PROFILE_AVRCP_CT, CONN_ID_DEFAULT));
+    bt_sal_cm_profile_connected_callback(&avrcp_info->bd_addr, PROFILE_AVRCP_CT, CONN_ID_DEFAULT);
     bt_sal_profile_disconnect_register(&avrcp_info->bd_addr, PROFILE_AVRCP_CT, CONN_ID_DEFAULT, PRIMARY_ADAPTER, avrcp_control_disconnect, NULL);
 }
 
@@ -748,7 +748,7 @@ static void zblue_on_ct_disconnected(struct bt_avrcp_ct* ct)
     msg->data.conn_state.conn_state = PROFILE_STATE_DISCONNECTED;
     msg->data.conn_state.reason = PROFILE_REASON_UNSPECIFIED;
     bt_sal_avrcp_control_event_callback(msg);
-    bt_sal_cm_profile_disconnected_callback(cm_data_new(&avrcp_info->bd_addr, PROFILE_AVRCP_CT, CONN_ID_DEFAULT));
+    bt_sal_cm_profile_disconnected_callback(&avrcp_info->bd_addr, PROFILE_AVRCP_CT, CONN_ID_DEFAULT);
 
     bt_list_remove_avrcp_info(avrcp_info);
 }
@@ -1068,7 +1068,7 @@ static void zblue_on_tg_disconnected(struct bt_avrcp_tg* tg)
     msg->data.conn_state.conn_state = PROFILE_STATE_DISCONNECTED;
     msg->data.conn_state.reason = PROFILE_REASON_UNSPECIFIED;
     bt_sal_avrcp_target_event_callback(msg);
-    bt_sal_cm_profile_disconnected_callback(cm_data_new(&avrcp_info->bd_addr, PROFILE_AVRCP_TG, CONN_ID_DEFAULT));
+    bt_sal_cm_profile_disconnected_callback(&avrcp_info->bd_addr, PROFILE_AVRCP_TG, CONN_ID_DEFAULT);
 #endif
 
     bt_list_remove_avrcp_info(avrcp_info);
