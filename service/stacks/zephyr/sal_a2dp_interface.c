@@ -918,12 +918,12 @@ static void bt_sal_a2dp_notify_connected(struct zblue_a2dp_info_t* a2dp_info)
 {
     if (a2dp_info->role == SEP_SRC) {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-        bt_sal_cm_profile_connected_callback(cm_data_new(&a2dp_info->bd_addr, PROFILE_A2DP, CONN_ID_DEFAULT));
+        bt_sal_cm_profile_connected_callback(&a2dp_info->bd_addr, PROFILE_A2DP, CONN_ID_DEFAULT);
         bt_sal_profile_disconnect_register(&a2dp_info->bd_addr, PROFILE_A2DP, CONN_ID_DEFAULT, PRIMARY_ADAPTER, a2dp_source_disconnect, NULL);
 #endif
     } else { /* SEP_SNK */
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
-        bt_sal_cm_profile_connected_callback(cm_data_new(&a2dp_info->bd_addr, PROFILE_A2DP_SINK, CONN_ID_DEFAULT));
+        bt_sal_cm_profile_connected_callback(&a2dp_info->bd_addr, PROFILE_A2DP_SINK, CONN_ID_DEFAULT);
         bt_sal_profile_disconnect_register(&a2dp_info->bd_addr, PROFILE_A2DP_SINK, CONN_ID_DEFAULT, PRIMARY_ADAPTER, a2dp_sink_disconnect, NULL);
 #endif
     }
@@ -933,11 +933,11 @@ static void bt_sal_a2dp_notify_disconnected(struct zblue_a2dp_info_t* a2dp_info)
 {
     if (a2dp_info->role == SEP_SRC) {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-        bt_sal_cm_profile_disconnected_callback(cm_data_new(&a2dp_info->bd_addr, PROFILE_A2DP, CONN_ID_DEFAULT));
+        bt_sal_cm_profile_disconnected_callback(&a2dp_info->bd_addr, PROFILE_A2DP, CONN_ID_DEFAULT);
 #endif /* CONFIG_BLUETOOTH_A2DP_SOURCE */
     } else { /* SEP_SNK */
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
-        bt_sal_cm_profile_disconnected_callback(cm_data_new(&a2dp_info->bd_addr, PROFILE_A2DP_SINK, CONN_ID_DEFAULT));
+        bt_sal_cm_profile_disconnected_callback(&a2dp_info->bd_addr, PROFILE_A2DP_SINK, CONN_ID_DEFAULT);
 #endif /* CONFIG_BLUETOOTH_A2DP_SINK */
     }
 }
