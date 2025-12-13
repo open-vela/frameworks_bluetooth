@@ -1068,7 +1068,6 @@ static void zblue_on_tg_disconnected(struct bt_avrcp_tg* tg)
     msg->data.conn_state.conn_state = PROFILE_STATE_DISCONNECTED;
     msg->data.conn_state.reason = PROFILE_REASON_UNSPECIFIED;
     bt_sal_avrcp_target_event_callback(msg);
-    bt_sal_cm_profile_disconnected_callback(&avrcp_info->bd_addr, PROFILE_AVRCP_TG, CONN_ID_DEFAULT);
 #endif
 
     bt_list_remove_avrcp_info(avrcp_info);

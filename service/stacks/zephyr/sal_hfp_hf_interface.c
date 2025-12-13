@@ -431,6 +431,7 @@ static uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_resu
 
 error:
     hfp_hf_on_connection_state_changed(&bd_addr, PROFILE_STATE_DISCONNECTED, 0, 0);
+    bt_sal_cm_profile_disconnected_callback(&bd_addr, PROFILE_HFP_HF, CONN_ID_DEFAULT);
     return BT_SDP_DISCOVER_UUID_STOP;
 }
 
@@ -470,6 +471,7 @@ static void zblue_hf_disconnected(struct bt_hfp_hf* hf)
 
     hfp_hf_on_connection_state_changed(bd_addr, PROFILE_STATE_DISCONNECTING, 0, 0);
     hfp_hf_on_connection_state_changed(bd_addr, PROFILE_STATE_DISCONNECTED, 0, 0);
+    bt_sal_cm_profile_disconnected_callback(bd_addr, PROFILE_HFP_HF, CONN_ID_DEFAULT);
 
     bt_list_remove(g_sal_hf_conn_list, conn);
 }
