@@ -79,6 +79,7 @@ struct zblue_a2dp_info_t {
 static bt_list_t* bt_a2dp_conn = NULL;
 
 static void bt_list_remove_a2dp_info(struct zblue_a2dp_info_t* a2dp_info);
+static void bt_sal_a2dp_notify_connected(struct zblue_a2dp_info_t* a2dp_info);
 
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
 static bt_status_t a2dp_source_disconnect(bt_controller_id_t id, bt_address_t* addr, void* user_data);
@@ -912,6 +913,8 @@ static void zblue_on_stream_established(struct bt_a2dp_stream* stream)
         bt_sal_a2dp_sink_event_callback(a2dp_event_new(CONNECTED_EVT, &a2dp_info->bd_addr));
 #endif /* CONFIG_BLUETOOTH_A2DP_SINK */
     }
+
+    bt_sal_a2dp_notify_connected(a2dp_info);
 }
 
 static void bt_sal_a2dp_notify_connected(struct zblue_a2dp_info_t* a2dp_info)
@@ -1212,7 +1215,6 @@ static void zblue_on_connected(struct bt_a2dp* a2dp, int err)
     a2dp_info->selected_peer_endpoint = NULL;
 
     bt_list_add_tail(bt_a2dp_conn, a2dp_info);
-    bt_sal_a2dp_notify_connected(a2dp_info);
 }
 
 static void bt_list_remove_a2dp_info(struct zblue_a2dp_info_t* a2dp_info)
@@ -1449,6 +1451,8 @@ static void zblue_on_establish_rsp(struct bt_a2dp_stream* stream, uint8_t rsp_er
         bt_sal_a2dp_sink_event_callback(a2dp_event_new(DISCONNECTED_EVT, &a2dp_info->bd_addr));
 #endif /* CONFIG_BLUETOOTH_A2DP_SINK */
     }
+
+    bt_sal_a2dp_notify_disconnected(a2dp_info);
 }
 
 static int zblue_on_release_req(struct bt_a2dp_stream* stream, uint8_t* rsp_err_code)
