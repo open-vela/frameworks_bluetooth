@@ -75,6 +75,23 @@ static struct list_node channel_list = LIST_INITIAL_VALUE(channel_list);
 static l2cap_trans_ctx_t g_trans_ctx = { 0 };
 static sem_t speed_tx_sem;
 
+static void cleanup_l2cap_channel(void* data)
+{
+    struct list_node* node;
+    struct list_node* tmp;
+    struct list_node* list = &channel_list;
+
+    list_for_every_safe(list, node, tmp)
+    {
+        list_delete(node);
+        if (((l2cap_chnl_t*)node)->pipe) {
+            euv_pipe_disconnect(((l2cap_chnl_t*)node)->pipe);
+        }
+
+        free(node);
+    }
+}
+
 static l2cap_chnl_t* find_channel_by_id(uint16_t id)
 {
     struct list_node* node;
@@ -742,6 +759,7 @@ int l2cap_command_init(void* handle)
 
 void l2cap_command_uninit(void* handle)
 {
+    do_in_thread_loop(&g_l2cap_thread, cleanup_l2cap_channel, NULL);
     bt_l2cap_unregister_callbacks(handle, g_l2cap_handle);
     thread_loop_exit(&g_l2cap_thread);
     sem_destroy(&speed_tx_sem);
