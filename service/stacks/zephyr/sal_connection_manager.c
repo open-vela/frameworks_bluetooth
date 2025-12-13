@@ -107,22 +107,11 @@ static void profile_entry_destroy(void* data)
     }
 }
 
-static bt_profile_connection_manager_t* find_or_create_connection_manager(bt_list_t* list, bt_address_t* addr)
+static bt_profile_connection_manager_t* create_connection_manager(bt_address_t* addr)
 {
     bt_profile_connection_manager_t* manager;
 
-    if (!addr || !list) {
-        return NULL;
-    }
-
-    manager = (bt_profile_connection_manager_t*)bt_list_find(list, bt_connection_manager_find, addr);
-
-    if (manager != NULL) {
-        return manager;
-    }
-
-    manager = (bt_profile_connection_manager_t*)zalloc(sizeof(*manager));
-
+    manager = zalloc(sizeof(*manager));
     if (!manager) {
         return NULL;
     }
@@ -132,6 +121,27 @@ static bt_profile_connection_manager_t* find_or_create_connection_manager(bt_lis
     manager->profile_conn_handler_list = bt_list_new(profile_entry_destroy);
     if (!manager->profile_conn_handler_list) {
         free(manager);
+        return NULL;
+    }
+
+    return manager;
+}
+
+static bt_profile_connection_manager_t* find_or_create_connection_manager(bt_list_t* list, bt_address_t* addr)
+{
+    bt_profile_connection_manager_t* manager;
+
+    if (!addr || !list) {
+        return NULL;
+    }
+
+    manager = bt_list_find(list, bt_connection_manager_find, addr);
+    if (manager) {
+        return manager;
+    }
+
+    manager = create_connection_manager(addr);
+    if (!manager) {
         return NULL;
     }
 
@@ -467,13 +477,12 @@ bt_status_t bt_sal_cm_try_disconnect_profiles(bt_address_t* addr, bool is_unpair
         return bt_sal_trigger_profile_conn_act(manager, bt_sal_disconnecting_list);
     }
 
-    manager = (bt_profile_connection_manager_t*)zalloc(sizeof(bt_profile_connection_manager_t));
+    manager = create_connection_manager(addr);
     if (!manager) {
         BT_LOGE("%s, malloc failed", __func__);
         return BT_STATUS_NOMEM;
     }
 
-    memcpy(&manager->device_addr, addr, sizeof(bt_address_t));
     manager->is_unpair = is_unpair;
     bt_list_add_tail(bt_sal_disconnecting_list, manager);
 
