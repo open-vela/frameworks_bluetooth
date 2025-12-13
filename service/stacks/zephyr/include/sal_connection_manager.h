@@ -52,8 +52,10 @@ bt_status_t bt_sal_disconnect_internal(bt_controller_id_t id,
     bt_address_t* addr, uint8_t reason);
 
 cm_data_t* cm_data_new(bt_address_t* addr, uint8_t profile_id, uint16_t conn_id);
-void bt_sal_cm_profile_connected_callback(cm_data_t* data);
-void bt_sal_cm_profile_disconnected_callback(cm_data_t* data);
+void bt_sal_cm_profile_connected_callback(bt_address_t* addr, uint8_t profile_id,
+    uint16_t conn_id);
+void bt_sal_cm_profile_disconnected_callback(bt_address_t* addr, uint8_t profile_id,
+    uint16_t conn_id);
 void bt_sal_cm_acl_connected_callback(cm_data_t* data);
 void bt_sal_cm_acl_disconnected_callback(cm_data_t* data);
 

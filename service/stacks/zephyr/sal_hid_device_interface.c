@@ -426,7 +426,7 @@ static void hid_connect_callback(struct bt_hid_device* hid)
     hid_conn_unlock();
     hid_device_on_connection_state_changed(&hid_conn->addr, false, PROFILE_STATE_CONNECTED);
 
-    bt_sal_cm_profile_connected_callback(cm_data_new(&hid_conn->addr, PROFILE_HID_DEV, CONN_ID_DEFAULT));
+    bt_sal_cm_profile_connected_callback(&hid_conn->addr, PROFILE_HID_DEV, CONN_ID_DEFAULT);
     bt_sal_profile_disconnect_register(&hid_conn->addr, PROFILE_HID_DEV, CONN_ID_DEFAULT, PRIMARY_ADAPTER, hid_disconnect_handler, hid_conn);
 }
 
