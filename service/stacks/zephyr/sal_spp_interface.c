@@ -829,6 +829,7 @@ static bt_status_t spp_connect_handler(bt_controller_id_t id, bt_address_t* addr
 
 fail:
     spp_on_connection_state_changed(addr, spp_conn->conn_port, PROFILE_STATE_DISCONNECTED);
+    bt_sal_cm_profile_disconnected_callback(&spp_conn->addr, PROFILE_SPP, spp_conn->conn_port);
     spp_connection_free(spp_conn);
     return BT_STATUS_FAIL;
 }
