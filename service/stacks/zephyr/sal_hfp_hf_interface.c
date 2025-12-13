@@ -453,7 +453,7 @@ static void zblue_on_connected(struct bt_conn* conn, struct bt_hfp_hf* hf)
 
         hfp_hf_on_connection_state_changed(&bd_addr, PROFILE_STATE_CONNECTING, 0, 0);
     }
-    bt_sal_cm_profile_connected_callback(cm_data_new(&bd_addr, PROFILE_HFP_HF, CONN_ID_DEFAULT));
+    bt_sal_cm_profile_connected_callback(&bd_addr, PROFILE_HFP_HF, CONN_ID_DEFAULT);
     bt_sal_profile_disconnect_register(&bd_addr, PROFILE_HFP_HF, CONN_ID_DEFAULT, PRIMARY_ADAPTER, do_hf_disconnect, NULL);
 
     hfp_hf_on_connection_state_changed(&bd_addr, PROFILE_STATE_CONNECTED, 0, 0);

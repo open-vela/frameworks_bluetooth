@@ -335,7 +335,7 @@ static void spp_rfcomm_connected(struct bt_rfcomm_dlc* rfcomm_dlc)
     spp_on_connection_state_changed(&spp_conn->addr, spp_conn->conn_port, PROFILE_STATE_CONNECTED);
     spp_on_connection_mfs_update(spp_conn->conn_port, rfcomm_dlc->mtu);
 
-    bt_sal_cm_profile_connected_callback(cm_data_new(&spp_conn->addr, PROFILE_SPP, spp_conn->conn_port));
+    bt_sal_cm_profile_connected_callback(&spp_conn->addr, PROFILE_SPP, spp_conn->conn_port);
     bt_sal_profile_disconnect_register(&spp_conn->addr, PROFILE_SPP, spp_conn->conn_port, PRIMARY_ADAPTER, spp_disconnect_handler, spp_conn);
 
     spp_conn_unlock();
@@ -375,7 +375,7 @@ static void spp_rfcomm_disconnected(struct bt_rfcomm_dlc* rfcomm_dlc)
     }
 
     spp_on_connection_state_changed(&spp_conn->addr, spp_conn->conn_port, PROFILE_STATE_DISCONNECTED);
-    bt_sal_cm_profile_disconnected_callback(cm_data_new(&spp_conn->addr, PROFILE_SPP, spp_conn->conn_port));
+    bt_sal_cm_profile_disconnected_callback(&spp_conn->addr, PROFILE_SPP, spp_conn->conn_port);
 
     do_in_service_loop_deffered(spp_disconnected_defer_handler, rfcomm_dlc, false);
     spp_conn_unlock();

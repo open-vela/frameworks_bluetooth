@@ -318,29 +318,6 @@ static void remove_from_connection_manager_list(bt_list_t* list, bt_address_t* a
     }
 }
 
-static void bt_sal_cm_profile_disconnected(void* data)
-{
-    if (data == NULL) {
-        return;
-    }
-
-    cm_data_t* cm_data = data;
-
-    remove_from_connection_manager_list(bt_sal_connecting_list,
-        &cm_data->addr,
-        cm_data->profile_id,
-        cm_data->conn_id,
-        false);
-
-    remove_from_connection_manager_list(bt_sal_disconnecting_list,
-        &cm_data->addr,
-        cm_data->profile_id,
-        cm_data->conn_id,
-        true);
-
-    cm_data_destory(cm_data);
-}
-
 static void bt_sal_cm_acl_connected(void* data)
 {
     if (data == NULL)
@@ -356,21 +333,6 @@ static void bt_sal_cm_acl_connected(void* data)
     if (manager != NULL) {
         bt_sal_trigger_profile_conn_act(manager, bt_sal_connecting_list);
     }
-
-    cm_data_destory(cm_data);
-}
-
-static void bt_sal_cm_profile_connected(void* data)
-{
-    if (data == NULL)
-        return;
-
-    cm_data_t* cm_data = data;
-
-    /*
-     * To avoid generating duplicate profile connect requests for an
-     * already-connected profile, we do not change the manager state.
-     */
 
     cm_data_destory(cm_data);
 }
@@ -408,20 +370,36 @@ static void bt_sal_cm_acl_disconnected(void* data)
     cm_data_destory(cm_data);
 }
 
-void bt_sal_cm_profile_connected_callback(cm_data_t* data)
+void bt_sal_cm_profile_connected_callback(bt_address_t* addr, uint8_t profile_id,
+    uint16_t conn_id)
 {
-    if (data == NULL)
-        return;
-
-    do_in_service_loop(bt_sal_cm_profile_connected, data);
+    /*
+     * To avoid generating duplicate profile connect requests for an
+     * already-connected profile, we do not change the manager state.
+     */
+    return;
 }
 
-void bt_sal_cm_profile_disconnected_callback(cm_data_t* data)
+void bt_sal_cm_profile_disconnected_callback(bt_address_t* addr, uint8_t profile_id,
+    uint16_t conn_id)
 {
-    if (data == NULL)
+    if (!addr) {
         return;
+    }
 
-    do_in_service_loop(bt_sal_cm_profile_disconnected, data);
+    remove_from_connection_manager_list(
+        bt_sal_connecting_list,
+        addr,
+        profile_id,
+        conn_id,
+        false);
+
+    remove_from_connection_manager_list(
+        bt_sal_disconnecting_list,
+        addr,
+        profile_id,
+        conn_id,
+        true);
 }
 
 void bt_sal_cm_acl_connected_callback(cm_data_t* data)
