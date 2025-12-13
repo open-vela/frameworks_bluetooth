@@ -491,8 +491,10 @@ void euv_pipe_close(euv_pipe_t* handle)
         BT_LOGE("%s, unkown mode", __func__);
         handle->srv_pipe[EUV_PIPE_TYPE_SERVER_LOCAL].data = handle;
         uv_close((uv_handle_t*)&handle->srv_pipe[EUV_PIPE_TYPE_SERVER_LOCAL], euv_close_callback);
+#ifdef CONFIG_NET_RPMSG
         handle->srv_pipe[EUV_PIPE_TYPE_SERVER_RPMSG].data = handle;
         uv_close((uv_handle_t*)&handle->srv_pipe[EUV_PIPE_TYPE_SERVER_RPMSG], euv_close_callback);
+#endif
         return;
     }
 
