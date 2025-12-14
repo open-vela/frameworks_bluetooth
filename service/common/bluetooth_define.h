@@ -36,7 +36,7 @@
 
 #define BT_KVDB_VERSION_KEY "persist.bluetooth.version"
 #define BT_STORAGE_VERSION_STR_LEN 12 /* vxxx_xxx_xxx. e.g. v5_0_0 */
-#define BT_STORAGE_CURRENT_VERSION "v5_0_2"
+#define BT_STORAGE_CURRENT_VERSION "v5_0_3"
 
 typedef enum {
     BT_LINKKEY_TYPE_COMBINATION_KEY,
@@ -80,7 +80,7 @@ typedef struct {
     uint8_t link_key[16];
     uint32_t class_of_device;
     uint8_t uuids[CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN];
-} __attribute__((aligned(4))) remote_device_properties_v5_0_2_t;
+} __attribute__((aligned(4))) remote_device_properties_v5_0_3_t;
 
 typedef struct {
     bt_address_t addr;
@@ -89,7 +89,7 @@ typedef struct {
     uint8_t device_type;
     uint8_t smp_key[80];
     uint8_t local_csrk[16];
-} __attribute__((aligned(4))) remote_device_le_properties_v5_0_2_t;
+} __attribute__((aligned(4))) remote_device_le_properties_v5_0_3_t;
 
 typedef struct {
     char name[BT_LOC_NAME_MAX_LEN + 1];
@@ -98,10 +98,11 @@ typedef struct {
     uint32_t io_capability;
     uint32_t scan_mode;
     uint32_t bondable;
-} __attribute__((aligned(4))) adapter_storage_v5_0_2_t;
+    uint8_t irk[16];
+} __attribute__((aligned(4))) adapter_storage_v5_0_3_t;
 
-typedef remote_device_properties_v5_0_2_t remote_device_properties_t;
-typedef remote_device_le_properties_v5_0_2_t remote_device_le_properties_t;
-typedef adapter_storage_v5_0_2_t adapter_storage_t;
+typedef remote_device_properties_v5_0_3_t remote_device_properties_t;
+typedef remote_device_le_properties_v5_0_3_t remote_device_le_properties_t;
+typedef adapter_storage_v5_0_3_t adapter_storage_t;
 
 #endif /* __BLUETOOTH_DEFINE_H_ */
