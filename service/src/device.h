@@ -37,6 +37,8 @@ bt_transport_t device_get_transport(bt_device_t* device);
 bt_address_t* device_get_address(bt_device_t* device);
 bt_address_t* device_get_identity_address(bt_device_t* device);
 void device_set_identity_address(bt_device_t* device, bt_address_t* addr);
+uint8_t* device_get_local_csrk(bt_device_t* device);
+void device_set_local_csrk(bt_device_t* device, const uint8_t* local_csrk);
 ble_addr_type_t device_get_address_type(bt_device_t* device);
 void device_set_address_type(bt_device_t* device, ble_addr_type_t type);
 void device_set_device_type(bt_device_t* device, bt_device_type_t type);

@@ -696,6 +696,7 @@ if(CONFIG_BLUETOOTH)
 
     if(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE OR CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
       list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/port/include/)
+      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/subsys/settings/include/settings)
       list(APPEND INCDIR
            ${NUTTX_APPS_DIR}/external/zblue/zblue/port/include/kernel/include)
     endif()

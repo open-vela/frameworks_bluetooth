@@ -88,6 +88,7 @@ typedef struct {
     // only can add member after "addr_type" if needed, see function bt_storage_save_le_remote_device for reasons.
     uint8_t device_type;
     uint8_t smp_key[80];
+    uint8_t local_csrk[16];
 } __attribute__((aligned(4))) remote_device_le_properties_v5_0_2_t;
 
 typedef struct {
