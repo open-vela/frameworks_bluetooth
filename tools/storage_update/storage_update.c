@@ -79,6 +79,11 @@ static int bt_storage_update_item_size[BT_STORAGE_VERSION_MAX][BT_STORAGE_UPDATE
         sizeof(remote_device_properties_v5_0_2_t),
         sizeof(remote_device_le_properties_v5_0_2_t),
         sizeof(remote_device_le_properties_v5_0_2_t) },
+    /* version 5_0_3 */
+    { sizeof(adapter_storage_v5_0_3_t),
+        sizeof(remote_device_properties_v5_0_3_t),
+        sizeof(remote_device_le_properties_v5_0_3_t),
+        sizeof(remote_device_le_properties_v5_0_3_t) },
 #endif
     /*   Reserve for future version   */
 };
@@ -104,6 +109,7 @@ const static bt_storage_update_func_t verison_map[] = {
 #ifdef BLUETOOTH_STORAGE_VERSION_5
     bt_storage_update_v5_0_0_to_v5_0_1,
     bt_storage_update_v5_0_1_to_v5_0_2,
+    bt_storage_update_v5_0_2_to_v5_0_3,
 #endif
     /*   Reserve for future version   */
 };
@@ -543,6 +549,8 @@ int bt_storage_get_version(void)
 #ifdef BLUETOOTH_STORAGE_VERSION_5
     if (!strncasecmp(version_str, "v5_0_2", strlen(version_str))) {
         return BT_STORAGE_VERSION_5_0_2;
+    } else if (!strncasecmp(version_str, "v5_0_3", strlen(version_str))) {
+        return BT_STORAGE_VERSION_5_0_3;
     }
 #endif
 
@@ -629,6 +637,9 @@ static bt_storage_update_properties_t* bt_storage_update_load_info(int storage_v
         break;
     case BT_STORAGE_VERSION_5_0_2:
         storage_info = bt_storage_load_info_v5_0_2();
+        break;
+    case BT_STORAGE_VERSION_5_0_3:
+        storage_info = bt_storage_load_info_v5_0_3();
         break;
 #endif
     default:

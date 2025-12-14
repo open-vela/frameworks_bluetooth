@@ -66,6 +66,38 @@ bt_storage_update_properties_t* bt_storage_load_info_v5_0_2(void)
     return properties;
 }
 
+bt_storage_update_properties_t* bt_storage_load_info_v5_0_3(void)
+{
+    bt_storage_update_properties_t* properties;
+    adapter_storage_v5_0_3_t* adapter_info;
+    int ret, ret1;
+
+    /* load device information */
+    properties = bt_storage_load_info_kvdb(BT_STORAGE_VERSION_5_0_3);
+    if (!properties) {
+        return NULL;
+    }
+
+    /* load adapter information */
+    adapter_info = (adapter_storage_v5_0_3_t*)(properties->storage_info[BT_STORAGE_UPDATE_ADAPTER_INFO].value);
+    ret = property_get_binary(BT_KVDB_ADAPTERINFO_NAME, adapter_info->name, sizeof(adapter_info->name));
+    ret1 = property_get_binary(BT_KVDB_ADAPTERINFO_IRK, adapter_info->irk, sizeof(adapter_info->irk));
+    adapter_info->class_of_device = property_get_int32(BT_KVDB_ADAPTERINFO_COD, ERROR_ADAPTERINFO_VALUE);
+    adapter_info->io_capability = property_get_int32(BT_KVDB_ADAPTERINFO_IOCAP, ERROR_ADAPTERINFO_VALUE);
+    adapter_info->scan_mode = property_get_int32(BT_KVDB_ADAPTERINFO_SCAN, ERROR_ADAPTERINFO_VALUE);
+    adapter_info->bondable = property_get_int32(BT_KVDB_ADAPTERINFO_BOND, ERROR_ADAPTERINFO_VALUE);
+    if (ret < 0 || ret1 < 0 || adapter_info->class_of_device == ERROR_ADAPTERINFO_VALUE
+        || adapter_info->io_capability == ERROR_ADAPTERINFO_VALUE
+        || adapter_info->scan_mode == ERROR_ADAPTERINFO_VALUE
+        || adapter_info->bondable == ERROR_ADAPTERINFO_VALUE) {
+        syslog(LOG_ERR, "adapter info load failed");
+        bt_storage_update_properties_free(properties);
+        return NULL;
+    }
+
+    return properties;
+}
+
 bt_storage_update_properties_t* bt_storage_update_v4_0_0_to_v5_0_0(bt_storage_update_properties_t* old_storage)
 {
     bt_storage_update_properties_t* new_storage;
@@ -258,6 +290,66 @@ bt_storage_update_properties_t* bt_storage_update_v5_0_1_to_v5_0_2(bt_storage_up
         new_whitelist->addr_type = old_whitelist->addr_type;
         new_whitelist->device_type = old_whitelist->device_type;
         memcpy(new_whitelist->smp_key, old_whitelist->smp_key, 80);
+        new_whitelist++;
+        old_whitelist++;
+    }
+
+    return new_storage;
+}
+
+bt_storage_update_properties_t* bt_storage_update_v5_0_2_to_v5_0_3(bt_storage_update_properties_t* old_storage)
+{
+    bt_storage_update_properties_t* new_storage;
+    bt_storage_update_items_t prop_items = { 0 };
+    int i;
+    /* v5_0_3 storage structure */
+    adapter_storage_v5_0_3_t* new_adapter;
+    remote_device_properties_v5_0_3_t* new_btbond;
+    remote_device_le_properties_v5_0_3_t *new_lebond, *new_whitelist;
+    /* v5_0_2 storage structure */
+    adapter_storage_v5_0_2_t* old_adapter;
+    remote_device_properties_v5_0_2_t* old_btbond;
+    remote_device_le_properties_v5_0_2_t *old_lebond, *old_whitelist;
+
+    old_adapter = (adapter_storage_v5_0_2_t*)(old_storage->storage_info[BT_STORAGE_UPDATE_ADAPTER_INFO].value);
+    old_btbond = (remote_device_properties_v5_0_2_t*)(old_storage->storage_info[BT_STORAGE_UPDATE_BTBOND_INFO].value);
+    old_lebond = (remote_device_le_properties_v5_0_2_t*)(old_storage->storage_info[BT_STORAGE_UPDATE_BLEBOND_INFO].value);
+    old_whitelist = (remote_device_le_properties_v5_0_2_t*)(old_storage->storage_info[BT_STORAGE_UPDATE_WHITELIST_INFO].value);
+    for (i = 0; i < BT_STORAGE_UPDATE_ITEM_MAX; ++i) {
+        prop_items.items[i] = old_storage->storage_info[i].items;
+    }
+
+    /* properties init */
+    new_storage = bt_storage_update_properties_malloc(BT_STORAGE_VERSION_5_0_3, &prop_items);
+    if (!new_storage) {
+        return NULL;
+    }
+
+    /* transform adapter info */
+    new_adapter = (adapter_storage_v5_0_3_t*)(new_storage->storage_info[BT_STORAGE_UPDATE_ADAPTER_INFO].value);
+    memcpy(new_adapter, old_adapter, sizeof(adapter_storage_v5_0_2_t));
+    /* TODO: transform local_irk */
+
+    /* transform btbond info */
+    if (prop_items.items[BT_STORAGE_UPDATE_BTBOND_INFO] > 0) {
+        new_btbond = (remote_device_properties_v5_0_3_t*)(new_storage->storage_info[BT_STORAGE_UPDATE_BTBOND_INFO].value);
+        memcpy(new_btbond, old_btbond, old_storage->storage_info[BT_STORAGE_UPDATE_BTBOND_INFO].value_length);
+    }
+
+    /* transform blebond info */
+    new_lebond = (remote_device_le_properties_v5_0_3_t*)(new_storage->storage_info[BT_STORAGE_UPDATE_BLEBOND_INFO].value);
+    for (i = 0; i < prop_items.items[BT_STORAGE_UPDATE_BLEBOND_INFO]; ++i) {
+        memcpy(new_lebond, old_lebond, sizeof(remote_device_le_properties_v5_0_2_t));
+        /* TODO: transform local_csrk */
+        new_lebond++;
+        old_lebond++;
+    }
+
+    /* transform whitelist info */
+    new_whitelist = (remote_device_le_properties_v5_0_3_t*)(new_storage->storage_info[BT_STORAGE_UPDATE_WHITELIST_INFO].value);
+    for (i = 0; i < prop_items.items[BT_STORAGE_UPDATE_WHITELIST_INFO]; ++i) {
+        memcpy(new_whitelist, old_whitelist, sizeof(remote_device_le_properties_v5_0_2_t));
+        /* TODO: transform local_csrk */
         new_whitelist++;
         old_whitelist++;
     }
