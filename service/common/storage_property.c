@@ -43,6 +43,7 @@ static void storage_save_adapter_info(service_work_t* work, void* userdata)
     adapter_storage_t* adapter = (adapter_storage_t*)userdata;
     property_set_binary(BT_KVDB_VERSION_KEY, BT_STORAGE_CURRENT_VERSION, strlen(BT_STORAGE_CURRENT_VERSION) + 1, false);
     property_set_binary(BT_KVDB_ADAPTERINFO_NAME, adapter->name, strlen(adapter->name) + 1, false);
+    property_set_binary(BT_KVDB_ADAPTERINFO_IRK, adapter->irk, sizeof(adapter->irk), false);
     property_set_int32(BT_KVDB_ADAPTERINFO_COD, adapter->class_of_device);
     property_set_int32(BT_KVDB_ADAPTERINFO_IOCAP, adapter->io_capability);
     property_set_int32(BT_KVDB_ADAPTERINFO_SCAN, adapter->scan_mode);
@@ -126,6 +127,7 @@ static void storage_get_key(const char* key, void* data, uint16_t value_len, voi
         adapter->io_capability = property_get_int32(BT_KVDB_ADAPTERINFO_IOCAP, ERROR_ADAPTERINFO_VALUE);
         adapter->scan_mode = property_get_int32(BT_KVDB_ADAPTERINFO_SCAN, ERROR_ADAPTERINFO_VALUE);
         adapter->bondable = property_get_int32(BT_KVDB_ADAPTERINFO_BOND, ERROR_ADAPTERINFO_VALUE);
+        property_get_binary(BT_KVDB_ADAPTERINFO_IRK, adapter->irk, sizeof(adapter->irk));
         return;
     }
 

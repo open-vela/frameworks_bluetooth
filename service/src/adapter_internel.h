@@ -229,9 +229,11 @@ void adapter_on_br_enabled(void);
 void adapter_on_br_disabled(void);
 
 /* adapter sal callback invoke functions */
+void adapter_on_adapter_info_load(void);
 void adapter_on_adapter_state_changed(uint8_t stack_state);
 void adapter_on_device_found(bt_discovery_result_t* result);
 void adapter_on_scan_mode_changed(bt_scan_mode_t mode);
+void adapter_on_irk_changed(const char* irk, uint8_t size);
 void adapter_on_discovery_state_changed(bt_discovery_state_t state);
 void adapter_on_remote_name_recieved(bt_address_t* addr, const char* name);
 void adapter_on_connect_request(bt_address_t* addr, uint32_t cod);
@@ -260,6 +262,7 @@ void adapter_on_le_local_oob_data_got(bt_address_t* addr, bt_128key_t c_val, bt_
 /* adapter sal invoke functions */
 uint8_t* adapter_get_smp_data(bt_address_t* addr);
 uint8_t* adapter_get_local_csrk(bt_address_t* addr);
+uint8_t* adapter_get_local_irk(void);
 bt_address_t* adapter_get_le_remote_address(bt_address_t* addr, ble_addr_type_t addr_type);
 ble_addr_type_t adapter_get_le_remote_address_type(bt_address_t* addr);
 uint8_t* adapter_get_link_key(bt_address_t* addr);

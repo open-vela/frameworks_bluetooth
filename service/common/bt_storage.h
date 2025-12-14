@@ -51,6 +51,7 @@ int bt_storage_load_le_bonded_device(load_storage_callback_t cb);
 #define BT_KVDB_ADAPTERINFO_IOCAP "persist.bluetooth.adapterInfo.io_capability"
 #define BT_KVDB_ADAPTERINFO_SCAN "persist.bluetooth.adapterInfo.scan_mode"
 #define BT_KVDB_ADAPTERINFO_BOND "persist.bluetooth.adapterInfo.bondable"
+#define BT_KVDB_ADAPTERINFO_IRK "persist.bluetooth.adapterInfo.irk"
 
 #define BT_KVDB_ADAPTERINFO "persist.bluetooth.adapterInfo."
 #define BT_KVDB_BTBOND "persist.bluetooth.btbonded."
