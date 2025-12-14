@@ -85,6 +85,8 @@ static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err r
 static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer);
 static void zblue_convert_le_addr(bt_address_t* addr, ble_addr_type_t type, bt_addr_le_t* le_addr);
 #if defined(CONFIG_SETTINGS_ZBLUE)
+static int zblue_on_irk_notify(uint8_t dev_id, const char* key_value, uint8_t value_len);
+static int zblue_on_irk_load(uint8_t* key_value, uint8_t value_len);
 static int zblue_on_ltk_notify(uint8_t dev_id, uint8_t id, bt_addr_le_t* addr, const char* key_value, uint8_t value_len);
 static int zblue_on_ltk_load(bt_addr_le_t* addr, uint8_t* key_value, uint8_t value_len);
 #endif
@@ -129,6 +131,8 @@ static struct bt_conn_auth_info_cb g_conn_auth_info_cbs = {
 
 #if defined(CONFIG_SETTINGS_ZBLUE)
 static struct bt_settings_zblue_cb g_setting_cbs = {
+    .irk_notify = zblue_on_irk_notify,
+    .irk_load = zblue_on_irk_load,
     .ltk_notify = zblue_on_ltk_notify,
     .ltk_load = zblue_on_ltk_load,
 };
@@ -170,6 +174,38 @@ static uint8_t zblue_convert_addr_type(ble_addr_type_t addr_type)
 }
 
 #if defined(CONFIG_SETTINGS_ZBLUE)
+static int zblue_on_irk_notify(uint8_t dev_id, const char* key_value, uint8_t value_len)
+{
+    BT_LOGD("%s", __func__);
+
+    adapter_on_irk_changed(key_value, value_len);
+
+    return 0;
+}
+
+static bool irk_is_empty(const uint8_t* irk)
+{
+    for (int i = 0; i < 16; i++) {
+        if (irk[i] != 0) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static int zblue_on_irk_load(uint8_t* key_value, uint8_t value_len)
+{
+    uint8_t* irk;
+
+    irk = adapter_get_local_irk();
+    if (irk_is_empty(irk)) {
+        return 0;
+    }
+
+    memcpy(key_value, irk, value_len);
+    return value_len;
+}
 /**
  * struct smp_key {
  *     uint8_t id_addr[6];
@@ -730,10 +766,6 @@ static void zblue_on_ready_cb(bt_controller_id_t dev_id, int err)
 {
     UNUSED(dev_id);
 
-    if (IS_ENABLED(CONFIG_SETTINGS)) {
-        settings_load();
-    }
-
     if (err) {
         BT_LOGD("zblue init failed (err %d)\n", err);
         adapter_on_adapter_state_changed(BT_BREDR_STACK_STATE_OFF);
@@ -741,6 +773,11 @@ static void zblue_on_ready_cb(bt_controller_id_t dev_id, int err)
     }
 
     zblue_register_callback();
+    adapter_on_adapter_info_load();
+    if (IS_ENABLED(CONFIG_SETTINGS)) {
+        settings_load();
+    }
+
     adapter_on_adapter_state_changed(BLE_STACK_STATE_ON);
 }
 

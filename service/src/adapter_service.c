@@ -75,6 +75,7 @@ typedef struct adapter_properties {
     uint32_t io_capability;
     uint8_t scan_mode;
     bool bondable;
+    uint8_t irk[16];
     bt_uuid_t uuids[10];
 } adapter_properties_t;
 
@@ -268,6 +269,13 @@ uint8_t* adapter_get_local_csrk(bt_address_t* addr)
     return NULL;
 }
 
+uint8_t* adapter_get_local_irk(void)
+{
+    adapter_service_t* adapter = &g_adapter_service;
+
+    return adapter->properties.irk;
+}
+
 ble_addr_type_t adapter_get_le_remote_address_type(bt_address_t* addr)
 {
     bt_device_t* device;
@@ -372,6 +380,7 @@ static void adapter_properties_copy(adapter_properties_t* prop, adapter_storage_
     prop->io_capability = storage->io_capability;
     prop->scan_mode = storage->scan_mode;
     prop->bondable = storage->bondable;
+    memcpy(prop->irk, storage->irk, sizeof(prop->irk));
 }
 
 static int get_devices_cnt(int flag, uint8_t transport)
@@ -660,6 +669,7 @@ static void adapter_save_properties(void)
     storage.io_capability = prop->io_capability;
     storage.scan_mode = prop->scan_mode;
     storage.bondable = prop->bondable;
+    memcpy(storage.irk, prop->irk, sizeof(storage.irk));
     bt_storage_save_adapter_info(&storage);
 }
 
@@ -1341,6 +1351,15 @@ void adapter_notify_state_change(bt_adapter_state_t prev, bt_adapter_state_t cur
     CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_adapter_state_changed, current);
 }
 
+void adapter_on_adapter_info_load(void)
+{
+    adapter_service_t* adapter = &g_adapter_service;
+    adapter_storage_t storage = { 0 };
+
+    bt_storage_load_adapter_info(&storage);
+    adapter_properties_copy(&adapter->properties, &storage);
+}
+
 void adapter_on_adapter_state_changed(uint8_t stack_state)
 {
     uint16_t event;
@@ -1348,12 +1367,11 @@ void adapter_on_adapter_state_changed(uint8_t stack_state)
 
     switch (stack_state) {
     case BT_BREDR_STACK_STATE_ON: {
-        adapter_storage_t storage;
         int ret;
 
-        bt_storage_load_adapter_info(&storage);
-        adapter_properties_copy(&adapter->properties, &storage);
-
+#if !defined(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
+        adapter_on_adapter_info_load();
+#endif
         /* load bonded devices to stack (name/address/cod/alias/linkkey) */
         ret = bt_storage_load_bonded_device(bonded_device_loaded);
         if (ret < 0) {
@@ -1511,6 +1529,18 @@ static void handle_scan_mode_changed(void* data)
     CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_scan_mode_changed, scan_mode);
 }
 
+static void handle_irk_changed(void* data)
+{
+    adapter_service_t* adapter = &g_adapter_service;
+    uint8_t* irk = (uint8_t*)data;
+
+    adapter_lock();
+    memcpy(adapter->properties.irk, irk, sizeof(adapter->properties.irk));
+    adapter_save_properties();
+    adapter_unlock();
+    free(data);
+}
+
 static void process_link_role_changed_evt(bt_address_t* addr, bt_link_role_t role)
 {
     bt_device_t* device;
@@ -1581,6 +1611,14 @@ void adapter_on_scan_mode_changed(bt_scan_mode_t mode)
 
     *scan_mode = mode;
     do_in_service_loop(handle_scan_mode_changed, scan_mode);
+}
+
+void adapter_on_irk_changed(const char* irk, uint8_t size)
+{
+    uint8_t* local_irk = malloc(size);
+
+    memcpy(local_irk, irk, size);
+    do_in_service_loop(handle_irk_changed, local_irk);
 }
 
 void adapter_on_discovery_state_changed(bt_discovery_state_t state)
