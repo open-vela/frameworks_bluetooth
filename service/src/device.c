@@ -63,6 +63,7 @@ typedef struct remote_device {
     bt_address_t identity_addr;
     uint16_t appearance;
     uint8_t smp_data[80];
+    uint8_t local_csrk[16];
     ble_phy_type_t tx_phy;
     ble_phy_type_t rx_phy;
     // uint8_t scan_repetition_mode;
@@ -141,6 +142,16 @@ void device_set_identity_address(bt_device_t* device, bt_address_t* addr)
     } else {
         bt_addr_set_empty(&device->remote.identity_addr);
     }
+}
+
+uint8_t* device_get_local_csrk(bt_device_t* device)
+{
+    return device->remote.local_csrk;
+}
+
+void device_set_local_csrk(bt_device_t* device, const uint8_t* local_csrk)
+{
+    memcpy(device->remote.local_csrk, local_csrk, 16);
 }
 
 ble_addr_type_t device_get_address_type(bt_device_t* device)
@@ -537,6 +548,7 @@ void device_get_le_property(bt_device_t* device, remote_device_le_properties_t* 
     prop->addr_type = device->remote.addr_type;
     memcpy(prop->smp_key, device->remote.smp_data, 80);
     prop->device_type = device->remote.device_type;
+    memcpy(prop->local_csrk, device->remote.local_csrk, 16);
 }
 
 void device_set_flags(bt_device_t* device, uint32_t flags)

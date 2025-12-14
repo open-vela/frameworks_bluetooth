@@ -29,6 +29,7 @@
 #include <zephyr/bluetooth/hci.h>
 #include <zephyr/bluetooth/hci_types.h>
 
+#include <settings_zblue.h>
 #include <zephyr/settings/settings.h>
 
 #include "keys.h"
@@ -47,6 +48,10 @@ typedef union {
         struct bt_conn_le_create_param create;
         struct bt_le_conn_param conn;
     } conn_param;
+    struct {
+        void* key;
+        uint8_t id;
+    } le_set_bond;
     int security_level;
     bool bondable;
 } sal_adapter_args_t;
@@ -78,6 +83,11 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
 static void zblue_on_pairing_complete(struct bt_conn* conn, bool bonded);
 static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err reason);
 static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer);
+static void zblue_convert_le_addr(bt_address_t* addr, ble_addr_type_t type, bt_addr_le_t* le_addr);
+#if defined(CONFIG_SETTINGS_ZBLUE)
+static int zblue_on_ltk_notify(uint8_t dev_id, uint8_t id, bt_addr_le_t* addr, const char* key_value, uint8_t value_len);
+static int zblue_on_ltk_load(bt_addr_le_t* addr, uint8_t* key_value, uint8_t value_len);
+#endif
 #if defined(CONFIG_BT_USER_PHY_UPDATE)
 static void zblue_on_phy_updated(struct bt_conn* conn, struct bt_conn_le_phy_info* info);
 #endif
@@ -117,6 +127,13 @@ static struct bt_conn_auth_info_cb g_conn_auth_info_cbs = {
     .bond_deleted = zblue_on_bond_deleted,
 };
 
+#if defined(CONFIG_SETTINGS_ZBLUE)
+static struct bt_settings_zblue_cb g_setting_cbs = {
+    .ltk_notify = zblue_on_ltk_notify,
+    .ltk_load = zblue_on_ltk_load,
+};
+#endif
+
 static struct bt_conn_auth_cb g_conn_auth_cbs;
 static le_conn_info_t g_le_conn_info[CONFIG_BT_MAX_CONN];
 static bt_security_t g_security_level = BT_SECURITY_L2;
@@ -151,6 +168,176 @@ static uint8_t zblue_convert_addr_type(ble_addr_type_t addr_type)
 
     return type;
 }
+
+#if defined(CONFIG_SETTINGS_ZBLUE)
+/**
+ * struct smp_key {
+ *     uint8_t id_addr[6];
+ *     uint8_t id_addr_type;
+ *     uint8_t id_num;
+ *
+ *     uint8_t enc_size;
+ *
+ *     uint8_t flags;
+ *
+ *     uint8_t ltk[16];
+ *     uint8_t ediv[2];
+ *     uint8_t rand[8];
+ *
+ *     uint8_t irk[16];
+ *
+ *     uint8_t csrk[16];
+ *
+ *     uint8_t rpa_addr[6];
+ *     uint8_t rpa_addr_type;
+ *     uint8_t id_num;
+ *
+ *     uint16_t keys;
+ * };
+ */
+static int zblue_on_ltk_notify(uint8_t dev_id, uint8_t id, bt_addr_le_t* addr, const char* key_value, uint8_t value_len)
+{
+    remote_device_le_properties_t* prop;
+    struct bt_keys* keys;
+    bt_address_t le_addr;
+    BT_LOGD("%s", __func__);
+
+    if (!key_value) {
+        BT_LOGD("%s, delete key_value", __func__);
+        return 0;
+    }
+
+    prop = zalloc(sizeof(remote_device_le_properties_t));
+    if (!prop) {
+        BT_LOGD("%s, prop malloc failed", __func__);
+        return -ENOSPC;
+    }
+
+    keys = (struct bt_keys*)zalloc(sizeof(struct bt_keys));
+    if (!keys) {
+        BT_LOGD("%s, keys malloc failed", __func__);
+        free(prop);
+        return -ENOSPC;
+    }
+
+    memcpy(keys->storage_start, key_value, value_len);
+
+    memcpy(le_addr.addr, keys->irk.rpa.val, sizeof(le_addr.addr));
+    if (!bt_addr_is_empty(&le_addr)) {
+        memcpy(prop->addr.addr, keys->irk.rpa.val, sizeof(prop->addr.addr));
+        prop->addr_type = BT_LE_ADDR_TYPE_RANDOM;
+    } else {
+        memcpy(prop->addr.addr, addr->a.val, sizeof(prop->addr.addr));
+        prop->addr_type = BT_LE_ADDR_TYPE_PUBLIC;
+    }
+
+    /**
+     * smp[0 ~ 5]  id_addr
+     * smp[6] id_addr type
+     * smp[7] id_addr cap/id_num
+     */
+    memcpy(&prop->smp_key[0], addr->a.val, 6);
+    prop->smp_key[6] = addr->type;
+
+    /* SMP[8] LTK_len */
+    prop->smp_key[8] = keys->enc_size;
+
+    /* smp[9] LTK fea/flags */
+    prop->smp_key[9] = keys->flags;
+    /* smp[10 ~ 11] div[2](unused); */
+
+    /**
+     * smp[12 ~ 27] LTK key
+     * smp[28 ~ 29] ediv(legacy)
+     * smp[30 ~ 37] rand(legacy)
+     */
+    if (keys->keys & BT_KEYS_PERIPH_LTK) {
+        memcpy(&prop->smp_key[12], keys->periph_ltk.val, 16);
+        memcpy(&prop->smp_key[28], keys->periph_ltk.ediv, 2);
+        memcpy(&prop->smp_key[30], keys->periph_ltk.rand, 8);
+    } else {
+        memcpy(&prop->smp_key[12], keys->ltk.val, 16);
+        memcpy(&prop->smp_key[28], keys->ltk.ediv, 2);
+        memcpy(&prop->smp_key[30], keys->ltk.rand, 8);
+    }
+
+    /* smp[38 ~ 53] IRK */
+    memcpy(&prop->smp_key[38], keys->irk.val, 16);
+    /* smp[54 ~ 69] CSRK(remote) */
+    memcpy(&prop->smp_key[54], keys->remote_csrk.val, 16);
+
+    // smp[70 ~ 77] addr { addr[6], type[1], cap[1]/id_num[1] };
+    memcpy(&prop->smp_key[70], prop->addr.addr, sizeof(prop->addr.addr));
+    prop->smp_key[76] = prop->addr_type;
+
+    /* smp[78 ~ 79] RFU/keys; */
+    memcpy(&prop->smp_key[78], &keys->keys, 2);
+
+    memcpy(prop->local_csrk, keys->local_csrk.val, 16);
+
+    adapter_on_le_bonded_device_update(prop, 1);
+    free(prop);
+    free(keys);
+
+    return 0;
+}
+
+static int zblue_on_ltk_load(bt_addr_le_t* addr, uint8_t* key_value, uint8_t value_len)
+{
+    BT_LOGD("%s", __func__);
+    uint8_t *smp_data, *local_csrk;
+    bt_address_t le_addr, *remote_addr;
+    struct bt_keys* keys;
+
+    keys = (struct bt_keys*)zalloc(sizeof(struct bt_keys));
+    if (!keys) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return -ENOSPC;
+    }
+
+    /* get information */
+    memcpy(&le_addr, addr->a.val, sizeof(le_addr.addr));
+    remote_addr = adapter_get_le_remote_address(&le_addr, addr->type);
+    local_csrk = adapter_get_local_csrk(remote_addr);
+    smp_data = adapter_get_smp_data(remote_addr);
+    if (!smp_data) {
+        BT_LOGE("%s, smp_data is NULL", __func__);
+        free(keys);
+        return -EINVAL;
+    }
+
+    /* Rearrange data */
+    keys->enc_size = smp_data[8];
+    keys->flags = smp_data[9];
+
+    memcpy(&keys->keys, &smp_data[78], 2);
+
+    if (keys->keys & BT_KEYS_PERIPH_LTK) {
+        memcpy(keys->periph_ltk.val, &smp_data[12], 16);
+        memcpy(keys->periph_ltk.ediv, &smp_data[28], 2);
+        memcpy(keys->periph_ltk.rand, &smp_data[30], 8);
+    } else {
+        memcpy(keys->ltk.val, &smp_data[12], 16);
+        memcpy(keys->ltk.ediv, &smp_data[28], 2);
+        memcpy(keys->ltk.rand, &smp_data[30], 8);
+    }
+
+    memcpy(keys->irk.val, &smp_data[38], 16);
+
+    memcpy(keys->irk.rpa.val, remote_addr->addr, sizeof(remote_addr->addr));
+
+    memcpy(keys->remote_csrk.val, &smp_data[54], 16);
+
+    if (local_csrk)
+        memcpy(keys->local_csrk.val, local_csrk, 16);
+
+    memcpy(key_value, keys->storage_start, value_len);
+
+    free(keys);
+
+    return value_len;
+}
+#endif
 
 static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
 {
@@ -502,6 +689,7 @@ static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer)
     bt_address_t addr;
     bool is_ctkd = false;
     bt_address_t* remote_addr;
+    remote_device_le_properties_t* prop = zalloc(sizeof(remote_device_le_properties_t) * 0);
 
     BT_LOGD("%s", __func__);
 
@@ -513,6 +701,8 @@ static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer)
     }
 
     adapter_on_bond_state_changed(remote_addr, BOND_STATE_NONE, BT_TRANSPORT_BLE, BT_STATUS_SUCCESS, is_ctkd);
+    adapter_on_le_bonded_device_update(prop, 0);
+    free(prop);
 }
 
 static void zblue_register_callback(void)
@@ -521,6 +711,9 @@ static void zblue_register_callback(void)
 #ifdef CONFIG_BT_SMP
     bt_conn_le_auth_cb_register(&g_conn_auth_cbs);
     bt_conn_auth_info_cb_register(&g_conn_auth_info_cbs);
+#endif
+#ifdef CONFIG_SETTINGS_ZBLUE
+    bt_setting_cb_register(&g_setting_cbs);
 #endif
 }
 
@@ -965,10 +1158,44 @@ bt_status_t bt_sal_le_get_address(bt_controller_id_t id, bt_address_t* addr)
     return BT_STATUS_SUCCESS;
 }
 
+static void STACK_CALL(le_set_bond)(void* args)
+{
+    sal_adapter_req_t* req = args;
+    bt_addr_le_t le_addr;
+
+    zblue_convert_le_addr(&req->addr, req->addr_type, &le_addr);
+
+#ifdef CONFIG_SETTINGS_ZBLUE
+    bt_settings_load(req->id, req->adpt.le_set_bond.id, req->adpt.le_set_bond.key, &le_addr);
+#endif
+}
+
 bt_status_t bt_sal_le_set_bonded_devices(bt_controller_id_t id, remote_device_le_properties_t* props, uint16_t prop_cnt)
 {
-    /* stack handle this case: */
-    SAL_NOT_SUPPORT;
+    sal_adapter_req_t* req;
+    bt_status_t status;
+
+    for (int i = 0; i < prop_cnt; i++) {
+        req = sal_adapter_req(id, (bt_address_t*)props->smp_key, STACK_CALL(le_set_bond));
+        if (!req) {
+            BT_LOGE("%s, req null", __func__);
+            return BT_STATUS_NOMEM;
+        }
+
+        req->addr_type = props->smp_key[6];
+        req->adpt.le_set_bond.id = BT_ID_DEFAULT;
+        req->adpt.le_set_bond.key = "keys";
+
+        status = sal_send_req(req);
+        if (status) {
+            BT_LOGE("%s send req error, ret: %d", __func__, status);
+            return status;
+        }
+
+        props++;
+    }
+
+    return BT_STATUS_SUCCESS;
 }
 
 static void STACK_CALL(conn_connect)(void* args)

@@ -248,6 +248,8 @@ void adapter_on_le_bonded_device_update(remote_device_le_properties_t* props, ui
 void adapter_on_le_local_oob_data_got(bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val);
 
 /* adapter sal invoke functions */
+uint8_t* adapter_get_smp_data(bt_address_t* addr);
+uint8_t* adapter_get_local_csrk(bt_address_t* addr);
 bt_address_t* adapter_get_le_remote_address(bt_address_t* addr, ble_addr_type_t addr_type);
 
 /* adapter framework invoke functions */
