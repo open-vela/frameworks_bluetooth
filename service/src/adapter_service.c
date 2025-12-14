@@ -248,6 +248,26 @@ bt_address_t* adapter_get_le_remote_address(bt_address_t* addr, ble_addr_type_t 
     return NULL;
 }
 
+uint8_t* adapter_get_smp_data(bt_address_t* addr)
+{
+    bt_device_t* device;
+
+    if ((device = adapter_find_device(addr, BT_TRANSPORT_BLE)))
+        return device_get_smp_key(device);
+
+    return NULL;
+}
+
+uint8_t* adapter_get_local_csrk(bt_address_t* addr)
+{
+    bt_device_t* device;
+
+    if ((device = adapter_find_device(addr, BT_TRANSPORT_BLE)))
+        return device_get_local_csrk(device);
+
+    return NULL;
+}
+
 ble_addr_type_t adapter_get_le_remote_address_type(bt_address_t* addr)
 {
     bt_device_t* device;
@@ -506,6 +526,7 @@ static void le_bonded_device_loaded(void* data, uint16_t length, uint16_t items)
             device_set_bond_state(device, BOND_STATE_BONDED, false, NULL);
             device_set_smp_key(device, remote->smp_key);
             device_set_identity_address(device, (bt_address_t*)remote->smp_key);
+            device_set_local_csrk(device, remote->local_csrk);
             bt_addr_ba2str(&remote->addr, addr_str);
             uint8_t* ltk = &remote->smp_key[12];
             BT_LOGD("LE BOND DEVICE[%d], Addr:[%s] Atype:[%d] LTK: [%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X]",
@@ -549,6 +570,32 @@ static void adapter_update_bonded_device(void)
 }
 
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
+static void adapter_update_le_bonded_device(void)
+{
+    bt_list_t* list = g_adapter_service.le_devices;
+    bt_list_node_t* node;
+
+    int size = get_devices_cnt(DFLAG_BONDED, BT_TRANSPORT_BLE);
+    if (!size) {
+        bt_storage_save_le_bonded_device(NULL, 0);
+        return;
+    }
+
+    remote_device_le_properties_t remotes[size];
+    memset(remotes, 0x00, sizeof(remote_device_le_properties_t) * size);
+
+    size = 0;
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        bt_device_t* device = bt_list_node(node);
+        if (device_is_bonded(device)) {
+            device_get_le_property(device, &remotes[size]);
+            size++;
+        }
+    }
+
+    bt_storage_save_le_bonded_device(remotes, size);
+}
+
 static void adapter_update_whitelist(void)
 {
     BT_LOGD("%s", __func__);
@@ -1162,6 +1209,7 @@ static void process_le_bonded_device_update_evt(remote_device_le_properties_t* p
         /* store smp key to mapped device struct */
         device_set_smp_key(device, prop->smp_key);
         device_set_identity_address(device, (bt_address_t*)prop->smp_key);
+        device_set_local_csrk(device, prop->local_csrk);
 
         bt_addr_ba2str(&prop->addr, addr_str);
         uint8_t* ltk = &prop->smp_key[12];
@@ -1173,7 +1221,7 @@ static void process_le_bonded_device_update_evt(remote_device_le_properties_t* p
     }
 
     /* update all bonded le device to storage */
-    bt_storage_save_le_bonded_device(props, bonded_devices_cnt);
+    adapter_update_le_bonded_device();
     free(props);
     adapter_unlock();
 }
