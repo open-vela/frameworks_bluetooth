@@ -1503,7 +1503,8 @@ static void STACK_CALL(remove_bond)(void* args)
     zblue_convert_le_addr(&req->addr, type, &le_addr);
     keys = bt_keys_find_irk(BT_ID_DEFAULT, &le_addr);
     if (keys) {
-        err = bt_unpair(BT_ID_DEFAULT, &keys->addr);
+        memcpy(&le_addr, &keys->addr, sizeof(bt_addr_le_t));
+        err = bt_unpair(BT_ID_DEFAULT, &le_addr);
     } else {
         /* if peer device not support BT_PRIVACY, will not exchange IRK. */
         BT_LOGD("%s, not found irk", __func__);
