@@ -281,6 +281,32 @@ ble_addr_type_t adapter_get_le_remote_address_type(bt_address_t* addr)
     return device_get_address_type(device);
 }
 
+uint8_t* adapter_get_link_key(bt_address_t* addr)
+{
+    bt_device_t* device;
+
+    device = adapter_find_device(addr, BT_TRANSPORT_BREDR);
+    if (!device) {
+        BT_LOGE("device not found");
+        return NULL;
+    }
+
+    return device_get_link_key(device);
+}
+
+bt_link_key_type_t adapter_get_link_key_type(bt_address_t* addr)
+{
+    bt_device_t* device;
+
+    device = adapter_find_device(addr, BT_TRANSPORT_BREDR);
+    if (!device) {
+        BT_LOGE("device not found");
+        return 0;
+    }
+
+    return device_get_link_key_type(device);
+}
+
 static bt_device_t* adapter_find_create_le_device(bt_address_t* addr, ble_addr_type_t addr_type)
 {
     bt_device_t* device;
