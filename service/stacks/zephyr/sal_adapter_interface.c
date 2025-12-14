@@ -42,6 +42,11 @@
 #include "sal_interface.h"
 #include "sal_zephyr_interface.h"
 
+#include <settings_zblue.h>
+#include <zephyr/settings/settings.h>
+
+#include "keys.h"
+
 #include "utils/log.h"
 
 #define STACK_CALL(func) zblue_##func
@@ -131,11 +136,14 @@ static void zblue_on_cancel(struct bt_conn* conn);
 static void zblue_on_pairing_confirm(struct bt_conn* conn);
 static void zblue_on_pincode_entry(struct bt_conn* conn, bool highsec);
 static void zblue_on_br_pairing_complete_ctkd(struct bt_conn* conn, bool is_link_key);
-static void zblue_on_link_key_notify(struct bt_conn* conn, uint8_t* key, uint8_t key_type);
 static void zblue_on_br_pairing_failed(struct bt_conn* conn, enum bt_security_err reason);
 static void zblue_on_br_bond_deleted(uint8_t id, const bt_addr_le_t* peer);
 static void zblue_register_callback(void);
 static void zblue_unregister_callback(void);
+#if defined(CONFIG_SETTINGS_ZBLUE)
+static int zblue_on_link_key_notify(uint8_t dev_id, bt_addr_le_t* addr, const char* key_value, uint8_t value_len);
+static int zblue_on_link_key_load(bt_addr_le_t* addr, uint8_t* key_value, uint8_t value_len);
+#endif
 
 static bt_security_t g_security_level = BT_SECURITY_L2;
 
@@ -155,9 +163,15 @@ static struct bt_conn_cb g_conn_cbs = {
     .role_changed = zblue_on_role_changed,
 };
 
+#if defined(CONFIG_SETTINGS_ZBLUE)
+static struct bt_settings_zblue_cb g_setting_cbs = {
+    .linkkey_notify = zblue_on_link_key_notify,
+    .linkkey_load = zblue_on_link_key_load,
+};
+#endif
+
 static struct bt_conn_auth_info_cb g_conn_auth_info_cbs = {
     .pairing_complete_ctkd = zblue_on_br_pairing_complete_ctkd,
-    .link_key_notify = zblue_on_link_key_notify,
     .pairing_failed = zblue_on_br_pairing_failed,
     .bond_deleted = zblue_on_br_bond_deleted,
 };
@@ -405,18 +419,77 @@ static void zblue_on_br_pairing_complete_ctkd(struct bt_conn* conn, bool is_link
     adapter_on_bond_state_changed(&addr, BOND_STATE_BONDED, BT_TRANSPORT_BREDR, BT_STATUS_SUCCESS, true);
 }
 
-static void zblue_on_link_key_notify(struct bt_conn* conn, uint8_t* key, uint8_t key_type)
+#ifdef CONFIG_SETTINGS_ZBLUE
+static int zblue_on_link_key_notify(uint8_t dev_id, bt_addr_le_t* addr, const char* key_value, uint8_t value_len)
 {
-    bt_address_t addr;
+    bt_address_t br_addr;
+    bt_128key_t key;
+    bt_link_key_type_t key_type = 0;
+    struct bt_keys_link_key* link_key;
 
-    if (!bt_conn_get_dst_br(conn)) {
-        return;
+    memcpy(br_addr.addr, addr->a.val, sizeof(br_addr.addr));
+    if (!key_value) {
+        BT_LOGD("%s delete key_value", __func__);
+        return 0;
     }
 
-    zblue_conn_get_addr(conn, &addr);
-    adapter_on_link_key_update(&addr, key, key_type);
-    adapter_on_bond_state_changed(&addr, BOND_STATE_BONDED, BT_TRANSPORT_BREDR, BT_STATUS_SUCCESS, false);
+    link_key = (struct bt_keys_link_key*)zalloc(sizeof(struct bt_keys_link_key));
+    if (!link_key) {
+        BT_LOGE("%s link_key malloc fail", __func__);
+        return -ENOSPC;
+    }
+
+    memcpy(link_key->storage_start, key_value, value_len);
+    memcpy(key, link_key->val, 16);
+    key_type = link_key->key_type;
+    free(link_key);
+
+    adapter_on_bond_state_changed(&br_addr, BOND_STATE_BONDED, BT_TRANSPORT_BREDR, BT_STATUS_SUCCESS, false);
+    adapter_on_link_key_update(&br_addr, key, key_type);
+    return 0;
 }
+
+static int zblue_on_link_key_load(bt_addr_le_t* addr, uint8_t* key_value, uint8_t value_len)
+{
+    struct bt_keys_link_key* link_key;
+    bt_address_t br_addr;
+    uint8_t* key;
+
+    memcpy(br_addr.addr, addr->a.val, sizeof(br_addr.addr));
+
+    link_key = (struct bt_keys_link_key*)zalloc(sizeof(struct bt_keys_link_key));
+    if (!link_key) {
+        BT_LOGE("%s link_key malloc fail", __func__);
+        return -ENOSPC;
+    }
+
+    key = adapter_get_link_key(&br_addr);
+    if (!key) {
+        BT_LOGE("%s link_key load fail", __func__);
+        free(link_key);
+        return -EINVAL;
+    }
+
+    memcpy(link_key->val, key, 16);
+
+    link_key->key_type = adapter_get_link_key_type(&br_addr);
+    switch (link_key->key_type) {
+    case BT_LK_COMBINATION:
+    case BT_LK_AUTH_COMBINATION_P192:
+        link_key->flags |= BT_LINK_KEY_AUTHENTICATED;
+        break;
+    case BT_LK_AUTH_COMBINATION_P256:
+        link_key->flags |= BT_LINK_KEY_AUTHENTICATED | BT_LINK_KEY_SC;
+        break;
+    default:
+        break;
+    }
+
+    memcpy(key_value, link_key->storage_start, value_len);
+    free(link_key);
+    return value_len;
+}
+#endif
 
 static void zblue_on_br_pairing_failed(struct bt_conn* conn, enum bt_security_err reason)
 {
@@ -446,9 +519,11 @@ static void zblue_on_ready_cb(bt_controller_id_t dev_id, int err)
     uint8_t state = BT_BREDR_STACK_STATE_OFF;
 
     UNUSED(dev_id);
+#if !defined(CONFIG_BLUETOOTH_BLE_SUPPORT)
     if (IS_ENABLED(CONFIG_SETTINGS)) {
         settings_load();
     }
+#endif
 
     if (err) {
         BT_LOGD("zblue init failed (err %d)\n", err);
@@ -546,6 +621,9 @@ static void zblue_register_callback(void)
     bt_conn_cb_register(&g_conn_cbs);
     bt_conn_auth_cb_register(&g_conn_auth_cbs);
     bt_conn_auth_info_cb_register(&g_conn_auth_info_cbs);
+#ifdef CONFIG_SETTINGS_ZBLUE
+    bt_setting_cb_register(&g_setting_cbs);
+#endif
 }
 
 static void zblue_unregister_callback(void)
@@ -1501,18 +1579,39 @@ bt_status_t bt_sal_get_remote_device_info(bt_controller_id_t id, bt_address_t* a
     return BT_STATUS_SUCCESS;
 }
 
+static void STACK_CALL(set_bond)(void* args)
+{
+    sal_adapter_req_t* req = args;
+    bt_addr_le_t le_addr;
+
+    memcpy(le_addr.a.val, req->addr.addr, sizeof(le_addr.a.val));
+    le_addr.type = BT_LE_ADDR_TYPE_PUBLIC;
+
+#ifdef CONFIG_SETTINGS_ZBLUE
+    bt_settings_load(req->id, 0, "link_key", &le_addr);
+#endif
+}
+
 bt_status_t bt_sal_set_bonded_devices(bt_controller_id_t id, remote_device_properties_t* props, int cnt)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    UNUSED(id);
-    struct bt_bond_info_br bondinfo;
+    sal_adapter_req_t* req;
+    bt_status_t status;
 
     for (int i = 0; i < cnt; i++) {
-        memcpy(&bondinfo.addr, &props->addr, 6);
-        memcpy(&bondinfo.key, &props->link_key, 16);
-        bondinfo.key_type = props->link_key_type;
-        if (bt_set_bond_info_br(&bondinfo))
-            break;
+        req = sal_adapter_req(id, &props->addr, STACK_CALL(set_bond));
+        if (!req) {
+            BT_LOGE("%s, req null", __func__);
+            return BT_STATUS_NOMEM;
+        }
+
+        status = sal_send_req(req);
+        if (status) {
+            BT_LOGE("%s send req error, ret: %d", __func__, status);
+            return status;
+        }
+
+        props++;
     }
 
     return BT_STATUS_SUCCESS;
@@ -1522,15 +1621,20 @@ bt_status_t bt_sal_set_bonded_devices(bt_controller_id_t id, remote_device_prope
 }
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-static void get_bonded_devices(const struct bt_bond_info_br* info,
+static void get_bonded_devices(const struct bt_bond_info* info,
     void* user_data)
 {
     struct device_context* ctx = user_data;
+    uint8_t* link_key;
 
     if (ctx->got < ctx->cnt) {
         memcpy(&ctx->props->addr, &info->addr, 6);
-        memcpy(&ctx->props->link_key, &info->key, 16);
-        ctx->props->link_key_type = info->key_type;
+        link_key = adapter_get_link_key(&ctx->props->addr);
+        if (link_key) {
+            memcpy(ctx->props->link_key, link_key, 16);
+            ctx->props->link_key_type = adapter_get_link_key_type(&ctx->props->addr);
+        }
+
         ctx->props++;
         ctx->got++;
     }

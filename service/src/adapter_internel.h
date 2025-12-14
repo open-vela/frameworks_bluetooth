@@ -262,6 +262,8 @@ uint8_t* adapter_get_smp_data(bt_address_t* addr);
 uint8_t* adapter_get_local_csrk(bt_address_t* addr);
 bt_address_t* adapter_get_le_remote_address(bt_address_t* addr, ble_addr_type_t addr_type);
 ble_addr_type_t adapter_get_le_remote_address_type(bt_address_t* addr);
+uint8_t* adapter_get_link_key(bt_address_t* addr);
+bt_link_key_type_t adapter_get_link_key_type(bt_address_t* addr);
 
 /* adapter framework invoke functions */
 void adapter_init(void);
