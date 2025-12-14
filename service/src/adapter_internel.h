@@ -21,6 +21,7 @@
 #include "bt_adapter.h"
 #include "bt_device.h"
 #include "bt_status.h"
+#include "service_loop.h"
 #include <stdbool.h>
 
 enum {
@@ -47,6 +48,12 @@ enum {
     LE_BONDED_DEVICE_UPDATE_EVT,
     LE_SC_LOCAL_OOB_DATA_GOT_EVT,
 };
+
+typedef struct {
+    void* device;
+    bond_state_t previous_state;
+    bool is_ctkd;
+} bond_state_change_message_t;
 
 typedef struct {
     bt_address_t addr; // Remote BT address
@@ -93,7 +100,7 @@ typedef struct {
         {
             /* data */
             bt_address_t addr;
-            bool is_added;
+            bool is_add;
             bt_status_t status;
         } whitelist;
         struct
@@ -181,8 +188,10 @@ enum {
 enum adapter_event {
     SYS_TURN_ON = 0,
     SYS_TURN_OFF,
+    SYS_TURN_OFF_SAFE,
     TURN_ON_BLE,
     TURN_OFF_BLE,
+    SYS_TURN_OFF_SAFE_TIMEOUT,
     /*
         Don't support BREDR-only mode. If the user chooses TURN_ON,
         we turn on ble first by default, and then turn on bt
@@ -195,6 +204,7 @@ enum adapter_event {
     BREDR_DISABLE_TIMEOUT,
     BREDR_ENABLE_PROFILE_TIMEOUT,
     BREDR_DISABLE_PROFILE_TIMEOUT,
+    BREDR_ACL_ALL_DISCONNECTED,
     BLE_ENABLED,
     BLE_DISABLED,
     BLE_PROFILE_ENABLED,
@@ -243,7 +253,7 @@ void adapter_on_link_policy_changed(bt_address_t* addr, bt_link_policy_t policy)
 void adapter_on_le_addr_update(bt_address_t* addr, ble_addr_type_t type);
 void adapter_on_le_phy_update(bt_address_t* addr, ble_phy_type_t tx_phy,
     ble_phy_type_t rx_phy, bt_status_t status);
-void adapter_on_whitelist_update(bt_address_t* addr, bool is_added, bt_status_t status);
+void adapter_on_whitelist_update(bt_address_t* addr, bool is_add, bt_status_t status);
 void adapter_on_le_bonded_device_update(remote_device_le_properties_t* props, uint16_t bonded_devices_cnt);
 void adapter_on_le_local_oob_data_got(bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val);
 
@@ -251,18 +261,22 @@ void adapter_on_le_local_oob_data_got(bt_address_t* addr, bt_128key_t c_val, bt_
 uint8_t* adapter_get_smp_data(bt_address_t* addr);
 uint8_t* adapter_get_local_csrk(bt_address_t* addr);
 bt_address_t* adapter_get_le_remote_address(bt_address_t* addr, ble_addr_type_t addr_type);
+ble_addr_type_t adapter_get_le_remote_address_type(bt_address_t* addr);
+uint8_t* adapter_get_link_key(bt_address_t* addr);
+bt_link_key_type_t adapter_get_link_key_type(bt_address_t* addr);
 
 /* adapter framework invoke functions */
 void adapter_init(void);
 void adapter_cleanup(void);
 bt_status_t adapter_enable(uint8_t opt);
 bt_status_t adapter_disable(uint8_t opt);
+bt_status_t adapter_disable_safe(uint8_t opt);
 bt_adapter_state_t adapter_get_state(void);
 bool adapter_is_le_enabled(void);
 bt_device_type_t adapter_get_type(void);
 
 bt_status_t adapter_set_discovery_filter(void);
-bt_status_t adapter_start_discovery(uint32_t timeout);
+bt_status_t adapter_start_discovery(uint32_t timeout, bool is_limited);
 bt_status_t adapter_cancel_discovery(void);
 bool adapter_is_discovering(void);
 void adapter_get_address(bt_address_t* addr);
@@ -288,7 +302,7 @@ bool adapter_get_pts_mode(void);
 bt_status_t adapter_set_debug_mode(bt_debug_mode_t mode, uint8_t operation);
 bt_status_t adapter_get_le_address(bt_address_t* addr, ble_addr_type_t* type);
 bt_status_t adapter_set_le_address(bt_address_t* addr);
-bt_status_t adapter_set_le_identity_address(bt_address_t* addr, bool public);
+bt_status_t adapter_set_le_identity_address(bt_address_t* addr, bool is_public);
 bt_status_t adapter_set_le_appearance(uint16_t appearance);
 uint16_t adapter_get_le_appearance(void);
 bt_status_t adapter_get_bonded_devices(bt_transport_t transport, bt_address_t** addr, int* size, bt_allocator_t allocator);
@@ -313,6 +327,7 @@ bond_state_t adapter_get_remote_bond_state(bt_address_t* addr, bt_transport_t tr
 bool adapter_is_remote_bonded(bt_address_t* addr, bt_transport_t transport);
 bt_status_t adapter_connect(bt_address_t* addr);
 bt_status_t adapter_disconnect(bt_address_t* addr);
+bt_status_t adapter_disconnect_safe(void);
 bt_status_t adapter_le_connect(bt_address_t* addr,
     ble_addr_type_t type,
     ble_connect_params_t* param);
