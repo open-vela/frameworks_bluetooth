@@ -304,11 +304,6 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
         return;
     }
 
-    if (info.state != BT_CONN_STATE_CONNECTED) {
-        BT_LOGD("%s, not CONNECTED", __func__);
-        return;
-    }
-
     bt_addr_set(&addr, info.br.dst->val);
 
     BT_LOGD("%s, level: %d, required level: %d, err: %d", __func__, level, g_security_level, err);
