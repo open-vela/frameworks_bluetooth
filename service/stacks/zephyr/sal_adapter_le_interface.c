@@ -83,7 +83,7 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason);
 static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level, enum bt_security_err err);
 static void zblue_on_pairing_complete_ctkd(struct bt_conn* conn, bool is_link_key);
 #endif
-static void zblue_on_pairing_complete(struct bt_conn* conn, bool bonded);
+static void zblue_on_pairing_complete(struct bt_conn* conn, bool bonding_flag);
 static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err reason);
 static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer);
 static void zblue_convert_le_addr(bt_address_t* addr, ble_addr_type_t type, bt_addr_le_t* le_addr);
@@ -708,25 +708,26 @@ static void zblue_on_pairing_complete_ctkd(struct bt_conn* conn, bool is_link_ke
 #endif
 }
 
-static void zblue_on_pairing_complete(struct bt_conn* conn, bool bonded)
+static void zblue_on_pairing_complete(struct bt_conn* conn, bool bonding_flag)
 {
     bt_address_t addr;
-    bond_state_t state;
+    struct bt_conn_info info;
 
-    BT_LOGD("%s", __func__);
+    /* FIXME: double call bt_conn_get_info, we may implement bt_conn_get_dst_ble in stack */
+    bt_conn_get_info(conn, &info);
+
+    if (info.type != BT_CONN_TYPE_LE) {
+        return;
+    }
 
     if (get_le_addr_from_conn(conn, &addr) != BT_STATUS_SUCCESS) {
         BT_LOGE("%s, get_le_addr_from_conn failed", __func__);
         return;
     }
 
-    if (bonded) {
-        state = BOND_STATE_BONDED;
-    } else {
-        state = BOND_STATE_NONE;
-    }
+    BT_LOGD("%s", __func__);
 
-    adapter_on_bond_state_changed(&addr, state, BT_TRANSPORT_BLE, BT_STATUS_SUCCESS, false);
+    adapter_on_bond_state_changed(&addr, BOND_STATE_BONDED, BT_TRANSPORT_BLE, BT_STATUS_SUCCESS, false);
 }
 
 static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err reason)
