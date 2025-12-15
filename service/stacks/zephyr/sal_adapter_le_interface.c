@@ -711,10 +711,10 @@ static void zblue_on_pairing_complete_ctkd(struct bt_conn* conn, bool is_link_ke
 static void zblue_on_pairing_complete(struct bt_conn* conn, bool bonding_flag)
 {
     bt_address_t addr;
-    struct bt_conn_info info;
 
-    /* FIXME: double call bt_conn_get_info, we may implement bt_conn_get_dst_ble in stack */
-    bt_conn_get_info(conn, &info);
+    if (!bt_conn_get_dst(conn)) {
+        return;
+    }
 
     if (info.type != BT_CONN_TYPE_LE) {
         return;
