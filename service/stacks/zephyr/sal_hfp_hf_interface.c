@@ -301,7 +301,7 @@ static void set_call_state(
     sal_call->state = state;
 }
 
-static bt_status_t do_hf_connect(bt_controller_id_t id, bt_address_t* addr)
+static bt_status_t do_hf_connect(bt_controller_id_t id, bt_address_t* addr, void* user_data)
 {
     struct bt_hfp_hf* hf = NULL;
     uint8_t channel;
@@ -360,7 +360,7 @@ static bt_status_t do_hf_connect(bt_controller_id_t id, bt_address_t* addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t do_hf_disconnect(bt_controller_id_t id, bt_address_t* addr)
+bt_status_t do_hf_disconnect(bt_controller_id_t id, bt_address_t* addr, void* user_data)
 {
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
@@ -421,7 +421,7 @@ static uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_resu
 
     g_conn_params->channel = (uint8_t)port;
 
-    if (do_hf_connect(0 /* bt_controller_id_t */, &bd_addr) != BT_STATUS_SUCCESS) {
+    if (do_hf_connect(0 /* bt_controller_id_t */, &bd_addr, NULL) != BT_STATUS_SUCCESS) {
         free(g_conn_params);
         g_conn_params = NULL;
         goto error;
@@ -453,8 +453,8 @@ static void zblue_on_connected(struct bt_conn* conn, struct bt_hfp_hf* hf)
 
         hfp_hf_on_connection_state_changed(&bd_addr, PROFILE_STATE_CONNECTING, 0, 0);
     }
-    bt_sal_cm_profile_connected_callback(cm_data_new(&bd_addr, PROFILE_HFP_HF));
-    bt_sal_profile_disconnect_register(&bd_addr, PROFILE_HFP_HF, PRIMARY_ADAPTER, do_hf_disconnect);
+    bt_sal_cm_profile_connected_callback(cm_data_new(&bd_addr, PROFILE_HFP_HF, CONN_ID_DEFAULT));
+    bt_sal_profile_disconnect_register(&bd_addr, PROFILE_HFP_HF, CONN_ID_DEFAULT, PRIMARY_ADAPTER, do_hf_disconnect, NULL);
 
     hfp_hf_on_connection_state_changed(&bd_addr, PROFILE_STATE_CONNECTED, 0, 0);
 }
@@ -958,7 +958,7 @@ bt_status_t bt_sal_hfp_hf_connect(bt_address_t* addr)
         return BT_STATUS_BUSY;
     }
 
-    return bt_sal_profile_connect_request(addr, PROFILE_HFP_HF, 0, do_hf_connect);
+    return bt_sal_profile_connect_request(addr, PROFILE_HFP_HF, CONN_ID_DEFAULT, 0, do_hf_connect, NULL);
 }
 
 bt_status_t bt_sal_hfp_hf_disconnect(bt_address_t* addr)
@@ -974,7 +974,7 @@ bt_status_t bt_sal_hfp_hf_disconnect(bt_address_t* addr)
         return BT_STATUS_FAIL;
     }
 
-    return bt_sal_profile_disconnect_request(addr, PROFILE_HFP_HF, 0, do_hf_disconnect);
+    return bt_sal_profile_disconnect_request(addr, PROFILE_HFP_HF, CONN_ID_DEFAULT, 0, do_hf_disconnect, NULL);
 }
 
 bt_status_t bt_sal_hfp_hf_connect_audio(bt_address_t* addr)
