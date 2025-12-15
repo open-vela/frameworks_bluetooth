@@ -129,7 +129,7 @@ endchoice
 
 choice
 	prompt "Select Bluetooth Storage Method(Unqlite, KVDB)"
-	default BLUETOOTH_STORAGE_UNQLITE_SUPPORT
+	default BLUETOOTH_STORAGE_PROPERTY_SUPPORT
 	config BLUETOOTH_STORAGE_PROPERTY_SUPPORT
 		bool "Bluetooth Storage KVDB Property support"
 		depends on KVDB
