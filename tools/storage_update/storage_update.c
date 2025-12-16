@@ -201,7 +201,7 @@ static int bt_storage_save_storage_kvdb(const char* key, void* data, int item_le
 {
     char *prop_name, *tmp_data;
     bt_address_t addr;
-    int i, ret;
+    int i, ret = 0;
     size_t prop_vlen;
 
     if (!key || !data)
