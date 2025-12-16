@@ -80,8 +80,11 @@ typedef remote_device_le_properties_v5_0_0_t remote_device_le_properties_v5_0_1_
 /* Get diefferent version storage Info */
 bt_storage_update_properties_t* bt_storage_load_info_v5_0_0(void);
 bt_storage_update_properties_t* bt_storage_load_info_v5_0_1(void);
+bt_storage_update_properties_t* bt_storage_load_info_v5_0_2(void);
 
 /* update function */
 bt_storage_update_properties_t* bt_storage_update_v4_0_0_to_v5_0_0(bt_storage_update_properties_t* old_storage);
 bt_storage_update_properties_t* bt_storage_update_v5_0_0_to_v5_0_1(bt_storage_update_properties_t* old_storage);
+bt_storage_update_properties_t* bt_storage_update_v5_0_1_to_v5_0_2(bt_storage_update_properties_t* old_storage);
+
 #endif /* __STORAGE_VERSION_5_H__ */

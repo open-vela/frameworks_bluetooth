@@ -60,10 +60,11 @@ enum {
     BT_STORAGE_VERSION_4_0_0 = 0, // name_str:64 Bytes
     BT_STORAGE_VERSION_5_0_0, // name_str:65 Bytes
     BT_STORAGE_VERSION_5_0_1, // add 80 Bytes UUIDs
+    BT_STORAGE_VERSION_5_0_2, // version for dev-bluetooth/dev/openvela
     BT_STORAGE_VERSION_MAX,
 };
 
-#define BT_STORAGE_VERISON_CURRENT BT_STORAGE_VERSION_5_0_1 /* need to change per version */
+#define BT_STORAGE_VERISON_CURRENT BT_STORAGE_VERSION_5_0_2 /* need to change per version */
 
 typedef bt_storage_update_properties_t* (*bt_storage_update_func_t)(bt_storage_update_properties_t* old_storage);
 

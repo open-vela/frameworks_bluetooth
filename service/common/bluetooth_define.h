@@ -70,31 +70,37 @@ typedef enum {
 
 typedef struct {
     bt_address_t addr;
-    ble_addr_type_t addr_type;
+    uint8_t addr_type;
     // only can add member after "addr_type" if needed, see function bt_storage_save_remote_device for reasons.
     char name[BT_REM_NAME_MAX_LEN + 1];
     char alias[BT_REM_NAME_MAX_LEN + 1];
-    uint32_t class_of_device;
+    uint8_t link_key_type;
+    uint8_t device_type;
+    uint8_t pad[1];
     uint8_t link_key[16];
-    bt_link_key_type_t link_key_type;
-    bt_device_type_t device_type;
+    uint32_t class_of_device;
     uint8_t uuids[CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN];
-} remote_device_properties_t;
+} __attribute__((aligned(4))) remote_device_properties_v5_0_2_t;
 
 typedef struct {
     bt_address_t addr;
-    ble_addr_type_t addr_type;
+    uint8_t addr_type;
     // only can add member after "addr_type" if needed, see function bt_storage_save_le_remote_device for reasons.
+    uint8_t device_type;
     uint8_t smp_key[80];
-    bt_device_type_t device_type;
-} remote_device_le_properties_t;
+} __attribute__((aligned(4))) remote_device_le_properties_v5_0_2_t;
 
 typedef struct {
     char name[BT_LOC_NAME_MAX_LEN + 1];
+    uint8_t pad[3];
     uint32_t class_of_device;
     uint32_t io_capability;
     uint32_t scan_mode;
     uint32_t bondable;
-} adapter_storage_t;
+} __attribute__((aligned(4))) adapter_storage_v5_0_2_t;
+
+typedef remote_device_properties_v5_0_2_t remote_device_properties_t;
+typedef remote_device_le_properties_v5_0_2_t remote_device_le_properties_t;
+typedef adapter_storage_v5_0_2_t adapter_storage_t;
 
 #endif /* __BLUETOOTH_DEFINE_H_ */
