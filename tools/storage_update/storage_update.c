@@ -266,6 +266,8 @@ int bt_storage_remove(void)
 
     syslog(LOG_INFO, __func__);
     /* delete bt storage properties */
+    if (!bt_storage_update_kvdb_check())
+        ret = bt_storage_properties_destory();
 #if defined(BLUETOOTH_STORAGE_VERSION_4) || defined(BLUETOOTH_STORAGE_VERSION_5)
     /* delete db file */
     if (!access(BT_STORAGE_FILE_PATH, F_OK))
