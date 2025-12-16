@@ -34,6 +34,26 @@
 #define BT_KEY_BLEWHITELIST "WhiteList"
 #define BT_KEY_BLERESOLVINGLIST "ResolvingList"
 
+typedef void (*kvdb_callback_t)(const char* name, const char* value, void* cookie);
+
+typedef struct {
+    char* key;
+    kvdb_callback_t cb;
+} bt_storage_update_kvdb_callback_t;
+
+typedef struct {
+    const void* key;
+    uint16_t items;
+    uint16_t offset;
+    uint32_t value_length;
+    void* value;
+} bt_property_value_t;
+
+static void callback_adapter_count(const char* name, const char* value, void* count_u16);
+static void callback_bt_count(const char* name, const char* value, void* count_u16);
+static void callback_le_count(const char* name, const char* value, void* count_u16);
+static void callback_whitelist_count(const char* name, const char* value, void* count_u16);
+
 static uv_db_t* storage_handle = NULL;
 
 static int bt_storage_update_item_size[BT_STORAGE_VERSION_MAX][BT_STORAGE_UPDATE_ITEM_MAX] = {
@@ -56,6 +76,13 @@ static int bt_storage_update_item_size[BT_STORAGE_VERSION_MAX][BT_STORAGE_UPDATE
         sizeof(remote_device_le_properties_v5_0_1_t) },
 #endif
     /*   Reserve for future version   */
+};
+
+const static bt_storage_update_kvdb_callback_t callback_cnt_list[BT_STORAGE_UPDATE_ITEM_MAX] = {
+    { BT_KVDB_ADAPTERINFO, callback_adapter_count },
+    { BT_KVDB_BTBOND, callback_bt_count },
+    { BT_KVDB_BLEBOND, callback_le_count },
+    { BT_KVDB_BLEWHITELIST, callback_whitelist_count },
 };
 
 const static char* unqlite_item_key[BT_STORAGE_UNQLITE_ITEM] = {
@@ -116,6 +143,143 @@ int bt_storage_load_le_bonded_device_unqlite(void** data, uint16_t* length)
 int bt_storage_load_whitelist_device_unqlite(void** data, uint16_t* length)
 {
     return bt_storage_load_storage_sync_unqlite(BT_KEY_BLEWHITELIST, data, length);
+}
+
+/****************************************************************************
+ * KVDB storage load function
+ ****************************************************************************/
+static void callback_adapter_count(const char* name, const char* value, void* count_u16)
+{
+    if (!strncmp(name, BT_KVDB_ADAPTERINFO, strlen(BT_KVDB_ADAPTERINFO))) {
+        (*(uint16_t*)count_u16)++;
+    }
+}
+
+static void callback_bt_count(const char* name, const char* value, void* count_u16)
+{
+    if (!strncmp(name, BT_KVDB_BTBOND, strlen(BT_KVDB_BTBOND))) {
+        (*(uint16_t*)count_u16)++;
+    }
+}
+
+static void callback_le_count(const char* name, const char* value, void* count_u16)
+{
+    if (!strncmp(name, BT_KVDB_BLEBOND, strlen(BT_KVDB_BLEBOND))) {
+        (*(uint16_t*)count_u16)++;
+    }
+}
+
+static void callback_whitelist_count(const char* name, const char* value, void* count_u16)
+{
+    if (!strncmp(name, BT_KVDB_BLEWHITELIST, strlen(BT_KVDB_BLEWHITELIST))) {
+        (*(uint16_t*)count_u16)++;
+    }
+}
+
+static void callback_load_addr(const char* name, const char* value, void* cookie)
+{
+    bt_property_value_t* prop_value = (bt_property_value_t*)cookie;
+    char addr_str[BT_ADDR_STR_LENGTH];
+    bt_address_t* addr;
+
+    if (strncmp(name, prop_value->key, strlen(prop_value->key)))
+        return;
+
+    assert(prop_value->offset < prop_value->items);
+    addr = (bt_address_t*)prop_value->value + prop_value->offset * prop_value->value_length;
+    PARSE_PROP_KEY(addr_str, name, strlen((char*)prop_value->key), BT_ADDR_STR_LENGTH, addr);
+    prop_value->offset++;
+}
+
+static int bt_storage_load_storage_kvdb(const char* key, bt_storage_update_value_t* prop_value, int item_len)
+{
+    bt_property_value_t* value;
+    int i, prop_size;
+    char* prop_name;
+    bt_address_t* addr;
+    char* storage_value;
+
+    if (!prop_value)
+        return -1;
+
+    value = (bt_property_value_t*)zalloc(sizeof(bt_property_value_t));
+    if (!value) {
+        syslog(LOG_ERR, "%s value malloc failed\n", __func__);
+        return -1;
+    }
+
+    value->items = prop_value->items;
+    value->offset = 0;
+    value->key = key;
+    value->value_length = item_len;
+    value->value = prop_value->value;
+
+    property_list(callback_load_addr, value); // get addr to generate property name
+    free(value);
+
+    prop_name = (char*)malloc(PROP_NAME_MAX);
+    if (!prop_name) {
+        syslog(LOG_ERR, "property_name malloc failed!");
+        return -ENOMEM;
+    }
+
+    for (i = 0; i < prop_value->items; i++) {
+        addr = (bt_address_t*)((char*)prop_value->value + i * item_len); // first 6 Bytes is address.
+        storage_value = (char*)addr + sizeof(bt_address_t);
+        GEN_PROP_KEY(prop_name, key, addr, PROP_NAME_MAX);
+        /**
+         * Note: It should be ensured that "addr" is the first member of the struct remote_device_properties_t
+         * and "addr_type" is the second member.
+         * */
+        prop_size = property_get_binary(prop_name, storage_value, PROP_VALUE_MAX);
+        if (prop_size < 0) {
+            syslog(LOG_ERR, "property_get_binary failed!");
+            free(prop_name);
+            return -1;
+        }
+    }
+
+    free(prop_name);
+    return 0;
+}
+
+bt_storage_update_properties_t* bt_storage_load_info_kvdb(int version)
+{
+    bt_storage_update_properties_t* properties;
+    int ret, i, item_len;
+    bt_storage_update_items_t prop_items = { 0 };
+
+    prop_items.items[BT_STORAGE_UPDATE_ADAPTER_INFO] = 1;
+    for (i = BT_STORAGE_UPDATE_BTBOND_INFO; i < BT_STORAGE_UPDATE_ITEM_MAX; i++) {
+        if (!callback_cnt_list[i].cb)
+            continue;
+
+        ret = property_list(callback_cnt_list[i].cb, &prop_items.items[i]);
+        if (ret < 0) {
+            syslog(LOG_ERR, "property_list [%d] failed, ret = %d", i, ret);
+            return NULL;
+        }
+    }
+
+    properties = bt_storage_update_properties_malloc(version, &prop_items);
+    if (!properties) {
+        return NULL;
+    }
+
+    for (i = BT_STORAGE_UPDATE_BTBOND_INFO; i < BT_STORAGE_UPDATE_ITEM_MAX; i++) {
+        if (prop_items.items[i] > 0) {
+            item_len = bt_storage_update_item_size[version][i];
+            ret = bt_storage_load_storage_kvdb(callback_cnt_list[i].key, &properties->storage_info[i], item_len);
+            if (ret < 0)
+                goto error;
+        }
+    }
+
+    return properties;
+
+error:
+    bt_storage_update_properties_free(properties);
+    return NULL;
 }
 
 /****************************************************************************

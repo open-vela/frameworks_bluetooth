@@ -86,4 +86,6 @@ int bt_storage_load_adapter_info_unqlite(void** data, uint16_t* length);
 int bt_storage_load_le_bonded_device_unqlite(void** data, uint16_t* length);
 
 /* KVDB */
+bt_storage_update_properties_t* bt_storage_load_info_kvdb(int version);
+
 #endif /* __STORAGE_UPDATE_H__ */
