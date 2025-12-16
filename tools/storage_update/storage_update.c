@@ -109,6 +109,49 @@ const static bt_storage_update_func_t verison_map[] = {
 };
 
 /****************************************************************************
+ * Unqlite storage save function
+ ****************************************************************************/
+static int bt_storage_save_storage_sync_unqlite(const char* key, void* data, int length)
+{
+    uv_buf_t buf;
+    int ret;
+
+    buf = uv_buf_init((char*)data, length);
+    ret = uv_db_set(storage_handle, key, &buf, NULL, NULL);
+    if (ret != 0) {
+        syslog(LOG_ERR, "key %s set error:%d", key, ret);
+        return ret;
+    }
+
+    syslog(LOG_DEBUG, "key %s set success:%d", key, ret);
+    uv_db_commit(storage_handle);
+    return ret;
+}
+
+int bt_storage_save_item_unqlite(void* data, int items, int version, int storage_item)
+{
+    key_header_t* header;
+    int total_len, ret;
+
+    total_len = items * bt_storage_update_item_size[version][storage_item];
+    header = zalloc(sizeof(key_header_t) + total_len);
+    if (!header) {
+        syslog(LOG_ERR, "%s key malloc failed\n", __func__);
+        return -1;
+    }
+
+    header->items = items;
+    header->key_length = total_len;
+    if (data && items)
+        memcpy(header->key_value, data, total_len);
+
+    ret = bt_storage_save_storage_sync_unqlite(unqlite_item_key[storage_item], header, sizeof(key_header_t) + total_len);
+    free(header);
+
+    return ret;
+}
+
+/****************************************************************************
  * Unqlite storage load function
  ****************************************************************************/
 static int bt_storage_load_storage_sync_unqlite(const char* key, void** data, uint16_t* length)

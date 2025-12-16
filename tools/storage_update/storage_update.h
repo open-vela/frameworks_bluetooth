@@ -81,6 +81,8 @@ int bt_storage_remove(void);
 int bt_storage_unqlite_init(void);
 int bt_storage_unqlite_cleanup(void);
 
+int bt_storage_save_item_unqlite(void* data, int items, int version, int storage_item);
+
 int bt_storage_load_whitelist_device_unqlite(void** data, uint16_t* length);
 int bt_storage_load_bonded_device_unqlite(void** data, uint16_t* length);
 int bt_storage_load_adapter_info_unqlite(void** data, uint16_t* length);
