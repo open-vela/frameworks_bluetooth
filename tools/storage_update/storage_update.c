@@ -195,6 +195,85 @@ int bt_storage_load_whitelist_device_unqlite(void** data, uint16_t* length)
 }
 
 /****************************************************************************
+ * KVDB storage save function
+ ****************************************************************************/
+static int bt_storage_save_storage_kvdb(const char* key, void* data, int item_len, int num)
+{
+    char *prop_name, *tmp_data;
+    bt_address_t addr;
+    int i, ret;
+    size_t prop_vlen;
+
+    if (!key || !data)
+        return 0;
+
+    prop_name = (char*)malloc(PROP_NAME_MAX);
+    if (!prop_name) {
+        syslog(LOG_ERR, "property_name malloc failed!");
+        return -ENOMEM;
+    }
+
+    tmp_data = (char*)data;
+    prop_vlen = item_len - BT_ADDR_LENGTH;
+    for (i = 0; i < num; i++) {
+        memcpy(addr.addr, tmp_data, BT_ADDR_LENGTH);
+        GEN_PROP_KEY(prop_name, key, &addr, PROP_NAME_MAX);
+        /**
+         * Note: It should be ensured that "addr" is the first member of the struct remote_device_le_properties_t
+         * and "addr_type" is the second member.
+         * */
+        ret = property_set_binary(prop_name, tmp_data + BT_ADDR_LENGTH, prop_vlen, false);
+        if (ret < 0) {
+            syslog(LOG_ERR, "key %s set error!", prop_name);
+            free(prop_name);
+            return ret;
+        }
+
+        tmp_data += item_len;
+    }
+
+    property_commit();
+    free(prop_name);
+    return ret;
+}
+
+int bt_storage_save_item_kvdb(void* data, int items, int version, int storage_item)
+{
+    int ret, load_num = 0;
+    char* prop_name;
+
+    if (storage_item == BT_STORAGE_UPDATE_ADAPTER_INFO) {
+        syslog(LOG_INFO, "adapter_info not use this function");
+        return -1;
+    }
+
+    ret = property_list(callback_cnt_list[storage_item].cb, &load_num);
+    syslog(LOG_DEBUG, "bt_storage_save_item_kvdb [%s] load_num = %d", callback_cnt_list[storage_item].key, load_num);
+    if (ret < 0) {
+        syslog(LOG_ERR, "property_list [%d] failed!, ret = %d", storage_item, ret);
+        return ret;
+    }
+
+    prop_name = (char*)malloc(PROP_NAME_MAX);
+    if (!prop_name) {
+        syslog(LOG_ERR, "property_name malloc failed!");
+        return -ENOMEM;
+    }
+
+    bt_storage_delete(callback_cnt_list[storage_item].key, load_num, prop_name);
+    free(prop_name);
+
+    ret = bt_storage_save_storage_kvdb(callback_cnt_list[storage_item].key, data, bt_storage_update_item_size[version][storage_item], items);
+    if (ret < 0) {
+        syslog(LOG_ERR, "bt_storage_save_storage_kvdb [%d] failed!", storage_item);
+        return ret;
+    }
+
+    syslog(LOG_DEBUG, "bt_storage_save_item_kvdb [%s] success!", callback_cnt_list[storage_item].key);
+    return ret;
+}
+
+/****************************************************************************
  * KVDB storage load function
  ****************************************************************************/
 static void callback_adapter_count(const char* name, const char* value, void* count_u16)
