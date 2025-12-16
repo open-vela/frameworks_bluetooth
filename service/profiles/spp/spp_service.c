@@ -156,6 +156,7 @@ static void spp_server_cleanup_devices(spp_server_t* server);
 static void spp_proxy_connection_callback(euv_pipe_t* handle, int status, void* user_data);
 static bt_status_t spp_unregister_app(void** remote, void* handle);
 static bool spp_rx_buffer_empty(spp_device_t* device);
+static void euv_close_complete(euv_pipe_t* handle);
 
 /****************************************************************************
  * Private Data
@@ -410,31 +411,21 @@ static void spp_device_close(spp_device_t* device)
         device->timer = NULL;
     }
 
-    if (device->state == PROFILE_STATE_CONNECTED || device->state == PROFILE_STATE_CONNECTING)
+    if (device->state == PROFILE_STATE_CONNECTED || device->state == PROFILE_STATE_CONNECTING) {
+        BT_LOGD("%s, disconnect spp conn port: %" PRIu16, __func__, device->conn_id);
         bt_sal_spp_disconnect(device->conn_port);
+    }
 
     if (device->handle) {
-        euv_pipe_close(device->handle);
-        device->handle = NULL;
+        BT_LOGD("%s, spp conn port %" PRIu16 " close proxy 0x%p", __func__, device->conn_id, device->handle);
+        euv_pipe_close_with_cb(device->handle, euv_close_complete);
+        device->proxy_state = SPP_PROXY_STATE_CLOSING;
     }
 
     if (device->cache_buf.length > 0) {
         BT_LOGD("%s, free cache buf, length: %d", __func__, device->cache_buf.length);
         free(device->cache_buf.buffer_head);
         device->cache_buf.length = 0;
-    }
-
-    if (!spp_rx_buffer_empty(device)) {
-        BT_LOGD("%s, free rx cache list, list_length: %zu", __func__, list_length(&device->rx_list));
-        struct list_node *node, *tmp;
-
-        list_for_every_safe(&device->rx_list, node, tmp)
-        {
-            /* The memory pointed to by buf->buffer must be released prior to the protocol stack
-            reporting status. */
-            list_delete(node);
-            free(node);
-        }
     }
 
     device->app_handle = NULL;
@@ -445,8 +436,29 @@ static void spp_device_cleanup(spp_device_t* device, bool notify)
     if (notify)
         spp_notify_connection_state(device, PROFILE_STATE_DISCONNECTED);
 
-    spp_device_close(device);
-    remove_spp_device(device);
+    BT_LOGD("%s, spp device conn_id: %" PRIu16 ", proxy_state: %d", __func__, device->conn_id, device->proxy_state);
+    switch (device->proxy_state) {
+    case SPP_PROXY_STATE_CONNECTING:
+        /* wait for proxy connected and enter closing state */
+        device->proxy_state = SPP_PROXY_STATE_CLOSING;
+        if (device->state == PROFILE_STATE_DISCONNECTING) {
+            /* disconnect initiated by our side */
+            BT_LOGD("%s, disconnect spp conn port: %" PRIu16, __func__, device->conn_id);
+            spp_device_close(device);
+        }
+        break;
+    case SPP_PROXY_STATE_CONNECTED:
+        /* close proxy and enter closing state */
+        spp_device_close(device);
+        break;
+    case SPP_PROXY_STATE_DISCONNECTED:
+        /* directly remove device */
+        spp_device_close(device);
+        remove_spp_device(device);
+        break;
+    default:
+        break;
+    }
 }
 
 static void spp_server_cleanup_devices(spp_server_t* server)
@@ -578,6 +590,20 @@ static void euv_write_complete(euv_pipe_t* handle, uint8_t* buf, int status)
         spp_device_close(device);
 }
 
+static void euv_close_complete(euv_pipe_t* handle)
+{
+    spp_device_t* device;
+
+    device = find_spp_device_by_handle(handle);
+    if (!device) {
+        BT_LOGE("%s, device null", __func__);
+        return;
+    }
+
+    BT_LOGD("%s, data path closed, device 0x%p ", __func__, device);
+    remove_spp_device(device);
+}
+
 static void spp_rx_buffer_send(spp_device_t* device)
 {
     struct list_node *node, *tmp;
@@ -639,16 +665,14 @@ static void spp_proxy_connection_callback(euv_pipe_t* handle, int status, void* 
         return;
     }
 
+    spp_rx_buffer_send(device); /* send cached received data */
     BT_LOGD("%s, connection port %" PRIu16 ", proxy state: %d", __func__, device->conn_id, device->proxy_state);
     if (device->proxy_state == SPP_PROXY_STATE_CLOSING) {
-        spp_device_cleanup(device, false);
+        spp_device_close(device);
         return;
     }
 
-    BT_LOGD("spp proxy connected, status: %d", status);
     device->proxy_state = SPP_PROXY_STATE_CONNECTED;
-    spp_rx_buffer_send(device);
-
     ret = euv_pipe_read_start(device->handle, device->next_to_read, euv_read_complete, euv_alloc_buffer);
     if (ret != 0) {
         BT_LOGE("%s, read start fail", __func__);
@@ -778,13 +802,7 @@ static void spp_on_connection_state_chaneged(bt_address_t* addr, uint16_t port,
     } else if (state == PROFILE_STATE_DISCONNECTED) {
         bt_pm_conn_close(PROFILE_SPP, &device->addr);
         spp_notify_proxy_state(device, SPP_PROXY_STATE_DISCONNECTED);
-        BT_LOGD("spp proxy state: %d", device->proxy_state);
-        if (device->proxy_state == SPP_PROXY_STATE_CONNECTING) {
-            BT_LOGI("spp proxy is waiting for connection, connection port: %" PRIu16 " release later", device->conn_id);
-            device->proxy_state = SPP_PROXY_STATE_CLOSING;
-        } else {
-            spp_device_cleanup(device, false);
-        }
+        spp_device_cleanup(device, false);
     }
 }
 
