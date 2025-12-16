@@ -35,7 +35,7 @@ endchoice
 
 config BLUETOOTH_STORAGE_UPDATE
 	bool "Bluetooth Storage update"
-	default n
+	default y
 	depends on BLUETOOTH_STORAGE_PROPERTY_SUPPORT
 
 config BLUETOOTH_DEBUG_TIMEVAL
