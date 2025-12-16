@@ -127,25 +127,9 @@ choice
 		bool "Bluetooth vendor NONE"
 endchoice
 
-choice
-	prompt "Select Bluetooth Storage Method(Unqlite, KVDB)"
-	default BLUETOOTH_STORAGE_PROPERTY_SUPPORT
-	config BLUETOOTH_STORAGE_PROPERTY_SUPPORT
-		bool "Bluetooth Storage KVDB Property support"
-		depends on KVDB
-	config BLUETOOTH_STORAGE_UNQLITE_SUPPORT
-		bool "Bluetooth Storage uv_db support"
-		depends on UNQLITE
-endchoice
-
 config BLUETOOTH_PM_MAX_TIMER_NUMBER
 	int "Bluetooth PM maximum number of timers"
 	default 16
-
-config BLUETOOTH_STORAGE_UPDATE
-	bool "Bluetooth Storage update"
-	default y
-	depends on BLUETOOTH_STORAGE_PROPERTY_SUPPORT
 
 config BLUETOOTH_UPGRADE
 	bool "Enable Bluetooth Storage transformation tool for upgrading OS"
@@ -261,6 +245,22 @@ config LE_DLF_SUPPORT
 
 endmenu #Bluetooth LE Config
 endif #BLUETOOTH_BLE_SUPPORT
+
+choice
+	prompt "Select Bluetooth Storage Method(Unqlite, KVDB)"
+	default BLUETOOTH_STORAGE_PROPERTY_SUPPORT
+	config BLUETOOTH_STORAGE_PROPERTY_SUPPORT
+		bool "Bluetooth Storage KVDB Property support"
+		depends on KVDB
+	config BLUETOOTH_STORAGE_UNQLITE_SUPPORT
+		bool "Bluetooth Storage uv_db support"
+		depends on UNQLITE
+endchoice
+
+config BLUETOOTH_STORAGE_UPDATE
+	bool "Bluetooth Storage update"
+	default y
+	depends on BLUETOOTH_STORAGE_PROPERTY_SUPPORT
 
 config BLUETOOTH_SERVICE_HCI_UART_NAME
 	string "HCI uart driver name"
