@@ -758,7 +758,7 @@ static void bt_storage_update_cleanup(void)
 #endif
 }
 
-int main(void)
+int main(int argc, char** argv)
 {
     int storage_version, ret;
 
