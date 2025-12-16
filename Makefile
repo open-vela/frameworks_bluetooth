@@ -481,10 +481,10 @@ CSRCS     += feature/src/system_bluetooth_bt_avrcpcontrol_impl.c
 endif
 
 ifneq ($(CONFIG_BLUETOOTH_DFX),)
-  DFX_XML=$(APPDIR)/frameworks/connectivity/bluetooth/dfx
-  CHARGER_XML=$(APPDIR)/frameworks/connectivity/bluetooth/dfx/event_bt.xml
+  DFX_XML=$(APPDIR)/frameworks/system/dfx/src/onetrack/xml
+  BLUETOOTH_XML=$(APPDIR)/frameworks/connectivity/bluetooth/dfx/event_bt.xml
 context::
-	@cp $(CHARGER_XML) $(DFX_XML)
+	@cp $(BLUETOOTH_XML) $(DFX_XML)
 endif
 
 depend::
