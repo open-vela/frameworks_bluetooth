@@ -582,7 +582,7 @@ int bt_storage_remove(void)
 
 static bt_storage_update_properties_t* bt_storage_update_handler(void* storage_info, int storage_version, int cur_version)
 {
-    bt_storage_update_properties_t *old_storage, *new_storage;
+    bt_storage_update_properties_t *old_storage, *new_storage = NULL;
     bt_storage_update_func_t func;
 
     old_storage = (bt_storage_update_properties_t*)storage_info;
@@ -656,7 +656,7 @@ static int bt_storage_update_save_info(bt_storage_update_properties_t* storage_i
 
 static int bt_storage_update_process(int storage_version)
 {
-    bt_storage_update_properties_t *storage_info, *updated_info;
+    bt_storage_update_properties_t *storage_info, *updated_info = NULL;
 
     if (storage_version > BT_STORAGE_VERISON_CURRENT) {
         syslog(LOG_ERR, "Storage version fallback is not supported.");
