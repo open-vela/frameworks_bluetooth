@@ -33,6 +33,11 @@ choice
 		depends on UNQLITE
 endchoice
 
+config BLUETOOTH_STORAGE_UPDATE
+	bool "Bluetooth Storage update"
+	default n
+	depends on BLUETOOTH_STORAGE_PROPERTY_SUPPORT
+
 config BLUETOOTH_DEBUG_TIMEVAL
     bool "Enable Bluetooth Debug Time"
     default n

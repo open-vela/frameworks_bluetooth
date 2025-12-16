@@ -82,6 +82,14 @@ if(CONFIG_BLUETOOTH)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/service/common/bt_storage.c)
   endif()
 
+  if(CONFIG_BLUETOOTH_STORAGE_UPDATE)
+    list(
+      APPEND
+      CSRCS
+      ${BLUETOOTH_DIR}/tools/storage_update/storage_version_4.c
+      ${BLUETOOTH_DIR}/tools/storage_update/storage_version_5.c)
+  endif()
+
   if(CONFIG_BLUETOOTH_DEBUG_TRACE)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/bt_trace.c)
   endif()
@@ -453,6 +461,10 @@ if(CONFIG_BLUETOOTH)
     if(CONFIG_BLUETOOTH_LEAUDIO_TBS)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/lea_tbs.c)
     endif()
+
+    if(CONFIG_BLUETOOTH_STORAGE_UPDATE)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/storage_update/storage_tool.c)
+    endif()
   endif()
 
   list(APPEND INCDIR ${BLUETOOTH_DIR}/framework/include)
@@ -537,6 +549,11 @@ if(CONFIG_BLUETOOTH)
   if(CONFIG_BLUETOOTH_TOOLS)
     list(APPEND INCDIR ${BLUETOOTH_DIR}/tools)
   endif()
+
+  if(CONFIG_BLUETOOTH_STORAGE_UPDATE)
+    list(APPEND INCDIR ${BLUETOOTH_DIR}/tools/storage_update)
+  endif()
+
 
   if(CONFIG_ARCH_SIM)
     list(APPEND CFLAGS -O0)
@@ -689,6 +706,24 @@ if(CONFIG_BLUETOOTH)
       ${CFLAGS}
       DEPENDS
       libbluetooth)
+  endif()
+
+  if(CONFIG_BLUETOOTH_STORAGE_UPDATE)
+    nuttx_add_application(
+        NAME
+        bt_storage_update
+        SRCS
+        ${BLUETOOTH_DIR}/tools/storage_update/storage_update.c
+        INCLUDE_DIRECTORIES
+        ${INCDIR}
+        STACKSIZE
+        8192
+        PRIORITY
+        ${SCHED_PRIORITY_DEFAULT}
+        COMPILE_FLAGS
+        ${CFLAGS}
+        DEPENDS
+        libbluetooth)
   endif()
 
   if(CONFIG_BLUETOOTH_FEATURE)

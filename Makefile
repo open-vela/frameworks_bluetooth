@@ -53,6 +53,11 @@ else
 CSRCS += service/common/bt_storage.c
 endif
 
+ifeq ($(CONFIG_BLUETOOTH_STORAGE_UPDATE), y)
+CSRCS += tools/storage_update/storage_version_4.c
+CSRCS += tools/storage_update/storage_version_5.c
+endif #CONFIG_BLUETOOTH_STORAGE_UPDATE
+
 ifeq ($(CONFIG_BLUETOOTH_DEBUG_MEMORY),y)
 CSRCS += debug/bt_memory.c
 endif
@@ -334,6 +339,10 @@ ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_TBS), y)
 	CSRCS += tools/lea_tbs.c
 endif
 
+ifeq ($(CONFIG_BLUETOOTH_STORAGE_UPDATE), y)
+	CSRCS += tools/storage_update/storage_tool.c
+endif #CONFIG_BLUETOOTH_STORAGE_UPDATE
+
 endif
 
 # framework/service/stack/tools dependence
@@ -399,6 +408,10 @@ ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	CFLAGS	+= ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/tools
 endif
 
+ifeq ($(CONFIG_BLUETOOTH_STORAGE_UPDATE), y)
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/tools/storage_update
+endif #CONFIG_BLUETOOTH_STORAGE_UPDATE
+
 ifeq ($(CONFIG_ARCH_SIM),y)
 CFLAGS	 += -O0
 endif
@@ -452,6 +465,11 @@ ifeq ($(CONFIG_BLUETOOTH_UPGRADE), y)
 	PROGNAME += bt_upgrade
 	MAINSRC  += tools/storage_transform.c
 endif
+
+ifeq ($(CONFIG_BLUETOOTH_STORAGE_UPDATE), y)
+	PROGNAME += bt_storage_update
+	MAINSRC  += tools/storage_update/storage_update.c
+endif #CONFIG_BLUETOOTH_STORAGE_UPDATE
 endif
 
 ASRCS := $(wildcard $(ASRCS))
