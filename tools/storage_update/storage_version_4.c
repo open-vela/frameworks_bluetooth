@@ -18,6 +18,7 @@
 
 #include "bluetooth_define.h"
 #include "bt_storage.h"
+#include "bt_utils.h"
 #include "storage_update.h"
 #include "storage_version_4.h"
 #include "uv_ext.h"
