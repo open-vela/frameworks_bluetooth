@@ -34,6 +34,10 @@
 #define DEFAULT_SCAN_MODE BT_BR_SCAN_MODE_CONNECTABLE
 #define DEFAULT_BONDABLE_MODE 1
 
+#define BT_KVDB_VERSION_KEY "persist.bluetooth.version"
+#define BT_STORAGE_VERSION_STR_LEN 12 /* vxxx_xxx_xxx. e.g. v5_0_0 */
+#define BT_STORAGE_CURRENT_VERSION "v5_0_2"
+
 typedef enum {
     BT_LINKKEY_TYPE_COMBINATION_KEY,
     BT_LINKKEY_TYPE_LOCAL_UNIT_KEY,
