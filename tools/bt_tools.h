@@ -186,4 +186,8 @@ int lea_vmicp_command_init(void* handle);
 void lea_vmicp_command_uninit(void* handle);
 int vmicp_command_exec(void* handle, int argc, char* argv[]);
 
+int storage_command_init(void* handle);
+void storage_command_uninit(void* handle);
+int storage_command_exec(void* handle, int argc, char* argv[]);
+
 #endif /* __BT_TOOLS_H__ */

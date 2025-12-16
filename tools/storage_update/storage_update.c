@@ -538,6 +538,7 @@ int bt_storage_get_version(void)
         return BT_STORAGE_VERSION_5_0_2;
     }
 #endif
+
     return -1;
 }
 
