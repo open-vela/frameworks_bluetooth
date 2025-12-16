@@ -21,23 +21,6 @@ config BLUETOOTH
 	depends on LIBUV_EXTENSION
 
 if BLUETOOTH
-
-choice
-	prompt "select Bluetooth Storage Method(Unqlite, KVDB)"
-	default BLUETOOTH_STORAGE_PROPERTY_SUPPORT
-	config BLUETOOTH_STORAGE_PROPERTY_SUPPORT
-		bool "Bluetooth Storage KVDB Property support"
-		depends on KVDB
-	config BLUETOOTH_STORAGE_UNQLITE_SUPPORT
-		bool "Bluetooth Storage uv_db support"
-		depends on UNQLITE
-endchoice
-
-config BLUETOOTH_STORAGE_UPDATE
-	bool "Bluetooth Storage update"
-	default y
-	depends on BLUETOOTH_STORAGE_PROPERTY_SUPPORT
-
 config BLUETOOTH_DEBUG_TIMEVAL
     bool "Enable Bluetooth Debug Time"
     default n
@@ -379,6 +362,22 @@ config BLUETOOTH_SERVICE
 		Enable bluetooth service
 
 if BLUETOOTH_SERVICE
+choice
+	prompt "select Bluetooth Storage Method(Unqlite, KVDB)"
+	default BLUETOOTH_STORAGE_PROPERTY_SUPPORT
+	config BLUETOOTH_STORAGE_PROPERTY_SUPPORT
+		bool "Bluetooth Storage KVDB Property support"
+		depends on KVDB
+	config BLUETOOTH_STORAGE_UNQLITE_SUPPORT
+		bool "Bluetooth Storage uv_db support"
+		depends on UNQLITE
+endchoice
+
+config BLUETOOTH_STORAGE_UPDATE
+	bool "Bluetooth Storage update"
+	default y
+	depends on BLUETOOTH_STORAGE_PROPERTY_SUPPORT
+
 config BLUETOOTH_SERVER
 	bool "Bluetooth server enable"
 	default n
