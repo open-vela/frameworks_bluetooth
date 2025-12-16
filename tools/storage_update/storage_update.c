@@ -472,6 +472,7 @@ static int bt_storage_update_get_version_by_db(void)
 {
     key_header_t* tmp_value = NULL;
     uint16_t tmp_value_length;
+    int cur_version;
     int ret;
 
     /* load bonded device info */
@@ -483,15 +484,18 @@ static int bt_storage_update_get_version_by_db(void)
     }
 
     if (tmp_value->key_length == (sizeof(remote_device_properties_v4_0_0_t) * tmp_value->items)) {
-        return BT_STORAGE_VERSION_4_0_0;
+        cur_version = BT_STORAGE_VERSION_4_0_0;
     } else if (tmp_value->key_length == (sizeof(remote_device_properties_v5_0_0_t) * tmp_value->items)) {
-        return BT_STORAGE_VERSION_5_0_0;
+        cur_version = BT_STORAGE_VERSION_5_0_0;
     } else if (tmp_value->key_length == (sizeof(remote_device_properties_v5_0_1_t) * tmp_value->items)) {
-        return BT_STORAGE_VERSION_5_0_1;
+        cur_version = BT_STORAGE_VERSION_5_0_1;
     } else {
         syslog(LOG_ERR, "%s unknown version\n", __func__);
-        return -1;
+        cur_version = -1;
     }
+
+    free(tmp_value);
+    return cur_version;
 
 load_adapter:
     ret = bt_storage_load_adapter_info_unqlite((void**)&tmp_value, &tmp_value_length);
@@ -501,14 +505,17 @@ load_adapter:
     }
 
     if (tmp_value->key_length == (sizeof(adapter_storage_v4_0_0_t) * tmp_value->items)) {
-        return BT_STORAGE_VERSION_4_0_0;
+        cur_version = BT_STORAGE_VERSION_4_0_0;
     } else if (tmp_value->key_length == (sizeof(adapter_storage_v5_0_1_t) * tmp_value->items)) {
         /* version 5_0_0 equal version 5_0_1, goto the latest version*/
-        return BT_STORAGE_VERSION_5_0_1;
+        cur_version = BT_STORAGE_VERSION_5_0_1;
+    } else {
+        syslog(LOG_ERR, "%s unknown version\n", __func__);
+        cur_version = -1;
     }
 
-    syslog(LOG_ERR, "%s unknown version\n", __func__);
-    return -1;
+    free(tmp_value);
+    return cur_version;
 }
 #endif
 
@@ -702,7 +709,7 @@ int bt_storage_unqlite_init(void)
 
 int bt_storage_unqlite_cleanup(void)
 {
-    syslog(LOG_DEBUG, "%s", __func__);
+    syslog(LOG_DEBUG, "%s, handle: %p", __func__, storage_handle);
     if (storage_handle)
         uv_db_close(storage_handle);
 
@@ -717,9 +724,7 @@ static int bt_storage_update_init(void)
     syslog(LOG_INFO, __func__);
 
 #if defined(BLUETOOTH_STORAGE_VERSION_4) || defined(BLUETOOTH_STORAGE_VERSION_5)
-    if (!access(BT_STORAGE_FILE_PATH, F_OK)) {
-        ret = bt_storage_unqlite_init();
-    }
+    ret = bt_storage_unqlite_init();
 #endif
 
     return ret;
@@ -730,10 +735,15 @@ static void bt_storage_update_cleanup(void)
     syslog(LOG_INFO, __func__);
 
 #if defined(BLUETOOTH_STORAGE_VERSION_4) || defined(BLUETOOTH_STORAGE_VERSION_5)
+    bt_storage_unqlite_cleanup();
     if (!access(BT_STORAGE_FILE_PATH, F_OK)) {
-        bt_storage_unqlite_cleanup();
         unlink(BT_STORAGE_FILE_PATH);
     }
+
+    syslog(LOG_INFO, "uv_loop_close\n");
+    uv_loop_close(get_service_uv_loop());
+    syslog(LOG_INFO, "uv_library_shutdown\n");
+    uv_library_shutdown();
 #endif
 }
 
