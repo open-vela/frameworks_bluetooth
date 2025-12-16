@@ -30,6 +30,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
+#define LOG_TAG "a2dp_source_audio"
+
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -38,13 +40,13 @@
 #include "sal_a2dp_source_interface.h"
 #include "sal_interface.h"
 
+#include "a2dp_audio.h"
 #include "a2dp_codec.h"
 #include "a2dp_source.h"
 #include "a2dp_source_audio.h"
 #include "audio_control.h"
-#include "utils.h"
-#define LOG_TAG "a2dp_source_audio"
 #include "sal_zblue.h"
+#include "utils.h"
 #include "utils/log.h"
 
 #include "service_loop.h"
