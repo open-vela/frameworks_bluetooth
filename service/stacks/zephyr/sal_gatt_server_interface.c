@@ -1107,6 +1107,18 @@ bt_status_t bt_sal_gatt_server_set_phy(bt_controller_id_t id, bt_address_t* addr
     return bt_sal_le_set_phy(id, addr, tx_phy, rx_phy);
 }
 
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+bt_status_t bt_sal_gatt_server_get_database_hash(bt_controller_id_t id, bt_address_t* addr, bool force_update)
+{
+    SAL_NOT_SUPPORT;
+}
+#endif
+
+bt_status_t bt_sal_gatt_server_change_indicate(bt_controller_id_t id, uint16_t start_hdl, uint16_t end_hdl)
+{
+    SAL_NOT_SUPPORT;
+}
+
 void bt_sal_gatt_server_connection_state_changed_callback(bt_controller_id_t id, bt_address_t* addr, profile_connection_state_t state)
 {
     if_gatts_on_connection_state_changed(addr, state);
