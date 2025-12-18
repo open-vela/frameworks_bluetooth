@@ -53,6 +53,7 @@ static void callback_adapter_count(const char* name, const char* value, void* co
 static void callback_bt_count(const char* name, const char* value, void* count_u16);
 static void callback_le_count(const char* name, const char* value, void* count_u16);
 static void callback_whitelist_count(const char* name, const char* value, void* count_u16);
+static void callback_gatt_dbhash_count(const char* name, const char* value, void* count_u16);
 
 static uv_db_t* storage_handle = NULL;
 
@@ -62,28 +63,34 @@ static int bt_storage_update_item_size[BT_STORAGE_VERSION_MAX][BT_STORAGE_UPDATE
     { sizeof(adapter_storage_v4_0_0_t),
         sizeof(remote_device_properties_v4_0_0_t),
         sizeof(remote_device_le_properties_v4_0_0_t),
-        sizeof(remote_device_le_properties_v4_0_0_t) },
+        sizeof(remote_device_le_properties_v4_0_0_t),
+        0 },
 #endif
 #ifdef BLUETOOTH_STORAGE_VERSION_5
     { sizeof(adapter_storage_v5_0_0_t),
         sizeof(remote_device_properties_v5_0_0_t),
         sizeof(remote_device_le_properties_v5_0_0_t),
-        sizeof(remote_device_le_properties_v5_0_0_t) },
+        sizeof(remote_device_le_properties_v5_0_0_t),
+        0 },
     /* version 5_0_1 */
     { sizeof(adapter_storage_v5_0_1_t),
         sizeof(remote_device_properties_v5_0_1_t),
         sizeof(remote_device_le_properties_v5_0_1_t),
-        sizeof(remote_device_le_properties_v5_0_1_t) },
+        sizeof(remote_device_le_properties_v5_0_1_t),
+        0 },
     /* version 5_0_2 */
     { sizeof(adapter_storage_v5_0_2_t),
         sizeof(remote_device_properties_v5_0_2_t),
         sizeof(remote_device_le_properties_v5_0_2_t),
-        sizeof(remote_device_le_properties_v5_0_2_t) },
+        sizeof(remote_device_le_properties_v5_0_2_t),
+        0 },
     /* version 5_0_3 */
-    { sizeof(adapter_storage_v5_0_3_t),
+    {
+        sizeof(adapter_storage_v5_0_3_t),
         sizeof(remote_device_properties_v5_0_3_t),
         sizeof(remote_device_le_properties_v5_0_3_t),
-        sizeof(remote_device_le_properties_v5_0_3_t) },
+        sizeof(remote_device_le_properties_v5_0_3_t),
+        sizeof(remote_device_gatt_properties_v5_0_3_t) },
 #endif
     /*   Reserve for future version   */
 };
@@ -93,6 +100,7 @@ const static bt_storage_update_kvdb_callback_t callback_cnt_list[BT_STORAGE_UPDA
     { BT_KVDB_BTBOND, callback_bt_count },
     { BT_KVDB_BLEBOND, callback_le_count },
     { BT_KVDB_BLEWHITELIST, callback_whitelist_count },
+    { BT_KVDB_BLEGATTDBHASH, callback_gatt_dbhash_count },
 };
 
 const static char* unqlite_item_key[BT_STORAGE_UNQLITE_ITEM] = {
@@ -306,6 +314,13 @@ static void callback_le_count(const char* name, const char* value, void* count_u
 static void callback_whitelist_count(const char* name, const char* value, void* count_u16)
 {
     if (!strncmp(name, BT_KVDB_BLEWHITELIST, strlen(BT_KVDB_BLEWHITELIST))) {
+        (*(uint16_t*)count_u16)++;
+    }
+}
+
+static void callback_gatt_dbhash_count(const char* name, const char* value, void* count_u16)
+{
+    if (!strncmp(name, BT_KVDB_BLEGATTDBHASH, strlen(BT_KVDB_BLEGATTDBHASH))) {
         (*(uint16_t*)count_u16)++;
     }
 }
@@ -668,6 +683,9 @@ static int bt_storage_update_save_info(bt_storage_update_properties_t* storage_i
     bt_storage_save_le_bonded_device(
         (remote_device_le_properties_t*)storage_info->storage_info[BT_STORAGE_UPDATE_BLEBOND_INFO].value,
         storage_info->storage_info[BT_STORAGE_UPDATE_BLEBOND_INFO].items);
+    bt_storage_save_gatt_cache_device(
+        (remote_device_gatt_properties_t*)storage_info->storage_info[BT_STORAGE_UPDATE_GATT_HASH_INFO].value,
+        storage_info->storage_info[BT_STORAGE_UPDATE_GATT_HASH_INFO].items);
 
     return 0;
 }
