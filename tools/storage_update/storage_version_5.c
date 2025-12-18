@@ -354,5 +354,7 @@ bt_storage_update_properties_t* bt_storage_update_v5_0_2_to_v5_0_3(bt_storage_up
         old_whitelist++;
     }
 
+    /* No raw material conversion GATT HASH */
+
     return new_storage;
 }
