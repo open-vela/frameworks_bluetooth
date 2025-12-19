@@ -1036,3 +1036,8 @@ bt_status_t bt_sal_spp_connect_request_reply(bt_address_t* addr, uint16_t port, 
     BT_LOGD("Accepting SPP connection on port %d", port);
     return BT_STATUS_SUCCESS;
 }
+
+bt_status_t bt_sal_spp_connect_with_option(bt_address_t* addr, uint16_t conn_port, bt_uuid_t* uuid128, uint8_t insecure)
+{
+    return BT_STATUS_UNSUPPORTED;
+}
