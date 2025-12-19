@@ -32,5 +32,6 @@ bt_status_t bt_sal_spp_write(uint16_t conn_port, uint8_t* buffer, uint16_t lengt
 bt_status_t bt_sal_spp_add_credits(uint16_t conn_port, uint8_t credits);
 bt_status_t bt_sal_spp_data_received_response(uint16_t conn_port, uint8_t* buffer);
 bt_status_t bt_sal_spp_connect_request_reply(bt_address_t* addr, uint16_t conn_port, bool accept);
+bt_status_t bt_sal_spp_connect_with_option(bt_address_t* addr, uint16_t conn_port, bt_uuid_t* uuid128, uint8_t insecure);
 
 #endif /* __SAL_SPP_INTERFACE_H__ */
