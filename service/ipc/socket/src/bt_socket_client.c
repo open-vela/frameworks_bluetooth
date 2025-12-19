@@ -715,6 +715,7 @@ int bt_socket_async_client_init(bt_instance_t* ins, uv_loop_t* loop, int family,
 {
     int ret;
     bt_socket_async_client_t* priv;
+    bt_status_t status = BT_STATUS_FAIL;
 
     if (ins == NULL || loop == NULL)
         return BT_STATUS_PARM_INVALID;
@@ -757,7 +758,8 @@ int bt_socket_async_client_init(bt_instance_t* ins, uv_loop_t* loop, int family,
         }
 #endif
         else {
-            return BT_STATUS_NOT_SUPPORTED;
+            status = BT_STATUS_NOT_SUPPORTED;
+            goto fail;
         }
     }
 
@@ -766,7 +768,7 @@ int bt_socket_async_client_init(bt_instance_t* ins, uv_loop_t* loop, int family,
     return BT_STATUS_SUCCESS;
 fail:
     bt_socket_async_client_deinit(ins);
-    return BT_STATUS_FAIL;
+    return status;
 }
 
 static void bt_socket_invoke_async_cb(bt_instance_t* ins, bt_list_t* list)
