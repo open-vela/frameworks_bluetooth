@@ -27,9 +27,9 @@
 
 #include <string.h>
 #include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/classic/at.h>
 #include <zephyr/bluetooth/classic/hfp_ag.h>
 #include <zephyr/bluetooth/classic/sdp.h>
-#include <zephyr/bluetooth/classic/at.h>
 
 static bt_list_t* g_sal_ag_conn_list = NULL;
 
@@ -77,7 +77,6 @@ static void free_connection(void* data)
         bt_list_free(sal_conn->calls);
         sal_conn->calls = NULL;
     }
-    bt_conn_unref(sal_conn->context);
     free(sal_conn);
     return;
 }
@@ -232,8 +231,7 @@ static bt_hfp_ag_call_info_t* find_call_by_context(struct bt_hfp_ag_call* z_cont
         if (!sal_conn || !sal_conn->calls) {
             continue;
         }
-        bt_hfp_ag_call_info_t* call =
-            (bt_hfp_ag_call_info_t*)bt_list_find(sal_conn->calls, sal_call_context_cmp, z_context);
+        bt_hfp_ag_call_info_t* call = (bt_hfp_ag_call_info_t*)bt_list_find(sal_conn->calls, sal_call_context_cmp, z_context);
         if (call) {
             if (sal_conn_out) {
                 *sal_conn_out = sal_conn;
@@ -354,7 +352,7 @@ static bt_hfp_ag_call_info_t* update_sal_call(bt_hfp_ag_connection_t* conn,
         }
         return NULL;
     }
-    
+
     sal_call->dir = service_call_dir_to_sal_dir(dir);
     sal_call->type = type;
 
@@ -444,7 +442,7 @@ static bt_status_t do_ag_connect(bt_controller_id_t id, bt_address_t* addr, void
         return BT_STATUS_FAIL;
     }
 
-    if(new_sal_connection(conn, ag) == NULL) {
+    if (new_sal_connection(conn, ag) == NULL) {
         BT_LOGE("%s, Failed to create HFP AG connection", __func__);
         if (Z_API(bt_hfp_ag_disconnect)(ag)) {
             BT_LOGE("%s, Failed disconnect HFP", __func__);
@@ -510,7 +508,7 @@ static uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_resu
         goto error;
     }
 
-    /** TODO: remove @p g_conn_params, send @p port as a context to 
+    /** TODO: remove @p g_conn_params, send @p port as a context to
      *        @ref bt_sal_profile_connect_request */
     g_conn_params = (ag_connect_params_t*)zalloc(sizeof(ag_connect_params_t));
     if (g_conn_params == NULL) {
@@ -608,7 +606,7 @@ static void zblue_on_ag_sco_disconnected(struct bt_conn* sco_conn, uint8_t reaso
     hfp_ag_on_audio_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_DISCONNECTED, 0xFFFF); // sco conn handle not supported
 }
 
-static int zblue_on_ag_vendor_at_cmd(struct bt_hfp_ag* ag, const char* cmd, uint8_t *cme_code)
+static int zblue_on_ag_vendor_at_cmd(struct bt_hfp_ag* ag, const char* cmd, uint8_t* cme_code)
 {
     bt_hfp_ag_connection_t* sal_conn;
 
@@ -757,8 +755,7 @@ static void zblue_on_ag_accept(struct bt_hfp_ag_call* call)
         return;
     }
 
-    if (sal_call->state != BT_HFP_AG_CALL_STATUS_INCOMING &&
-        sal_call->state != BT_HFP_AG_CALL_STATUS_WAITING) {
+    if (sal_call->state != BT_HFP_AG_CALL_STATUS_INCOMING && sal_call->state != BT_HFP_AG_CALL_STATUS_WAITING) {
         return;
     }
 
@@ -842,7 +839,7 @@ static void zblue_on_ag_reject(struct bt_hfp_ag_call* call)
     if (sal_call->state != BT_HFP_AG_CALL_STATUS_INCOMING) {
         return;
     }
-    
+
     hfp_ag_on_reject_call(&sal_conn->addr);
 }
 
@@ -1283,12 +1280,12 @@ bt_status_t bt_sal_hfp_ag_call_sync(
     hfp_call_addrtype_t type, const char* number)
 {
     bt_hfp_ag_connection_t* conn = g_sal_ag_sync_conn;
-    
+
     if (!conn) {
         BT_LOGW("%s, no sync connection set, ignore", __func__);
         return BT_STATUS_SUCCESS;
     }
-    
+
     update_sal_call(conn, dir, call, mode, mpty, type, number);
     return BT_STATUS_SUCCESS;
 }
@@ -1318,7 +1315,7 @@ bt_status_t bt_sal_hfp_ag_cind_response(bt_address_t* addr, hfp_ag_cind_resopnse
 {
     bt_hfp_ag_connection_t* sal_conn;
     struct bt_hfp_ag_ongoing_call calls[HFP_CALL_LIST_MAX];
-    struct bt_hfp_ag_indicator_value indicators[4] = {0};
+    struct bt_hfp_ag_indicator_value indicators[4] = { 0 };
     size_t count = 0;
 
     if (!addr || !response) {
@@ -1528,7 +1525,11 @@ bt_status_t bt_sal_hfp_ag_send_at_cmd(bt_address_t* addr, const char* atcmd, uin
     const char* start;
     const char* end;
     size_t line_len;
-    char* line = (char *)malloc(HFP_AT_LEN_MAX + 1);
+    char* line = (char*)malloc(HFP_AT_LEN_MAX + 1);
+    if (!line) {
+        BT_LOGE("%s, failed to allocate memory for AT command", __func__);
+        return BT_STATUS_NOMEM;
+    }
 
     if (!addr || !atcmd || length == 0) {
         return BT_STATUS_PARM_INVALID;
