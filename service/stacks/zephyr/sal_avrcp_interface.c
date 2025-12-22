@@ -239,8 +239,13 @@ static struct bt_sdp_record avrcp_tg_rec = BT_SDP_RECORD(avrcp_tg_attrs);
 #endif
 
 static bt_list_t* bt_avrcp_conn = NULL;
+#if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME)
 static bool avrcp_ct_registered = false;
+#endif
+
+#if defined(CONFIG_BLUETOOTH_AVRCP_TARGET) || defined(CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME)
 static bool avrcp_tg_registered = false;
+#endif
 
 NET_BUF_POOL_DEFINE(bt_avrcp_tx_pool, CONFIG_BT_MAX_CONN,
     BT_L2CAP_BUF_SIZE(CONFIG_BT_L2CAP_TX_MTU),
@@ -1487,6 +1492,7 @@ bt_status_t bt_sal_avrcp_control_send_pass_through_cmd(bt_controller_id_t id,
 #endif
 }
 
+#if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME)
 static void bt_avrcp_control_notification_cb(struct bt_avrcp_ct* ct, uint8_t event_id, struct bt_avrcp_event_data* data)
 {
     zblue_avrcp_info_t* avrcp_info;
@@ -1498,9 +1504,7 @@ static void bt_avrcp_control_notification_cb(struct bt_avrcp_ct* ct, uint8_t eve
         return;
     }
 
-#if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME)
     zblue_on_ct_notification_rsp(ct, 0, BT_AVRCP_STATUS_SUCCESS, event_id, data);
-#endif
 
     switch (event_id) {
     case BT_AVRCP_EVT_PLAYBACK_STATUS_CHANGED:
@@ -1529,6 +1533,7 @@ static void bt_avrcp_control_notification_cb(struct bt_avrcp_ct* ct, uint8_t eve
 
     bt_avrcp_ct_register_notification(ct, get_next_ct_tid(avrcp_info), event_id, interval, bt_avrcp_control_notification_cb);
 }
+#endif
 
 bt_status_t bt_sal_avrcp_control_register_notification(bt_controller_id_t id,
     bt_address_t* bd_addr, avrcp_notification_event_t event, uint32_t interval)
