@@ -446,7 +446,7 @@ void tele_service_get_current_calls(void)
 
     for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
         call = bt_list_node(node);
-        BT_LOGD("%s, Call state: %d, Incoming: %d", __func__, call->call_state, call->is_incoming);
+        BT_LOGD("%s, Call state: %d, Incoming: %d, Number: %s", __func__, call->call_state, call->is_incoming, call->line_identification ? call->line_identification : "null");
 
         bt_sal_hfp_ag_call_sync(call->is_incoming,
             call->call_state, HFP_CALL_MODE_VOICE,
