@@ -663,7 +663,7 @@ static int zblue_on_ag_number_call(struct bt_hfp_ag* ag, const char* number)
 
     hfp_ag_on_dial_number(&sal_conn->addr, (char*)number, strlen(number));
 
-    return 0;
+    return -EINPROGRESS;
 }
 
 static void zblue_on_ag_outgoing(struct bt_hfp_ag* ag, struct bt_hfp_ag_call* call, const char* number)
@@ -1373,6 +1373,20 @@ bt_status_t bt_sal_hfp_ag_clcc_response(bt_address_t* addr, uint32_t index,
 
 bt_status_t bt_sal_hfp_ag_dial_response(bt_address_t* addr, hfp_atcmd_result_t result)
 {
+    bt_hfp_ag_connection_t* sal_conn;
+    if (!addr) {
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    sal_conn = find_connection_by_addr(addr);
+
+    if (!sal_conn || !sal_conn->ag) {
+        BT_LOGE("%s, connection not found", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    SAL_CHECK_RET(Z_API(bt_hfp_ag_send_vendor)(sal_conn->ag, NULL), 0);
+
     return BT_STATUS_SUCCESS;
 }
 
