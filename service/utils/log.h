@@ -42,6 +42,7 @@ enum bt_log_level_ {
     BT_LOG_LEVEL_WARNING = LOG_WARNING,
     BT_LOG_LEVEL_INFO = LOG_INFO,
     BT_LOG_LEVEL_DEBUG = LOG_DEBUG,
+    BT_LOG_LEVEL_VERBOSE,
 };
 
 #ifndef CONFIG_BLUETOOTH_SERVICE_LOG_LEVEL
@@ -51,6 +52,7 @@ enum bt_log_level_ {
 #define BT_LOGW(fmt, args...)
 #define BT_LOGI(fmt, args...)
 #define BT_LOGD(fmt, args...)
+#define BT_LOGV(fmt, args...)
 #else
 extern bool bt_log_print_check(uint8_t level);
 
@@ -81,6 +83,15 @@ extern bool bt_log_print_check(uint8_t level);
         if (bt_log_print_check(BT_LOG_LEVEL_DEBUG))                           \
             BT_LOG(LOG_ID_FRAMEWORK, BT_LOG_LEVEL_DEBUG, fmt, ##__VA_ARGS__); \
     } while (0);
+#if CONFIG_BLUETOOTH_SERVICE_LOG_LEVEL < 7
+#define BT_LOGV(fmt, args...)
+#else
+#define BT_LOGV(fmt, ...)                                                     \
+    do {                                                                      \
+        if (bt_log_print_check(BT_LOG_LEVEL_VERBOSE))                         \
+            BT_LOG(LOG_ID_FRAMEWORK, BT_LOG_LEVEL_DEBUG, fmt, ##__VA_ARGS__); \
+    } while (0);
+#endif
 #endif
 
 #define BT_ADDR_LOG(fmt, _addr, ...)                \

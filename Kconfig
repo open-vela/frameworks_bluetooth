@@ -851,7 +851,7 @@ config BLUETOOTH_SERVICE_LOG_LEVEL
 	default 7
 	depends on BLUETOOTH_SERVICE
 	help
-		Set BT Service log level <0~7>
+		Set BT Service log level <0~8>
 endif #BLUETOOTH_LOG
 
 endmenu #Debug
