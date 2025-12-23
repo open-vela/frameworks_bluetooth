@@ -84,12 +84,14 @@ static int set_phy_cmd(void* handle, int argc, char** argv);
 static int enhance_mode_cmd(void* handle, int argc, char** argv);
 static int dump_cmd(void* handle, int argc, char** argv);
 static int quit_cmd(void* handle, int argc, char** argv);
+static void bttool_ins_uninit(bttool_t* bttool);
 
 bt_instance_t* g_bttool_ins = NULL;
 static void* adapter_callback = NULL;
 static bool g_cmd_had_inited = false;
 bool g_auto_accept_pair = true;
 bond_state_t g_bond_state = BOND_STATE_NONE;
+uv_loop_t* g_bttool_loop = NULL;
 
 static struct {
     int cmd_err_code;
@@ -1719,6 +1721,17 @@ static int execute_command(void* handle, int argc, char* argv[])
     return CMD_UNKNOWN;
 }
 
+static void bt_tool_uninit_cb(void* data)
+{
+    bttool_ins_uninit(NULL);
+
+    if (g_bttool_loop) {
+        uv_loop_close(g_bttool_loop);
+        free(g_bttool_loop);
+        g_bttool_loop = NULL;
+    }
+}
+
 static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
 {
     PRINT("Context:%p, Adapter state changed: %d", cookie, state);
@@ -1740,7 +1753,9 @@ static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
         PRINT("Adapter Name: %s, Cap: %d, Class: 0x%08" PRIX32 ", Mode:%d", name, cap, class, mode);
     } else if (state == BT_ADAPTER_STATE_TURNING_OFF) {
         /* code */
-        bt_tool_uninit(g_bttool_ins);
+        if (g_bttool_loop && g_bttool_loop->data && !uv_loop_is_close(g_bttool_loop)) {
+            do_in_thread_loop(g_bttool_loop, bt_tool_uninit_cb, NULL);
+        }
     } else if (state == BT_ADAPTER_STATE_OFF) {
         /* do something */
     }
@@ -2002,10 +2017,12 @@ static void bttool_command_uvloop_run(bttool_t* bttool)
     int ret;
 
     /* This code is used to initialize the async queue. */
-    ret = uv_async_queue_init(&bttool->loop, &bttool->async, bttool_execute_command_cb);
+    ret = uv_async_queue_init(g_bttool_loop, &bttool->async, bttool_execute_command_cb);
     if (ret != 0) {
         PRINT("%s async error: %d", __func__, ret);
-        uv_loop_close(&bttool->loop);
+        uv_loop_close(g_bttool_loop);
+        free(g_bttool_loop);
+        g_bttool_loop = NULL;
         return;
     }
 
@@ -2013,23 +2030,30 @@ static void bttool_command_uvloop_run(bttool_t* bttool)
     uv_sem_post(&bttool->ready);
 
     /* This code is used to start the event loop until there are no more events to process. */
-    uv_run(&bttool->loop, UV_RUN_DEFAULT);
+    uv_run(g_bttool_loop, UV_RUN_DEFAULT);
 
     /* The assert() function is used to check the return value of uv_loop_close().
        If the return value is 0, it means that the loop is closed successfully,
        otherwise it means an error occurs.
     */
-    assert(uv_loop_close(&bttool->loop) == 0);
+    if (g_bttool_loop) {
+        assert(uv_loop_close(g_bttool_loop) == 0);
+        free(g_bttool_loop);
+        g_bttool_loop = NULL;
+    }
 }
 
 static void bttool_thread(void* data)
 {
     bttool_t* bttool = data;
 
-    /* Initialize the event loop, the loop is available
-       before the asynchronous instance is created.
+    /* g_bttool_loop is now initialized in main() function
+       before the thread starts, so it's already available here.
     */
-    uv_loop_init(&bttool->loop);
+    if (!g_bttool_loop) {
+        PRINT("%s: g_bttool_loop is not initialized", __func__);
+        return;
+    }
 
     /* initialize synchronous or asynchronous instance.
        and register callbacks.
@@ -2111,11 +2135,29 @@ int main(int argc, char** argv)
         }
     }
 
+    g_bttool_loop = zalloc(sizeof(uv_loop_t));
+    if (!g_bttool_loop) {
+        PRINT("%s: Failed to allocate uv_loop_t", __func__);
+        return -1;
+    }
+
+    ret = uv_loop_init(g_bttool_loop);
+    if (ret != 0) {
+        PRINT("%s: Failed to init uv_loop: %d", __func__, ret);
+        free(g_bttool_loop);
+        g_bttool_loop = NULL;
+        return -1;
+    }
+
     // Call the bttool_create_thread function to create a new thread
     // If thread creation fails, the return value is non-zero
     ret = bttool_create_thread(&bttool);
-    if (ret != 0)
+    if (ret != 0) {
+        uv_loop_close(g_bttool_loop);
+        free(g_bttool_loop);
+        g_bttool_loop = NULL;
         return ret;
+    }
 
     while (1) {
         printf("bttool> ");
@@ -2149,6 +2191,12 @@ int main(int argc, char** argv)
     }
 
     uv_thread_join(&bttool.thread);
+
+    if (g_bttool_loop) {
+        uv_loop_close(g_bttool_loop);
+        free(g_bttool_loop);
+        g_bttool_loop = NULL;
+    }
 
     return 0;
 }
