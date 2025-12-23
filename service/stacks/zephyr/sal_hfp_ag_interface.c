@@ -904,7 +904,14 @@ bt_status_t bt_sal_hfp_ag_init(uint32_t features, uint8_t max_connection)
 
 void bt_sal_hfp_ag_cleanup(void)
 {
-    return;
+    if (g_sal_ag_conn_list) {
+        bt_list_free(g_sal_ag_conn_list);
+        g_sal_ag_conn_list = NULL;
+    }
+
+    if (Z_API(bt_hfp_ag_unregister)()) {
+        BT_LOGE("%s, Failed to unregister HFP AG", __func__);
+    }
 }
 
 bt_status_t bt_sal_hfp_ag_connect(bt_address_t* addr)
