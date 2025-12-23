@@ -259,6 +259,7 @@ static bool g_cmd_had_inited = false;
 extern bt_instance_t* g_bttool_ins;
 extern bool g_auto_accept_pair;
 extern bond_state_t g_bond_state;
+extern uv_loop_t* g_bttool_loop;
 
 static void status_cb(bt_instance_t* ins, bt_status_t status, void* userdata)
 {
@@ -1627,7 +1628,12 @@ static void ipc_disconnected(bt_instance_t* ins, void* userdata, int status)
 
 int bttool_async_ins_init(bttool_t* bttool)
 {
-    g_bttool_ins = bluetooth_create_async_instance(&bttool->loop, ipc_connected, ipc_disconnected, (void*)bttool);
+    if (g_bttool_loop == NULL) {
+        PRINT("%s: g_bttool_loop is not initialized", __func__);
+        return -1;
+    }
+
+    g_bttool_ins = bluetooth_create_async_instance(g_bttool_loop, ipc_connected, ipc_disconnected, (void*)bttool);
     if (g_bttool_ins == NULL) {
         PRINT("create instance error\n");
         return -1;
