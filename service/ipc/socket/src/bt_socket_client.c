@@ -724,6 +724,7 @@ int bt_socket_async_client_init(bt_instance_t* ins, uv_loop_t* loop, int family,
     if (priv == NULL)
         return BT_STATUS_NOMEM;
 
+    ins->priv = priv;
     priv->user_data = user_data;
     priv->loop = loop;
     priv->ins = ins;
@@ -762,8 +763,6 @@ int bt_socket_async_client_init(bt_instance_t* ins, uv_loop_t* loop, int family,
             goto fail;
         }
     }
-
-    ins->priv = priv;
 
     return BT_STATUS_SUCCESS;
 fail:
