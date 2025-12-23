@@ -62,7 +62,6 @@ typedef struct
     uint8_t max_connections;
     bt_list_t* ag_devices;
     callbacks_list_t* callbacks;
-    pthread_mutex_t device_lock;
 } ag_service_t;
 
 typedef struct
@@ -184,13 +183,11 @@ static uint8_t get_current_connnection_cnt(void)
     bt_list_node_t* node;
     uint8_t cnt = 0;
 
-    pthread_mutex_lock(&g_ag_service.device_lock);
     for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
         ag_device_t* device = bt_list_node(node);
         if (ag_state_machine_get_state(device->agsm) >= HFP_AG_STATE_CONNECTED || ag_state_machine_get_state(device->agsm) == HFP_AG_STATE_CONNECTING)
             cnt++;
     }
-    pthread_mutex_unlock(&g_ag_service.device_lock);
 
     return cnt;
 }
@@ -211,7 +208,6 @@ static uint32_t get_ag_features(void)
 static void ag_startup(profile_on_startup_t on_startup)
 {
     bt_status_t status;
-    pthread_mutexattr_t attr;
     ag_service_t* service = &g_ag_service;
 
     if (service->started) {
@@ -227,10 +223,6 @@ static void ag_startup(profile_on_startup_t on_startup)
         goto fail;
     }
 
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    pthread_mutex_init(&service->device_lock, &attr);
-
     status = bt_sal_hfp_ag_init((get_ag_features() & 0xFFFF), service->max_connections);
     if (status != BT_STATUS_SUCCESS)
         goto fail;
@@ -245,7 +237,6 @@ fail:
     service->ag_devices = NULL;
     bt_callbacks_list_free(service->callbacks);
     service->callbacks = NULL;
-    pthread_mutex_destroy(&service->device_lock);
     on_startup(PROFILE_HFP_AG, false);
 }
 
@@ -257,12 +248,9 @@ static void ag_shutdown(profile_on_shutdown_t on_shutdown)
     }
 
     tele_service_cleanup();
-    pthread_mutex_lock(&g_ag_service.device_lock);
     g_ag_service.started = false;
     bt_list_free(g_ag_service.ag_devices);
     g_ag_service.ag_devices = NULL;
-    pthread_mutex_unlock(&g_ag_service.device_lock);
-    pthread_mutex_destroy(&g_ag_service.device_lock);
     bt_callbacks_list_free(g_ag_service.callbacks);
     g_ag_service.callbacks = NULL;
     bt_sal_hfp_ag_cleanup();
@@ -297,15 +285,11 @@ static void hfp_ag_process_message(void* data)
     case AG_SET_VOLUME:
     case AG_SET_INBAND_RING_ENABLE:
     case AG_DIALING_RESULT:
-        pthread_mutex_lock(&g_ag_service.device_lock);
         bt_list_foreach(g_ag_service.ag_devices, ag_dispatch_msg_foreach, msg);
-        pthread_mutex_unlock(&g_ag_service.device_lock);
         break;
     default: {
-        pthread_mutex_lock(&g_ag_service.device_lock);
         ag_state_machine_t* agsm = get_state_machine(&msg->data.addr);
         if (!agsm) {
-            pthread_mutex_unlock(&g_ag_service.device_lock);
             break;
         }
 
@@ -317,7 +301,6 @@ static void hfp_ag_process_message(void* data)
         }
 
         ag_state_machine_dispatch(agsm, msg);
-        pthread_mutex_unlock(&g_ag_service.device_lock);
         break;
     }
     }
@@ -480,32 +463,26 @@ static bool hfp_ag_unregister_callbacks(void** remote, void* cookie)
 
 static bool hfp_ag_is_connected(bt_address_t* addr)
 {
-    pthread_mutex_lock(&g_ag_service.device_lock);
     ag_device_t* device = find_ag_device_by_addr(addr);
 
     if (!device) {
-        pthread_mutex_unlock(&g_ag_service.device_lock);
         return false;
     }
 
     bool connected = ag_state_machine_get_state(device->agsm) >= HFP_AG_STATE_CONNECTED;
-    pthread_mutex_unlock(&g_ag_service.device_lock);
 
     return connected;
 }
 
 static bool hfp_ag_is_audio_connected(bt_address_t* addr)
 {
-    pthread_mutex_lock(&g_ag_service.device_lock);
     ag_device_t* device = find_ag_device_by_addr(addr);
 
     if (!device) {
-        pthread_mutex_unlock(&g_ag_service.device_lock);
         return false;
     }
 
     bool connected = ag_state_machine_get_state(device->agsm) == HFP_AG_STATE_AUDIO_CONNECTED;
-    pthread_mutex_unlock(&g_ag_service.device_lock);
 
     return connected;
 }
@@ -519,7 +496,6 @@ static profile_connection_state_t hfp_ag_get_connection_state(bt_address_t* addr
     if (!device)
         return PROFILE_STATE_DISCONNECTED;
 
-    pthread_mutex_lock(&g_ag_service.device_lock);
     state = ag_state_machine_get_state(device->agsm);
     if (state == HFP_AG_STATE_DISCONNECTED)
         conn_state = PROFILE_STATE_DISCONNECTED;
@@ -529,7 +505,6 @@ static profile_connection_state_t hfp_ag_get_connection_state(bt_address_t* addr
         conn_state = PROFILE_STATE_DISCONNECTING;
     else
         conn_state = PROFILE_STATE_CONNECTED;
-    pthread_mutex_unlock(&g_ag_service.device_lock);
 
     return conn_state;
 }
