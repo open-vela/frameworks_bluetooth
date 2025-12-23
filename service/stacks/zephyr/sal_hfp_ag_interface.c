@@ -102,13 +102,6 @@ static bool sal_conn_addr_cmp(void* sal_context, void* z_context)
     return !bt_addr_compare(&sal_conn->addr, addr);
 }
 
-static bool sal_conn_context_cmp(void* sal_context, void* z_context)
-{
-    bt_hfp_ag_connection_t* sal_conn = (bt_hfp_ag_connection_t*)sal_context;
-    struct bt_conn* conn = (struct bt_conn*)z_context;
-    return sal_conn && sal_conn->context == conn;
-}
-
 static bool sal_conn_sco_context_cmp(void* sal_context, void* z_context)
 {
     bt_hfp_ag_connection_t* sal_conn = (bt_hfp_ag_connection_t*)sal_context;
@@ -134,16 +127,7 @@ static bt_hfp_ag_connection_t* find_connection_by_ag(struct bt_hfp_ag* ag)
     return (bt_hfp_ag_connection_t*)bt_list_find(g_sal_ag_conn_list, sal_conn_ag_cmp, ag);
 }
 
-static bt_hfp_ag_connection_t* find_connection_by_conn(struct bt_conn* conn)
-{
-    if (!g_sal_ag_conn_list) {
-        BT_LOGE("%s, ag conn list not initialized", __func__);
-        return NULL;
-    }
-    return (bt_hfp_ag_connection_t*)bt_list_find(g_sal_ag_conn_list, sal_conn_context_cmp, conn);
-}
-
-static __attribute__((unused)) bt_hfp_ag_connection_t* find_connection_by_sco_context(struct bt_conn* sco_conn)
+static bt_hfp_ag_connection_t* find_connection_by_sco_context(struct bt_conn* sco_conn)
 {
     if (!g_sal_ag_conn_list) {
         BT_LOGE("%s, ag conn list not initialized", __func__);
@@ -203,13 +187,6 @@ static bool sal_call_context_cmp(void* sal_context, void* z_context)
     return sal_call->context == call;
 }
 
-static bool sal_call_state_cmp(void* sal_context, void* z_state)
-{
-    bt_hfp_ag_call_info_t* sal_call = (bt_hfp_ag_call_info_t*)sal_context;
-    hfp_ag_call_state_t state = *((hfp_ag_call_state_t*)z_state);
-    return sal_call && sal_call->state == tele_call_state_to_sal_status(state);
-}
-
 static bool sal_call_number_cmp(void* sal_context, void* data)
 {
     bt_hfp_ag_call_info_t* sal_call = (bt_hfp_ag_call_info_t*)sal_context;
@@ -241,17 +218,6 @@ static bt_hfp_ag_call_info_t* find_call_by_context(struct bt_hfp_ag_call* z_cont
     }
 
     return NULL;
-}
-
-static __attribute__((unused)) bt_hfp_ag_call_info_t* find_call_by_state(
-    bt_hfp_ag_connection_t* sal_conn,
-    hfp_ag_call_state_t state)
-{
-    if (!sal_conn || !sal_conn->calls) {
-        return NULL;
-    }
-
-    return (bt_hfp_ag_call_info_t*)bt_list_find(sal_conn->calls, sal_call_state_cmp, &state);
 }
 
 static bt_hfp_ag_call_info_t* find_call_by_number(bt_hfp_ag_connection_t* sal_conn, const char* number)
@@ -306,6 +272,12 @@ static bt_hfp_ag_call_info_t* build_sal_call(
 
     sal_call->state = state;
     sal_call->dir = service_call_dir_to_sal_dir(dir);
+    if (sal_call->dir < 0) {
+        BT_LOGE("%s, invalid call direction", __func__);
+        free(sal_call);
+        return NULL;
+    }
+
     sal_call->type = type;
     if (number) {
         strlcpy(sal_call->number, number, sizeof(sal_call->number));
@@ -357,46 +329,6 @@ static bt_hfp_ag_call_info_t* update_sal_call(bt_hfp_ag_connection_t* conn,
     sal_call->type = type;
 
     return sal_call;
-}
-
-static __attribute__((unused)) bt_hfp_ag_call_info_t* find_or_create_call(bt_hfp_ag_connection_t* conn, struct bt_hfp_ag_call* z_context)
-{
-    if (!conn) {
-        return NULL;
-    }
-
-    bt_hfp_ag_call_info_t* call = find_call_by_context(z_context, &conn);
-    if (call) {
-        return call;
-    }
-
-    call = new_sal_call();
-    if (!call) {
-        return NULL;
-    }
-
-    call->context = z_context;
-
-    return call;
-}
-
-static void __attribute__((unused)) set_call_state(
-    bt_hfp_ag_call_info_t* sal_call,
-    hfp_ag_call_state_t state)
-{
-    if (!sal_call) {
-        return;
-    }
-
-    sal_call->state = state;
-
-    if (state == HFP_AG_CALL_STATE_DISCONNECTED) {
-        bt_hfp_ag_connection_t* owner = NULL;
-        find_call_by_context(sal_call->context, &owner);
-        if (owner && owner->calls) {
-            bt_list_remove(owner->calls, sal_call);
-        }
-    }
 }
 
 static bt_status_t do_ag_connect(bt_controller_id_t id, bt_address_t* addr, void* userdata)
@@ -595,7 +527,7 @@ static void zblue_on_ag_sco_connected(struct bt_hfp_ag* ag, struct bt_conn* sco_
 static void zblue_on_ag_sco_disconnected(struct bt_conn* sco_conn, uint8_t reason)
 {
     BT_LOGD("%s, HFP AG SCO disconnected, reason=%d", __func__, reason);
-    bt_hfp_ag_connection_t* sal_conn = find_connection_by_conn(sco_conn);
+    bt_hfp_ag_connection_t* sal_conn = find_connection_by_sco_context(sco_conn);
     if (!sal_conn) {
         BT_LOGE("%s, Failed to find connection", __func__);
         return;
