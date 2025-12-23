@@ -436,7 +436,7 @@ void tele_service_get_phone_state(uint8_t* num_active, uint8_t* num_held,
     *call_state = g_call_state;
 }
 
-void tele_service_get_current_calls(void)
+void tele_service_get_current_calls(bt_address_t* addr)
 {
     BT_LOGD("%s", __func__);
 
@@ -448,7 +448,7 @@ void tele_service_get_current_calls(void)
         call = bt_list_node(node);
         BT_LOGD("%s, Call state: %d, Incoming: %d, Number: %s", __func__, call->call_state, call->is_incoming, call->line_identification ? call->line_identification : "null");
 
-        bt_sal_hfp_ag_call_sync(call->is_incoming,
+        bt_sal_hfp_ag_call_sync(addr, call->is_incoming,
             call->call_state, HFP_CALL_MODE_VOICE,
             call->is_multiparty, HFP_CALL_ADDRTYPE_UNKNOWN,
             call->line_identification);

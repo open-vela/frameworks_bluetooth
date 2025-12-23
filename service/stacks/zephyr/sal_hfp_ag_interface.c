@@ -68,8 +68,6 @@ typedef struct _ag_connect_params {
 // TODO: remove g_conn_params later when bt_sal_profile_connect_request can carry a userdata.
 static ag_connect_params_t* g_conn_params = NULL;
 
-static bt_hfp_ag_connection_t* g_sal_ag_sync_conn = NULL;
-
 static void free_connection(void* data)
 {
     bt_hfp_ag_connection_t* sal_conn = (bt_hfp_ag_connection_t*)data;
@@ -1206,16 +1204,16 @@ bt_status_t bt_sal_hfp_ag_phone_state_change(bt_address_t* addr, uint8_t num_act
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hfp_ag_call_sync(
+bt_status_t bt_sal_hfp_ag_call_sync(bt_address_t* bd_addr,
     hfp_call_direction_t dir, hfp_ag_call_state_t call,
     hfp_call_mode_t mode, hfp_call_mpty_type_t mpty,
     hfp_call_addrtype_t type, const char* number)
 {
-    bt_hfp_ag_connection_t* conn = g_sal_ag_sync_conn;
+    bt_hfp_ag_connection_t* conn = find_connection_by_addr(bd_addr);
 
     if (!conn) {
         BT_LOGW("%s, no sync connection set, ignore", __func__);
-        return BT_STATUS_SUCCESS;
+        return BT_STATUS_PARM_INVALID;
     }
 
     update_sal_call(conn, dir, call, mode, mpty, type, number);
