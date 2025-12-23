@@ -38,7 +38,9 @@ static int get_adapter_cmd(void* handle, int argc, char** argv);
 static int set_scanmode_cmd(void* handle, int argc, char** argv);
 static int get_scanmode_cmd(void* handle, int argc, char** argv);
 static int set_iocap_cmd(void* handle, int argc, char** argv);
+static int set_le_iocap_cmd(void* handle, int argc, char** argv);
 static int get_iocap_cmd(void* handle, int argc, char** argv);
+static int get_le_iocap_cmd(void* handle, int argc, char** argv);
 static int get_local_addr_cmd(void* handle, int argc, char** argv);
 static int get_appearance_cmd(void* handle, int argc, char** argv);
 static int set_appearance_cmd(void* handle, int argc, char** argv);
@@ -79,13 +81,14 @@ static int stop_service_cmd(void* handle, int argc, char** argv);
 static int set_phy_cmd(void* handle, int argc, char** argv);
 static int dump_cmd(void* handle, int argc, char** argv);
 static int quit_cmd(void* handle, int argc, char** argv);
+static void bttool_ins_uninit(bttool_t* bttool);
 
-static bt_instance_t* g_bttool_ins = NULL;
+bt_instance_t* g_bttool_ins = NULL;
 static void* adapter_callback = NULL;
-static void* adapter_callback2 = NULL;
-static pthread_mutex_t bt_lock;
-static pthread_cond_t disable_cond;
 static bool g_cmd_had_inited = false;
+bool g_auto_accept_pair = true;
+bond_state_t g_bond_state = BOND_STATE_NONE;
+uv_loop_t* g_bttool_loop = NULL;
 
 static struct {
     int cmd_err_code;
@@ -102,6 +105,7 @@ static struct {
 };
 
 static struct option main_options[] = {
+    { "async", 0, 0, 'a' },
     { "help", 0, 0, 'h' },
     { "version", 0, 0, 'v' },
     { 0, 0, 0, 0 }
@@ -140,8 +144,8 @@ static struct option le_conn_options[] = {
                       "\t --min_ce_length, Range: 0x0000 to 0xFFFF\n"                                                           \
                       "\t --max_ce_length, Range: 0x0000 to 0xFFFF\n"
 
-#define INQUIRY_USAGE "inquiry device\n"                                          \
-                      "\t\t\t- start <timeout>(Range: 1-48, i.e., 1.28-61.44s)\n" \
+#define INQUIRY_USAGE "inquiry device\n"                                                                    \
+                      "\t\t\t- start <timeout>(Range: 1-48, i.e., 1.28-61.44s) [is_limited](Range: 0, 1)\n" \
                       "\t\t\t- stop"
 
 #define SET_LE_PHY_USAGE "set le tx and rx phy, params: <addr><txphy><rxphy>(0:1M, 1:2M, 2:CODED)"
@@ -172,6 +176,9 @@ static bt_command_t g_cmd_tables[] = {
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
     { "scan", scan_command_exec, 0, "scan cmd,          input \'scan\' show usage" },
+#endif
+#ifdef CONFIG_BLUETOOTH_L2CAP
+    { "l2cap", l2cap_command_exec, 0, "l2cap cmd,         input \'l2cap\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     { "a2dpsnk", a2dp_sink_command_exec, 0, "a2dp sink cmd,    input \'a2dpsnk\' show usage" },
@@ -246,6 +253,7 @@ static bt_command_t g_cmd_tables[] = {
 static bt_command_t g_set_cmd_tables[] = {
     { "scanmode", set_scanmode_cmd, 0, "params: <scan mode> (0:none, 1:connectable 2:connectable&discoverable)" },
     { "iocap", set_iocap_cmd, 0, SET_IOCAP_USAGE },
+    { "le_iocap", set_le_iocap_cmd, 0, SET_IOCAP_USAGE },
     { "name", set_local_name_cmd, 0, "params: <local name>, example \"vela-bt\"" },
     { "class", set_local_cod_cmd, 0, SET_CLASS_USAGE },
     { "appearance", set_appearance_cmd, 0, "set le adapter appearance, params: <appearance>" },
@@ -262,6 +270,7 @@ static bt_command_t g_set_cmd_tables[] = {
 static bt_command_t g_get_cmd_tables[] = {
     { "scanmode", get_scanmode_cmd, 0, "get adapter scan mode" },
     { "iocap", get_iocap_cmd, 0, "get adapter io capability" },
+    { "le_iocap", get_le_iocap_cmd, 0, "get adapter le io capability" },
     { "addr", get_local_addr_cmd, 0, "get adapter local addr" },
     { "leaddr", get_le_addr_cmd, 0, "get ble adapter addr" },
     { "name", get_local_name_cmd, 0, "get adapter local name" },
@@ -293,6 +302,9 @@ static void bt_tool_init(void* handle)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
     scan_command_init(handle);
+#endif
+#ifdef CONFIG_BLUETOOTH_L2CAP
+    l2cap_command_init(handle);
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     a2dp_sink_commond_init(handle);
@@ -362,6 +374,9 @@ static void bt_tool_uninit(void* handle)
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
     scan_command_uninit(handle);
 #endif
+#ifdef CONFIG_BLUETOOTH_L2CAP
+    l2cap_command_uninit(handle);
+#endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     a2dp_sink_commond_uninit(handle);
 #endif
@@ -429,23 +444,6 @@ static const char* cmd_err_str(int err_code)
     return "Correct code ?";
 }
 
-#ifdef CONFIG_BLUETOOTH_FRAMEWORK_LOCAL
-static void do_disable_wait(void* handle)
-{
-    pthread_mutex_lock(&bt_lock);
-    bt_adapter_disable(handle);
-    pthread_cond_wait(&disable_cond, &bt_lock);
-    pthread_mutex_unlock(&bt_lock);
-}
-
-static void disable_done_signal(void* handle)
-{
-    pthread_mutex_lock(&bt_lock);
-    pthread_cond_signal(&disable_cond);
-    pthread_mutex_unlock(&bt_lock);
-}
-#endif
-
 static int enable_cmd(void* handle, int argc, char** argv)
 {
     bt_adapter_enable(handle);
@@ -454,7 +452,7 @@ static int enable_cmd(void* handle, int argc, char** argv)
 
 static int disable_cmd(void* handle, int argc, char** argv)
 {
-    bt_adapter_disable(handle);
+    bt_adapter_disable_safe(handle);
     return CMD_OK;
 }
 
@@ -466,6 +464,8 @@ static int get_state_cmd(void* handle, int argc, char** argv)
 
 static int discovery_cmd(void* handle, int argc, char** argv)
 {
+    int limited = 0;
+
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
@@ -479,9 +479,19 @@ static int discovery_cmd(void* handle, int argc, char** argv)
             return CMD_INVALID_PARAM;
         }
 
-        PRINT("start discovery timeout:%d", timeout);
-        if (bt_adapter_start_discovery(handle, timeout) != BT_STATUS_SUCCESS)
+        if (argc >= 3) {
+            limited = atoi(argv[2]);
+        }
+
+        PRINT("start %s discovery timeout:%d", limited ? "limited" : "general", timeout);
+
+        if ((limited
+                    ? bt_adapter_start_limited_discovery(handle, timeout)
+                    : bt_adapter_start_discovery(handle, timeout))
+            != BT_STATUS_SUCCESS) {
             return CMD_ERROR;
+        }
+
     } else if (!strcmp(argv[0], "stop")) {
         if (bt_adapter_cancel_discovery(handle) != BT_STATUS_SUCCESS)
             return CMD_ERROR;
@@ -607,9 +617,35 @@ static int set_iocap_cmd(void* handle, int argc, char** argv)
     return CMD_OK;
 }
 
+static int set_le_iocap_cmd(void* handle, int argc, char** argv)
+{
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    if (strlen(argv[0]) > 1) {
+        return CMD_INVALID_PARAM;
+    }
+
+    uint32_t iocap = *argv[0] - '0';
+    if (iocap < BT_IO_CAPABILITY_DISPLAYONLY || iocap > BT_IO_CAPABILITY_KEYBOARDDISPLAY)
+        return CMD_INVALID_PARAM;
+
+    if (bt_adapter_set_le_io_capability(handle, iocap) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    PRINT("IO Capability:%" PRIu32 " set success", iocap);
+    return CMD_OK;
+}
+
 static int get_iocap_cmd(void* handle, int argc, char** argv)
 {
     PRINT("IO Capability:%d", bt_adapter_get_io_capability(handle));
+    return CMD_OK;
+}
+
+static int get_le_iocap_cmd(void* handle, int argc, char** argv)
+{
+    PRINT("IO Capability:%" PRIu32, bt_adapter_get_le_io_capability(handle));
     return CMD_OK;
 }
 
@@ -841,9 +877,6 @@ static int pair_cmd(void* handle, int argc, char** argv)
 
     return ret;
 }
-
-static bool g_auto_accept_pair = true;
-static bond_state_t g_bond_state = BOND_STATE_NONE;
 
 static int pair_set_auto_cmd(void* handle, int argc, char** argv)
 {
@@ -1537,7 +1570,7 @@ static void usage(void)
 
 static void show_version(void)
 {
-    printf("Version :1.0.1");
+    printf("Version :2.0.1");
 }
 
 static int execute_command(void* handle, int argc, char* argv[])
@@ -1564,6 +1597,17 @@ static int execute_command(void* handle, int argc, char* argv[])
     return CMD_UNKNOWN;
 }
 
+static void bt_tool_uninit_cb(void* data)
+{
+    bttool_ins_uninit(NULL);
+
+    if (g_bttool_loop) {
+        uv_loop_close(g_bttool_loop);
+        free(g_bttool_loop);
+        g_bttool_loop = NULL;
+    }
+}
+
 static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
 {
     PRINT("Context:%p, Adapter state changed: %d", cookie, state);
@@ -1585,17 +1629,12 @@ static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
         PRINT("Adapter Name: %s, Cap: %d, Class: 0x%08" PRIX32 ", Mode:%d", name, cap, class, mode);
     } else if (state == BT_ADAPTER_STATE_TURNING_OFF) {
         /* code */
-        bt_tool_uninit(g_bttool_ins);
+        if (g_bttool_loop && g_bttool_loop->data && !uv_loop_is_close(g_bttool_loop)) {
+            do_in_thread_loop(g_bttool_loop, bt_tool_uninit_cb, NULL);
+        }
     } else if (state == BT_ADAPTER_STATE_OFF) {
-#ifdef CONFIG_BLUETOOTH_FRAMEWORK_LOCAL
-        disable_done_signal(g_bttool_ins);
-#endif
+        /* do something */
     }
-}
-
-static void on_adapter_state_changed_cb_2(void* cookie, bt_adapter_state_t state)
-{
-    PRINT("Context2:%p, Adapter state changed: %d", cookie, state);
 }
 
 static void on_discovery_state_changed_cb(void* cookie, bt_discovery_state_t state)
@@ -1675,10 +1714,12 @@ static void on_connection_state_changed_cb(void* cookie, bt_address_t* addr, bt_
     PRINT_ADDR("Device [%s][%s] connection state: %d", addr, LINK_TYPE(transport), state);
 }
 
-static void on_bond_state_changed_cb(void* cookie, bt_address_t* addr, bt_transport_t transport, bond_state_t state, bool is_ctkd)
+static void on_bond_state_changed_cb(void* cookie, bt_address_t* addr, bt_transport_t transport,
+    bond_state_t previous_state, bond_state_t current_state, bool is_ctkd)
 {
-    g_bond_state = state;
-    PRINT_ADDR("Device [%s][%s] bond state: %s, is_ctkd: %d", addr, LINK_TYPE(transport), bond_state_to_string(state), is_ctkd);
+    g_bond_state = current_state;
+    PRINT_ADDR("Device [%s][%s] bond state: %s -> %s, is_ctkd: %d", addr, LINK_TYPE(transport),
+        bond_state_to_string(previous_state), bond_state_to_string(current_state), is_ctkd);
 }
 
 static void on_le_sc_local_oob_data_got_cb(void* cookie, bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val)
@@ -1738,16 +1779,12 @@ const static adapter_callbacks_t g_adapter_cbs = {
     .on_pair_display = on_pair_display_cb,
     .on_connect_request = on_connect_request_cb,
     .on_connection_state_changed = on_connection_state_changed_cb,
-    .on_bond_state_changed = on_bond_state_changed_cb,
+    .on_bond_state_changed_extra = on_bond_state_changed_cb,
     .on_le_sc_local_oob_data_got = on_le_sc_local_oob_data_got_cb,
     .on_remote_name_changed = on_remote_name_changed_cb,
     .on_remote_alias_changed = on_remote_alias_changed_cb,
     .on_remote_cod_changed = on_remote_cod_changed_cb,
     .on_remote_uuids_changed = on_remote_uuids_changed_cb,
-};
-
-const static adapter_callbacks_t g_adapter_cbs_2 = {
-    .on_adapter_state_changed = on_adapter_state_changed_cb_2,
 };
 
 int execute_command_in_table_offset(void* handle, bt_command_t* table, uint32_t table_size, int argc, char* argv[], uint8_t offset)
@@ -1774,6 +1811,272 @@ int execute_command_in_table(void* handle, bt_command_t* table, uint32_t table_s
     return execute_command_in_table_offset(handle, table, table_size, argc, argv, 1);
 }
 
+static int bttool_ins_init(bttool_t* bttool)
+{
+    pthread_setschedprio(pthread_self(), CONFIG_BLUETOOTH_SERVICE_LOOP_THREAD_PRIORITY);
+    g_bttool_ins = bluetooth_create_instance();
+    if (g_bttool_ins == NULL) {
+        PRINT("create instance error\n");
+        return -1;
+    }
+
+    adapter_callback = bt_adapter_register_callback(g_bttool_ins, &g_adapter_cbs);
+    if (bt_adapter_get_state(g_bttool_ins) == BT_ADAPTER_STATE_ON)
+        bt_tool_init(g_bttool_ins);
+
+    return 0;
+}
+
+static void bttool_ins_uninit(bttool_t* bttool)
+{
+    bt_tool_uninit(g_bttool_ins);
+    bt_adapter_unregister_callback(g_bttool_ins, adapter_callback);
+    bluetooth_delete_instance(g_bttool_ins);
+    g_bttool_ins = NULL;
+    adapter_callback = NULL;
+}
+
+#ifdef CONFIG_LIBUV_EXTENSION
+static void handle_close_cb(uv_handle_t* handle)
+{
+    uv_stop(uv_handle_get_loop(handle));
+}
+
+static void bttool_execute_command_cb(uv_async_queue_t* handle, void* buffer)
+{
+    int ret;
+    int _argc = 0;
+    char* _argv[32];
+    char* saveptr = NULL;
+    char* tmpstr = buffer;
+    bttool_t* bttool = handle->data;
+
+    memset(_argv, 0, sizeof(_argv));
+
+    // 1. split command
+    while ((tmpstr = strtok_r(tmpstr, " ", &saveptr)) != NULL) {
+        _argv[_argc] = tmpstr;
+        _argc++;
+        tmpstr = NULL;
+    }
+
+    // 2. execute command
+    if (_argc > 0) {
+        if (bttool->async_api) {
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_ASYNC
+            ret = execute_async_command(g_bttool_ins, _argc, _argv);
+#else
+            ret = CMD_INVALID_OPT;
+#endif
+        } else
+            ret = execute_command(g_bttool_ins, _argc, _argv);
+        if (ret != CMD_OK) {
+            if (ret == -2) {
+                if (bttool->async_api) {
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_ASYNC
+                    bttool_async_ins_uninit(bttool);
+#endif
+                } else
+                    bttool_ins_uninit(bttool);
+                uv_async_queue_close(handle, handle_close_cb);
+            } else
+                PRINT("cmd execute error: [%s]", cmd_err_str(ret));
+        }
+    }
+
+    // 3. free buffer alloced by getline()
+    free(buffer);
+}
+
+static void bttool_command_uvloop_run(bttool_t* bttool)
+{
+    int ret;
+
+    /* This code is used to initialize the async queue. */
+    ret = uv_async_queue_init(g_bttool_loop, &bttool->async, bttool_execute_command_cb);
+    if (ret != 0) {
+        PRINT("%s async error: %d", __func__, ret);
+        uv_loop_close(g_bttool_loop);
+        free(g_bttool_loop);
+        g_bttool_loop = NULL;
+        return;
+    }
+
+    bttool->async.data = bttool;
+    uv_sem_post(&bttool->ready);
+
+    /* This code is used to start the event loop until there are no more events to process. */
+    uv_run(g_bttool_loop, UV_RUN_DEFAULT);
+
+    /* The assert() function is used to check the return value of uv_loop_close().
+       If the return value is 0, it means that the loop is closed successfully,
+       otherwise it means an error occurs.
+    */
+    if (g_bttool_loop) {
+        assert(uv_loop_close(g_bttool_loop) == 0);
+        free(g_bttool_loop);
+        g_bttool_loop = NULL;
+    }
+}
+
+static void bttool_thread(void* data)
+{
+    bttool_t* bttool = data;
+
+    /* g_bttool_loop is now initialized in main() function
+       before the thread starts, so it's already available here.
+    */
+    if (!g_bttool_loop) {
+        PRINT("%s: g_bttool_loop is not initialized", __func__);
+        return;
+    }
+
+    /* initialize synchronous or asynchronous instance.
+       and register callbacks.
+    */
+    if (!bttool->async_api) {
+        bttool_ins_init(bttool);
+    } else {
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_ASYNC
+        bttool_async_ins_init(bttool);
+#endif
+    }
+
+    /* This code is used to start the event loop until there are no more events to process. */
+    bttool_command_uvloop_run(bttool);
+}
+
+static int bttool_create_thread(bttool_t* bttool)
+{
+    int ret;
+    uv_thread_options_t options = {
+        .flags = UV_THREAD_HAS_STACK_SIZE,
+        .stack_size = 8192,
+    };
+
+    ret = uv_sem_init(&bttool->ready, 0);
+    if (ret != 0) {
+        PRINT("%s sem init error: %d", __func__, ret);
+        return ret;
+    }
+
+    ret = uv_thread_create_ex(&bttool->thread, &options, bttool_thread, (void*)bttool);
+    if (ret != 0) {
+        PRINT("loop thread create :%d", ret);
+        return ret;
+    }
+
+    pthread_setname_np(bttool->thread, "bttool-cmd-exec");
+    uv_sem_wait(&bttool->ready);
+    uv_sem_destroy(&bttool->ready);
+
+    return 0;
+}
+
+static void bttool_quit(bttool_t* bttool)
+{
+    char* buffer = malloc(5);
+
+    strcpy(buffer, "quit");
+    uv_async_queue_send(&bttool->async, buffer);
+}
+
+int main(int argc, char** argv)
+{
+    int opt;
+    char* buffer = NULL;
+    int ret;
+    size_t len, size = 0;
+    bttool_t bttool = { .async_api = false };
+
+    while ((opt = getopt_long(argc, argv, "a-h-v-d", main_options, NULL)) != -1) {
+        switch (opt) {
+        case 'a':
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_ASYNC
+            bttool.async_api = true;
+            break;
+#else
+            PRINT("async not supported");
+            return -1;
+#endif
+        case 'h':
+            usage();
+            exit(0);
+        case 'v':
+            show_version();
+            exit(0);
+            break;
+        default:
+            break;
+        }
+    }
+
+    g_bttool_loop = zalloc(sizeof(uv_loop_t));
+    if (!g_bttool_loop) {
+        PRINT("%s: Failed to allocate uv_loop_t", __func__);
+        return -1;
+    }
+
+    ret = uv_loop_init(g_bttool_loop);
+    if (ret != 0) {
+        PRINT("%s: Failed to init uv_loop: %d", __func__, ret);
+        free(g_bttool_loop);
+        g_bttool_loop = NULL;
+        return -1;
+    }
+
+    // Call the bttool_create_thread function to create a new thread
+    // If thread creation fails, the return value is non-zero
+    ret = bttool_create_thread(&bttool);
+    if (ret != 0) {
+        uv_loop_close(g_bttool_loop);
+        free(g_bttool_loop);
+        g_bttool_loop = NULL;
+        return ret;
+    }
+
+    while (1) {
+        printf("bttool> ");
+        fflush(stdout);
+
+        len = getline(&buffer, &size, stdin);
+        if (-1 == len) {
+            bttool_quit(&bttool);
+            break;
+        }
+
+        buffer[len] = '\0';
+        if (buffer[0] == '!') {
+#ifdef CONFIG_SYSTEM_SYSTEM
+            system(buffer + 1);
+#endif
+            continue;
+        }
+
+        if (buffer[len - 1] == '\n')
+            buffer[len - 1] = '\0';
+
+        if (strcmp(buffer, "quit") == 0 || strcmp(buffer, "q") == 0) {
+            uv_async_queue_send(&bttool.async, buffer);
+            break;
+        }
+
+        uv_async_queue_send(&bttool.async, buffer);
+
+        buffer = NULL;
+    }
+
+    uv_thread_join(&bttool.thread);
+
+    if (g_bttool_loop) {
+        uv_loop_close(g_bttool_loop);
+        free(g_bttool_loop);
+        g_bttool_loop = NULL;
+    }
+
+    return 0;
+}
+#else /* CONFIG_LIBUV_EXTENSION */
 int main(int argc, char** argv)
 {
     int opt;
@@ -1782,11 +2085,7 @@ int main(int argc, char** argv)
     char* buffer = NULL;
     char* saveptr;
     int ret;
-    size_t len;
-
-#ifndef __NuttX__
-    size_t size;
-#endif
+    size_t len, size = 0;
 
     while ((opt = getopt_long(argc, argv, "h-v-d", main_options, NULL)) != -1) {
         switch (opt) {
@@ -1802,42 +2101,17 @@ int main(int argc, char** argv)
         }
     }
 
-#ifdef __NuttX__
-    buffer = malloc(CONFIG_NSH_LINELEN);
-    if (!buffer)
-        return -ENOMEM;
-#endif
-
-    pthread_mutex_init(&bt_lock, NULL);
-    pthread_cond_init(&disable_cond, NULL);
-    pthread_setschedprio(pthread_self(), CONFIG_BLUETOOTH_SERVICE_LOOP_THREAD_PRIORITY);
-    g_bttool_ins = bluetooth_create_instance();
-    if (g_bttool_ins == NULL) {
-        PRINT("create instance error\n");
-        free(buffer);
-        return -1;
-    }
-
-    adapter_callback = bt_adapter_register_callback(g_bttool_ins, &g_adapter_cbs);
-    adapter_callback2 = bt_adapter_register_callback(g_bttool_ins, &g_adapter_cbs_2);
-    if (bt_adapter_get_state(g_bttool_ins) == BT_ADAPTER_STATE_ON)
-        bt_tool_init(g_bttool_ins);
+    bttool_ins_init(NULL);
 
     while (1) {
         printf("bttool> ");
         fflush(stdout);
 
         memset(_argv, 0, sizeof(_argv));
-#ifdef __NuttX__
-        len = readline_stream(buffer, CONFIG_NSH_LINELEN, stdin, stdout);
-#else
         len = getline(&buffer, &size, stdin);
-        if (-1 == len)
-            continue;
-#endif
         buffer[len] = '\0';
         if (len < 0)
-            continue;
+            goto quit;
 
         if (buffer[0] == '!') {
 #ifdef CONFIG_SYSTEM_SYSTEM
@@ -1869,20 +2143,10 @@ int main(int argc, char** argv)
         }
     }
 
-    if (bt_adapter_get_state(g_bttool_ins) != BT_ADAPTER_STATE_OFF) {
-#ifdef CONFIG_BLUETOOTH_FRAMEWORK_LOCAL
-        do_disable_wait(g_bttool_ins);
-#endif
-    }
-
-    bt_tool_uninit(g_bttool_ins);
-    bt_adapter_unregister_callback(g_bttool_ins, adapter_callback2);
-    bt_adapter_unregister_callback(g_bttool_ins, adapter_callback);
-    bluetooth_delete_instance(g_bttool_ins);
+quit:
+    bttool_ins_uninit(NULL);
     free(buffer);
-
-    g_bttool_ins = NULL;
-    adapter_callback = NULL;
 
     return 0;
 }
+#endif /* CONFIG_LIBUV_EXTENSION */

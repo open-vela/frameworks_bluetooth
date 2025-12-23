@@ -33,10 +33,15 @@
 #include "bt_debug.h"
 #include "utils.h"
 
+#include "uv.h"
+#include "uv_async_queue.h"
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
+#ifndef ARRAY_SIZE
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#endif
 #define CMD_OK (0)
 #define CMD_INVALID_PARAM (-1)
 #define CMD_INVALID_OPT (-4)
@@ -73,11 +78,22 @@
  * Public Types
  ****************************************************************************/
 typedef struct {
+    uv_async_queue_t async;
+    uv_thread_t thread;
+    uv_sem_t ready;
+    bool async_api;
+} bttool_t;
+
+typedef struct {
     char* cmd; /* command */
     int (*func)(void* handle, int argc, char** argv); /* command func */
     int opt; /* use option parameters */
     char* help; /* usage  */
 } bt_command_t;
+
+int execute_async_command(void* handle, int argc, char* argv[]);
+int bttool_async_ins_init(bttool_t* bttool);
+void bttool_async_ins_uninit(bttool_t* bttool);
 
 int execute_command_in_table(void* handle, bt_command_t* table, uint32_t table_size, int argc, char* argv[]);
 int execute_command_in_table_offset(void* handle, bt_command_t* table, uint32_t table_size, int argc, char* argv[], uint8_t offset);
@@ -85,10 +101,18 @@ int execute_command_in_table_offset(void* handle, bt_command_t* table, uint32_t 
 int log_command(void* handle, int argc, char* argv[]);
 int log_command_async(void* handle, int argc, char* argv[]);
 int adv_command_exec(void* handle, int argc, char* argv[]);
+int adv_command_exec_async(void* handle, int argc, char* argv[]);
 
 int scan_command_init(void* handle);
 void scan_command_uninit(void* handle);
 int scan_command_exec(void* handle, int argc, char* argv[]);
+int scan_command_init_async(void* handle);
+void scan_command_uninit_async(void* handle);
+int scan_command_exec_async(void* handle, int argc, char* argv[]);
+
+int l2cap_command_init(void* handle);
+void l2cap_command_uninit(void* handle);
+int l2cap_command_exec(void* handle, int argc, char* argv[]);
 
 int a2dp_sink_commond_init(void* handle);
 int a2dp_sink_commond_uninit(void* handle);
