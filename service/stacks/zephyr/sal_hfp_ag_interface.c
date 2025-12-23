@@ -76,14 +76,12 @@ static void free_connection(void* data)
         sal_conn->calls = NULL;
     }
     free(sal_conn);
-    return;
 }
 
 static void free_call(void* data)
 {
     bt_hfp_ag_call_info_t* sal_call = (bt_hfp_ag_call_info_t*)data;
     free(sal_call);
-    return;
 }
 
 static bool sal_conn_ag_cmp(void* sal_context, void* z_context)
@@ -174,7 +172,7 @@ static enum bt_hfp_ag_call_status tele_call_state_to_sal_status(hfp_ag_call_stat
         return BT_HFP_AG_CALL_STATUS_WAITING;
 
     default:
-        return -1;
+        return BT_HFP_AG_CALL_STATUS_UNKNOWN;
     }
 }
 
@@ -237,7 +235,7 @@ static enum bt_hfp_ag_call_dir service_call_dir_to_sal_dir(hfp_call_direction_t 
         return BT_HFP_AG_CALL_DIR_INCOMING;
 
     default:
-        return -1;
+        return BT_HFP_AG_CALL_DIR_UNKNOWN;
     }
 }
 
@@ -258,7 +256,7 @@ static bt_hfp_ag_call_info_t* build_sal_call(
     hfp_call_addrtype_t type, const char* number)
 {
     enum bt_hfp_ag_call_status state = tele_call_state_to_sal_status(call);
-    if (state < 0) {
+    if (state == BT_HFP_AG_CALL_STATUS_UNKNOWN) {
         return NULL;
     }
 
@@ -270,7 +268,7 @@ static bt_hfp_ag_call_info_t* build_sal_call(
 
     sal_call->state = state;
     sal_call->dir = service_call_dir_to_sal_dir(dir);
-    if (sal_call->dir < 0) {
+    if (sal_call->dir == BT_HFP_AG_CALL_DIR_UNKNOWN) {
         BT_LOGE("%s, invalid call direction", __func__);
         free(sal_call);
         return NULL;
@@ -291,15 +289,7 @@ static bt_hfp_ag_call_info_t* update_sal_call(bt_hfp_ag_connection_t* conn,
     hfp_call_mpty_type_t mpty, hfp_call_addrtype_t type, const char* number)
 {
     bt_hfp_ag_call_info_t* sal_call = find_call_by_number(conn, number);
-    if (sal_call) {
-        sal_call->state = tele_call_state_to_sal_status(call);
-        if (sal_call->state < 0) {
-            bt_list_remove(conn->calls, sal_call);
-            return NULL;
-        }
-        sal_call->dir = service_call_dir_to_sal_dir(dir);
-        sal_call->type = type;
-    } else {
+    if (!sal_call) {
         sal_call = build_sal_call(dir, call, type, number);
         if (!sal_call) {
             return NULL;
@@ -314,7 +304,8 @@ static bt_hfp_ag_call_info_t* update_sal_call(bt_hfp_ag_connection_t* conn,
     }
 
     sal_call->state = tele_call_state_to_sal_status(call);
-    if (sal_call->state < 0) {
+    sal_call->dir = service_call_dir_to_sal_dir(dir);
+    if (sal_call->state == BT_HFP_AG_CALL_STATUS_UNKNOWN || sal_call->dir == BT_HFP_AG_CALL_DIR_UNKNOWN) {
         bt_hfp_ag_connection_t* owner = NULL;
         find_call_by_context(sal_call->context, &owner);
         if (owner && owner->calls) {
@@ -323,7 +314,6 @@ static bt_hfp_ag_call_info_t* update_sal_call(bt_hfp_ag_connection_t* conn,
         return NULL;
     }
 
-    sal_call->dir = service_call_dir_to_sal_dir(dir);
     sal_call->type = type;
 
     return sal_call;
