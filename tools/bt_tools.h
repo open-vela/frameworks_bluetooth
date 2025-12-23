@@ -78,7 +78,6 @@
  * Public Types
  ****************************************************************************/
 typedef struct {
-    uv_loop_t loop;
     uv_async_queue_t async;
     uv_thread_t thread;
     uv_sem_t ready;
