@@ -1158,7 +1158,6 @@ static void zblue_on_tg_register_notification_req(struct bt_avrcp_tg* tg, uint8_
     zblue_avrcp_info_t* avrcp_info;
     avrcp_notification_event_t event;
     bt_status_t status;
-    bool flag = false;
 
     avrcp_info = bt_list_find(bt_avrcp_conn, bt_avrcp_info_find_by_tg, tg);
     if (!avrcp_info) {
@@ -1177,7 +1176,6 @@ static void zblue_on_tg_register_notification_req(struct bt_avrcp_tg* tg, uint8_
         msg->data.notify_req.event = event;
         msg->data.notify_req.interval = interval;
         bt_sal_avrcp_control_event_callback(msg);
-        flag = true;
 #endif /* CONFIG_BLUETOOTH_AVRCP_CONTROL */
 #endif /* CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME */
     } else {
@@ -1186,12 +1184,8 @@ static void zblue_on_tg_register_notification_req(struct bt_avrcp_tg* tg, uint8_
         msg->data.notify_req.event = event;
         msg->data.notify_req.interval = interval;
         bt_sal_avrcp_target_event_callback(msg);
-        flag = true;
 #endif /* CONFIG_BLUETOOTH_AVRCP_TARGET */
     }
-
-    if (!flag)
-        return;
 
     zblue_tg_tid_t* tg_tid = (zblue_tg_tid_t*)calloc(1, sizeof(zblue_tg_tid_t));
     tg_tid->tid = tid;
