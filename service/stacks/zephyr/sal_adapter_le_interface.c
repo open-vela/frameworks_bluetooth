@@ -755,6 +755,7 @@ static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer)
     remote_addr = adapter_get_le_remote_address(&addr, peer->type);
     if (!remote_addr) {
         BT_LOGE("%s, not found remote device", __func__);
+        free(prop);
         return;
     }
 
