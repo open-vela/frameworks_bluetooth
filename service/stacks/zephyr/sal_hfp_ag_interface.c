@@ -20,6 +20,7 @@
 #include "sal_connection_manager.h"
 #include "sal_interface.h"
 #include "sal_zblue.h"
+#include "service_loop.h"
 
 #undef BT_UUID_DECLARE_16
 #undef BT_UUID_DECLARE_32
@@ -64,6 +65,15 @@ typedef struct _ag_connect_params {
     struct bt_conn* conn;
     uint8_t channel;
 } ag_connect_params_t;
+
+typedef struct _ag_connect_sco_params {
+    struct bt_hfp_ag* ag;
+    uint8_t codec; /* e.g., BT_HFP_AG_CODEC_CVSD */
+} ag_connect_sco_params_t;
+
+typedef struct _ag_disconnect_sco_params {
+    struct bt_conn* sco_context;
+} ag_disconnect_sco_params_t;
 
 // TODO: remove g_conn_params later when bt_sal_profile_connect_request can carry a userdata.
 static ag_connect_params_t* g_conn_params = NULL;
@@ -392,6 +402,80 @@ bt_status_t do_ag_disconnect(bt_controller_id_t id, bt_address_t* addr, void* us
 
     SAL_CHECK_RET(Z_API(bt_hfp_ag_disconnect)(sal_conn->ag), 0);
     return BT_STATUS_SUCCESS;
+}
+
+static void do_ag_sco_connect(service_work_t* work, void* userdata)
+{
+    ag_connect_sco_params_t* params;
+    struct bt_hfp_ag* ag;
+    uint8_t codec;
+    bt_hfp_ag_connection_t* sal_conn;
+
+    params = (ag_connect_sco_params_t*)userdata;
+    if (!params) {
+        BT_LOGE("%s, Invalid parameters", __func__);
+        return;
+    }
+
+    if (!params->ag) {
+        BT_LOGE("%s, Invalid ag parameter", __func__);
+        free(params);
+        return;
+    }
+
+    ag = params->ag;
+    codec = params->codec;
+    free(params);
+
+    sal_conn = find_connection_by_ag(ag);
+    if (!sal_conn) {
+        BT_LOGW("%s, connection not found for ag=%p", __func__, ag);
+        return;
+    }
+
+    hfp_ag_on_audio_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_CONNECTING, 0xFFFF); // sco conn handle not supported
+
+    if (Z_API(bt_hfp_ag_audio_connect)(ag, codec)) {
+        BT_LOGE("%s, Failed to connect HFP AG SCO", __func__);
+
+        hfp_ag_on_audio_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_DISCONNECTED, 0xFFFF);
+    }
+}
+
+static void do_ag_sco_disconnect(service_work_t* work, void* userdata)
+{
+    ag_disconnect_sco_params_t* params;
+    struct bt_conn* sco_context;
+    bt_hfp_ag_connection_t* sal_conn;
+    int err;
+
+    params = (ag_disconnect_sco_params_t*)userdata;
+    if (!params) {
+        BT_LOGE("%s, Invalid parameters", __func__);
+        return;
+    }
+
+    if (!params->sco_context) {
+        BT_LOGE("%s, Invalid sco_context parameter", __func__);
+        free(params);
+        return;
+    }
+
+    sco_context = params->sco_context;
+    free(params);
+
+    sal_conn = find_connection_by_sco_context(sco_context);
+    if (!sal_conn) {
+        BT_LOGW("%s, sco_context no longer tracked, skip disconnect", __func__);
+        return;
+    }
+
+    hfp_ag_on_audio_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_DISCONNECTING, 0xFFFF);
+
+    err = bt_conn_disconnect(sco_context, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+    if (err) {
+        BT_LOGE("%s, Failed to disconnect HFP AG SCO, err=%d", __func__, err);
+    }
 }
 
 static uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_result* result,
@@ -945,9 +1029,19 @@ bt_status_t bt_sal_hfp_ag_connect_audio(bt_address_t* addr)
         return BT_STATUS_PARM_INVALID;
     }
 
-    SAL_CHECK_RET(Z_API(bt_hfp_ag_audio_connect)(sal_conn->ag, BT_HFP_AG_CODEC_CVSD), 0);
+    ag_connect_sco_params_t* params = (ag_connect_sco_params_t*)zalloc(sizeof(ag_connect_sco_params_t));
+    if (!params) {
+        BT_LOGE("%s, Failed to allocate memory", __func__);
+        return BT_STATUS_NOMEM;
+    }
 
-    hfp_ag_on_audio_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_CONNECTING, 0xFFFF); // sco conn handle not supported
+    params->ag = sal_conn->ag;
+    params->codec = BT_HFP_AG_CODEC_CVSD; // default codec
+
+    if (!service_loop_work(params, do_ag_sco_connect, NULL)) {
+        free(params);
+        return BT_STATUS_FAIL;
+    }
 
     return BT_STATUS_SUCCESS;
 }
@@ -970,11 +1064,18 @@ bt_status_t bt_sal_hfp_ag_disconnect_audio(bt_address_t* addr)
         return BT_STATUS_FAIL;
     }
 
-    hfp_ag_on_audio_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_DISCONNECTING, 0xFFFF); // sco conn handle not supported
+    ag_disconnect_sco_params_t* params = (ag_disconnect_sco_params_t*)zalloc(sizeof(ag_disconnect_sco_params_t));
+    if (!params) {
+        BT_LOGE("%s, Failed to allocate memory", __func__);
+        return BT_STATUS_NOMEM;
+    }
 
-    int err = bt_conn_disconnect(sal_conn->sco_context, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
-    bt_conn_unref(sal_conn->sco_context);
-    SAL_CHECK_RET(err, 0);
+    params->sco_context = sal_conn->sco_context;
+
+    if (!service_loop_work(params, do_ag_sco_disconnect, NULL)) {
+        free(params);
+        return BT_STATUS_FAIL;
+    }
 
     return BT_STATUS_SUCCESS;
 }
