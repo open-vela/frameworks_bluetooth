@@ -1,57 +1,66 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
-apply plugin: 'com.android.application'
-apply plugin: 'org.jetbrains.kotlin.android'
-apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.plugin.compose'
+}
 
 android {
-    namespace 'com.openvela.bluetoothtest'
+    namespace = 'com.openvela.bluetoothtest'
     compileSdk {
         version = release(36)
     }
 
     buildFeatures {
-        compose true
+        compose = true
     }
 
     defaultConfig {
-        applicationId "com.openvela.bluetoothtest"
-        minSdk 29
-        targetSdk 34
-        versionName "1.0"
+        applicationId = "com.openvela.bluetoothtest"
+        minSdk = 29
+        targetSdk = 36
+        versionName = "1.0"
 
-        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+        testInstrumentationRunner = 'androidx.test.runner.AndroidJUnitRunner'
         vectorDrawables.useSupportLibrary = true
-        multiDexEnabled true
+        multiDexEnabled = true
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_24
-        targetCompatibility JavaVersion.VERSION_24
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     kotlin {
         compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_24)
+            jvmTarget.set(JvmTarget.JVM_21)
             freeCompilerArgs.add("-Xjvm-default=all")
         }
     }
 
     buildTypes {
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            minifyEnabled = false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
-            jniDebuggable true
+            jniDebuggable = true
         }
     }
 
-    android.applicationVariants.all { variant ->
-        variant.outputs.all {
-            outputFileName = "BluetoothTest_${buildType.name}_v${defaultConfig.versionName}.apk"
+    androidComponents {
+        onVariants(selector().all()) { variant ->
+            variant.outputs.forEach { output ->
+                output.outputFileName.set("BluetoothTest_${variant.buildType}_v${defaultConfig.versionName}.apk")
+            }
         }
     }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
+    options.compilerArgs << "-Xlint:deprecation"
+    options.compilerArgs << "-Xlint:unchecked"
 }
 
 dependencies {
@@ -64,5 +73,6 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.12.0'
     implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0"
+    implementation 'androidx.recyclerview:recyclerview:1.4.0'
 }
 
