@@ -37,7 +37,7 @@ extern struct net_buf_pool sdp_pool;
 
 static uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_result* result, const struct bt_sdp_discover_params* ignore);
 
-static const struct bt_sdp_discover_params sdp_discover = {
+static struct bt_sdp_discover_params sdp_discover = {
     .func = zblue_on_sdp_done,
     .pool = &sdp_pool,
     .uuid = BT_UUID_DECLARE_16(BT_SDP_HANDSFREE_SVCLASS),
