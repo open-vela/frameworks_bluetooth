@@ -202,7 +202,7 @@ static sal_spp_connection_t* spp_find_connection_by_sdp_param(struct bt_conn* co
 
         spp_conn = bt_list_node(node);
         spp_client = spp_conn->spp_client;
-        if ((spp_conn && (spp_conn->conn == conn)) && (spp_client && (&spp_client->sdp_discover == param))) {
+        if ((spp_conn->conn == conn) && (spp_client && (&spp_client->sdp_discover == param))) {
             return spp_conn;
         }
     }
@@ -754,12 +754,18 @@ static void sdp_disconnected_cb(struct bt_conn* conn, const struct bt_sdp_discov
 
 static bt_status_t spp_connect_with_uuid(sal_spp_connection_t* spp_conn, bt_uuid_t* uuid)
 {
-    sal_spp_client_t* spp_client = spp_conn->spp_client;
+    sal_spp_client_t* spp_client;
     int err;
     bt_uuid_t uuid_128;
 
     if (!spp_conn || !uuid) {
         BT_LOGE("Invalid parameters: spp_conn=%p, uuid=%p", spp_conn, uuid);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    spp_client = spp_conn->spp_client;
+    if (!spp_client) {
+        BT_LOGE("SPP client not found for conn");
         return BT_STATUS_PARM_INVALID;
     }
 
