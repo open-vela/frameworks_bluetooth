@@ -616,6 +616,30 @@ void tele_service_get_phone_state(uint8_t* num_active, uint8_t* num_held,
     BT_LOGD("%s\n", __func__);
 }
 
+void tele_service_get_current_calls(bt_address_t* addr)
+{
+    BT_LOGD("%s", __func__);
+
+    bt_list_node_t* node;
+    bt_list_t* list = g_current_calls;
+    tapi_call_info* call;
+
+    if (!is_online) {
+        /* Ignore */
+        return;
+    }
+
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        call = bt_list_node(node);
+        BT_LOGD("%s, Call state: %d, Incoming: %d, Number: %s", __func__, call->state, call->is_incoming, call->lineIdentification ? call->lineIdentification : "null");
+
+        bt_sal_hfp_ag_call_sync(addr, call->is_incoming,
+            call->state, HFP_CALL_MODE_VOICE,
+            call->multiparty, HFP_CALL_ADDRTYPE_UNKNOWN,
+            call->lineIdentification);
+    }
+}
+
 void tele_service_query_current_call(bt_address_t* addr)
 {
     bt_list_node_t* node;
