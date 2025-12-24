@@ -16,6 +16,7 @@
 
 package com.openvela.bluetoothtest.ble;
 
+import android.Manifest;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.EditText;
@@ -23,6 +24,7 @@ import android.widget.TextView;
 import android.widget.Button;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresPermission;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -40,6 +42,7 @@ public class BleScanActivity extends AppCompatActivity {
     private EditText etFilter;
     private BleScanAdapter bleScanAdapter;
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,6 +51,7 @@ public class BleScanActivity extends AppCompatActivity {
         initView();
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -56,6 +60,7 @@ public class BleScanActivity extends AppCompatActivity {
         }
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     private void initView() {
         tvScanState = findViewById(R.id.tv_scan_state);
         btnScan = findViewById(R.id.btn_scan);

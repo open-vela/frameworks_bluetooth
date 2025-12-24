@@ -16,6 +16,7 @@
 
 package com.openvela.bluetoothtest.bredr;
 
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -27,6 +28,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresPermission;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.openvela.bluetooth.BluetoothBondStateObserver;
@@ -69,6 +71,7 @@ public class BondActivity extends AppCompatActivity {
 
         Button buttonEnable = findViewById(R.id.button_create_bond);
         buttonEnable.setOnClickListener(new View.OnClickListener() {
+            @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
             @Override
             public void onClick(View v) {
                 String str = textNumOfCycles.getText().toString();
@@ -98,6 +101,7 @@ public class BondActivity extends AppCompatActivity {
         });
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     @Override
     protected void onStart() {
         super.onStart();
@@ -114,6 +118,7 @@ public class BondActivity extends AppCompatActivity {
     private void listenBluetoothBondState() {
         btBondStateObserver = new BluetoothBondStateObserver(this);
         btBondStateObserver.registerReceiver(new BluetoothBondStateCallback() {
+            @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
             @Override
             public void onBonded(BluetoothDevice device) {
                 String str = textResultDisplay.getText().toString();
@@ -129,6 +134,7 @@ public class BondActivity extends AppCompatActivity {
                     removeBond();
             }
 
+            @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
             @Override
             public void onBondRemoved(BluetoothDevice device) {
                 String str = textResultDisplay.getText().toString();
@@ -153,6 +159,7 @@ public class BondActivity extends AppCompatActivity {
         return bluetoothAdapter != null && bluetoothAdapter.isEnabled();
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     private void createBond() {
         String addr = textBdAddr.getText().toString();
 
@@ -177,6 +184,7 @@ public class BondActivity extends AppCompatActivity {
         }
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     private void showBondedDevices() {
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null)

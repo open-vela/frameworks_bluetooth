@@ -2,6 +2,7 @@ package com.openvela.bluetooth;
 
 import static androidx.core.content.ContextCompat.getSystemService;
 
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -17,6 +18,8 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.ParcelUuid;
 import android.util.Log;
+
+import androidx.annotation.RequiresPermission;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -97,6 +100,7 @@ public class BtSock {
     // var means UUID, for SOCK_TYPE_SPP_xxx
     // var means PSM, for SOCK_TYPE_L2CAP_BLE_xxx
     // var means Channel, for SOCK_TYPE_L2CAP_BREDR_xxx
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     public void register(String var) {
         if (mSockRole != SOCK_ROLE_UNKNOWN) {
             showLogs("Unexpected register, current role = " + mSockRole);
@@ -116,6 +120,7 @@ public class BtSock {
         thread.start();
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_ADVERTISE)
     public void unregister() {
         if (mSockRole != SOCK_ROLE_SERVER) {
             showLogs("Unexpected unregister, current role = " + mSockRole);
@@ -327,6 +332,7 @@ public class BtSock {
 
     // RxThread is used by Client or Server to Receive data (in the background) after connection
     private class RxThread extends Thread {
+        @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
         public void run() {
             int readSize = 0;
             byte[] buffer = new byte[1000];
@@ -555,6 +561,7 @@ public class BtSock {
         }
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     private boolean registerServer(String var) {
         try {
             Log.d(TAG, "registerServer: mServerSocket = " + mServerSocket + ", type = " + mType + ", var = " + var);
@@ -692,6 +699,7 @@ public class BtSock {
         }
     };
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_ADVERTISE)
     private void stopAdvertising() {
         Log.d(TAG, "stopAdvertising: enter");
 

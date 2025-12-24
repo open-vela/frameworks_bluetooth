@@ -16,6 +16,7 @@
 
 package com.openvela.bluetoothtest.LocalAdapter;
 
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.Intent;
@@ -26,6 +27,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresPermission;
 import androidx.appcompat.app.AppCompatActivity;
 import com.openvela.bluetooth.BluetoothStateObserver;
 import com.openvela.bluetooth.callback.BluetoothStateCallback;
@@ -59,6 +61,7 @@ public class OnOffActivity extends AppCompatActivity {
 
         Button buttonEnable = findViewById(R.id.button_enable_bluetooth);
         buttonEnable.setOnClickListener(new View.OnClickListener() {
+            @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
             @Override
             public void onClick(View v) {
                 String str = textNumOfCycles.getText().toString();
@@ -84,6 +87,7 @@ public class OnOffActivity extends AppCompatActivity {
 
                 Log.d(TAG, "onClick: Disable Bluetooth, timesOfCycles = " + timesOfCycles);
                 new AsyncTask<Void, Void, Void>() {
+                    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
                     @Override
                     protected Void doInBackground(Void... params) {
                         // Time consuming operation
@@ -109,6 +113,7 @@ public class OnOffActivity extends AppCompatActivity {
     private void listenBluetoothState() {
         btStateObserver = new BluetoothStateObserver(this);
         btStateObserver.registerReceiver(new BluetoothStateCallback() {
+            @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
             @Override
             public void onEnabled() {
                 String str = textResultDisplay.getText().toString();
@@ -121,6 +126,7 @@ public class OnOffActivity extends AppCompatActivity {
                     disableBluetooth();
             }
 
+            @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
             @Override
             public void onDisabled() {
                 String str = textResultDisplay.getText().toString();
@@ -142,10 +148,12 @@ public class OnOffActivity extends AppCompatActivity {
         return bluetoothAdapter != null && bluetoothAdapter.isEnabled();
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     private void enableBluetooth() {
         startActivityForResult(new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE), REQUEST_ENABLE_BT);
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     private void disableBluetooth() {
         bluetoothAdapter.disable();
     }

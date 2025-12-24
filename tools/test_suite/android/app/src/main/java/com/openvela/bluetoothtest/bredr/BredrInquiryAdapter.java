@@ -18,6 +18,7 @@ package com.openvela.bluetoothtest.bredr;
 
 import java.util.ArrayList;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Handler;
@@ -27,6 +28,7 @@ import android.view.View;
 
 import android.bluetooth.BluetoothAdapter;
 
+import androidx.annotation.RequiresPermission;
 import androidx.core.os.HandlerCompat;
 
 import com.openvela.bluetooth.adapter.RecyclerAdapter;
@@ -72,10 +74,12 @@ public class BredrInquiryAdapter extends RecyclerAdapter<BtDevice> {
         }
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     public boolean isDiscovering() {
         return bluetoothDiscoveryObserver.isDiscovering();
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     public void startDiscovery(final String[] discoveryFilters, long discoveryPeriod, BluetoothDiscoveryCallback<BtDevice> callback) {
         bluetoothDiscoveryCallback = callback;
 
@@ -100,6 +104,7 @@ public class BredrInquiryAdapter extends RecyclerAdapter<BtDevice> {
         bluetoothDiscoveryObserver.startDiscovery();
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     public void stopDiscovery() {
         if (!isDiscovering()) {
             return;
@@ -113,6 +118,7 @@ public class BredrInquiryAdapter extends RecyclerAdapter<BtDevice> {
         handler.removeCallbacksAndMessages(DISCOVERY_TIMEOUT_TOKEN);
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     private void startDiscoveryTimer(long discoveryPeriod) {
         cancelDiscoveryTimer();
 

@@ -16,12 +16,15 @@
 
 package com.openvela.bluetooth;
 
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+
+import androidx.annotation.RequiresPermission;
 
 import com.openvela.bluetooth.callback.BluetoothDiscoveryCallback;
 
@@ -34,14 +37,17 @@ public class BluetoothDiscoveryObserver extends BroadcastReceiver {
         this.context = context;
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     public boolean isDiscovering() {
         return bluetoothAdapter.isDiscovering();
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     public void startDiscovery() {
         bluetoothAdapter.startDiscovery();
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     public void cancelDiscovery() {
         bluetoothAdapter.cancelDiscovery();
     }
@@ -64,6 +70,7 @@ public class BluetoothDiscoveryObserver extends BroadcastReceiver {
         }
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     @Override
     public void onReceive(Context context, Intent intent) {
         String action = intent.getAction();
@@ -80,8 +87,8 @@ public class BluetoothDiscoveryObserver extends BroadcastReceiver {
                     bluetoothDiscoveryCallback.onStop();
                 break;
             case BluetoothDevice.ACTION_FOUND:
-                BluetoothDevice bluetoothDevice = intent.getParcelableExtra(android.bluetooth.BluetoothDevice.EXTRA_DEVICE);
-                int rssi = intent.getShortExtra(android.bluetooth.BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE);
+                BluetoothDevice bluetoothDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                int rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE);
                 BtDevice btDevice = new BtDevice(bluetoothDevice.getAddress(), bluetoothDevice.getName());
                 btDevice.setRssi(rssi);
                 if (bluetoothDiscoveryCallback != null)

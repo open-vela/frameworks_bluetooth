@@ -16,12 +16,14 @@
 
 package com.openvela.bluetoothtest.ble;
 
+import android.Manifest;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.TextView;
 
 import android.bluetooth.BluetoothProfile;
 
+import androidx.annotation.RequiresPermission;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -42,6 +44,7 @@ public class BleCentralActivity extends AppCompatActivity {
     private @NotNull BtDevice currentDevice;
     private GattClientAdapter gattClientAdapter;
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,6 +57,7 @@ public class BleCentralActivity extends AppCompatActivity {
         gattClientAdapter.connect(currentDevice, connectCallback);
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -64,6 +68,7 @@ public class BleCentralActivity extends AppCompatActivity {
         }
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     private void initView() {
         tvConnectState = findViewById(R.id.tv_connect_state);
         btnConnect = findViewById(R.id.btn_connect);

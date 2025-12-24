@@ -16,6 +16,7 @@
 
 package com.openvela.bluetoothtest.ble;
 
+import android.Manifest;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -26,6 +27,7 @@ import android.widget.Button;
 import android.widget.EditText;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresPermission;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.openvela.bluetooth.BtSock;
@@ -61,6 +63,7 @@ public class BleL2capActivity extends AppCompatActivity {
         // Register Server #1
         Button buttonRegister_1 = findViewById(R.id.button_spp_server_register_1);
         buttonRegister_1.setOnClickListener(new View.OnClickListener() {
+            @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
             @Override
             public void onClick(View v) {
                 String uuid = textServiceUUID_1.getText().toString();
@@ -73,6 +76,7 @@ public class BleL2capActivity extends AppCompatActivity {
         // Unregister Server #1
         Button buttonUnregister_1 = findViewById(R.id.button_spp_server_unregister_1);
         buttonUnregister_1.setOnClickListener(new View.OnClickListener() {
+            @RequiresPermission(Manifest.permission.BLUETOOTH_ADVERTISE)
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "onClick: Unregister Server#1");
@@ -86,6 +90,7 @@ public class BleL2capActivity extends AppCompatActivity {
         // Register Server #2
         Button buttonRegister_2 = findViewById(R.id.button_spp_server_register_2);
         buttonRegister_2.setOnClickListener(new View.OnClickListener() {
+            @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
             @Override
             public void onClick(View v) {
                 String uuid = textServiceUUID_2.getText().toString();
@@ -98,6 +103,7 @@ public class BleL2capActivity extends AppCompatActivity {
         // Unregister Server #2
         Button buttonUnregister_2 = findViewById(R.id.button_spp_server_unregister_2);
         buttonUnregister_2.setOnClickListener(new View.OnClickListener() {
+            @RequiresPermission(Manifest.permission.BLUETOOTH_ADVERTISE)
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "onClick: Unregister Server#2");

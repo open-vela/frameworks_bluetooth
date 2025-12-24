@@ -16,6 +16,8 @@
 
 package com.openvela.bluetoothtest.ble;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.EditText;
@@ -29,6 +31,7 @@ import android.bluetooth.le.AdvertiseSettings;
 import android.bluetooth.le.BluetoothLeAdvertiser;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
 import com.openvela.bluetoothtest.R;
 
@@ -96,6 +99,16 @@ public class BlePeripheralActivity extends AppCompatActivity {
     public void stopAdvertising() {
         Log.d(TAG, "stopAdvertising");
 
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADVERTISE) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
         bluetoothAdvertiser.stopAdvertising(advertiseCallback);
         bluetoothAdvertiser = null;
     }

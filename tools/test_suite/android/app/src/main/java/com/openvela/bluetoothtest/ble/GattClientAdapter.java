@@ -19,6 +19,8 @@ package com.openvela.bluetoothtest.ble;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+
+import android.Manifest;
 import android.view.View;
 
 import android.annotation.SuppressLint;
@@ -34,6 +36,7 @@ import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
 
+import androidx.annotation.RequiresPermission;
 import androidx.core.os.HandlerCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -102,6 +105,7 @@ public class GattClientAdapter extends RecyclerAdapter<BluetoothGattService> {
         });
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     public void connect(BtDevice device, BleConnectCallback<BtDevice> callback) {
         bleConnectCallback = callback;
 
@@ -121,6 +125,7 @@ public class GattClientAdapter extends RecyclerAdapter<BluetoothGattService> {
         }
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     public void disconnect(BtDevice device) {
         String address = device.getAddress();
         BluetoothGatt bluetoothGatt = gattHashMap.get(address);
@@ -132,6 +137,7 @@ public class GattClientAdapter extends RecyclerAdapter<BluetoothGattService> {
         }
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     public void cancelConnect(BtDevice device) {
         String address = device.getAddress();
         BluetoothGatt bluetoothGatt = gattHashMap.get(address);
@@ -147,6 +153,7 @@ public class GattClientAdapter extends RecyclerAdapter<BluetoothGattService> {
         handler.removeCallbacksAndMessages(address);
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     private void startConnectTimer(String address) {
         cancelConnectTimer(address);
 
@@ -156,6 +163,7 @@ public class GattClientAdapter extends RecyclerAdapter<BluetoothGattService> {
         }, address, GATT_CONNECT_TIMEOUT_MS);
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     private void close(String address) {
         BluetoothGatt bluetoothGatt = gattHashMap.get(address);
         if (bluetoothGatt != null) {
@@ -165,6 +173,7 @@ public class GattClientAdapter extends RecyclerAdapter<BluetoothGattService> {
     }
 
     private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
+        @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             BluetoothDevice device = gatt.getDevice();

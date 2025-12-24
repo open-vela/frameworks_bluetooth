@@ -19,6 +19,7 @@ package com.openvela.bluetoothtest.ble;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
@@ -35,6 +36,7 @@ import android.bluetooth.le.ScanRecord;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 
+import androidx.annotation.RequiresPermission;
 import androidx.core.os.HandlerCompat;
 
 import com.openvela.bluetooth.adapter.RecyclerAdapter;
@@ -59,6 +61,7 @@ public class BleScanAdapter extends RecyclerAdapter<BtDevice> {
         super(context, R.layout.item_scan_result, new ArrayList<>());
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     @SuppressLint("DefaultLocale")
     @Override
     public void onBindViewHolderItem(RecyclerViewHolder viewHolder, BtDevice device) {
@@ -139,6 +142,7 @@ public class BleScanAdapter extends RecyclerAdapter<BtDevice> {
         return (bluetoothScanner != null);
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     @SuppressLint("NotifyDataSetChanged")
     public void startScan(final String[] scanFilters, long scanPeriod, BluetoothDiscoveryCallback<BtDevice> callback) {
         bleDiscoveryCallback = callback;
@@ -175,6 +179,7 @@ public class BleScanAdapter extends RecyclerAdapter<BtDevice> {
         }
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     public void stopScan() {
         if (!isScanning()) {
             return;
@@ -190,6 +195,7 @@ public class BleScanAdapter extends RecyclerAdapter<BtDevice> {
         handler.removeCallbacksAndMessages(SCAN_TIMEOUT_TOKEN);
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     private void startScanTimer(long scanPeriod) {
         cancelScanTimer();
 
@@ -203,6 +209,7 @@ public class BleScanAdapter extends RecyclerAdapter<BtDevice> {
     }
 
     private final ScanCallback scanCallback = new ScanCallback() {
+        @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
         @SuppressLint("NotifyDataSetChanged")
         @Override
         public void onScanResult(final int callbackType, final ScanResult result) {
@@ -252,6 +259,7 @@ public class BleScanAdapter extends RecyclerAdapter<BtDevice> {
             }
         }
 
+        @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
         @Override
         public void onScanFailed(final int errorCode) {
             stopScan();
