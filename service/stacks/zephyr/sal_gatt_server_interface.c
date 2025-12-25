@@ -432,43 +432,61 @@ static int alloc_descriptor(const struct bt_gatt_attr* attr, struct add_descript
     struct gatt_ccc_wrapper* ccc_wrapper;
     struct bt_gatt_chrc* chrc = attr->user_data;
     struct _bt_gatt_ccc* ccc;
+    struct gatt_user_data user_data = { 0 };
 
-    if (bt_uuid_cmp(desc->uuid, BT_UUID_GATT_CCC)) {
-        BT_LOGE("%s uuid not match", __func__);
-        return -EINVAL;
+    if (bt_uuid_cmp(desc->uuid, BT_UUID_GATT_CCC) == 0) {
+
+        if (!(chrc->properties & (BT_GATT_CHRC_NOTIFY | BT_GATT_CHRC_INDICATE))) {
+            BT_LOGE("%s, invald properties:0x%0x", __func__, chrc->properties);
+            return -EINVAL;
+        }
+
+        /* This memory is freed in remove_service() via attr->user_data */
+        ccc_wrapper = zalloc(sizeof(struct gatt_ccc_wrapper));
+        if (!ccc_wrapper) {
+            BT_LOGE("%s, wrapper alloc failed", __func__);
+            return -ENOMEM;
+        }
+
+        ccc = &ccc_wrapper->ccc;
+        ccc_wrapper->element = desc->element;
+
+        attr_desc = gatt_db_add(
+            &(struct bt_gatt_attr) {
+                .uuid = BT_UUID_GATT_CCC,
+                .perm = desc->permissions & GATT_PERM_MASK,
+                .read = bt_gatt_attr_read_ccc,
+                .write = bt_sal_on_ccc_written,
+                .user_data = ccc },
+            0);
+
+        if (!attr_desc) {
+            free(ccc_wrapper);
+            BT_LOGE("%s attr_desc null", __func__);
+            return -EINVAL;
+        }
+
+        desc->desc_id = attr_desc->handle;
+    } else {
+        user_data.element = desc->element;
+
+        attr_desc = gatt_db_add(
+            &(struct bt_gatt_attr)BT_GATT_ATTRIBUTE(
+                desc->uuid,
+                desc->permissions & GATT_PERM_MASK,
+                read_value,
+                write_value,
+                &user_data),
+            sizeof(user_data));
+
+        if (!attr_desc) {
+            BT_LOGE("%s, generic descriptor allocation failed", __func__);
+            return -EINVAL;
+        }
+
+        desc->desc_id = attr_desc->handle;
     }
 
-    if (!(chrc->properties & (BT_GATT_CHRC_NOTIFY | BT_GATT_CHRC_INDICATE))) {
-        BT_LOGE("%s, invald properties:0x%0x", __func__, chrc->properties);
-        return -EINVAL;
-    }
-
-    /* This memory is freed in remove_service() via attr->user_data */
-    ccc_wrapper = zalloc(sizeof(struct gatt_ccc_wrapper));
-    if (!ccc_wrapper) {
-        BT_LOGE("%s, wrapper alloc failed", __func__);
-        return -ENOMEM;
-    }
-
-    ccc = &ccc_wrapper->ccc;
-    ccc_wrapper->element = desc->element;
-
-    attr_desc = gatt_db_add(
-        &(struct bt_gatt_attr) {
-            .uuid = BT_UUID_GATT_CCC,
-            .perm = desc->permissions & GATT_PERM_MASK,
-            .read = bt_gatt_attr_read_ccc,
-            .write = bt_sal_on_ccc_written,
-            .user_data = ccc },
-        0);
-
-    if (!attr_desc) {
-        free(ccc_wrapper);
-        BT_LOGE("%s attr_desc null", __func__);
-        return -EINVAL;
-    }
-
-    desc->desc_id = attr_desc->handle;
     return 0;
 }
 
