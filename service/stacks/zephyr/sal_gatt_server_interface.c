@@ -633,6 +633,11 @@ bt_status_t bt_sal_gatt_server_add_elements(gatt_element_t* elements, uint16_t s
         switch (elements[index].type) {
         case GATT_PRIMARY_SERVICE:
         case GATT_SECONDARY_SERVICE:
+            /* Workaround: BR/EDR services to be registered over BLE as well */
+            if (elements[index].properties & GATT_PROP_EXPOSED_OVER_BREDR) {
+                elements[index].properties &= ~GATT_PROP_EXPOSED_OVER_BREDR;
+                BT_LOGD("BR/EDR service to be registered over BLE");
+            }
             add_service(&elements[index]);
             break;
         case GATT_CHARACTERISTIC:
