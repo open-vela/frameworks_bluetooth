@@ -17,6 +17,8 @@
 #include "cs_ras.h"
 #include "cs_ras_test.h"
 #include "cs_ras_gatts.h"
+#include "cs_service.h"
+#include "utils/log.h"
 
 /**
  * @brief LE CS Subevent Result Event
@@ -508,7 +510,7 @@ int bt_gatt_notify_cb_test(ras_attr_notify_t attr, bt_address_t* addr, uint8_t* 
                 uint8_t buf[3] = { 0 };
                 buf[0] = SAL_LE_RAS_CTL_OP_CMD_ACK_RANG_DATA;
                 memcpy(&buf[1], (uint8_t*)value + 1, 2);
-                ras_ctrl_point_send_test(NULL, &attr_svc[SAL_LE_RAS_CTR_PT_CHAR_IDX], buf, sizeof(buf), 0, 0);
+                ras_ctrl_point_send_test(NULL, buf, sizeof(buf));
             }
         }
         break;
@@ -532,7 +534,7 @@ int bt_gatt_notify_test(ras_attr_notify_t attr, bt_address_t* addr, uint8_t* val
             memcmp(value, ras_recv_second_seg_data_test, sizeof(ras_recv_second_seg_data_test)) != 0 &&
             memcmp(value, ras_recv_last_seg_data_test, sizeof(ras_recv_last_seg_data_test)) != 0) {
             test_status = RAS_TEST_FAIL;
-            LOG_ERR("---- No segment match the test data. -----");
+            BT_LOGE("---- No segment match the test data. -----");
             return -1;
         }
 
@@ -544,7 +546,7 @@ int bt_gatt_notify_test(ras_attr_notify_t attr, bt_address_t* addr, uint8_t* val
             uint16_t count = 10;
             buf[0] = SAL_LE_RAS_CTL_OP_CMD_GET_RANG_DATA;
             ras_put_uint16_to_ptr(count, &buf[1]);
-            ras_ctrl_point_send_test(NULL, &attr_svc[SAL_LE_RAS_CTR_PT_CHAR_IDX], buf, sizeof(buf), 0, 0);
+            ras_ctrl_point_send_test(NULL, buf, sizeof(buf));
         }
 
         break;
@@ -557,7 +559,7 @@ int bt_gatt_notify_test(ras_attr_notify_t attr, bt_address_t* addr, uint8_t* val
 
 int bt_gatt_indicate_test(ras_attr_notify_t attr, bt_address_t* addr, uint8_t* value, uint16_t len)
 {   
-    ras_on_demand_indicate_finish_test(attr, addr);
+    ras_on_demand_indicate_finish_test(addr, attr);
     return 0;
 }
 

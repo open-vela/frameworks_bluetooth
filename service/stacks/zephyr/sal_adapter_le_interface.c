@@ -96,6 +96,19 @@ static enum bt_security_err zblue_on_pairing_accept(struct bt_conn* conn, const 
 static void zblue_register_callback(void);
 static void zblue_unregister_callback(void);
 
+#ifdef CONFIG_BLUETOOTH_LE_CS
+static void zblue_on_cs_subevent(struct bt_conn* conn, struct bt_conn_le_cs_subevent_result* result);
+void zblue_on_cs_capabilities_available(struct bt_conn *conn,
+						    struct bt_conn_le_cs_capabilities *params);
+void zblue_on_cs_remote_fae_table_available(struct bt_conn *conn,
+						 struct bt_conn_le_cs_fae_table *params);
+void zblue_on_cs_config_created(struct bt_conn *conn, struct bt_conn_le_cs_config *config);
+void zblue_on_cs_config_removed(struct bt_conn *conn, uint8_t config_id);
+void zblue_on_cs_security_enabled(struct bt_conn *conn);
+void zblue_on_cs_procedure_enabled(struct bt_conn *conn,
+               struct bt_conn_le_cs_procedure_enable_complete *params);
+#endif /* CONFIG_BLUETOOTH_LE_CS */
+
 static le_conn_info_t* le_conn_add(const bt_address_t* addr);
 static le_conn_info_t* le_conn_find(const bt_address_t* addr);
 
@@ -109,6 +122,15 @@ static struct bt_conn_cb g_conn_cbs = {
 #if defined(CONFIG_BT_USER_PHY_UPDATE)
     .le_phy_updated = zblue_on_phy_updated,
 #endif
+#if defined(CONFIG_BLUETOOTH_LE_CS)
+    .le_cs_remote_capabilities_available = zblue_on_cs_capabilities_available,
+    .le_cs_remote_fae_table_available = zblue_on_cs_remote_fae_table_available,
+    .le_cs_config_created = zblue_on_cs_config_created,
+    .le_cs_config_removed = zblue_on_cs_config_removed,
+    .le_cs_security_enabled = zblue_on_cs_security_enabled,
+    .le_cs_procedure_enabled = zblue_on_cs_procedure_enabled,
+    .le_cs_subevent_data_available = zblue_on_cs_subevent,
+#endif /* CONFIG_BLUETOOTH_LE_CS */
 };
 
 static struct bt_conn_auth_info_cb g_conn_auth_info_cbs = {
@@ -376,6 +398,183 @@ static void zblue_on_param_updated(struct bt_conn* conn, uint16_t interval, uint
         if_gattc_on_connection_parameter_updated(&addr, interval, latency, timeout, BT_STATUS_SUCCESS);
     }
 #endif
+}
+
+void zblue_on_cs_capabilities_available(struct bt_conn *conn,
+						    struct bt_conn_le_cs_capabilities *params)
+{
+    if (!conn) {
+        BT_LOGE("Invalid connection handle.");
+        return;
+    }
+
+    bt_address_t bt_addr = { 0 };
+    const bt_addr_le_t *addr = bt_conn_get_dst(conn);
+
+    if (!addr) {
+        BT_LOGE("Cann't find address for conn:%p", conn);
+        return;
+    }
+
+    memcpy(bt_addr.addr, addr->a.val, sizeof(bt_address_t));
+    cs_msg_t* msg = cs_msg_new(CAPBLITIES_RECEIVED_EVT, &bt_addr);
+    bt_srv_conn_le_cs_capabilities_t *capabilities = malloc(sizeof(bt_srv_conn_le_cs_capabilities_t));
+    memcpy(capabilities, params, sizeof(bt_srv_conn_le_cs_capabilities_t));
+    msg->cs_data.data = (void *)capabilities;
+    bt_sal_cs_event_callback(msg);
+
+    ARG_UNUSED(params);
+    BT_LOGD("CS capability exchange completed.");
+    BT_LOGD("num_config_supported:%d, max_consecutive_procedures_supported:%d",
+        params->num_config_supported, params->max_consecutive_procedures_supported);
+    BT_LOGD("num_antennas_supported:%d, max_antenna_paths_supported:%d.",
+        params->num_antennas_supported, params->max_antenna_paths_supported);
+    BT_LOGD("initiator_supported:%d, reflector_supported:%d",
+        params->initiator_supported, params->reflector_supported);
+    BT_LOGD("mode_3_supported:%d, rtt_aa_only_precision:%d",
+        params->mode_3_supported, params->rtt_aa_only_precision);
+    BT_LOGD("rtt_sounding_precision:%d, rtt_random_payload_precision:%d",
+        params->rtt_sounding_precision, params->rtt_random_payload_precision);
+    BT_LOGD("rtt_aa_only_n:%d, rtt_sounding_n:%d, rtt_random_payload_n:%d",
+        params->rtt_aa_only_n, params->rtt_sounding_n, params->rtt_random_payload_n);
+    BT_LOGD("phase_based_nadm_sounding_supported:%d, phase_based_nadm_random_supported:%d",
+        params->phase_based_nadm_sounding_supported, params->phase_based_nadm_random_supported);
+    BT_LOGD("cs_sync_2m_phy_supported:%d, cs_sync_2m_2bt_phy_supported:%d",
+        params->cs_sync_2m_phy_supported, params->cs_sync_2m_2bt_phy_supported);
+    BT_LOGD("cs_without_fae_supported:%d, chsel_alg_3c_supported:%d",
+        params->cs_without_fae_supported, params->chsel_alg_3c_supported);
+    BT_LOGD("pbr_from_rtt_sounding_seq_supported:%d, t_ip1_times_supported:%d",
+        params->pbr_from_rtt_sounding_seq_supported, params->t_ip1_times_supported);
+    BT_LOGD("t_ip2_times_supported:%d, t_fcs_times_supported:%d",
+        params->t_ip2_times_supported, params->t_fcs_times_supported);
+    BT_LOGD("t_pm_times_supported:%d, t_sw_time:%d, tx_snr_capability:%d",
+        params->t_pm_times_supported, params->t_sw_time,
+        params->tx_snr_capability);
+    return;
+}
+
+void zblue_on_cs_remote_fae_table_available(struct bt_conn *conn,
+						 struct bt_conn_le_cs_fae_table *params)
+{
+    return;
+}
+
+void zblue_on_cs_config_created(struct bt_conn *conn, struct bt_conn_le_cs_config *config)
+{
+    bt_address_t bt_addr = { 0 };
+    const bt_addr_le_t *addr = bt_conn_get_dst(conn);
+
+    if (!addr) {
+        BT_LOGE("Cann't find address for conn:%p", conn);
+        return;
+    }
+
+    memcpy(bt_addr.addr, addr->a.val, sizeof(bt_address_t));
+    cs_msg_t* msg = cs_msg_new(CONFIG_DONE_EVT, &bt_addr);
+    bt_srv_conn_le_cs_config_t *cs_config = (bt_srv_conn_le_cs_config_t *)malloc(sizeof(bt_srv_conn_le_cs_config_t));
+    memcpy(cs_config, config, sizeof(bt_srv_conn_le_cs_config_t));
+    msg->cs_data.data = (void*)cs_config;
+    bt_sal_cs_event_callback(msg);
+
+    BT_LOGD("CS config creation complete. ID: %d\n", config->id);
+    BT_LOGD("main_mode_type:%d, sub_mode_type:%d",
+        config->main_mode_type, config->sub_mode_type);
+    BT_LOGD("min_main_mode_steps:%d, max_main_mode_steps:%d",
+        config->min_main_mode_steps, config->max_main_mode_steps);
+    BT_LOGD("main_mode_repetition:%d, mode_0_steps:%d",
+        config->main_mode_repetition, config->mode_0_steps);
+    BT_LOGD("role:%d, rtt_type:%d, cs_sync_phy:%d",
+        config->role, config->rtt_type, config->cs_sync_phy);
+    BT_LOGD("channel_map_repetition:%d, channel_selection_type:%d",
+        config->channel_map_repetition, config->channel_selection_type);
+    BT_LOGD("ch3c_shape:%d, ch3c_jump:%d", config->ch3c_shape, config->ch3c_jump);
+    BT_LOGD("t_ip1_time_us:%d, t_ip2_time_us:%d",
+        config->t_ip1_time_us, config->t_ip2_time_us);
+    BT_LOGD("t_fcs_time_us:%d, t_pm_time_us:%d", config->t_fcs_time_us, config->t_pm_time_us);
+    BT_LOGD("channel_map:0x%x%x%x%x%x%x%x%x%x%x.",
+        config->channel_map[0], config->channel_map[1], config->channel_map[2],
+        config->channel_map[3], config->channel_map[4], config->channel_map[5],
+        config->channel_map[6], config->channel_map[7], config->channel_map[8],
+        config->channel_map[9]);
+    return;
+}
+
+void zblue_on_cs_config_removed(struct bt_conn *conn, uint8_t config_id)
+{
+    return;
+}
+
+void zblue_on_cs_security_enabled(struct bt_conn *conn)
+{
+    bt_address_t bt_addr = { 0 };
+
+    const bt_addr_le_t *addr = bt_conn_get_dst(conn);
+
+    if (!addr) {
+        BT_LOGE("Cann't find address for conn:%p", conn);
+        return;
+    }
+
+    memcpy(bt_addr.addr, addr->a.val, sizeof(bt_address_t));
+    cs_msg_t* msg = cs_msg_new(SECURITY_DONE_EVT, &bt_addr);
+    bt_sal_cs_event_callback(msg);
+    BT_LOGD("CS security enabled.\n");
+    return;
+}
+
+void zblue_on_cs_procedure_enabled(struct bt_conn *conn,
+               struct bt_conn_le_cs_procedure_enable_complete *params)
+{
+    bt_address_t bt_addr = { 0 };
+
+    const bt_addr_le_t *addr = bt_conn_get_dst(conn);
+
+    if (!addr) {
+        BT_LOGE("Cann't find address for conn:%p", conn);
+        return;
+    }
+
+    memcpy(bt_addr.addr, addr->a.val, sizeof(bt_address_t));
+    cs_msg_t* msg = cs_msg_new(PROCEDURE_DONE_EVT, &bt_addr);
+    bt_srv_conn_le_cs_procedure_enable_complete_t *procedure = malloc(sizeof(bt_srv_conn_le_cs_procedure_enable_complete_t));
+    memcpy(procedure, params, sizeof(bt_srv_conn_le_cs_procedure_enable_complete_t));
+    msg->cs_data.data = (void*)procedure;
+    bt_sal_cs_event_callback(msg);
+
+    if (params->state == 1) {
+        BT_LOGD("CS procedures enabled.");
+    } else {
+        BT_LOGD("CS procedures disabled.");
+    }
+
+    BT_LOGD("config_id:%d, tone_antenna:%d, tx_power:%d, subevents_per_event:%d\n",
+        params->config_id, params->tone_antenna_config_selection,
+        params->selected_tx_power, params->subevents_per_event);
+    BT_LOGD("subevent_interval:%d, event_interval:%d, procedure_interval:%d, procedure_count:%d, max_procedure_len:%d\n",
+        params->subevent_interval, params->event_interval, params->procedure_interval,
+        params->procedure_count, params->max_procedure_len);
+    return;
+}
+
+void zblue_on_cs_subevent(struct bt_conn* conn, struct bt_conn_le_cs_subevent_result* result)
+{
+    bt_address_t bt_addr = { 0 };
+
+    const bt_addr_le_t *addr = bt_conn_get_dst(conn);
+
+    if (!addr) {
+        BT_LOGE("Cann't find address for conn:%p", conn);
+        return;
+    }
+
+    memcpy(bt_addr.addr, addr->a.val, sizeof(bt_address_t));
+    cs_msg_t* msg = cs_msg_new(CS_SUBEVENT_RESULT_EVT, &bt_addr);
+    bt_srv_conn_le_cs_subevent_result_t *subevent = malloc(sizeof(bt_srv_conn_le_cs_subevent_result_t) + result->step_data_buf->len);
+    memcpy(subevent, result, sizeof(bt_srv_conn_le_cs_subevent_result_t));
+
+    memcpy(subevent->step_data_buf, result->step_data_buf->data, subevent->len);
+    msg->cs_data.data = (void*)subevent;
+    bt_sal_cs_event_callback(msg);
 }
 
 #if defined(CONFIG_BT_USER_PHY_UPDATE)

@@ -30,41 +30,34 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __CS_MSG_H__
-#define __CS_MSG_H__
-/****************************************************************************
- * Included Files
- ****************************************************************************/
-#include "bt_cs.h"
+#ifndef __CS_STATE_MACHINE_H__
+#define __CS_STATE_MACHINE_H__
+
+#include "bt_device.h"
 
 typedef enum {
-    CS_STARTUP,
-    CS_SHUTDOWN,
-    START_REQ,
-    STOP_REQ,
-    CAPBLITIES_RECEIVED_EVT,
-    DISCONNECTED_EVT,
-    CONNECTED_EVT,
-    CONFIG_DONE_EVT,
-    SECURITY_DONE_EVT,
-    PROCEDURE_DONE_EVT,
-    CS_SUBEVENT_RESULT_EVT,
-} cs_msg_id_t;
+    CS_STATE_STOPPED,
+    CS_STATE_INIT,
+    CS_STATE_CONNECTED,
+    CS_STATE_WAIT_FOR_CONFIG_COMPLETE,
+    CS_STATE_WAIT_FOR_SECURITY_COMPLETE,
+    CS_STATE_WAIT_FOR_PROCEDURE_COMPLETE,
+    CS_STATE_START
+} cs_state_t;
 
-typedef struct
-{
+typedef enum {
+    CS_CONNECT,
+    CS_DISCONNECT,
+} cs_event_t;
+
+typedef struct _cs_state_machine cs_state_machine_t;
+
+typedef struct {
+    struct list_node node;
+    cs_state_machine_t* cs_sm;
     bt_address_t bd_addr;
-    void* data;
-    void* cb;
-} cs_msg_data_t;
+} cs_device_t;
 
-typedef struct
-{
-    cs_msg_id_t id;
-    cs_msg_data_t cs_data;
-} cs_msg_t;
-
-cs_msg_t* cs_msg_new(cs_msg_id_t msg, bt_address_t* bd_addr);
-void cs_msg_destory(cs_msg_t* cs_msg);
-
+cs_state_machine_t* cs_state_machine_new(void* context, bt_address_t* bd_addr);
+void cs_state_machine_handle_event(cs_state_machine_t* sm, cs_msg_t* msg);
 #endif

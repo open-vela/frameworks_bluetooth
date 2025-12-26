@@ -1,25 +1,46 @@
 /****************************************************************************
- *  Copyright (C) 2024 Xiaomi Corporation
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ *   Copyright (C) 2025 Xiaomi InC. All rights reserved.
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- ***************************************************************************/
-#ifndef _CS_RAS_SERVER_H_
-#define _CS_RAS_SERVER_H_
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ * 3. Neither the name NuttX nor the names of its contributors may be
+ *    used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ ****************************************************************************/
 
+#ifndef _CS_RAS_H_
+#define _CS_RAS_H_
+
+#include "service_loop.h"
+#include "cs_ras_util.h"
+#include "bt_addr.h"
+#include "cs_ras_gatts.h"
+#include "bt_gatt_defs.h"
 #include "cs_ras_test.h"
-#include <zephyr/bluetooth/conn.h>
-#include <zephyr/bluetooth/gatt.h>
-#include <zephyr/kernel.h>
+#include "cs_service.h"
 
 #define CONFIG_BT_CS_TEST 1
 
@@ -33,7 +54,7 @@
  * This macro defines the timeout duration for Ranging Service (RAS)
  * responses, set to 5 seconds.
  */
-#define RAS_RSP_TIMEOUT K_SECONDS(5)
+#define RAS_RSP_TIMEOUT (5 * 1000)
 
 /**
  * @brief Empty array indicator.
@@ -393,7 +414,7 @@ typedef uint8_t ras_rang_mode_t;
             p += (_size);                                      \
             remaining -= (_size);                              \
         } else {                                               \
-            LOG_WRN("Field truncated, size=%d", (int)(_size)); \
+            BT_LOGW("Field truncated, size=%d", (int)(_size)); \
             remaining = 0;                                     \
         }                                                      \
     } while (0)
@@ -489,7 +510,7 @@ enum {
  *  FILTER BIT MAPPING TABLE
  *  ------------------------------------------------------------
  *  Each field can be individually filtered out using the
- *  atomic_t ras_filter[SAL_LE_RAS_FILTER_MODE_MAX] bitmask.
+ *  uint32_t ras_filter[SAL_LE_RAS_FILTER_MODE_MAX] bitmask.
  *
  *  +----------------------------+-------------------------------+
  *  | Field Name                 | Bit Definition                |
@@ -659,7 +680,7 @@ typedef enum {
  * Represents a single segment of Ranging Data for On-demand transfers.
  */
 typedef struct ras_segment_t {
-    sys_snode_t seg_node;      /**< Node for linked list of segments. */
+    cs_node_t seg_node;   /**< Node for linked list of segments. */
     uint16_t seg_idx;          /**< Segment index in the sequence. */
     uint16_t len;              /**< Length of the segment data. */
     uint8_t data[RAS_EMPTY_ARRAY]; /**< Flexible array member for segment payload. */
@@ -673,8 +694,8 @@ typedef struct ras_segment_t {
 typedef struct ras_rang_on_demand_t {
     bool proc_used;                /**< Indicates if this procedure slot is in use. */
     uint16_t count;                /**< Count of segments or data items. */
-    struct k_work_delayable on_demand_work; /**< Timer/work item for response timeout. */
-    sys_slist_t seg_list;          /**< Linked list of Ranging Data segments. */
+    service_timer_t* on_demand_timer;  /**< Timer/work item for response timeout. */
+    cs_list_t seg_list;          /**< Linked list of Ranging Data segments. */
     ras_segment_t* seg;            /**< Pointer to the current segment being processed. */
 } ras_rang_on_demand_t;
 
@@ -697,7 +718,7 @@ typedef struct {
  */
 typedef struct {
     uint16_t step_data_attr_handle;          /**< GATT handle of Step Data characteristic. */
-    struct bt_conn* connection;              /**< Current BLE connection reference. */
+    bt_address_t* addr;                      /**< Current BLE address reference. */
     uint8_t latest_local_steps[SAL_LE_RAS_STEP_DATA_BUF_LEN]; /**< Buffer for step or ranging data. */
     uint8_t rt_dt_ccc_cfg;                   /**< CCC configuration for Real-time Data characteristic. */
     uint8_t ras_dt_rd_indicating;            /**< Flag indicating Ranging Data indication state. */
@@ -706,31 +727,14 @@ typedef struct {
     uint32_t ras_seg_offset;                 /**< Offset in the current Ranging Data segment. */
     uint32_t remaining_len;                  /**< Remaining bytes to send in current operation. */
     uint8_t ras_seg_idx;                      /**< Index of the current Ranging Data segment. */
-    struct bt_gatt_indicate_params ras_dt_rd_ind_params; /**< Parameters for GATT indication. */
     uint32_t ras_feature;                     /**< Bitfield indicating RAS feature support. */
-    atomic_t char_notify_state;               /**< Bitfield tracking characteristic notification/indication state. */
-    atomic_t ras_filter[SAL_LE_RAS_FILTER_MODE_MAX]; /**< Filter settings per RAS mode (0-3). */
-    atomic_t on_demand_state;                 /**< Current state of the On-demand RAS procedure. */
+    uint32_t char_notify_state;               /**< Bitfield tracking characteristic notification/indication state. */
+    uint32_t ras_filter[SAL_LE_RAS_FILTER_MODE_MAX]; /**< Filter settings per RAS mode (0-3). */
+    uint32_t on_demand_state;                 /**< Current state of the On-demand RAS procedure. */
     ras_rang_on_demand_t subevent[SAL_LE_RAS_STORE_PROCEDURE_NUM_MAX]; /**< Array of On-demand procedure slots. */
     ras_control_point_t control_point;        /**< Control Point status for current operation. */
-    sys_snode_t* on_deman_curr_node;         /**< Pointer to current node in On-demand segment list. */
-} sal_le_ras_srv_env_t;
-
-/**
- * @brief Retrieve the ras_rang_on_demand_t pointer from a k_work_delayable work item.
- *
- * This macro converts a pointer to a k_work structure (from a delayed work callback)
- * into a pointer to the enclosing ras_rang_on_demand_t structure.
- *
- * @param _w Pointer to k_work (from delayed work handler).
- *
- * @return Pointer to the ras_rang_on_demand_t instance that contains this work item.
- *
- * @note This is used in the On-demand Ranging Data procedure to find the procedure
- *       slot associated with a delayed work timeout callback.
- */
-#define RAS_ON_DEMAND_WORK_PICK(_w) CONTAINER_OF(k_work_delayable_from_work(_w), \
-    struct ras_rang_on_demand_t, on_demand_work)
+    cs_node_t* on_deman_curr_node;         /**< Pointer to current node in On-demand segment list. */
+} ras_srv_env_t;
 
 /**
  * @brief Write the step data for the CS Reflector.
@@ -750,7 +754,7 @@ int write_cs_reflector_step_data(void);
  *
  * @return 0 on success, or a negative error code on failure.
  */
-int le_cs_enable(void);
+int bt_cs_ras_enable(void);
 
 #ifdef CONFIG_BT_CS_TEST
 
@@ -759,29 +763,28 @@ int le_cs_enable(void);
  *
  * Redirects the GATT notification callback to the test implementation.
  */
-#define BT_GATT_NOTIFY_CB(conn, params) bt_gatt_notify_cb_test(conn, params)
+#define BT_GATT_NOTIFY_CB(attr, addr, value, len) bt_gatt_notify_cb_test(attr, addr, value, len)
 
 /**
  * @brief Attribute read wrapper for test mode.
  *
  * Redirects the GATT attribute read operation to the test implementation.
  */
-#define BT_GATT_ATTR_READ(conn, attr, buf, buf_len, offset, value, value_len) \
-    bt_gatt_attr_read_test(conn, attr, buf, buf_len, offset, value, value_len)
+#define BT_GATT_ATTR_READ(addr, attr, buf, buf_len, offset, value, value_len) //bt_gatt_attr_read_test(addr, attr, buf, buf_len, offset, value, value_len)
 
 /**
  * @brief GATT notify wrapper for test mode.
  *
  * Redirects the GATT notification operation to the test implementation.
  */
-#define BT_GATT_NOTIFY(conn, attr, data, len) bt_gatt_notify_test(conn, attr, data, len)
+#define BT_GATT_NOTIFY(attr, addr, value, len) bt_gatt_notify_test(attr, addr, value, len)
 
 /**
  * @brief GATT indicate wrapper for test mode.
  *
  * Redirects the GATT indication operation to the test implementation.
  */
-#define BT_GATT_INDICATE(conn, params) bt_gatt_indicate_test(conn, params)
+#define BT_GATT_INDICATE(attr, addr, value, len) bt_gatt_indicate_test(attr, addr, value, len)
 
 #else
 
@@ -790,42 +793,23 @@ int le_cs_enable(void);
  *
  * Uses the standard GATT notification callback.
  */
-#define BT_GATT_NOTIFY_CB(conn, params) bt_gatt_notify_cb(conn, params)
-
-/**
- * @brief Attribute read wrapper for normal mode.
- *
- * Uses the standard GATT attribute read function.
- */
-#define BT_GATT_ATTR_READ(conn, attr, buf, buf_len, offset, value, value_len) \
-    bt_gatt_attr_read(conn, attr, buf, buf_len, offset, value, value_len)
+#define BT_GATT_NOTIFY_CB(attr, addr, value, len) ras_gatts_data_send_notify(attr, addr, value, len, true)
 
 /**
  * @brief GATT notify wrapper for normal mode.
  *
  * Uses the standard GATT notification function.
  */
-#define BT_GATT_NOTIFY(conn, attr, data, len) bt_gatt_notify(conn, attr, data, len)
+#define BT_GATT_NOTIFY(attr, addr, value, len) ras_gatts_data_send_notify(attr, addr, value, len, true)
 
 /**
  * @brief GATT indicate wrapper for normal mode.
  *
  * Uses the standard GATT indication function.
  */
-#define BT_GATT_INDICATE(conn, params) bt_gatt_indicate(conn, params)
+#define BT_GATT_INDICATE(attr, addr, value, len) ras_gatts_data_send_notify(attr, addr, value, len, false)
 
 #endif /* CONFIG_BT_CS_TEST */
-
-/**
- * @brief Get the GATT attribute for the RAS service.
- *
- * This function returns a pointer to the primary GATT attribute
- * of the Ranging Service (RAS). It can be used to access the
- * service characteristics and descriptors.
- *
- * @return Pointer to the RAS GATT attribute.
- */
-struct bt_gatt_attr* ras_get_gatt_attr(void);
 
 /**
  * @brief Test helper: simulate receiving a RAS subevent.
@@ -835,30 +819,28 @@ struct bt_gatt_attr* ras_get_gatt_attr(void);
  *
  * @param mode The Ranging mode used for the test (e.g., Real-time or On-demand).
  * @param test_case The specific test case scenario to simulate.
- * @param conn Pointer to the connection associated with this subevent.
+ * @param addr Pointer to the bluetooth address associated with this subevent.
  * @param result Pointer to the subevent result data to inject.
  *
  * @return 0 on success, or a negative error code on failure.
  */
 int ras_subevent_recv_test(ras_rang_mode_t mode, ras_testcase_t test_case,
-    struct bt_conn* conn, struct bt_conn_le_cs_subevent_result* result);
+    bt_address_t* addr, bt_srv_conn_le_cs_subevent_result_t* result);
 
 /**
  * @brief Test helper: simulate sending a Control Point response.
  *
  * This function is used for testing the RAS Control Point procedure.
  *
- * @param conn Pointer to the connection to send the response to.
- * @param attr Pointer to the GATT attribute corresponding to the Control Point characteristic.
+ * @param addr Pointer to the bluetooth address to send the response to.
  * @param data Pointer to the data to send.
  * @param len Length of the data in bytes.
- * @param offset Offset in the characteristic to start writing.
- * @param flags GATT-specific flags (e.g., for reliable writes or prepare writes).
  *
  * @return 0 on success, or a negative error code on failure.
  */
-int ras_ctrl_point_send_test(struct bt_conn* conn, struct bt_gatt_attr* attr,
-    uint8_t* data, uint16_t len, uint16_t offset,
-    uint8_t flags);
+int ras_ctrl_point_send_test(bt_address_t* addr, uint8_t* data, uint16_t len);
 
-#endif /* _CS_RAS_SERVER_H_ */
+void ras_on_demand_notify_finish_test(bt_address_t* addr);
+
+void ras_on_demand_indicate_finish_test(bt_address_t* addr, ras_attr_notify_t attr);
+#endif /* _CS_RAS_H_ */

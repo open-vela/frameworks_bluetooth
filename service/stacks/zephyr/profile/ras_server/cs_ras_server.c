@@ -1246,14 +1246,13 @@ static ras_rang_on_demand_t* ras_rang_on_demand_find_subevent(struct bt_conn* co
 
 static uint8_t* ras_subevent_data_conversion(struct bt_conn* conn, struct bt_conn_le_cs_subevent_result* result)
 {
-    static int i = 0;
     memset(ras_srv->latest_local_steps, 0, sizeof(ras_srv->latest_local_steps));
 
     if (result->step_data_buf) {
         if (result->step_data_buf->len <= SAL_LE_RAS_STEP_DATA_BUF_LEN) {
             memcpy(ras_srv->latest_local_steps, result->step_data_buf->data,
                 result->step_data_buf->len);
-            LOG_INF("step data[%d]:%s\n", i++, bt_hex(result->step_data_buf->data, result->step_data_buf->len));
+            LOG_INF("step data[%d]:%s\n", result->step_data_buf->len, bt_hex(result->step_data_buf->data, result->step_data_buf->len));
         } else {
             LOG_INF("Not enough memory to store step data. (%d > %d)\n",
                 result->step_data_buf->len, SAL_LE_RAS_STEP_DATA_BUF_LEN);
@@ -1440,7 +1439,7 @@ static int ras_data_ready_send(struct bt_conn* conn, uint16_t count)
     return -1;
 }
 
-static void ras_mtu_updated(struct bt_conn* conn, uint16_t tx, uint16_t rx)
+static void ras_mtu_updated_cb(struct bt_conn* conn, uint16_t tx, uint16_t rx)
 {
     if (ras_srv) {
         ras_srv->ras_mtu = MIN(tx, rx);
@@ -1500,13 +1499,13 @@ static void disconnected_cb(struct bt_conn* conn, uint8_t reason)
     bt_conn_unref(conn);
     ras_srv->connection = NULL;
 
-    int err = bt_le_adv_start(BT_LE_ADV_PARAM(BT_LE_ADV_OPT_CONN, BT_GAP_ADV_FAST_INT_MIN_1,
-                                  BT_GAP_ADV_FAST_INT_MAX_1, NULL),
-        ad, ARRAY_SIZE(ad), NULL, 0);
-    if (err) {
-        LOG_INF("Advertising failed to start (err %d)\n", err);
-        return;
-    }
+    // int err = bt_le_adv_start(BT_LE_ADV_PARAM(BT_LE_ADV_OPT_CONN, BT_GAP_ADV_FAST_INT_MIN_1,
+    //                               BT_GAP_ADV_FAST_INT_MAX_1, NULL),
+    //     ad, ARRAY_SIZE(ad), NULL, 0);
+    // if (err) {
+    //     LOG_INF("Advertising failed to start (err %d)\n", err);
+    //     return;
+    // }
 
     LOG_INF("Advertising start again.\n");
 }
@@ -1669,16 +1668,6 @@ int le_cs_enable(void)
     bt_conn_cb_register(&conn_cbs);
 
     bt_gatt_cb_register(&ras_gatt_callbacks);
-
-    err = bt_le_adv_start(BT_LE_ADV_PARAM(BT_LE_ADV_OPT_CONN, BT_GAP_ADV_FAST_INT_MIN_1,
-                              BT_GAP_ADV_FAST_INT_MAX_1, NULL),
-        ad, ARRAY_SIZE(ad), NULL, 0);
-    if (err) {
-        LOG_INF("Advertising failed to start (err %d)\n", err);
-        return 0;
-    }
-
-    LOG_INF("Advertising starting.\n");
 
     return 0;
 }

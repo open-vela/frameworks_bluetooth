@@ -30,41 +30,24 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __CS_MSG_H__
-#define __CS_MSG_H__
-/****************************************************************************
- * Included Files
- ****************************************************************************/
-#include "bt_cs.h"
 
-typedef enum {
-    CS_STARTUP,
-    CS_SHUTDOWN,
-    START_REQ,
-    STOP_REQ,
-    CAPBLITIES_RECEIVED_EVT,
-    DISCONNECTED_EVT,
-    CONNECTED_EVT,
-    CONFIG_DONE_EVT,
-    SECURITY_DONE_EVT,
-    PROCEDURE_DONE_EVT,
-    CS_SUBEVENT_RESULT_EVT,
-} cs_msg_id_t;
+ #include "cs_ras_util.h"
 
-typedef struct
+ const char *cs_log_to_hex_str(const void *buf, size_t len)
 {
-    bt_address_t bd_addr;
-    void* data;
-    void* cb;
-} cs_msg_data_t;
+	static const char hex[] = "0123456789abcdef";
+	static char str[1024];
+	const uint8_t *b = buf;
+	size_t i;
 
-typedef struct
-{
-    cs_msg_id_t id;
-    cs_msg_data_t cs_data;
-} cs_msg_t;
+	len = MIN(len, (sizeof(str) - 1) / 2);
 
-cs_msg_t* cs_msg_new(cs_msg_id_t msg, bt_address_t* bd_addr);
-void cs_msg_destory(cs_msg_t* cs_msg);
+	for (i = 0; i < len; i++) {
+		str[i * 2] = hex[b[i] >> 4];
+		str[i * 2 + 1] = hex[b[i] & 0xf];
+	}
 
-#endif
+	str[i * 2] = '\0';
+
+	return str;
+}

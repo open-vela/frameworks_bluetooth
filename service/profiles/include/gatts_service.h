@@ -23,6 +23,7 @@
 #include "bt_gatt_defs.h"
 #include "bt_gatts.h"
 #include "gatt_define.h"
+#include "sal_le_cs_interface.h"
 
 /*
  * sal callback

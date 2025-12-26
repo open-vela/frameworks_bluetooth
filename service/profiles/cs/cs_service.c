@@ -26,7 +26,8 @@
 #include "bt_list.h"
 #include "callbacks_list.h"
 #include "cs_msg.h"
-#include "cs_ras_server.h"
+#include "cs_ras.h"
+#include "cs_ras_gatts.h"
 #include "cs_ras_test.h"
 #include "cs_service.h"
 #include "cs_state_machine.h"
@@ -41,6 +42,8 @@
 #define CS_CALLBACK_FOREACH(_list, _cback, ...) \
     BT_CALLBACK_FOREACH(_list, cs_callbacks_t, _cback, ##__VA_ARGS__)
 
+typedef void (*subevent_result_cb_t)(bt_address_t* addr, bt_srv_conn_le_cs_subevent_result_t* result);
+
 static gatts_handle_t g_cs_handle = NULL;
 typedef struct {
     struct list_node list;
@@ -48,9 +51,11 @@ typedef struct {
 } cs_servie_t;
 
 static cs_servie_t g_cs_service = { 0 };
+static subevent_result_cb_t result_cb = NULL;
 
 static void service_startup(profile_on_startup_t cb);
 static void service_shutdown(profile_on_shutdown_t cb);
+static const void* get_cs_profile_interface(void);
 
 static cs_device_t* cs_device_new(void* ctx, bt_address_t* bd_addr)
 {
@@ -125,6 +130,14 @@ static void cs_service_handle_event(void* data)
         break;
     case CS_SHUTDOWN:
         service_shutdown((profile_on_shutdown_t)msg->cs_data.cb);
+        break;
+    case CS_SUBEVENT_RESULT_EVT:
+        const bt_cs_interface_t* cs_if = (const bt_cs_interface_t*)get_cs_profile_interface();
+        if (cs_if->subevent_result_callbacks) {
+            cs_if->subevent_result_callbacks(&msg->cs_data.bd_addr, msg->cs_data.data);
+        }
+
+        free(msg->cs_data.data);
         break;
     default: {
         cs_state_machine_t* cs_sm;
@@ -239,7 +252,7 @@ static void cs_cleanup(void)
 
 static void service_startup(profile_on_startup_t cb)
 {
-    le_cs_enable();
+    bt_cs_ras_enable();
     cb(PROFILE_CS, true);
 }
 
@@ -319,6 +332,17 @@ static bt_status_t cs_stop_distance_measurement(bt_address_t* addr, int method, 
     return BT_STATUS_SUCCESS;
 }
 
+static bt_status_t cs_subevent_result_callbacks(bt_address_t* addr, void* data)
+{
+    if (result_cb == NULL) {
+        BT_LOGW("The subevent result callbacks haven't registers.");
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    result_cb(addr, (bt_srv_conn_le_cs_subevent_result_t*)data);
+    return BT_STATUS_SUCCESS;
+}
+
 static bt_status_t cs_test(void* data, uint16_t len)
 {
     int err = cs_ras_subevent_recv_test(data, len);
@@ -331,6 +355,7 @@ static const bt_cs_interface_t cs_interface = {
     .unregister_callbacks = cs_unregister_callbacks,
     .start_distance_measurement = cs_start_distance_measurement,
     .stop_distance_measurement = cs_stop_distance_measurement,
+    .subevent_result_callbacks = cs_subevent_result_callbacks,
     .cs_test = cs_test,
 };
 
@@ -381,6 +406,12 @@ void bt_sal_cs_event_callback(cs_msg_t* msg)
 void bt_register_cs_service(void)
 {
     register_service(&cs_service);
+}
+
+void bt_cs_register_subevent_cb(subevent_result_cb_t* cb)
+{
+    result_cb = cb;
+    return;
 }
 
 #endif /* CONFIG_BLUETOOTH_LE_CS */
