@@ -126,7 +126,7 @@ static void STACK_CALL(stop_scan)(void* args)
 bt_status_t bt_sal_le_set_scan_parameters(bt_controller_id_t id, ble_scan_params_t* params)
 {
     memset(&scan_param, 0, sizeof(scan_param));
-    scan_param.type = params->scan_type;
+    scan_param.type = (uint8_t)params->scan_type;
     scan_param.interval = params->scan_interval;
     scan_param.window = params->scan_window;
 
