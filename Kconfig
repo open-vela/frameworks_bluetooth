@@ -647,12 +647,12 @@ config BLUETOOTH_AUDIO_TRANS_ID_HFP_CTRL
 
 config BLUETOOTH_A2DP_SINK_DEVICE
 	string "Bluetooth A2DP Audio Transport Sink Device"
-	default "/dev/audio/a2dpsnkp" if CONFIG_MEDIA_SERVER
+	default "/dev/audio/a2dpsnkp" if MEDIA_SERVER
 	default "/dev/audio/a2dpsnk"
 
 config BLUETOOTH_A2DP_SOURCE_DEVICE
 	string "Bluetooth A2DP Audio Transport Source Device"
-	default "/dev/audio/a2dpsrcc" if CONFIG_MEDIA_SERVER
+	default "/dev/audio/a2dpsrcc" if MEDIA_SERVER
 	default "/dev/audio/a2dpsrc"
 
 config BLUETOOTH_LEA_SINK_CTRL_PATH
