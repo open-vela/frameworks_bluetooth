@@ -152,6 +152,23 @@ static inline void spp_conn_unlock(void)
     pthread_mutex_unlock(&g_spp_manager.mutex);
 }
 
+static sal_spp_connection_t* spp_find_connection_by_scn(const bt_address_t* addr, uint16_t scn)
+{
+    sal_spp_manager_t* spp_mgr = &g_spp_manager;
+    sal_spp_connection_t* spp_conn;
+    bt_list_node_t* node;
+
+    for (node = bt_list_head(spp_mgr->connections); node != NULL;
+         node = bt_list_next(spp_mgr->connections, node)) {
+        spp_conn = bt_list_node(node);
+        if (spp_conn->scn == scn && bt_addr_compare(&spp_conn->addr, addr) == 0) {
+            return spp_conn;
+        }
+    }
+
+    return NULL;
+}
+
 static sal_spp_connection_t* spp_find_connection_by_port(uint16_t conn_port)
 {
     sal_spp_manager_t* spp_mgr = &g_spp_manager;
@@ -527,7 +544,7 @@ static int spp_rfcomm_accept(struct bt_conn* conn, struct bt_rfcomm_server* serv
         return -ENXIO;
     }
 
-    spp_conn = spp_connection_new(&addr, 0, PORT2SCN(server->channel));
+    spp_conn = spp_connection_new(&addr, 0, server->channel);
     if (!spp_conn) {
         BT_LOGE("Failed to create SPP connection for DLCI %d", server->channel);
         return -ENOMEM;
@@ -1020,7 +1037,7 @@ bt_status_t bt_sal_spp_connect_request_reply(bt_address_t* addr, uint16_t port, 
     sal_spp_connection_t* spp_conn;
 
     spp_conn_lock();
-    spp_conn = spp_find_connection_by_dlci(addr, PORT2DLCI(port, 1));
+    spp_conn = spp_find_connection_by_scn(addr, PORT2SCN(port));
     if (!spp_conn) {
         spp_conn_unlock();
         BT_LOGE("No SPP connection found for port %d", port);
