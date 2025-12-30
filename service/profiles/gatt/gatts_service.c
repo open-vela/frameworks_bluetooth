@@ -283,7 +283,7 @@ static void gatts_process_message(void* data)
         if (!element)
             break;
 
-        if (element->rsp_type == ATTR_AUTO_RSP) {
+        if (element->rsp_type == ATTR_AUTO_RSP || element->rsp_type == ATTR_AUTO_RSP_CCC_READ) {
             bt_sal_gatt_server_send_response(PRIMARY_ADAPTER, &msg->param.read.addr, msg->param.read.request_id, element->attr_data, element->attr_length);
         } else if (element->read_cb) {
             element->read_cb(service, &msg->param.read.addr, msg->param.read.element_id ^ service->srv_id, msg->param.read.request_id);
