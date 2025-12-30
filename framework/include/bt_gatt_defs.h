@@ -51,6 +51,7 @@ typedef enum {
 typedef enum {
     ATTR_AUTO_RSP,
     ATTR_RSP_BY_APP,
+    ATTR_AUTO_RSP_CCC_READ,
 } gatt_attr_rsp_t;
 
 typedef enum {
@@ -154,7 +155,7 @@ typedef enum {
 
 /* GATT_H_DESCRIPTOR */
 #define GATT_H_CCCD(_perm, _change, _handle) \
-    GATT_H_DESCRIPTOR(BT_UUID_DECLARE_16(BT_UUID_GATT_CCCD), _perm, ATTR_AUTO_RSP, NULL, _change, NULL, 0, _handle)
+    GATT_H_DESCRIPTOR(BT_UUID_DECLARE_16(BT_UUID_GATT_CCCD), _perm, ATTR_AUTO_RSP_CCC_READ, NULL, _change, NULL, 0, _handle)
 
 /* GATT_H_DESCRIPTOR for CCCD with user response (APP handles read/write) */
 #define GATT_H_CCCD_USER_RSP(_perm, _read, _write, _handle) \
