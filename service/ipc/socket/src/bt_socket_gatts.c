@@ -287,7 +287,7 @@ void bt_socket_server_gatts_process(service_poll_t* poll, int fd,
             attr_inst->permissions = packet->gatts_pl._bt_gatts_add_attr_table.attr_db[i].permissions;
             attr_inst->attr_length = packet->gatts_pl._bt_gatts_add_attr_table.attr_db[i].attr_length;
 
-            if (attr_inst->rsp_type == ATTR_RSP_BY_APP) {
+            if (attr_inst->rsp_type == ATTR_RSP_BY_APP || attr_inst->rsp_type == ATTR_AUTO_RSP_CCC_READ) {
                 attr_inst->read_cb = on_read_request_cb;
                 attr_inst->write_cb = on_write_request_cb;
             } else if (attr_inst->attr_length) {
