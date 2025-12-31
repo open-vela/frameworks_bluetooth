@@ -165,7 +165,7 @@ static int count_call(bt_hfp_hf_connection_t* conn)
     return bt_list_length(conn->calls);
 }
 
-static bt_hfp_hf_call_info_t* new_call()
+static bt_hfp_hf_call_info_t* new_call(void)
 {
     bt_hfp_hf_call_info_t* call = (bt_hfp_hf_call_info_t*)zalloc(sizeof(bt_hfp_hf_call_info_t));
     if (!call) {
@@ -179,7 +179,7 @@ static bt_hfp_hf_call_info_t* new_call()
 
 static bt_hfp_hf_call_info_t* find_or_create_call(bt_hfp_hf_connection_t* sal_conn, struct bt_hfp_hf_call* z_context)
 {
-    if (!sal_conn || !sal_conn->calls) {
+    if (!sal_conn || !sal_conn->calls || !z_context) {
         return NULL;
     }
 
@@ -188,7 +188,7 @@ static bt_hfp_hf_call_info_t* find_or_create_call(bt_hfp_hf_connection_t* sal_co
         return call;
     }
 
-    call = new_call(z_context);
+    call = new_call();
     if (!call) {
         return NULL;
     }
@@ -362,9 +362,16 @@ static bt_status_t do_hf_connect(bt_controller_id_t id, bt_address_t* addr, void
 
 bt_status_t do_hf_disconnect(bt_controller_id_t id, bt_address_t* addr, void* user_data)
 {
+    if (!addr) {
+        BT_LOGE("%s, addr is NULL", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        BT_LOGE("%s, Failed to find connection", __func__);
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+        bt_addr_ba2str(addr, addr_str);
+        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
         return BT_STATUS_FAIL;
     }
     if (!sal_conn->hf) {
@@ -954,6 +961,11 @@ void bt_sal_hfp_hf_cleanup(void)
 
 bt_status_t bt_sal_hfp_hf_connect(bt_address_t* addr)
 {
+    if (!addr) {
+        BT_LOGE("%s, addr is NULL", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     /** FIXME: @p g_conn_params might be NULL even when the previous ACL is connecting */
     if (g_conn_params != NULL) {
         BT_LOGE("%s, Previous connection ongoing", __func__);
@@ -965,9 +977,16 @@ bt_status_t bt_sal_hfp_hf_connect(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_hf_disconnect(bt_address_t* addr)
 {
+    if (!addr) {
+        BT_LOGE("%s, addr is NULL", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        BT_LOGE("%s, Failed to find connection", __func__);
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+        bt_addr_ba2str(addr, addr_str);
+        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
         return BT_STATUS_FAIL;
     }
 
@@ -981,9 +1000,16 @@ bt_status_t bt_sal_hfp_hf_disconnect(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_hf_connect_audio(bt_address_t* addr)
 {
+    if (!addr) {
+        BT_LOGE("%s, addr is NULL", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        BT_LOGE("%s, Failed to find connection", __func__);
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+        bt_addr_ba2str(addr, addr_str);
+        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
         return BT_STATUS_FAIL;
     }
 
@@ -998,9 +1024,16 @@ bt_status_t bt_sal_hfp_hf_connect_audio(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_hf_disconnect_audio(bt_address_t* addr)
 {
+    if (!addr) {
+        BT_LOGE("%s, addr is NULL", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        BT_LOGE("%s, Failed to find connection", __func__);
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+        bt_addr_ba2str(addr, addr_str);
+        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
         return BT_STATUS_PARM_INVALID;
     }
 
@@ -1016,9 +1049,16 @@ bt_status_t bt_sal_hfp_hf_disconnect_audio(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_hf_answer_call(bt_address_t* addr)
 {
+    if (!addr) {
+        BT_LOGE("%s, addr is NULL", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        BT_LOGE("%s, Failed to find connection", __func__);
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+        bt_addr_ba2str(addr, addr_str);
+        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
         return BT_STATUS_PARM_INVALID;
     }
 
@@ -1034,9 +1074,16 @@ bt_status_t bt_sal_hfp_hf_answer_call(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_hf_reject_call(bt_address_t* addr)
 {
+    if (!addr) {
+        BT_LOGE("%s, addr is NULL", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        BT_LOGE("%s, Failed to find connection", __func__);
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+        bt_addr_ba2str(addr, addr_str);
+        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
         return BT_STATUS_FAIL;
     }
 
@@ -1052,9 +1099,16 @@ bt_status_t bt_sal_hfp_hf_reject_call(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_hf_hold_call(bt_address_t* addr)
 {
+    if (!addr) {
+        BT_LOGE("%s, addr is NULL", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        BT_LOGE("%s, Failed to find connection", __func__);
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+        bt_addr_ba2str(addr, addr_str);
+        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
         return BT_STATUS_FAIL;
     }
 
@@ -1069,9 +1123,16 @@ bt_status_t bt_sal_hfp_hf_hold_call(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_hf_hangup_call(bt_address_t* addr)
 {
+    if (!addr) {
+        BT_LOGE("%s, addr is NULL", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        BT_LOGE("%s, Failed to find connection", __func__);
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+        bt_addr_ba2str(addr, addr_str);
+        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
         return BT_STATUS_FAIL;
     }
 
@@ -1099,9 +1160,16 @@ bt_status_t bt_sal_hfp_hf_hangup_call(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_hf_dial_number(bt_address_t* addr, const char* number)
 {
+    if (!addr) {
+        BT_LOGE("%s, addr is NULL", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        BT_LOGE("%s, Failed to find connection", __func__);
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+        bt_addr_ba2str(addr, addr_str);
+        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
         return BT_STATUS_PARM_INVALID;
     }
 
@@ -1116,8 +1184,19 @@ bt_status_t bt_sal_hfp_hf_dial_number(bt_address_t* addr, const char* number)
 
 bt_status_t bt_sal_hfp_hf_dial_memory(bt_address_t* addr, uint32_t memory)
 {
+    if (!addr) {
+        BT_LOGE("%s, addr is NULL", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     char mem_in_str[HFP_PHONENUM_DIGITS_MAX + 1];
+    if (!sal_conn) {
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+        bt_addr_ba2str(addr, addr_str);
+        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
+        return BT_STATUS_PARM_INVALID;
+    }
 
     snprintf(mem_in_str, sizeof(mem_in_str), "%" PRIu32, memory);
     SAL_CHECK_RET(Z_API(bt_hfp_hf_memory_dial)(sal_conn->hf, mem_in_str), 0);
@@ -1126,9 +1205,16 @@ bt_status_t bt_sal_hfp_hf_dial_memory(bt_address_t* addr, uint32_t memory)
 
 bt_status_t bt_sal_hfp_hf_call_control(bt_address_t* addr, hfp_call_control_t chld, uint32_t index)
 {
+    if (!addr) {
+        BT_LOGE("%s, addr is NULL", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        BT_LOGE("%s, Failed to find connection", __func__);
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+        bt_addr_ba2str(addr, addr_str);
+        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
         return BT_STATUS_PARM_INVALID;
     }
 
@@ -1193,7 +1279,19 @@ bt_status_t bt_sal_hfp_hf_call_control(bt_address_t* addr, hfp_call_control_t ch
 
 bt_status_t bt_sal_hfp_hf_get_current_calls(bt_address_t* addr)
 {
+    if (!addr) {
+        BT_LOGE("%s, addr is NULL", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
+    if (!sal_conn) {
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+        bt_addr_ba2str(addr, addr_str);
+        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     SAL_CHECK_RET(Z_API(bt_hfp_hf_query_list_of_current_calls)(sal_conn->hf), 0);
 
     return BT_STATUS_SUCCESS;
@@ -1201,9 +1299,16 @@ bt_status_t bt_sal_hfp_hf_get_current_calls(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_hf_set_volume(bt_address_t* addr, hfp_volume_type_t type, uint8_t volume)
 {
+    if (!addr) {
+        BT_LOGE("%s, addr is NULL", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        BT_LOGE("%s, Failed to find connection", __func__);
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+        bt_addr_ba2str(addr, addr_str);
+        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
         return BT_STATUS_PARM_INVALID;
     }
 
@@ -1232,9 +1337,16 @@ bt_status_t bt_sal_hfp_hf_set_volume(bt_address_t* addr, hfp_volume_type_t type,
 
 bt_status_t bt_sal_hfp_hf_start_voice_recognition(bt_address_t* addr)
 {
+    if (!addr) {
+        BT_LOGE("%s, addr is NULL", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        BT_LOGE("%s, Failed to find connection", __func__);
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+        bt_addr_ba2str(addr, addr_str);
+        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
         return BT_STATUS_PARM_INVALID;
     }
 
@@ -1249,9 +1361,16 @@ bt_status_t bt_sal_hfp_hf_start_voice_recognition(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_hf_stop_voice_recognition(bt_address_t* addr)
 {
+    if (!addr) {
+        BT_LOGE("%s, addr is NULL", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        BT_LOGE("%s, Failed to find connection", __func__);
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+        bt_addr_ba2str(addr, addr_str);
+        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
         return BT_STATUS_PARM_INVALID;
     }
 
@@ -1266,9 +1385,16 @@ bt_status_t bt_sal_hfp_hf_stop_voice_recognition(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_hf_send_battery_level(bt_address_t* addr, uint8_t value)
 {
+    if (!addr) {
+        BT_LOGE("%s, addr is NULL", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        BT_LOGE("%s, Failed to find connection", __func__);
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+        bt_addr_ba2str(addr, addr_str);
+        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
         return BT_STATUS_PARM_INVALID;
     }
 
@@ -1285,10 +1411,16 @@ bt_status_t bt_sal_hfp_hf_send_battery_level(bt_address_t* addr, uint8_t value)
 
 bt_status_t bt_sal_hfp_hf_send_at_cmd(bt_address_t* addr, const char* cmd, uint16_t len)
 {
-    BT_LOGD("%s, Sending AT command: %.*s", __func__, len, cmd);
+    if (!addr) {
+        BT_LOGE("%s, addr is NULL", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        BT_LOGE("%s, Failed to find connection", __func__);
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+        bt_addr_ba2str(addr, addr_str);
+        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
         return BT_STATUS_PARM_INVALID;
     }
 
@@ -1296,6 +1428,8 @@ bt_status_t bt_sal_hfp_hf_send_at_cmd(bt_address_t* addr, const char* cmd, uint1
         BT_LOGE("%s, Invalid AT command", __func__);
         return BT_STATUS_PARM_INVALID;
     }
+
+    BT_LOGD("%s, Sending AT command: %.*s", __func__, len, cmd);
 
     int ret = Z_API(bt_hfp_hf_send_vendor)(sal_conn->hf, cmd);
     if (ret == -ENOTSUP) {
@@ -1308,9 +1442,16 @@ bt_status_t bt_sal_hfp_hf_send_at_cmd(bt_address_t* addr, const char* cmd, uint1
 
 bt_status_t bt_sal_hfp_hf_send_dtmf(bt_address_t* addr, char dtmf)
 {
+    if (!addr) {
+        BT_LOGE("%s, addr is NULL", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        BT_LOGE("%s, Failed to find connection", __func__);
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+        bt_addr_ba2str(addr, addr_str);
+        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
         return BT_STATUS_PARM_INVALID;
     }
 
@@ -1331,7 +1472,18 @@ bt_status_t bt_sal_hfp_hf_send_dtmf(bt_address_t* addr, char dtmf)
 
 bt_status_t bt_sal_hfp_hf_get_subscriber_number(bt_address_t* addr)
 {
+    if (!addr) {
+        BT_LOGE("%s, addr is NULL", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
+    if (!sal_conn) {
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+        bt_addr_ba2str(addr, addr_str);
+        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
+        return BT_STATUS_PARM_INVALID;
+    }
 
     SAL_CHECK_RET(Z_API(bt_hfp_hf_query_subscriber)(sal_conn->hf), 0);
 
