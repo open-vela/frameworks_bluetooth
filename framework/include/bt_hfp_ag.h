@@ -324,6 +324,22 @@ typedef void (*hfp_ag_vend_spec_at_cmd_received_callback)(void* cookie, bt_addre
 typedef void (*hfp_ag_clcc_cmd_received_callback)(void* cookie, bt_address_t* addr);
 
 /**
+ * @brief HFP CIND command received callback
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer HF device.
+ *
+ * **Example:**
+ * @code
+ void hfp_ag_cind_cmd_received_callback(void* cookie, bt_address_t* addr)
+ {
+        printf("hfp_ag_cind_cmd_received_callback\n");
+ }
+ * @endcode
+ */
+typedef void (*hfp_ag_cind_cmd_received_callback)(void* cookie, bt_address_t* addr);
+
+/**
  * @cond
  */
 
@@ -346,6 +362,7 @@ typedef struct
     hfp_ag_at_cmd_received_callback at_cmd_cb;
     hfp_ag_vend_spec_at_cmd_received_callback vender_specific_at_cmd_cb;
     hfp_ag_clcc_cmd_received_callback clcc_cmd_cb;
+    hfp_ag_cind_cmd_received_callback cind_cmd_cb;
 } hfp_ag_callbacks_t;
 
 /**
@@ -932,6 +949,42 @@ int bt_hfp_ag_send_clcc_response(bt_instance_t* ins, bt_address_t* addr, uint32_
 bt_status_t BTSYMBOLS(bt_hfp_ag_send_clcc_response)(bt_instance_t* ins, bt_address_t* addr,
     uint32_t index, hfp_call_direction_t dir, hfp_ag_call_state_t state, hfp_call_mode_t mode,
     hfp_call_mpty_type_t mpty, hfp_call_addrtype_t type, const char* number);
+
+/**
+ * @brief Send CIND Response
+ *
+ * After receiving the AT+CIND? command from peer device, should call this function to reply +CIND
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer HF device.
+ * @param network - index of the call.
+ * @param call - direction of the call.
+ * @param call_held - state of the call.
+ * @param call_setup - mode of the call.
+ * @param signal - whether the call is multi party.
+ * @param roam - type of the call.
+ * @param battery - phone number of the call.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ *
+ * **Example:**
+ * @code
+int bt_hfp_ag_send_cind_response(bt_instance_t* ins, bt_address_t* addr, hfp_network_state_t network, hfp_call_t call,
+    hfp_callheld_t call_held, hfp_callsetup_t call_setup, uint8_t signal,
+    hfp_roaming_state_t roam, uint8_t battery);
+{
+    bt_status_t status;
+
+    status = bt_hfp_ag_send_cind_response(ins, addr, network, call, call_held, call_setup, signal, roam, battery);
+    if (status != BT_STATUS_SUCCESS)
+        printf("send cind response failed\n");
+
+    return status;
+}
+ * @endcode
+ */
+bt_status_t BTSYMBOLS(bt_hfp_ag_send_cind_response)(bt_instance_t* ins, bt_address_t* addr,
+    hfp_network_state_t network, hfp_call_t call, hfp_callheld_t call_held, hfp_callsetup_t call_setup,
+    uint8_t signal, hfp_roaming_state_t roam, uint8_t battery);
 #ifdef __cplusplus
 }
 #endif
