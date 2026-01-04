@@ -41,6 +41,7 @@ typedef struct {
     uint32_t time_stamp;
     uint16_t seq;
     uint16_t length;
+    bool is_partial;
     uint8_t data[0];
 } a2dp_sink_packet_t;
 
