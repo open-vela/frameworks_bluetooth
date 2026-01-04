@@ -371,3 +371,28 @@ bt_status_t bt_hfp_ag_send_clcc_response(bt_instance_t* ins, bt_address_t* addr,
 
     return packet.hfp_ag_r.status;
 }
+
+bt_status_t bt_hfp_ag_send_cind_response(bt_instance_t* ins, bt_address_t* addr,
+    hfp_network_state_t network, hfp_call_t call, hfp_callheld_t call_held, hfp_callsetup_t call_setup,
+    uint8_t signal, hfp_roaming_state_t roam, uint8_t battery)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    memcpy(&packet.hfp_ag_pl._bt_hfp_ag_send_cind_response.addr, addr, sizeof(bt_address_t));
+    packet.hfp_ag_pl._bt_hfp_ag_send_cind_response.network = network;
+    packet.hfp_ag_pl._bt_hfp_ag_send_cind_response.call = call;
+    packet.hfp_ag_pl._bt_hfp_ag_send_cind_response.call_held = call_held;
+    packet.hfp_ag_pl._bt_hfp_ag_send_cind_response.call_setup = call_setup;
+    packet.hfp_ag_pl._bt_hfp_ag_send_cind_response.signal = signal;
+    packet.hfp_ag_pl._bt_hfp_ag_send_cind_response.roam = roam;
+    packet.hfp_ag_pl._bt_hfp_ag_send_cind_response.battery = battery;
+
+    status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_SEND_CIND_RESPONSE);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.hfp_ag_r.status;
+}
