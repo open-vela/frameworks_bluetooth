@@ -144,6 +144,7 @@ static void a2dp_sink_audio_handle_timer(service_timer_t* timer, void* arg)
             stream->block_ticks++;
             goto out;
         } else if (ret < packet->length) {
+            packet->is_partial = true;
             memmove(packet->data, packet->data + ret, packet->length - ret);
             packet->length -= ret;
             stream->block_ticks++;
@@ -178,9 +179,24 @@ void a2dp_sink_packet_receive(a2dp_sink_packet_t* packet)
 
     uv_mutex_lock(&stream->queue_lock);
     if (list_length(queue) == A2DP_MAX_ENQUEUE_PACKET_COUNT) {
-        struct list_node* pkt = list_remove_head(queue); /* FIXME:  it's not allowed to remove a packet if it's partially sent */
-        free(pkt);
-        list_add_tail(queue, &packet->node);
+        a2dp_sink_packet_t* pkt = (a2dp_sink_packet_t*)list_peek_head(queue);
+
+        if (pkt && pkt->is_partial) {
+            // The list head element has already been partially sent and cannot be deleted. Delete the next packet.
+            FAR struct list_node* node = list_next(queue, &pkt->node);
+
+            if (node) {
+                list_delete(node);
+                free(node);
+                list_add_tail(queue, &packet->node);
+            } else {
+                free(packet);
+            }
+        } else {
+            free(list_remove_head(queue));
+            list_add_tail(queue, &packet->node);
+        }
+
         uv_mutex_unlock(&stream->queue_lock);
         return;
     }
@@ -203,13 +219,23 @@ void a2dp_sink_packet_receive(a2dp_sink_packet_t* packet)
 
 a2dp_sink_packet_t* a2dp_sink_new_packet(uint32_t timestamp, uint16_t seq, uint8_t* data, uint16_t length)
 {
+    a2dp_sink_packet_t* packet = NULL;
+
     (void)seq;
     (void)timestamp;
 
-    if (sink_stream.stream_interface)
-        return sink_stream.stream_interface->repackage(data, length);
-    else
+    if (!sink_stream.stream_interface) {
         return NULL;
+    }
+
+    packet = sink_stream.stream_interface->repackage(data, length);
+
+    if (!packet) {
+        return NULL;
+    }
+
+    packet->is_partial = false;
+    return packet;
 }
 
 // TODO: check active peer
