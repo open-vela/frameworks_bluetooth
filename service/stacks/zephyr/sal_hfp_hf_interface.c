@@ -657,8 +657,6 @@ static void zblue_on_call_retrieve(struct bt_hfp_hf_call* call)
 
 static void zblue_on_subscriber_number(struct bt_hfp_hf* hf, const char* number, uint8_t type, uint8_t service)
 {
-    bt_address_t* bd_addr = zalloc(sizeof(bt_address_t));
-
     bt_hfp_hf_connection_t* conn = find_connection_by_hf(hf);
     if (!conn) {
         BT_LOGE("%s, Failed to find connection", __func__);
@@ -678,8 +676,7 @@ static void zblue_on_subscriber_number(struct bt_hfp_hf* hf, const char* number,
         break;
     }
 
-    bt_sal_get_remote_address(conn->conn, bd_addr);
-    hfp_hf_on_subscriber_number_response(bd_addr, number, fw_service);
+    hfp_hf_on_subscriber_number_response(&conn->addr, number, fw_service);
 }
 
 static void zblue_on_vgm(struct bt_hfp_hf* hf, uint8_t gain)
