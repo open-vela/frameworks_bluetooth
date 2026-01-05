@@ -840,7 +840,11 @@ bt_status_t bt_sal_set_io_capability(bt_controller_id_t id, bt_io_capability_t c
     default:
         g_conn_auth_cbs.passkey_display = NULL;
         g_conn_auth_cbs.passkey_entry = NULL;
+#ifdef CONFIG_HCI_AUTO_REPLY_IN_JUST_WORK
         g_conn_auth_cbs.passkey_confirm = NULL;
+#else
+        g_conn_auth_cbs.passkey_confirm = zblue_on_passkey_confirm;
+#endif
         g_conn_auth_cbs.pairing_confirm = NULL;
         break;
     }
