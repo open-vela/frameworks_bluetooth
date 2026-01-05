@@ -36,6 +36,10 @@
 #include "bluetooth_define.h"
 
 typedef enum {
+    // Received from audio
+    A2DP_AUDIO_EVENT_START,
+    A2DP_AUDIO_EVENT_STOP,
+    // Received from bluetooth
     A2DP_AUDIO_EVENT_STOPPED,
     A2DP_AUDIO_EVENT_START_FAIL,
 } a2dp_audio_event_type_t;
