@@ -70,6 +70,8 @@ typedef struct {
 
 static a2dp_sink_stream_t sink_stream = { 0 };
 
+static void a2dp_sink_stop_audio_req();
+
 static const a2dp_sink_stream_interface_t* get_stream_interface(void)
 {
     a2dp_codec_config_t* config;
@@ -235,6 +237,17 @@ static void a2dp_sink_audio_handle_event(void* event)
     a2dp_audio_event_t* audio_event = (a2dp_audio_event_t*)event;
 
     switch (audio_event->type) {
+    case A2DP_AUDIO_EVENT_START:
+        if (!a2dp_sink_stream_ready() && !a2dp_sink_stream_started()) {
+            BT_LOGW("%s: can not start when sink stream is not ready", __func__);
+            break;
+        }
+
+        a2dp_sink_on_started(true);
+        break;
+    case A2DP_AUDIO_EVENT_STOP:
+        a2dp_sink_stop_audio_req();
+        break;
     case A2DP_AUDIO_EVENT_STOPPED:
         audio_control_stop(A2DP_SINK_PROFILE_ID);
         break;
@@ -290,20 +303,34 @@ void a2dp_sink_on_stopped(void)
 
 static void a2dp_sink_audio_stop(void)
 {
+    a2dp_audio_event_t* event;
+
     BT_LOGD("%s", __func__);
 
-    a2dp_sink_stop_audio_req();
+    event = (a2dp_audio_event_t*)zalloc(sizeof(a2dp_audio_event_t));
+    if (!event) {
+        BT_LOGE("%s: malloc event fail", __func__);
+        return;
+    }
+
+    event->type = A2DP_AUDIO_EVENT_STOP;
+    do_in_service_loop(a2dp_sink_audio_handle_event, event);
 }
 
 static void a2dp_sink_audio_start(void)
 {
+    a2dp_audio_event_t* event;
+
     BT_LOGD("%s", __func__);
-    if (!a2dp_sink_stream_ready() && !a2dp_sink_stream_started()) {
-        BT_LOGW("%s: can not start when sink stream is not ready", __func__);
+
+    event = (a2dp_audio_event_t*)zalloc(sizeof(a2dp_audio_event_t));
+    if (!event) {
+        BT_LOGE("%s: malloc event fail", __func__);
         return;
     }
 
-    a2dp_sink_on_started(true);
+    event->type = A2DP_AUDIO_EVENT_START;
+    do_in_service_loop(a2dp_sink_audio_handle_event, event);
 }
 
 void a2dp_sink_setup_codec(bt_address_t* bd_addr)
