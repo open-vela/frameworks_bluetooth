@@ -26,7 +26,7 @@ enum scan_state {
 };
 
 void scan_on_state_changed(uint8_t state);
-void scan_on_result_data_update(ble_scan_result_t* result_info, char* adv_data);
+void scan_on_result_data_update(ble_scan_result_t* result_info, const uint8_t* adv_data);
 bt_scanner_t* scanner_start_scan(void* remote, const scanner_callbacks_t* cbs);
 bt_scanner_t* scanner_start_scan_settings(void* remote,
     ble_scan_settings_t* settings,
