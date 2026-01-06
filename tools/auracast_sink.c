@@ -23,11 +23,13 @@ typedef struct {
     bt_scanner_t* scanner;
 } bttool_auracast_sink_t;
 
-static int scan_cmd(void* handle, int argc, char* argv[]);
+static int scan_start_cmd(void* handle, int argc, char* argv[]);
+static int scan_stop_cmd(void* handle, int argc, char* argv[]);
 
 static bttool_auracast_sink_t* g_auracast_sink = NULL;
 static bt_command_t g_auracast_sink_tables[] = {
-    { "scan", scan_cmd, 0, "\"Search for nearby Auracast sources\"" },
+    { "scan", scan_start_cmd, 0, "\"Search for nearby Auracast sources\"" },
+    { "stopscan", scan_stop_cmd, 0, "\"Stop searching\"" },
 };
 
 static void usage(void)
@@ -47,7 +49,7 @@ static void on_scan_result(bt_scanner_t* scanner, ble_scan_result_t* result)
     char* log = NULL;
     size_t size = BTTOOL_AURACAST_SINK_LOG_SIZE;
 
-    if (g_auracast_sink->scanner != scanner)
+    if (!g_auracast_sink || g_auracast_sink->scanner != scanner)
         return;
 
     info = malloc(sizeof(bt_pa_sync_info_t));
@@ -92,7 +94,7 @@ static void on_scan_status(bt_scanner_t* scanner, uint8_t status)
 {
     PRINT("%s, status = %d", __func__, status);
 
-    if (g_auracast_sink->scanner != scanner) {
+    if (!g_auracast_sink || g_auracast_sink->scanner != scanner) {
         PRINT("%s, scanner(%p) mismatch", __func__, scanner);
         return;
     }
@@ -105,7 +107,7 @@ static void on_scan_stopped(bt_scanner_t* scanner)
 {
     PRINT("%s", __func__);
 
-    if (g_auracast_sink->scanner != scanner) {
+    if (!g_auracast_sink || g_auracast_sink->scanner != scanner) {
         PRINT("%s, scanner(%p) mismatch", __func__, scanner);
         return;
     }
@@ -128,9 +130,14 @@ static const ble_scan_settings_t default_scan_settings = {
     .policy.policy = 0, /**< Unfiltered */
 };
 
-int scan_cmd(void* handle, int argc, char* argv[])
+int scan_start_cmd(void* handle, int argc, char* argv[])
 {
     ble_scan_settings_t settings;
+
+    if (!g_auracast_sink) {
+        PRINT("Not initialized");
+        return CMD_INVALID_OPT;
+    }
 
     if (g_auracast_sink->scanner) {
         PRINT("Already scanning");
@@ -150,6 +157,26 @@ int scan_cmd(void* handle, int argc, char* argv[])
     return CMD_OK;
 }
 
+int scan_stop_cmd(void* handle, int argc, char* argv[])
+{
+    if (!g_auracast_sink) {
+        PRINT("Not initialized");
+        return CMD_INVALID_OPT;
+    }
+
+    if (!g_auracast_sink->scanner) {
+        PRINT("Not scanning");
+        return CMD_USAGE_FAULT;
+    }
+
+    PRINT("Stop scan, scanner = %p", g_auracast_sink->scanner);
+
+    bt_le_stop_scan(handle, g_auracast_sink->scanner);
+    g_auracast_sink->scanner = NULL;
+
+    return CMD_OK;
+}
+
 int auracast_sink_command_init(void* handle)
 {
     g_auracast_sink = zalloc(sizeof(bttool_auracast_sink_t));
@@ -161,6 +188,9 @@ int auracast_sink_command_init(void* handle)
 
 void auracast_sink_command_uninit(void* handle)
 {
+    if (!g_auracast_sink)
+        return;
+
     free(g_auracast_sink);
     g_auracast_sink = NULL;
 }
