@@ -771,12 +771,18 @@ static void sdp_disconnected_cb(struct bt_conn* conn, const struct bt_sdp_discov
 
 static bt_status_t spp_connect_with_uuid(sal_spp_connection_t* spp_conn, bt_uuid_t* uuid)
 {
-    sal_spp_client_t* spp_client = spp_conn->spp_client;
+    sal_spp_client_t* spp_client;
     int err;
     bt_uuid_t uuid_128;
 
     if (!spp_conn || !uuid) {
         BT_LOGE("Invalid parameters: spp_conn=%p, uuid=%p", spp_conn, uuid);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    spp_client = spp_conn->spp_client;
+    if (!spp_client) {
+        BT_LOGE("Invalid parameters: spp_client is null (spp_conn=%p)", spp_conn);
         return BT_STATUS_PARM_INVALID;
     }
 
