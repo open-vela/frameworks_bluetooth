@@ -582,6 +582,7 @@ endif #CONFIG_BLUETOOTH_STORAGE_UPDATE
 ifeq ($(CONFIG_ARCH_SIM),y)
 CFLAGS	 += -O0
 endif
+CFLAGS	 += -fno-inline-functions
 CFLAGS	 += -Wno-strict-prototypes #-fno-short-enums -Wl,-no-enum-size-warning #-Werror
 PRIORITY  = SCHED_PRIORITY_DEFAULT
 STACKSIZE = $(CONFIG_BLUETOOTH_TASK_STACK_SIZE)
@@ -708,4 +709,3 @@ BIN := $(APPDIR)/staging/libbluetooth.a
 endif
 
 include $(APPDIR)/Application.mk
-

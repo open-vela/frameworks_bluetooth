@@ -737,6 +737,7 @@ if(CONFIG_BLUETOOTH)
     list(APPEND CFLAGS -O0)
   endif()
 
+  list(APPEND CFLAGS -fno-inline-functions)
   list(APPEND CFLAGS -Wno-strict-prototypes)
 
   nuttx_add_library(libbluetooth STATIC)
