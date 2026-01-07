@@ -444,14 +444,11 @@ error:
 
 static void zblue_on_connected(struct bt_conn* conn, struct bt_hfp_hf* hf)
 {
-    bt_address_t bd_addr;
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_hf(hf);
 
-    if (bt_sal_get_remote_address(conn, &bd_addr) != BT_STATUS_SUCCESS) {
-        return;
-    }
-
-    if (!find_connection_by_addr(&bd_addr)) {
-        if (!new_hf_connection(conn, hf)) {
+    if (!sal_conn) {
+        sal_conn = new_hf_connection(conn, hf);
+        if (!sal_conn) {
             BT_LOGE("%s, Failed to create HFP HF connection", __func__);
             if (Z_API(bt_hfp_hf_disconnect)(hf)) {
                 BT_LOGE("%s, Failed to disconnect HFP HF connection", __func__);
@@ -459,12 +456,12 @@ static void zblue_on_connected(struct bt_conn* conn, struct bt_hfp_hf* hf)
             return;
         }
 
-        hfp_hf_on_connection_state_changed(&bd_addr, PROFILE_STATE_CONNECTING, 0, 0);
+        hfp_hf_on_connection_state_changed(&sal_conn->addr, PROFILE_STATE_CONNECTING, 0, 0);
     }
-    bt_sal_cm_profile_connected_callback(&bd_addr, PROFILE_HFP_HF, CONN_ID_DEFAULT);
-    bt_sal_profile_disconnect_register(&bd_addr, PROFILE_HFP_HF, CONN_ID_DEFAULT, PRIMARY_ADAPTER, do_hf_disconnect, NULL);
+    bt_sal_cm_profile_connected_callback(&sal_conn->addr, PROFILE_HFP_HF, CONN_ID_DEFAULT);
+    bt_sal_profile_disconnect_register(&sal_conn->addr, PROFILE_HFP_HF, CONN_ID_DEFAULT, PRIMARY_ADAPTER, do_hf_disconnect, NULL);
 
-    hfp_hf_on_connection_state_changed(&bd_addr, PROFILE_STATE_CONNECTED, 0, 0);
+    hfp_hf_on_connection_state_changed(&sal_conn->addr, PROFILE_STATE_CONNECTED, 0, 0);
 }
 
 static void zblue_hf_disconnected(struct bt_hfp_hf* hf)
@@ -825,12 +822,9 @@ static void zblue_on_current_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_current
         return;
     }
 
-    bt_address_t bd_addr;
-    bt_sal_get_remote_address(sal_conn->conn, &bd_addr);
-
     if (!call) {
-        BT_ADDR_LOG("CLCC finished from %s", &bd_addr);
-        hfp_hf_on_current_call_response(&bd_addr, 0, 0, 0, 0, NULL, 0);
+        BT_ADDR_LOG("CLCC finished from %s", &sal_conn->addr);
+        hfp_hf_on_current_call_response(&sal_conn->addr, 0, 0, 0, 0, NULL, 0);
         return;
     }
 
@@ -885,7 +879,7 @@ static void zblue_on_current_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_current
     sal_call->index = idx;
     sal_call->state = status;
 
-    hfp_hf_on_current_call_response(&bd_addr, idx, dir, status, mpty, call->number, call->type);
+    hfp_hf_on_current_call_response(&sal_conn->addr, idx, dir, status, mpty, call->number, call->type);
 }
 
 static struct bt_hfp_hf_cb hf_callbacks = {
