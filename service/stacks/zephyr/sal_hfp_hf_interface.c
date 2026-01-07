@@ -275,7 +275,13 @@ static bt_hfp_hf_connection_t* new_hf_connection(struct bt_conn* conn, struct bt
         return NULL;
     }
 
-    bt_sal_get_remote_address(conn, &sal_conn->addr);
+    bt_status_t status = bt_sal_get_remote_address(conn, &sal_conn->addr);
+    if (status != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, failed to get remote address", __func__);
+        free(sal_conn);
+        return NULL;
+    }
+
     sal_conn->conn = conn;
     sal_conn->hf = hf;
 
