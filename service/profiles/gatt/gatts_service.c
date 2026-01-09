@@ -605,8 +605,7 @@ static bt_status_t if_gatts_add_attr_table(void* srv_handle, gatt_srv_db_t* srv_
             memcpy(elements->attr_data, attr_inst->attr_value, elements->attr_length);
         }
 
-        elements->uuid.type = BT_UUID128_TYPE;
-        bt_uuid_to_uuid128(&attr_inst->uuid, &elements->uuid);
+        memcpy(&elements->uuid, &attr_inst->uuid, sizeof(bt_uuid_t));
     }
     svc_table->start_handle = svc_table->elements[0].handle;
     svc_table->end_handle = svc_table->elements[svc_table->element_size - 1].handle;
