@@ -287,10 +287,8 @@ void service_loop_exit(void)
         uv_sem_wait(&loop->exited);
         uv_sem_destroy(&loop->exited);
     } else {
-        if (!uv_loop_is_close(handle)) {
-            uv_run(handle, UV_RUN_ONCE);
-            (void)uv_loop_close(handle);
-        }
+        uv_run(handle, UV_RUN_ONCE);
+        (void)uv_loop_close(handle);
     }
 
     uv_mutex_lock(&loop->msg_lock);
