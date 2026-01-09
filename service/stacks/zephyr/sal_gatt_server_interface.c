@@ -423,7 +423,8 @@ static ssize_t bt_sal_on_ccc_written(struct bt_conn* conn, const struct bt_gatt_
     if_gatts_on_received_element_write_request(&addr, GATT_OPS_WRITE_REQUEST,
         element->handle, (uint8_t*)&value, 0, sizeof(value));
 
-    return ret;
+    // framework response
+    return -EINPROGRESS;
 }
 
 static int alloc_descriptor(const struct bt_gatt_attr* attr, struct add_descriptor* desc)
