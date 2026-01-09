@@ -223,10 +223,8 @@ void thread_loop_exit(uv_loop_t* loop)
         uv_sem_wait(&priv->exited);
         uv_sem_destroy(&priv->exited);
     } else {
-        if (!uv_loop_is_close(loop)) {
-            uv_run(loop, UV_RUN_ONCE);
-            (void)uv_loop_close(loop);
-        }
+        uv_run(loop, UV_RUN_ONCE);
+        (void)uv_loop_close(loop);
     }
 
     uv_mutex_lock(&priv->msg_lock);
