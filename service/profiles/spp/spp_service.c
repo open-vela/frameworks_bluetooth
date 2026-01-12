@@ -437,6 +437,18 @@ static void spp_device_cleanup(spp_device_t* device, bool notify)
         spp_notify_connection_state(device, PROFILE_STATE_DISCONNECTED);
 
     BT_LOGD("%s, spp device conn_id: %" PRIu16 ", proxy_state: %d", __func__, device->conn_id, device->proxy_state);
+    if (!g_spp_handle.started) {
+        /* cleanup device directly */
+        if (device->handle) {
+            euv_pipe_close(device->handle);
+            device->handle = NULL;
+        }
+
+        spp_device_close(device);
+        remove_spp_device(device);
+        return;
+    }
+
     switch (device->proxy_state) {
     case SPP_PROXY_STATE_CONNECTING:
         /* wait for proxy connected and enter closing state */
