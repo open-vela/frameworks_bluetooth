@@ -22,7 +22,9 @@ CSRCS += framework/common/*.c
 CSRCS += framework/api/bluetooth.c
 CSRCS += framework/api/bt_adapter.c
 CSRCS += framework/api/bt_device.c
-
+ifeq ($(CONFIG_BLUETOOTH_LE_CS), y)
+CSRCS += framework/api/bt_cs.c
+endif #CONFIG_BLUETOOTH_LE_CS
 ifeq ($(CONFIG_BLUETOOTH_A2DP_SINK), y)
 CSRCS += framework/api/bt_a2dp_sink.c
 endif #CONFIG_BLUETOOTH_A2DP_SINK
@@ -160,6 +162,11 @@ CSRCS += framework/socket/bt_trace.c
 CSRCS += service/ipc/socket/src/bt_socket_log.c
 endif #CONFIG_BLUETOOTH_BLE_AUDIO
 
+ifeq ($(CONFIG_BLUETOOTH_LE_CS), y)
+CSRCS += framework/socket/bt_cs.c
+CSRCS += service/ipc/socket/src/bt_socket_cs.c
+endif #CONFIG_BLUETOOTH_LE_CS
+
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/ipc/socket/include
 ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK_ASYNC), y)
 CSRCS += framework/socket/async/*.c
@@ -265,6 +272,9 @@ endif #CONFIG_BLUETOOTH_GATT_CLIENT
 ifeq ($(CONFIG_BLUETOOTH_GATT_SERVER), y)
 	CSRCS += service/stacks/zephyr/sal_gatt_server_interface.c
 endif #CONFIG_BLUETOOTH_GATT_SERVER
+ifeq ($(CONFIG_BLUETOOTH_LE_CS), y)
+	CSRCS += service/stacks/zephyr/sal_le_cs_interface.c
+endif #CONFIG_BLUETOOTH_LE_CS
 endif #CONFIG_BLUETOOTH_STACK_LE_ZBLUE
 
 endif
@@ -382,6 +392,11 @@ CSRCS += service/utils/btsnoop_log.c
 CSRCS += service/utils/btsnoop_writer.c
 CSRCS += service/utils/btsnoop_filter.c
 endif #CONFIG_BLUETOOTH_LOG
+
+ifeq ($(CONFIG_BLUETOOTH_LE_CS), y)
+CSRCS += service/profiles/cs/*.c
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/profiles/cs
+endif #CONFIG_BLUETOOTH_LE_CS
 
 ifeq ($(CONFIG_BLUETOOTH_HCI_FILTER), y)
 CSRCS += service/vhal/bt_hci_filter.c
@@ -508,6 +523,10 @@ ifeq ($(CONFIG_BLUETOOTH_STORAGE_UPDATE), y)
 	CSRCS += tools/storage_update/storage_tool.c
 endif #CONFIG_BLUETOOTH_STORAGE_UPDATE
 
+ifeq ($(CONFIG_BLUETOOTH_LE_CS), y)
+	CSRCS += tools/le_cs.c
+endif
+
 endif
 
 # framework/service/stack/tools dependence
@@ -544,6 +563,7 @@ ifneq ($(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE)$(CONFIG_BLUETOOTH_STACK_LE_ZBLUE),)
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/port/include/
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/subsys/bluetooth/host
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/subsys/settings/include/settings
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/subsys/bluetooth
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/port/include/kernel/include
 endif
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/ipc
