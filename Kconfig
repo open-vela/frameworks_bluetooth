@@ -227,6 +227,11 @@ choice
 		bool "Not support BLE Stack"
 endchoice
 
+config BLUETOOTH_LE_CS
+	bool "Bluetooth LE Channel Sounding supported"
+	depends on BLUETOOTH_STACK_LE_ZBLUE
+	default n
+
 config BLUETOOTH_LE_SCANNER_MAX_NUM
 	int "LE Scanner max register number"
 	default 2
