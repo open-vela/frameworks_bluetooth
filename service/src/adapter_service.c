@@ -1124,6 +1124,7 @@ static void process_connection_state_changed_evt(bt_address_t* addr, acl_state_p
 
     /* check acls connection is all disconnected in safe disable mode */
     if (acl_params->connection_state == CONNECTION_STATE_DISCONNECTED) {
+        device_clear_flag(device, DFLAG_CONN_REPLYED);
         if (adapter_check_acl_all_disconnected()) {
             send_to_state_machine((state_machine_t*)adapter->stm, BREDR_ACL_ALL_DISCONNECTED, NULL);
         }
@@ -3066,11 +3067,21 @@ bt_status_t adapter_connect_request_reply(bt_address_t* addr, bool accept)
         adapter_unlock();
         return BT_STATUS_DEVICE_NOT_FOUND;
     }
+
+    if (device_check_flag(device, DFLAG_CONN_REPLYED)) {
+        adapter_unlock();
+        return BT_STATUS_SUCCESS;
+    }
+
     adapter_unlock();
     bt_status_t status;
     status = bt_sal_acl_connection_reply(PRIMARY_ADAPTER, addr, accept);
-    if (status == BT_STATUS_SUCCESS && accept) {
-        device_set_connection_state(device, CONNECTION_STATE_CONNECTING);
+    if (status == BT_STATUS_SUCCESS) {
+        device_set_flags(device, DFLAG_CONN_REPLYED);
+
+        if (accept) {
+            device_set_connection_state(device, CONNECTION_STATE_CONNECTING);
+        }
     }
 
     return status;

@@ -28,6 +28,7 @@
 #define DFLAG_BONDED (1 << 6)
 #define DFLAG_LE_KEY_SET (1 << 7)
 #define DFLAG_GATT_HASH_VALID (1 << 8)
+#define DFLAG_CONN_REPLYED (1 << 9)
 
 typedef struct bt_device bt_device_t;
 
