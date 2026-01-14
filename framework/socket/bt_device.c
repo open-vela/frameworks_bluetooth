@@ -540,7 +540,7 @@ bt_status_t bt_device_set_pass_key(bt_instance_t* ins, bt_address_t* addr, uint8
     return packet.devs_r.status;
 }
 
-bt_status_t BTSYMBOLS(bt_device_set_le_legacy_tk)(bt_instance_t* ins, bt_address_t* addr, bt_128key_t tk_val)
+bt_status_t bt_device_set_le_legacy_tk(bt_instance_t* ins, bt_address_t* addr, bt_128key_t tk_val)
 {
     bt_message_packet_t packet;
     bt_status_t status;

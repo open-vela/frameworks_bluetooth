@@ -25,6 +25,12 @@
             return ret;               \
     } while (0)
 
+#define BT_SOCKET_PTR_VALID(cb, ret) \
+    do {                            \
+        if (cb == NULL)             \
+            return ret;             \
+    } while (0)
+
 /* Macros for number of items.
  * (aka. ARRAY_SIZE, ArraySize, Size of an Array)
  */
@@ -48,6 +54,21 @@ typedef struct {
 
     bt_list_t* pending_queue;
     callbacks_list_t* adapter_callbacks;
+    callbacks_list_t* a2dp_sink_callbacks;
+    callbacks_list_t* a2dp_source_callbacks;
+    callbacks_list_t* avrcp_target_callbacks;
+    callbacks_list_t* avrcp_control_callbacks;
+    callbacks_list_t* hfp_ag_callbacks;
+    callbacks_list_t* hfp_hf_callbacks;
+    callbacks_list_t* panu_callbacks;
+    callbacks_list_t* spp_callbacks;
+    callbacks_list_t* hidd_callbacks;
+    callbacks_list_t* l2cap_callbacks;
+    callbacks_list_t* cs_callbacks;
+
+    bt_list_t* gattc_remote_list;
+    bt_list_t* gatts_remote_list;
+
 } bt_socket_async_client_t;
 
 /****************************************************************************
@@ -100,7 +121,7 @@ void bt_socket_server_manager_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
 
 int bt_socket_client_manager_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async);
 
 /* Adapter */
 
@@ -120,13 +141,13 @@ void bt_socket_server_a2dp_source_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
 
 int bt_socket_client_a2dp_source_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async);
 /*A2DP Sink*/
 void bt_socket_server_a2dp_sink_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
 
 int bt_socket_client_a2dp_sink_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async);
 
 /* AVRCP Target */
 
@@ -134,27 +155,27 @@ void bt_socket_server_avrcp_target_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
 
 int bt_socket_client_avrcp_target_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async);
 
 /* AVRCP Control */
 void bt_socket_server_avrcp_control_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
 
 int bt_socket_client_avrcp_control_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async);
 
 /* HFP */
 void bt_socket_server_hfp_ag_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
 
 int bt_socket_client_hfp_ag_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async);
 
 void bt_socket_server_hfp_hf_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
 
 int bt_socket_client_hfp_hf_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async);
 
 /* Advertiser */
 
@@ -162,42 +183,42 @@ void bt_socket_server_advertiser_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
 
 int bt_socket_client_advertiser_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async);
 /* Scan */
 
 void bt_socket_server_scan_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
 
 int bt_socket_client_scan_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async);
 /* Gatt client */
 
 void bt_socket_server_gattc_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
 
 int bt_socket_client_gattc_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async);
 /* Gatt server */
 
 void bt_socket_server_gatts_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
 
 int bt_socket_client_gatts_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async);
 /* Spp */
 
 void bt_socket_server_spp_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
 
 int bt_socket_client_spp_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async);
 /* Pan */
 
 void bt_socket_server_pan_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
 
 int bt_socket_client_pan_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async);
 
 /* HID device */
 
@@ -205,7 +226,7 @@ void bt_socket_server_hid_device_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
 
 int bt_socket_client_hid_device_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async);
 
 /* L2CAP */
 
@@ -213,9 +234,13 @@ void bt_socket_server_l2cap_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
 
 int bt_socket_client_l2cap_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async);
 
 void bt_socket_server_log_process(service_poll_t* poll,
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+
+/* Channel Sounding */
+void bt_socket_server_cs_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
 #ifdef __cplusplus
 }
