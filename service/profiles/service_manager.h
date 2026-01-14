@@ -15,6 +15,7 @@
  ***************************************************************************/
 #ifndef _BT_SERVICE_MANAGER_H__
 #define _BT_SERVICE_MANAGER_H__
+#include <stddef.h>
 
 #include "bt_profile.h"
 #include "bt_status.h"

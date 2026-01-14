@@ -1486,6 +1486,7 @@ bt_status_t bt_sal_create_bond(bt_controller_id_t id, bt_address_t* addr, bt_tra
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(set_security_level)(void* args)
 {
+
     sal_adapter_req_t* req = args;
 
     g_security_level = req->adpt.security_level;

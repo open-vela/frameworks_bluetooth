@@ -28,6 +28,37 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
+ /** Procedure done status */
+typedef enum {
+	GATTS_LE_CS_PROCEDURE_COMPLETE = 0x0,
+	GATTS_LE_CS_PROCEDURE_INCOMPLETE = 0x1,
+	GATTS_LE_CS_PROCEDURE_ABORTED = 0xF,
+} gatts_le_cs_procedure_done_status_t;
+
+/** Subevent done status */
+typedef enum {
+	GATTS_LE_CS_SUBEVENT_COMPLETE = 0x1,
+	GATTS_LE_CS_SUBEVENT_ABORTED = 0xF,
+} gatts_le_cs_subevent_done_status_t;
+
+/** Procedure abort reason */
+typedef enum {
+	GATTS_LE_CS_PROCEDURE_NOT_ABORTED = 0x0,
+	GATTS_LE_CS_PROCEDURE_ABORT_REQUESTED = 0x1,
+	GATTS_LE_CS_PROCEDURE_ABORT_TOO_FEW_CHANNELS = 0x2,
+	GATTS_LE_CS_PROCEDURE_ABORT_CHMAP_INSTANT_PASSED = 0x3,
+	GATTS_LE_CS_PROCEDURE_ABORT_UNSPECIFIED = 0xF,
+} gatts_le_cs_procedure_abort_reason_t;
+
+/** Subevent abort reason */
+typedef enum {
+	GATTS_LE_CS_SUBEVENT_NOT_ABORTED = 0x0,
+	GATTS_LE_CS_SUBEVENT_ABORT_REQUESTED = 0x1,
+	GATTS_LE_CS_SUBEVENT_ABORT_NO_CS_SYNC = 0x2,
+	GATTS_LE_CS_SUBEVENT_ABORT_SCHED_CONFLICT = 0x3,
+	GATTS_LE_CS_SUBEVENT_ABORT_UNSPECIFIED = 0xF,
+} gatts_le_cs_subevent_abort_reason_t;
+
 typedef enum {
     GATTS_EVENT_ATTR_TABLE_ADDED,
     GATTS_EVENT_ATTR_TABLE_REMOVED,

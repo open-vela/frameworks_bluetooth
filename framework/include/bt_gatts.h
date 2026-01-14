@@ -344,7 +344,7 @@ typedef struct {
     gatts_phy_read_cb_t on_phy_read;
     gatts_phy_updated_cb_t on_phy_updated;
     gatts_connection_parameter_changed_cb_t on_conn_param_changed;
-
+    
 } gatts_callbacks_t;
 
 /**
