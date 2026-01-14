@@ -26,9 +26,9 @@
     } while (0)
 
 #define BT_SOCKET_PTR_VALID(cb, ret) \
-    do {                            \
-        if (cb == NULL)             \
-            return ret;             \
+    do {                             \
+        if (cb == NULL)              \
+            return ret;              \
     } while (0)
 
 /* Macros for number of items.
@@ -64,6 +64,7 @@ typedef struct {
     callbacks_list_t* spp_callbacks;
     callbacks_list_t* hidd_callbacks;
     callbacks_list_t* l2cap_callbacks;
+    callbacks_list_t* cs_callbacks;
 
     bt_list_t* gattc_remote_list;
     bt_list_t* gatts_remote_list;
@@ -236,6 +237,10 @@ int bt_socket_client_l2cap_callback(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async);
 
 void bt_socket_server_log_process(service_poll_t* poll,
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+
+/* Channel Sounding */
+void bt_socket_server_cs_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
 #ifdef __cplusplus
 }

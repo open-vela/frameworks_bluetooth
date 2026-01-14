@@ -28,6 +28,7 @@ extern "C" {
 #define PROFILE_A2DP_SINK_NAME "A2DP-Sink"
 #define PROFILE_AVRCP_CT_NAME "AVRCP-CT"
 #define PROFILE_AVRCP_TG_NAME "AVRCP-TG"
+#define PROFILE_CS_NAME "CS"
 #define PROFILE_HFP_HF_NAME "HFP-HF"
 #define PROFILE_HFP_AG_NAME "HFP-AG"
 #define PROFILE_SPP_NAME "SPP"
@@ -64,6 +65,7 @@ enum profile_id {
     PROFILE_LEAUDIO_MCS,
     PROFILE_LEAUDIO_TBS,
     PROFILE_LEAUDIO_VMICP,
+    PROFILE_CS, // TODO: remove this profile
     PROFILE_UNKOWN,
     PROFILE_MAX
 };
