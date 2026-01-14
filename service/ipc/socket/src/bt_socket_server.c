@@ -252,6 +252,10 @@ static int bt_socket_server_receive(service_poll_t* poll, int fd, void* userdata
         || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_LOG_BEGIN, BT_IPC_CODE_COMMAND_LOG_END)) {
         bt_socket_server_log_process(poll, fd, ins, packet);
 #endif
+#ifdef CONFIG_BLUETOOTH_LE_CS
+    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_CS_BEGIN, BT_IPC_CODE_COMMAND_CS_END)) {
+        bt_socket_server_cs_process(poll, fd, ins, packet);
+#endif /* CONFIG_BLUETOOTH_LE_CS */
     } else {
         BT_LOGE("%s, Unhandled message:%" PRIu32, __func__, packet->code);
         assert(0);
