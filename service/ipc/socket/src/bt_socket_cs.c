@@ -18,7 +18,6 @@
  * Included Files
  ****************************************************************************/
 
-#include <assert.h>
 #include <errno.h>
 #include <poll.h>
 #include <stdlib.h>
@@ -118,11 +117,13 @@ void bt_socket_server_cs_process(service_poll_t* poll,
             packet->cs_pl._bt_cs_stop_distance_measurement.method,
             packet->cs_pl._bt_cs_stop_distance_measurement.timeout_bool);
         break;
+#ifdef CONFIG_BT_CS_RAS_TEST
     case CS_SUBCODE_TEST:
         packet->cs_r.status = BTSYMBOLS(bt_cs_test)(ins,
             &packet->cs_pl._bt_cs_test.data,
             packet->cs_pl._bt_cs_test.len);
         break;
+#endif /* CONFIG_BT_CS_RAS_TEST */
     default:
         break;
     }
