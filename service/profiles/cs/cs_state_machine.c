@@ -38,11 +38,11 @@
 
 static char* stack_event_to_string(cs_msg_id_t msg_id);
 
-#define CS_TRANS_DBG(_sm, _addr, _action)                                                       \
-    do {                                                                                        \
-        char __addr_str[BT_ADDR_STR_LENGTH] = { 0 };                                            \
-        bt_addr_ba2str(_addr, __addr_str);                                                      \
-        BT_LOGD("%s State=%s, Peer=[%s]", _action, hsm_get_current_state_name(sm), __addr_str); \
+#define CS_TRANS_DBG(_sm, _addr, _action)                                                        \
+    do {                                                                                         \
+        char __addr_str[BT_ADDR_STR_LENGTH] = { 0 };                                             \
+        bt_addr_ba2str(_addr, __addr_str);                                                       \
+        BT_LOGD("%s State=%s, Peer=[%s]", _action, hsm_get_current_state_name(_sm), __addr_str); \
     } while (0);
 
 #define CS_DBG_ENTER(__sm, __addr) CS_TRANS_DBG(__sm, __addr, "Enter")
@@ -155,7 +155,6 @@ static const state_t started_state = {
 static void stopped_enter(state_machine_t* sm)
 {
     cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
-    // const state_t* prev_state = hsm_get_previous_state(sm);
 
     CS_DBG_ENTER(sm, &cs_sm->addr);
 }
@@ -186,7 +185,6 @@ static bool stopped_process_event(state_machine_t* sm, uint32_t event, void* p_d
 static void connected_enter(state_machine_t* sm)
 {
     cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
-    // const state_t* prev_state = hsm_get_previous_state(sm);
 
     CS_DBG_ENTER(sm, &cs_sm->addr);
 }
@@ -238,7 +236,6 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
 static void wait_for_config_complete_enter(state_machine_t* sm)
 {
     cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
-    // const state_t* prev_state = hsm_get_previous_state(sm);
 
     CS_DBG_ENTER(sm, &cs_sm->addr);
 }
@@ -253,7 +250,6 @@ static void wait_for_config_complete_exit(state_machine_t* sm)
 static bool wait_for_config_complete_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
-    // cs_msg_data_t* data = (cs_msg_data_t*)p_data;
 
     CS_DBG_EVENT(sm, &cs_sm->addr, event);
     switch (event) {
@@ -276,7 +272,6 @@ static bool wait_for_config_complete_process_event(state_machine_t* sm, uint32_t
 static void wait_for_security_complete_enter(state_machine_t* sm)
 {
     cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
-    // const state_t* prev_state = hsm_get_previous_state(sm);
 
     CS_DBG_ENTER(sm, &cs_sm->addr);
 }
@@ -316,7 +311,6 @@ static bool wait_for_security_complete_process_event(state_machine_t* sm, uint32
 static void wait_for_procedure_complete_enter(state_machine_t* sm)
 {
     cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
-    // const state_t* prev_state = hsm_get_previous_state(sm);
 
     CS_DBG_ENTER(sm, &cs_sm->addr);
 }
@@ -331,7 +325,7 @@ static void wait_for_procedure_complete_exit(state_machine_t* sm)
 static bool wait_for_procedure_complete_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
-    cs_msg_t* data = (cs_msg_t*)p_data;
+    cs_msg_data_t* data = (cs_msg_data_t*)p_data;
 
     CS_DBG_EVENT(sm, &cs_sm->addr, event);
     switch (event) {
@@ -343,21 +337,12 @@ static bool wait_for_procedure_complete_process_event(state_machine_t* sm, uint3
         break;
     case CONFIG_DONE_EVT:
         hsm_transition_to(sm, &wait_for_security_complete_state);
-        if (data && data->cs_data.data) {
-            free(data->cs_data.data);
-        }
         break;
     case SECURITY_DONE_EVT:
         hsm_transition_to(sm, &wait_for_procedure_complete_state);
-        if (data->cs_data.data) {
-            free(data->cs_data.data);
-        }
         break;
     case PROCEDURE_DONE_EVT:
         hsm_transition_to(sm, &started_state);
-        if (data->cs_data.data) {
-            free(data->cs_data.data);
-        }
         break;
     default:
         break;
@@ -369,7 +354,6 @@ static bool wait_for_procedure_complete_process_event(state_machine_t* sm, uint3
 static void started_enter(state_machine_t* sm)
 {
     cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
-    // const state_t* prev_state = hsm_get_previous_state(sm);
 
     CS_DBG_ENTER(sm, &cs_sm->addr);
 }
@@ -384,6 +368,7 @@ static void started_exit(state_machine_t* sm)
 static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
+    cs_msg_data_t* data = (cs_msg_data_t*)p_data;
 
     CS_DBG_EVENT(sm, &cs_sm->addr, event);
     switch (event) {
@@ -399,6 +384,17 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
     case SECURITY_DONE_EVT:
         hsm_transition_to(sm, &wait_for_procedure_complete_state);
         break;
+    case PROCEDURE_DONE_EVT: {
+        bt_srv_conn_le_cs_procedure_enable_complete_t* enable = (bt_srv_conn_le_cs_procedure_enable_complete_t*)data->data;
+
+        if (enable) {
+            if (enable->state == CS_BT_SRV_CONN_LE_CS_PROCEDURES_DISABLED) {
+                hsm_transition_to(sm, &connected_state);
+            }
+        }
+
+        break;
+    }
     default:
         break;
     }

@@ -41,7 +41,13 @@ bt_status_t bt_sal_cs_read_remote_supported_capabilities(bt_controller_id_t id, 
         return BT_STATUS_FAIL;
     }
 
-    SAL_CHECK_RET_WITH_CONN(bt_le_cs_read_remote_supported_capabilities(conn), 0, conn);
+    int err = bt_le_cs_read_remote_supported_capabilities(conn);
+
+    if (err) {
+        BT_LOGE("err: %d", err);
+        bt_conn_unref(conn);
+        return BT_STATUS_FAIL;
+    }
 
     bt_conn_unref(conn);
 
@@ -73,7 +79,13 @@ bt_status_t bt_sal_cs_set_default_settings(bt_controller_id_t id, bt_address_t* 
         return BT_STATUS_FAIL;
     }
 
-    SAL_CHECK_RET_WITH_CONN(bt_le_cs_set_default_settings(conn, &default_settings), 0, conn);
+    int err = bt_le_cs_set_default_settings(conn, &default_settings);
+
+    if (err) {
+        BT_LOGE("err: %d", err);
+        bt_conn_unref(conn);
+        return BT_STATUS_FAIL;
+    }
 
     bt_conn_unref(conn);
 
@@ -98,7 +110,13 @@ bt_status_t bt_sal_cs_read_remote_fae_table(bt_controller_id_t id, bt_address_t*
         return BT_STATUS_FAIL;
     }
 
-    SAL_CHECK_RET_WITH_CONN(bt_le_cs_read_remote_fae_table(conn), 0, conn);
+    int err = bt_le_cs_read_remote_fae_table(conn);
+
+    if (err) {
+        BT_LOGE("err: %d", err);
+        bt_conn_unref(conn);
+        return BT_STATUS_FAIL;
+    }
 
     bt_conn_unref(conn);
     return BT_STATUS_SUCCESS;
@@ -106,16 +124,17 @@ bt_status_t bt_sal_cs_read_remote_fae_table(bt_controller_id_t id, bt_address_t*
 
 static struct bt_le_cs_create_config_params* convert_cs_config_params_to_zblue(bt_le_srv_cs_create_config_params_t* params)
 {
-    struct bt_le_cs_create_config_params* config = (struct bt_le_cs_create_config_params*)zalloc(sizeof(struct bt_le_cs_create_config_params));
-
-    if (!config) {
-        BT_LOGE("cs create config, alloc memory failed.");
-        return NULL;
-    }
+    struct bt_le_cs_create_config_params* config;
 
     if (!params) {
         BT_LOGE("cs create config, invalid params.");
-        free(config);
+        return NULL;
+    }
+
+    config = (struct bt_le_cs_create_config_params*)zalloc(sizeof(struct bt_le_cs_create_config_params));
+
+    if (!config) {
+        BT_LOGE("cs create config, alloc memory failed.");
         return NULL;
     }
 
@@ -132,7 +151,8 @@ static struct bt_le_cs_create_config_params* convert_cs_config_params_to_zblue(b
         break;
     default:
         BT_LOGE("cs create config, invalid main mode type.");
-        break;
+        free(config);
+        return NULL;
     }
 
     switch (params->sub_mode_type) {
@@ -150,7 +170,8 @@ static struct bt_le_cs_create_config_params* convert_cs_config_params_to_zblue(b
         break;
     default:
         BT_LOGE("cs create config, invalid sub mode type.");
-        break;
+        free(config);
+        return NULL;
     }
 
     config->min_main_mode_steps = params->min_main_mode_steps;
@@ -166,7 +187,8 @@ static struct bt_le_cs_create_config_params* convert_cs_config_params_to_zblue(b
         break;
     default:
         BT_LOGE("cs create config, invalid role.");
-        break;
+        free(config);
+        return NULL;
     }
 
     switch (params->rtt_type) {
@@ -193,7 +215,8 @@ static struct bt_le_cs_create_config_params* convert_cs_config_params_to_zblue(b
         break;
     default:
         BT_LOGE("cs create config, invalid rtt type.");
-        break;
+        free(config);
+        return NULL;
     }
 
     switch (params->cs_sync_phy) {
@@ -208,7 +231,8 @@ static struct bt_le_cs_create_config_params* convert_cs_config_params_to_zblue(b
         break;
     default:
         BT_LOGE("cs create config, invalid cs sync phy.");
-        break;
+        free(config);
+        return NULL;
     }
 
     config->channel_map_repetition = params->channel_map_repetition;
@@ -221,7 +245,8 @@ static struct bt_le_cs_create_config_params* convert_cs_config_params_to_zblue(b
         break;
     default:
         BT_LOGE("cs create config, invalid channel selection type.");
-        break;
+        free(config);
+        return NULL;
     }
 
     switch (params->ch3c_shape) {
@@ -233,7 +258,8 @@ static struct bt_le_cs_create_config_params* convert_cs_config_params_to_zblue(b
         break;
     default:
         BT_LOGE("cs create config, invalid ch3c shape.");
-        break;
+        free(config);
+        return NULL;
     }
 
     config->ch3c_jump = params->ch3c_jump;
@@ -263,14 +289,20 @@ bt_status_t bt_sal_cs_create_config(bt_controller_id_t id, bt_address_t* addr,
 
     struct bt_le_cs_create_config_params* config = convert_cs_config_params_to_zblue(params);
 
+    if (config == NULL) {
+        BT_LOGE("cs create config, failed to convert params.");
+        bt_conn_unref(conn);
+        return BT_STATUS_FAIL;
+    }
+
+    int err = 0;
+
     switch (context) {
-    case CS_BT_SRV_CONN_LE_CS_SUB_MODE_1:
-        SAL_CHECK_RET_WITH_CONN(bt_le_cs_create_config(conn, config, BT_LE_CS_CREATE_CONFIG_CONTEXT_LOCAL_ONLY), 0, conn);
-        free(config);
+    case BT_LE_SRV_CS_CREATE_CONFIG_CONTEXT_LOCAL_ONLY:
+        err = bt_le_cs_create_config(conn, config, BT_LE_CS_CREATE_CONFIG_CONTEXT_LOCAL_ONLY);
         break;
-    case CS_BT_SRV_CONN_LE_CS_SUB_MODE_2:
-        SAL_CHECK_RET_WITH_CONN(bt_le_cs_create_config(conn, config, BT_LE_CS_CREATE_CONFIG_CONTEXT_LOCAL_AND_REMOTE), 0, conn);
-        free(config);
+    case BT_LE_SRV_CS_CREATE_CONFIG_CONTEXT_LOCAL_AND_REMOTE:
+        err = bt_le_cs_create_config(conn, config, BT_LE_CS_CREATE_CONFIG_CONTEXT_LOCAL_AND_REMOTE);
         break;
     default:
         BT_LOGE("cs create config, invalid context.");
@@ -278,6 +310,14 @@ bt_status_t bt_sal_cs_create_config(bt_controller_id_t id, bt_address_t* addr,
         return BT_STATUS_FAIL;
     }
 
+    if (err) {
+        BT_LOGE("err: %d", err);
+        free(config);
+        bt_conn_unref(conn);
+        return BT_STATUS_FAIL;
+    }
+
+    free(config);
     bt_conn_unref(conn);
 
     return BT_STATUS_SUCCESS;
@@ -301,7 +341,13 @@ bt_status_t bt_sal_cs_security_enable(bt_controller_id_t id, bt_address_t* addr)
         return BT_STATUS_FAIL;
     }
 
-    SAL_CHECK_RET_WITH_CONN(bt_le_cs_security_enable(conn), 0, conn);
+    int err = bt_le_cs_security_enable(conn);
+
+    if (err) {
+        BT_LOGE("err: %d", err);
+        bt_conn_unref(conn);
+        return BT_STATUS_FAIL;
+    }
 
     bt_conn_unref(conn);
 
@@ -316,9 +362,14 @@ bt_status_t bt_sal_cs_procedure_enable(bt_address_t* addr,
         return BT_STATUS_PARM_INVALID;
     }
 
+    if (!params) {
+        BT_LOGE("cs procedure enable, invalid params.");
+        return BT_STATUS_PARM_INVALID;
+    }
+
     bt_addr_le_t le_addr = { 0 };
     memcpy(le_addr.a.val, addr->addr, sizeof(addr->addr));
-    struct bt_le_cs_procedure_enable_param enable = {};
+    struct bt_le_cs_procedure_enable_param enable = { 0 };
     struct bt_conn* conn = bt_conn_lookup_addr_le(0, &le_addr);
 
     if (!conn) {
@@ -329,7 +380,13 @@ bt_status_t bt_sal_cs_procedure_enable(bt_address_t* addr,
 
     enable.config_id = params->config_id;
     enable.enable = params->enable;
-    SAL_CHECK_RET_WITH_CONN(bt_le_cs_procedure_enable(conn, &enable), 0, conn);
+    int err = bt_le_cs_procedure_enable(conn, &enable);
+
+    if (err) {
+        BT_LOGE("err: %d", err);
+        bt_conn_unref(conn);
+        return BT_STATUS_FAIL;
+    }
 
     bt_conn_unref(conn);
 
@@ -354,7 +411,13 @@ bt_status_t bt_sal_cs_remove_config(bt_controller_id_t id, bt_address_t* addr, u
         return BT_STATUS_FAIL;
     }
 
-    SAL_CHECK_RET_WITH_CONN(bt_le_cs_remove_config(conn, config_id), 0, conn);
+    int err = bt_le_cs_remove_config(conn, config_id);
+
+    if (err) {
+        BT_LOGE("err: %d", err);
+        bt_conn_unref(conn);
+        return BT_STATUS_FAIL;
+    }
 
     bt_conn_unref(conn);
 
@@ -363,15 +426,17 @@ bt_status_t bt_sal_cs_remove_config(bt_controller_id_t id, bt_address_t* addr, u
 
 static struct bt_le_cs_set_procedure_parameters_param* convert_cs_set_procedure_parameters_params_to_zblue(const bt_le_srv_cs_set_procedure_parameters_param_t* params)
 {
-    struct bt_le_cs_set_procedure_parameters_param* procedure = (struct bt_le_cs_set_procedure_parameters_param*)malloc(sizeof(struct bt_le_cs_set_procedure_parameters_param));
-    if (!procedure) {
-        BT_LOGE("cs set procedure parameters, malloc failed.");
-        return NULL;
-    }
+    struct bt_le_cs_set_procedure_parameters_param* procedure;
 
     if (!params) {
         BT_LOGE("cs set procedure parameters, invalid params.");
-        free(procedure);
+        return NULL;
+    }
+
+    procedure = (struct bt_le_cs_set_procedure_parameters_param*)malloc(sizeof(struct bt_le_cs_set_procedure_parameters_param));
+
+    if (!procedure) {
+        BT_LOGE("cs set procedure parameters, malloc failed.");
         return NULL;
     }
 
@@ -384,33 +449,34 @@ static struct bt_le_cs_set_procedure_parameters_param* convert_cs_set_procedure_
     procedure->max_subevent_len = params->max_subevent_len;
 
     switch (params->tone_antenna_config_selection) {
-    case CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_ONE:
+    case CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_ZERO:
         procedure->tone_antenna_config_selection = BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_ONE;
         break;
-    case CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_TWO:
+    case CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_ONE:
         procedure->tone_antenna_config_selection = BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_TWO;
         break;
-    case CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_THREE:
+    case CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_TWO:
         procedure->tone_antenna_config_selection = BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_THREE;
         break;
-    case CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_FOUR:
+    case CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_THREE:
         procedure->tone_antenna_config_selection = BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_FOUR;
         break;
-    case CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_FIVE:
+    case CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_FOUR:
         procedure->tone_antenna_config_selection = BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_FIVE;
         break;
-    case CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_SIX:
+    case CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_FIVE:
         procedure->tone_antenna_config_selection = BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_SIX;
         break;
-    case CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_SEVEN:
+    case CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_SIX:
         procedure->tone_antenna_config_selection = BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_SEVEN;
         break;
-    case CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_EIGHT:
+    case CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_SEVEN:
         procedure->tone_antenna_config_selection = BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_EIGHT;
         break;
     default:
         BT_LOGE("cs set procedure parameters, invalid tone antenna config selection.");
-        break;
+        free(procedure);
+        return NULL;
     }
 
     switch (params->phy) {
@@ -428,58 +494,61 @@ static struct bt_le_cs_set_procedure_parameters_param* convert_cs_set_procedure_
         break;
     default:
         BT_LOGE("cs set procedure parameters, invalid phy.");
-        break;
+        free(procedure);
+        return NULL;
     }
 
     procedure->tx_power_delta = params->tx_power_delta;
     procedure->preferred_peer_antenna = params->preferred_peer_antenna;
 
     switch (params->snr_control_initiator) {
-    case BT_LE_SRV_CS_INITIATOR_SNR_CONTROL_18dB:
+    case BT_LE_SRV_CS_SNR_CONTROL_18dB:
         procedure->snr_control_initiator = BT_LE_CS_INITIATOR_SNR_CONTROL_18dB;
         break;
-    case BT_LE_SRV_CS_INITIATOR_SNR_CONTROL_21dB:
+    case BT_LE_SRV_CS_SNR_CONTROL_21dB:
         procedure->snr_control_initiator = BT_LE_CS_INITIATOR_SNR_CONTROL_21dB;
         break;
-    case BT_LE_SRV_CS_INITIATOR_SNR_CONTROL_24dB:
+    case BT_LE_SRV_CS_SNR_CONTROL_24dB:
         procedure->snr_control_initiator = BT_LE_CS_INITIATOR_SNR_CONTROL_24dB;
         break;
-    case BT_LE_SRV_CS_INITIATOR_SNR_CONTROL_27dB:
+    case BT_LE_SRV_CS_SNR_CONTROL_27dB:
         procedure->snr_control_initiator = BT_LE_CS_INITIATOR_SNR_CONTROL_27dB;
         break;
-    case BT_LE_SRV_CS_INITIATOR_SNR_CONTROL_30dB:
+    case BT_LE_SRV_CS_SNR_CONTROL_30dB:
         procedure->snr_control_initiator = BT_LE_CS_INITIATOR_SNR_CONTROL_30dB;
         break;
-    case BT_LE_SRV_CS_INITIATOR_SNR_CONTROL_NOT_USED:
+    case BT_LE_SRV_CS_SNR_CONTROL_NOT_USED:
         procedure->snr_control_initiator = BT_LE_CS_INITIATOR_SNR_CONTROL_NOT_USED;
         break;
     default:
         BT_LOGE("cs set procedure parameters, invalid snr control initiator.");
-        break;
+        free(procedure);
+        return NULL;
     }
 
     switch (params->snr_control_reflector) {
-    case BT_LE_SRV_CS_REFLECTOR_SNR_CONTROL_18dB:
+    case BT_LE_SRV_CS_SNR_CONTROL_18dB:
         procedure->snr_control_reflector = BT_LE_CS_REFLECTOR_SNR_CONTROL_18dB;
         break;
-    case BT_LE_SRV_CS_REFLECTOR_SNR_CONTROL_21dB:
+    case BT_LE_SRV_CS_SNR_CONTROL_21dB:
         procedure->snr_control_reflector = BT_LE_CS_REFLECTOR_SNR_CONTROL_21dB;
         break;
-    case BT_LE_SRV_CS_REFLECTOR_SNR_CONTROL_24dB:
+    case BT_LE_SRV_CS_SNR_CONTROL_24dB:
         procedure->snr_control_reflector = BT_LE_CS_REFLECTOR_SNR_CONTROL_24dB;
         break;
-    case BT_LE_SRV_CS_REFLECTOR_SNR_CONTROL_27dB:
+    case BT_LE_SRV_CS_SNR_CONTROL_27dB:
         procedure->snr_control_reflector = BT_LE_CS_REFLECTOR_SNR_CONTROL_27dB;
         break;
-    case BT_LE_SRV_CS_REFLECTOR_SNR_CONTROL_30dB:
+    case BT_LE_SRV_CS_SNR_CONTROL_30dB:
         procedure->snr_control_reflector = BT_LE_CS_REFLECTOR_SNR_CONTROL_30dB;
         break;
-    case BT_LE_SRV_CS_REFLECTOR_SNR_CONTROL_NOT_USED:
+    case BT_LE_SRV_CS_SNR_CONTROL_NOT_USED:
         procedure->snr_control_reflector = BT_LE_CS_REFLECTOR_SNR_CONTROL_NOT_USED;
         break;
     default:
         BT_LOGE("cs set procedure parameters, invalid snr control initiator.");
-        break;
+        free(procedure);
+        return NULL;
     }
 
     return procedure;
@@ -506,7 +575,20 @@ bt_status_t bt_sal_cs_set_procedure_parameters(bt_controller_id_t id, bt_address
 
     struct bt_le_cs_set_procedure_parameters_param* parameters = convert_cs_set_procedure_parameters_params_to_zblue(params);
 
-    SAL_CHECK_RET_WITH_CONN(bt_le_cs_set_procedure_parameters(conn, parameters), 0, conn);
+    if (!parameters) {
+        BT_LOGE("cs set procedure parameters, convert params failed.");
+        bt_conn_unref(conn);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    int err = bt_le_cs_set_procedure_parameters(conn, parameters);
+
+    if (err) {
+        BT_LOGE("err: %d", err);
+        free(parameters);
+        bt_conn_unref(conn);
+        return BT_STATUS_FAIL;
+    }
 
     free(parameters);
     bt_conn_unref(conn);
@@ -532,7 +614,13 @@ bt_status_t bt_sal_cs_set_channel_classification(uint8_t channel_classification[
         return BT_STATUS_FAIL;
     }
 
-    SAL_CHECK_RET_WITH_CONN(bt_le_cs_set_channel_classification(channel_classification), 0, conn);
+    int err = bt_le_cs_set_channel_classification(channel_classification);
+
+    if (err) {
+        BT_LOGE("err: %d", err);
+        bt_conn_unref(conn);
+        return BT_STATUS_FAIL;
+    }
 
     bt_conn_unref(conn);
 
@@ -541,15 +629,17 @@ bt_status_t bt_sal_cs_set_channel_classification(uint8_t channel_classification[
 
 static struct bt_conn_le_cs_capabilities* convert_cs_capabilities_to_zblue(bt_srv_conn_le_cs_capabilities_t* params)
 {
-    struct bt_conn_le_cs_capabilities* capbs = (struct bt_conn_le_cs_capabilities*)zalloc(sizeof(struct bt_conn_le_cs_capabilities));
-
-    if (!capbs) {
-        BT_LOGE("cs set procedure parameters, allocate memory failed.");
-        return NULL;
-    }
+    struct bt_conn_le_cs_capabilities* capbs;
 
     if (!params) {
         BT_LOGE("cs set procedure parameters, invalid params.");
+        return NULL;
+    }
+
+    capbs = (struct bt_conn_le_cs_capabilities*)zalloc(sizeof(struct bt_conn_le_cs_capabilities));
+
+    if (!capbs) {
+        BT_LOGE("cs set procedure parameters, allocate memory failed.");
         return NULL;
     }
 
@@ -573,7 +663,8 @@ static struct bt_conn_le_cs_capabilities* convert_cs_capabilities_to_zblue(bt_sr
         break;
     default:
         BT_LOGE("cs set procedure parameters, invalid rtt aa only precision.");
-        break;
+        free(capbs);
+        return NULL;
     }
 
     switch (params->rtt_sounding_precision) {
@@ -588,7 +679,8 @@ static struct bt_conn_le_cs_capabilities* convert_cs_capabilities_to_zblue(bt_sr
         break;
     default:
         BT_LOGE("cs set procedure parameters, invalid rtt sounding precision.");
-        break;
+        free(capbs);
+        return NULL;
     }
 
     switch (params->rtt_random_payload_precision) {
@@ -603,14 +695,15 @@ static struct bt_conn_le_cs_capabilities* convert_cs_capabilities_to_zblue(bt_sr
         break;
     default:
         BT_LOGE("cs set procedure parameters, invalid rtt random payload precision.");
-        break;
+        free(capbs);
+        return NULL;
     }
 
     capbs->rtt_aa_only_n = params->rtt_aa_only_n;
     capbs->rtt_sounding_n = params->rtt_sounding_n;
     capbs->rtt_random_payload_n = params->rtt_random_payload_n;
-    capbs->phase_based_nadm_sounding_supported = params->phase_based_nadm_sounding_supported;
-    capbs->phase_based_nadm_random_supported = params->phase_based_nadm_random_supported;
+    capbs->phase_based_nadm_sounding_supported = params->amplitude_based_nadm_sounding_supported;
+    capbs->phase_based_nadm_random_supported = params->amplitude_based_nadm_random_supported;
     capbs->cs_sync_2m_phy_supported = params->cs_sync_2m_phy_supported;
     capbs->cs_sync_2m_2bt_phy_supported = params->cs_sync_2m_2bt_phy_supported;
     capbs->cs_without_fae_supported = params->cs_without_fae_supported;
@@ -628,11 +721,13 @@ static struct bt_conn_le_cs_capabilities* convert_cs_capabilities_to_zblue(bt_sr
 
 static void convert_cs_capabilities_to_service(bt_srv_conn_le_cs_capabilities_t* capabilities, struct bt_conn_le_cs_capabilities* params)
 {
+    if (!params) {
+        BT_LOGE("cs get procedure parameters, invalid params.");
+        return;
+    }
 
-    bt_srv_conn_le_cs_capabilities_t* capabilities = (bt_srv_conn_le_cs_capabilities_t*)zalloc(sizeof(bt_srv_conn_le_cs_capabilities_t));
-
-    if (!capabilities || !params) {
-        BT_LOGE("Invalid cs params.");
+    if (!capabilities) {
+        BT_LOGE("cs get procedure parameters, invalid capabilities.");
         return;
     }
 
@@ -656,7 +751,8 @@ static void convert_cs_capabilities_to_service(bt_srv_conn_le_cs_capabilities_t*
         break;
     default:
         BT_LOGE("Invalid rtt aa only precision.");
-        break;
+        free(capabilities);
+        return;
     }
 
     switch (params->rtt_sounding_precision) {
@@ -671,7 +767,8 @@ static void convert_cs_capabilities_to_service(bt_srv_conn_le_cs_capabilities_t*
         break;
     default:
         BT_LOGE("Invalid rtt sounding precision.");
-        break;
+        free(capabilities);
+        return;
     }
 
     switch (params->rtt_random_payload_precision) {
@@ -686,14 +783,15 @@ static void convert_cs_capabilities_to_service(bt_srv_conn_le_cs_capabilities_t*
         break;
     default:
         BT_LOGE("Invalid rtt random payload precision.");
-        break;
+        free(capabilities);
+        return;
     }
 
     capabilities->rtt_aa_only_n = params->rtt_aa_only_n;
     capabilities->rtt_sounding_n = params->rtt_sounding_n;
     capabilities->rtt_random_payload_n = params->rtt_random_payload_n;
-    capabilities->phase_based_nadm_sounding_supported = params->phase_based_nadm_sounding_supported;
-    capabilities->phase_based_nadm_random_supported = params->phase_based_nadm_random_supported;
+    capabilities->amplitude_based_nadm_sounding_supported = params->phase_based_nadm_sounding_supported;
+    capabilities->amplitude_based_nadm_random_supported = params->phase_based_nadm_random_supported;
     capabilities->cs_sync_2m_phy_supported = params->cs_sync_2m_phy_supported;
     capabilities->cs_sync_2m_2bt_phy_supported = params->cs_sync_2m_2bt_phy_supported;
     capabilities->cs_without_fae_supported = params->cs_without_fae_supported;
@@ -727,7 +825,20 @@ bt_status_t bt_sal_cs_read_local_supported_capabilities(bt_srv_conn_le_cs_capabi
 
     struct bt_conn_le_cs_capabilities* capabilities = convert_cs_capabilities_to_zblue(params);
 
-    SAL_CHECK_RET_WITH_CONN(bt_le_cs_read_local_supported_capabilities(capabilities), 0, conn);
+    if (!capabilities) {
+        BT_LOGE("cs read local supported capabilities, convert cs capabilities to zblue failed.");
+        bt_conn_unref(conn);
+        return BT_STATUS_FAIL;
+    }
+
+    int err = bt_le_cs_read_local_supported_capabilities(capabilities);
+
+    if (err) {
+        BT_LOGE("err: %d", err);
+        free(capabilities);
+        bt_conn_unref(conn);
+        return BT_STATUS_FAIL;
+    }
 
     convert_cs_capabilities_to_service(params, capabilities);
 
@@ -757,7 +868,14 @@ bt_status_t bt_sal_cs_write_cached_remote_supported_capabilities(
     }
 
     struct bt_conn_le_cs_capabilities* capabilities = convert_cs_capabilities_to_zblue(params);
-    SAL_CHECK_RET_WITH_CONN(bt_le_cs_write_cached_remote_supported_capabilities(conn, capabilities), 0, conn);
+    int err = bt_le_cs_write_cached_remote_supported_capabilities(conn, capabilities);
+
+    if (err) {
+        BT_LOGE("err: %d", err);
+        free(capabilities);
+        bt_conn_unref(conn);
+        return BT_STATUS_FAIL;
+    }
 
     free(capabilities);
     bt_conn_unref(conn);
