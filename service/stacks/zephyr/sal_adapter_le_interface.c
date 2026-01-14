@@ -17,6 +17,7 @@
 #include "sal_adapter_le_interface.h"
 
 #include "adapter_internel.h"
+#include "cs_service.h"
 #include "gattc_service.h"
 #include "gatts_service.h"
 #include "sal_gatt_client_interface.h"
@@ -107,7 +108,7 @@ static enum bt_security_err zblue_on_pairing_accept(struct bt_conn* conn, const 
 static void zblue_register_callback(void);
 static void zblue_unregister_callback(void);
 
-#ifdef CONFIG_BLUETOOTH_LE_CS
+#if defined(CONFIG_BLUETOOTH_LE_CS) && defined(CONFIG_BT_CHANNEL_SOUNDING)
 static void zblue_on_cs_subevent(struct bt_conn* conn, struct bt_conn_le_cs_subevent_result* result);
 static void zblue_on_cs_capabilities_available(struct bt_conn* conn,
     struct bt_conn_le_cs_capabilities* params);
@@ -118,7 +119,7 @@ static void zblue_on_cs_config_removed(struct bt_conn* conn, uint8_t config_id);
 static void zblue_on_cs_security_enabled(struct bt_conn* conn);
 static void zblue_on_cs_procedure_enabled(struct bt_conn* conn,
     struct bt_conn_le_cs_procedure_enable_complete* params);
-#endif /* CONFIG_BLUETOOTH_LE_CS */
+#endif /* CONFIG_BLUETOOTH_LE_CS &&  CONFIG_BT_CHANNEL_SOUNDING*/
 
 static struct bt_conn_cb g_conn_cbs = {
     .connected = zblue_on_connected,
@@ -621,6 +622,7 @@ static void zblue_on_param_updated(struct bt_conn* conn, uint16_t interval, uint
 #endif
 }
 
+#if defined(CONFIG_BLUETOOTH_LE_CS) && defined(CONFIG_BT_CHANNEL_SOUNDING)
 static void zblue_dump_cs_capabilities(struct bt_conn_le_cs_capabilities* params)
 {
     if (!params) {
@@ -656,17 +658,17 @@ static void zblue_dump_cs_capabilities(struct bt_conn_le_cs_capabilities* params
 
 static bt_srv_conn_le_cs_capabilities_t* zblue_convert_cs_capabilities_to_service(struct bt_conn_le_cs_capabilities* params)
 {
-
-    bt_srv_conn_le_cs_capabilities_t* capabilities = (bt_srv_conn_le_cs_capabilities_t*)zalloc(sizeof(bt_srv_conn_le_cs_capabilities_t));
-
-    if (!capabilities) {
-        BT_LOGE("Failed to allocate memory for cs capabilities.");
-        return NULL;
-    }
+    bt_srv_conn_le_cs_capabilities_t* capabilities;
 
     if (!params) {
         BT_LOGE("Invalid cs capabilities.");
-        free(capabilities);
+        return NULL;
+    }
+
+    capabilities = (bt_srv_conn_le_cs_capabilities_t*)zalloc(sizeof(bt_srv_conn_le_cs_capabilities_t));
+
+    if (!capabilities) {
+        BT_LOGE("Failed to allocate memory for cs capabilities.");
         return NULL;
     }
 
@@ -689,8 +691,9 @@ static bt_srv_conn_le_cs_capabilities_t* zblue_convert_cs_capabilities_to_servic
         capabilities->rtt_aa_only_precision = CS_BT_SRV_CONN_LE_CS_RTT_AA_ONLY_150NS;
         break;
     default:
-        BT_LOGE("Invalid rtt aa only precision.");
-        break;
+        BT_LOGE("Invalid rtt aa only precision: %d.", params->rtt_aa_only_precision);
+        free(capabilities);
+        return NULL;
     }
 
     switch (params->rtt_sounding_precision) {
@@ -704,8 +707,9 @@ static bt_srv_conn_le_cs_capabilities_t* zblue_convert_cs_capabilities_to_servic
         capabilities->rtt_sounding_precision = CS_BT_SRV_CONN_LE_CS_RTT_SOUNDING_150NS;
         break;
     default:
-        BT_LOGE("Invalid rtt sounding precision.");
-        break;
+        BT_LOGE("Invalid rtt sounding precision: %d.", params->rtt_sounding_precision);
+        free(capabilities);
+        return NULL;
     }
 
     switch (params->rtt_random_payload_precision) {
@@ -719,15 +723,16 @@ static bt_srv_conn_le_cs_capabilities_t* zblue_convert_cs_capabilities_to_servic
         capabilities->rtt_random_payload_precision = CS_BT_SRV_CONN_LE_CS_RTT_RANDOM_PAYLOAD_150NS;
         break;
     default:
-        BT_LOGE("Invalid rtt random payload precision.");
-        break;
+        BT_LOGE("Invalid rtt random payload precision: %d.", params->rtt_random_payload_precision);
+        free(capabilities);
+        return NULL;
     }
 
     capabilities->rtt_aa_only_n = params->rtt_aa_only_n;
     capabilities->rtt_sounding_n = params->rtt_sounding_n;
     capabilities->rtt_random_payload_n = params->rtt_random_payload_n;
-    capabilities->phase_based_nadm_sounding_supported = params->phase_based_nadm_sounding_supported;
-    capabilities->phase_based_nadm_random_supported = params->phase_based_nadm_random_supported;
+    capabilities->amplitude_based_nadm_sounding_supported = params->phase_based_nadm_sounding_supported;
+    capabilities->amplitude_based_nadm_random_supported = params->phase_based_nadm_random_supported;
     capabilities->cs_sync_2m_phy_supported = params->cs_sync_2m_phy_supported;
     capabilities->cs_sync_2m_2bt_phy_supported = params->cs_sync_2m_2bt_phy_supported;
     capabilities->cs_without_fae_supported = params->cs_without_fae_supported;
@@ -762,7 +767,7 @@ void zblue_on_cs_capabilities_available(struct bt_conn* conn,
         return;
     }
 
-    memcpy(bt_addr.addr, addr->a.val, sizeof(bt_address_t));
+    memcpy(bt_addr.addr, addr->a.val, sizeof(bt_addr.addr));
     msg = cs_msg_new(CAPABILITIES_RECEIVED_EVT, &bt_addr);
     capabilities = zblue_convert_cs_capabilities_to_service(params);
     msg->cs_data.data = (void*)capabilities;
@@ -808,16 +813,17 @@ static void zblue_dump_cs_config(struct bt_conn_le_cs_config* config)
 
 static bt_srv_conn_le_cs_config_t* zblue_convert_cs_config_to_service(struct bt_conn_le_cs_config* config)
 {
-    bt_srv_conn_le_cs_config_t* srv_config = (bt_srv_conn_le_cs_config_t*)zalloc(sizeof(bt_srv_conn_le_cs_config_t));
-
-    if (!srv_config) {
-        BT_LOGE("Failed to allocate memory for cs config.");
-        return NULL;
-    }
+    bt_srv_conn_le_cs_config_t* srv_config;
 
     if (!config) {
         BT_LOGE("Invalid cs config.");
-        free(srv_config);
+        return NULL;
+    }
+
+    srv_config = (bt_srv_conn_le_cs_config_t*)zalloc(sizeof(bt_srv_conn_le_cs_config_t));
+
+    if (!srv_config) {
+        BT_LOGE("Failed to allocate memory for cs config.");
         return NULL;
     }
 
@@ -833,8 +839,9 @@ static bt_srv_conn_le_cs_config_t* zblue_convert_cs_config_to_service(struct bt_
         srv_config->main_mode_type = CS_BT_SRV_CONN_LE_CS_MAIN_MODE_3;
         break;
     default:
-        BT_LOGE("Invalid main mode type.");
-        break;
+        BT_LOGE("Invalid main mode type: %d.", config->main_mode_type);
+        free(srv_config);
+        return NULL;
     }
 
     switch (config->sub_mode_type) {
@@ -851,8 +858,9 @@ static bt_srv_conn_le_cs_config_t* zblue_convert_cs_config_to_service(struct bt_
         srv_config->sub_mode_type = CS_BT_SRV_CONN_LE_CS_SUB_MODE_UNUSED;
         break;
     default:
-        BT_LOGE("Invalid sub mode type.");
-        break;
+        BT_LOGE("Invalid sub mode type: %d.", config->sub_mode_type);
+        free(srv_config);
+        return NULL;
     }
 
     srv_config->min_main_mode_steps = config->min_main_mode_steps;
@@ -867,8 +875,9 @@ static bt_srv_conn_le_cs_config_t* zblue_convert_cs_config_to_service(struct bt_
         srv_config->role = CS_BT_SRV_CONN_LE_CS_ROLE_REFLECTOR;
         break;
     default:
-        BT_LOGE("Invalid role.");
-        break;
+        BT_LOGE("Invalid role: %d", config->role);
+        free(srv_config);
+        return NULL;
     }
 
     switch (config->rtt_type) {
@@ -894,8 +903,9 @@ static bt_srv_conn_le_cs_config_t* zblue_convert_cs_config_to_service(struct bt_
         srv_config->rtt_type = CS_BT_SRV_CONN_LE_CS_RTT_TYPE_128_BIT_RANDOM;
         break;
     default:
-        BT_LOGE("Invalid rtt type.");
-        break;
+        BT_LOGE("Invalid rtt type: %d.", config->rtt_type);
+        free(srv_config);
+        return NULL;
     }
 
     switch (config->cs_sync_phy) {
@@ -909,8 +919,9 @@ static bt_srv_conn_le_cs_config_t* zblue_convert_cs_config_to_service(struct bt_
         srv_config->cs_sync_phy = CS_BT_SRV_CONN_LE_CS_SYNC_2M_2BT_PHY;
         break;
     default:
-        BT_LOGE("Invalid cs sync phy.");
-        break;
+        BT_LOGE("Invalid cs sync phy: %d.", config->cs_sync_phy);
+        free(srv_config);
+        return NULL;
     }
 
     srv_config->channel_map_repetition = config->channel_map_repetition;
@@ -923,8 +934,9 @@ static bt_srv_conn_le_cs_config_t* zblue_convert_cs_config_to_service(struct bt_
         srv_config->channel_selection_type = CS_BT_SRV_CONN_LE_CS_CHSEL_TYPE_3C;
         break;
     default:
-        BT_LOGE("Invalid channel selection type.");
-        break;
+        BT_LOGE("Invalid channel selection type: %d.", config->channel_selection_type);
+        free(srv_config);
+        return NULL;
     }
 
     switch (config->ch3c_shape) {
@@ -935,8 +947,9 @@ static bt_srv_conn_le_cs_config_t* zblue_convert_cs_config_to_service(struct bt_
         srv_config->ch3c_shape = CS_BT_SRV_CONN_LE_CS_CH3C_SHAPE_X;
         break;
     default:
-        BT_LOGE("Invalid ch3c shape.");
-        break;
+        BT_LOGE("Invalid ch3c shape: %d.", config->ch3c_shape);
+        free(srv_config);
+        return NULL;
     }
 
     srv_config->ch3c_jump = config->ch3c_jump;
@@ -960,7 +973,7 @@ void zblue_on_cs_config_created(struct bt_conn* conn, struct bt_conn_le_cs_confi
         return;
     }
 
-    memcpy(bt_addr.addr, addr->a.val, sizeof(bt_address_t));
+    memcpy(bt_addr.addr, addr->a.val, sizeof(bt_addr.addr));
     msg = cs_msg_new(CONFIG_DONE_EVT, &bt_addr);
     cs_config = zblue_convert_cs_config_to_service(config);
     msg->cs_data.data = (void*)cs_config;
@@ -987,25 +1000,26 @@ void zblue_on_cs_security_enabled(struct bt_conn* conn)
         return;
     }
 
-    memcpy(bt_addr.addr, addr->a.val, sizeof(bt_address_t));
+    memcpy(bt_addr.addr, addr->a.val, sizeof(bt_addr.addr));
     msg = cs_msg_new(SECURITY_DONE_EVT, &bt_addr);
     bt_sal_cs_event_callback(msg);
     BT_LOGD("CS security enabled.\n");
     return;
 }
 
-static bt_srv_conn_le_cs_procedure_enable_complete_t* zblue_convert_procedure_enable_complete_struct_to_service(bt_conn_le_cs_procedure_enable_complete* params)
+static bt_srv_conn_le_cs_procedure_enable_complete_t* zblue_convert_procedure_enable_complete_struct_to_service(struct bt_conn_le_cs_procedure_enable_complete* params)
 {
-    bt_srv_conn_le_cs_procedure_enable_complete_t* procedure = (bt_srv_conn_le_cs_procedure_enable_complete_t*)zalloc(sizeof(bt_srv_conn_le_cs_procedure_enable_complete_t));
-
-    if (!procedure) {
-        BT_LOGE("Failed to allocate memory for procedure enable complete.");
-        return NULL;
-    }
+    bt_srv_conn_le_cs_procedure_enable_complete_t* procedure;
 
     if (!params) {
         BT_LOGE("Invalid procedure enable complete params.");
-        free(procedure);
+        return NULL;
+    }
+
+    procedure = (bt_srv_conn_le_cs_procedure_enable_complete_t*)zalloc(sizeof(bt_srv_conn_le_cs_procedure_enable_complete_t));
+
+    if (!procedure) {
+        BT_LOGE("Failed to allocate memory for procedure enable complete.");
         return NULL;
     }
 
@@ -1018,38 +1032,40 @@ static bt_srv_conn_le_cs_procedure_enable_complete_t* zblue_convert_procedure_en
         procedure->state = CS_BT_SRV_CONN_LE_CS_PROCEDURES_ENABLED;
         break;
     default:
-        procedure->state = CS_BT_SRV_CONN_LE_CS_PROCEDURES_DISABLED;
-        break;
+        BT_LOGE("Invalid procedure state: %d.", params->state);
+        free(procedure);
+        return NULL;
     }
 
     switch (params->tone_antenna_config_selection) {
     case BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_ONE:
-        procedure->tone_antenna_config_selection = CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_ONE;
+        procedure->tone_antenna_config_selection = CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_ZERO;
         break;
     case BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_TWO:
-        procedure->tone_antenna_config_selection = CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_TWO;
-        break;
-    case BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_THREE:
-        procedure->tone_antenna_config_selection = CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_THREE;
-        break;
-    case BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_FOUR:
-        procedure->tone_antenna_config_selection = CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_FOUR;
-        break;
-    case BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_FIVE:
-        procedure->tone_antenna_config_selection = CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_FIVE;
-        break;
-    case BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_SIX:
-        procedure->tone_antenna_config_selection = CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_SIX;
-        break;
-    case BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_SEVEN:
-        procedure->tone_antenna_config_selection = CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_SEVEN;
-        break;
-    case BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_EIGHT:
-        procedure->tone_antenna_config_selection = CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_EIGHT;
-        break;
-    default:
         procedure->tone_antenna_config_selection = CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_ONE;
         break;
+    case BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_THREE:
+        procedure->tone_antenna_config_selection = CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_TWO;
+        break;
+    case BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_FOUR:
+        procedure->tone_antenna_config_selection = CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_THREE;
+        break;
+    case BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_FIVE:
+        procedure->tone_antenna_config_selection = CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_FOUR;
+        break;
+    case BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_SIX:
+        procedure->tone_antenna_config_selection = CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_FIVE;
+        break;
+    case BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_SEVEN:
+        procedure->tone_antenna_config_selection = CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_SIX;
+        break;
+    case BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_EIGHT:
+        procedure->tone_antenna_config_selection = CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_SEVEN;
+        break;
+    default:
+        BT_LOGE("Invalid tone antenna config selection: %d.", params->tone_antenna_config_selection);
+        free(procedure);
+        return NULL;
     }
 
     procedure->selected_tx_power = params->selected_tx_power;
@@ -1077,7 +1093,7 @@ void zblue_on_cs_procedure_enabled(struct bt_conn* conn,
         return;
     }
 
-    memcpy(bt_addr.addr, addr->a.val, sizeof(bt_address_t));
+    memcpy(bt_addr.addr, addr->a.val, sizeof(bt_addr.addr));
     msg = cs_msg_new(PROCEDURE_DONE_EVT, &bt_addr);
     procedure = zblue_convert_procedure_enable_complete_struct_to_service(params);
     msg->cs_data.data = (void*)procedure;
@@ -1098,23 +1114,24 @@ void zblue_on_cs_procedure_enabled(struct bt_conn* conn,
     return;
 }
 
-static bt_srv_conn_le_cs_subevent_result_t* zblue_convert_subevent_result_struct_to_service(bt_conn_le_cs_subevent_result* params)
+static bt_srv_conn_le_cs_subevent_result_t* zblue_convert_subevent_result_struct_to_service(struct bt_conn_le_cs_subevent_result* params)
 {
-    bt_srv_conn_le_cs_subevent_result_t* subevent = (bt_srv_conn_le_cs_subevent_result_t*)zalloc(sizeof(bt_srv_conn_le_cs_subevent_result_t));
+    bt_srv_conn_le_cs_subevent_result_t* subevent;
+
+    if (!params) {
+        BT_LOGE("Invalid subevent result params.");
+        return NULL;
+    }
+
+    subevent = (bt_srv_conn_le_cs_subevent_result_t*)zalloc(sizeof(bt_srv_conn_le_cs_subevent_result_t));
 
     if (!subevent) {
         BT_LOGE("Failed to allocate memory for subevent result.");
         return NULL;
     }
 
-    if (!params) {
-        BT_LOGE("Invalid subevent result params.");
-        free(subevent);
-        return NULL;
-    }
-
     subevent->header.config_id = params->header.config_id;
-    subevent->header.start_acl_conn_event = params->header.start_acl_conn_event;
+    subevent->header.start_acl_conn_event_counter = params->header.start_acl_conn_event;
     subevent->header.procedure_counter = params->header.procedure_counter;
     subevent->header.frequency_compensation = params->header.frequency_compensation;
     subevent->header.reference_power_level = params->header.reference_power_level;
@@ -1129,8 +1146,9 @@ static bt_srv_conn_le_cs_subevent_result_t* zblue_convert_subevent_result_struct
         subevent->header.procedure_done_status = BT_LE_SRV_CS_PROCEDURE_ABORTED;
         break;
     default:
-        BT_LOGD("procedure_done_status is not valid");
-        break;
+        BT_LOGD("procedure_done_status is not valid: %d", params->header.procedure_done_status);
+        free(subevent);
+        return NULL;
     }
 
     switch (params->header.subevent_done_status) {
@@ -1141,8 +1159,9 @@ static bt_srv_conn_le_cs_subevent_result_t* zblue_convert_subevent_result_struct
         subevent->header.subevent_done_status = BT_LE_SRV_CS_SUBEVENT_ABORTED;
         break;
     default:
-        BT_LOGD("subevent_done_status is not valid");
-        break;
+        BT_LOGD("subevent_done_status is not valid: %d", params->header.subevent_done_status);
+        free(subevent);
+        return NULL;
     }
 
     switch (params->header.procedure_abort_reason) {
@@ -1162,8 +1181,9 @@ static bt_srv_conn_le_cs_subevent_result_t* zblue_convert_subevent_result_struct
         subevent->header.procedure_abort_reason = BT_LE_SRV_CS_PROCEDURE_ABORT_UNSPECIFIED;
         break;
     default:
-        BT_LOGD("procedure_abort_reason is not valid");
-        break;
+        BT_LOGD("procedure_abort_reason is not valid: %d", params->header.procedure_abort_reason);
+        free(subevent);
+        return NULL;
     }
 
     switch (params->header.subevent_abort_reason) {
@@ -1183,17 +1203,27 @@ static bt_srv_conn_le_cs_subevent_result_t* zblue_convert_subevent_result_struct
         subevent->header.subevent_abort_reason = BT_LE_SRV_CS_SUBEVENT_ABORT_UNSPECIFIED;
         break;
     default:
-        BT_LOGD("subevent_abort_reason is not valid");
-        break;
+        BT_LOGD("subevent_abort_reason is not valid: %d", params->header.subevent_abort_reason);
+        free(subevent);
+        return NULL;
     }
 
     subevent->header.num_antenna_paths = params->header.num_antenna_paths;
     subevent->header.num_steps_reported = params->header.num_steps_reported;
     subevent->header.abort_step = params->header.abort_step;
-    subevent->len = params->len;
-    subevent->step_data_buf = malloc(params->len);
-    memcpy(subevent->step_data_buf, params->step_data_buf, subevent->len);
+    if (!params->step_data_buf) {
+        return subevent;
+    }
 
+    subevent->len = params->step_data_buf->len;
+    subevent->step_data_buf = malloc(params->step_data_buf->len);
+    if (!subevent->step_data_buf) {
+        BT_LOGE("Failed to allocate memory for step_data_buf.");
+        free(subevent);
+        return NULL;
+    }
+
+    memcpy(subevent->step_data_buf, params->step_data_buf->data, subevent->len);
     return subevent;
 }
 
@@ -1209,12 +1239,14 @@ void zblue_on_cs_subevent(struct bt_conn* conn, struct bt_conn_le_cs_subevent_re
         return;
     }
 
-    memcpy(bt_addr.addr, addr->a.val, sizeof(bt_address_t));
+    memcpy(bt_addr.addr, addr->a.val, sizeof(bt_addr.addr));
     msg = cs_msg_new(SUBEVENT_RESULT_EVT, &bt_addr);
     subevent = zblue_convert_subevent_result_struct_to_service(result);
     msg->cs_data.data = (void*)subevent;
     bt_sal_cs_event_callback(msg);
 }
+
+#endif /* CONFIG_BLUETOOTH_LE_CS && CONFIG_BT_CHANNEL_SOUNDING */
 
 #if defined(CONFIG_BT_USER_PHY_UPDATE)
 ble_phy_type_t le_phy_convert_from_stack(uint8_t mode)

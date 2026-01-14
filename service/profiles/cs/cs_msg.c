@@ -30,29 +30,38 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __CS_STATE_MACHINE_H__
-#define __CS_STATE_MACHINE_H__
+#include <stdlib.h>
+#include <string.h>
 
-#include "bt_device.h"
 #include "cs_msg.h"
 
-typedef enum {
-    CS_STATE_STOPPED,
-    CS_STATE_CONNECTED,
-    CS_STATE_WAIT_FOR_CONFIG_COMPLETE,
-    CS_STATE_WAIT_FOR_SECURITY_COMPLETE,
-    CS_STATE_WAIT_FOR_PROCEDURE_COMPLETE,
-    CS_STATE_START
-} cs_state_t;
+#ifdef CONFIG_BLUETOOTH_LE_CS
 
-typedef struct _cs_state_machine cs_state_machine_t;
+cs_msg_t* cs_msg_new(cs_msg_id_t msg, bt_address_t* bd_addr)
+{
+    cs_msg_t* cs_msg;
 
-typedef struct {
-    struct list_node node;
-    cs_state_machine_t* cs_sm;
-    bt_address_t bd_addr;
-} cs_device_t;
+    cs_msg = (cs_msg_t*)zalloc(sizeof(cs_msg_t));
+    if (cs_msg == NULL)
+        return NULL;
 
-cs_state_machine_t* cs_state_machine_new(void* context, bt_address_t* bd_addr);
-void cs_state_machine_handle_event(cs_state_machine_t* sm, cs_msg_t* msg);
-#endif
+    cs_msg->id = msg;
+    if (bd_addr != NULL)
+        memcpy(&cs_msg->cs_data.bd_addr, bd_addr, sizeof(bt_address_t));
+
+    cs_msg->cs_data.data = NULL;
+    cs_msg->cs_data.cb = NULL;
+    return cs_msg;
+}
+
+void cs_msg_destroy(cs_msg_t* cs_msg)
+{
+    if (!cs_msg) {
+        return;
+    }
+
+    free(cs_msg->cs_data.data);
+    free(cs_msg);
+}
+
+#endif /* CONFIG_BLUETOOTH_LE_CS */
