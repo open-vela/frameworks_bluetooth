@@ -191,6 +191,10 @@ static sal_hid_connection_t* hid_find_connection_by_address(bt_address_t* addr)
 {
     sal_bt_hid_device_mgr_t* hid_mgr = &g_hid_device_mgr;
 
+    if (hid_mgr->connections == NULL) {
+        return NULL;
+    }
+
     for (bt_list_node_t* node = bt_list_head(hid_mgr->connections); node != NULL; node = bt_list_next(hid_mgr->connections, node)) {
         sal_hid_connection_t* hid_conn = (sal_hid_connection_t*)bt_list_node(node);
 
@@ -205,6 +209,10 @@ static sal_hid_connection_t* hid_find_connection_by_address(bt_address_t* addr)
 static sal_hid_connection_t* hid_find_connections_by_device(struct bt_hid_device* hid)
 {
     sal_bt_hid_device_mgr_t* hid_mgr = &g_hid_device_mgr;
+
+    if (hid_mgr->connections == NULL) {
+        return NULL;
+    }
 
     for (bt_list_node_t* node = bt_list_head(hid_mgr->connections); node != NULL; node = bt_list_next(hid_mgr->connections, node)) {
         sal_hid_connection_t* hid_conn = (sal_hid_connection_t*)bt_list_node(node);
