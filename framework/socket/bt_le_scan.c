@@ -36,7 +36,7 @@ bt_scanner_t* bt_le_start_scan(bt_instance_t* ins, const scanner_callbacks_t* cb
     if (scan == NULL)
         return NULL;
 
-    scan->callback = (scanner_callbacks_t*)cbs;
+    scan->callbacks = (scanner_callbacks_t*)cbs;
     packet.scan_pl._bt_le_start_scan.remote = PTR2INT(uint64_t) scan;
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_LE_SCAN_START);
@@ -62,7 +62,7 @@ bt_scanner_t* bt_le_start_scan_settings(bt_instance_t* ins,
     if (scan == NULL)
         return NULL;
 
-    scan->callback = (scanner_callbacks_t*)cbs;
+    scan->callbacks = (scanner_callbacks_t*)cbs;
     packet.scan_pl._bt_le_start_scan_settings.remote = PTR2INT(uint64_t) scan;
     if (settings)
         memcpy(&packet.scan_pl._bt_le_start_scan_settings.settings, settings, sizeof(*settings));
@@ -91,7 +91,7 @@ bt_scanner_t* bt_le_start_scan_with_filters(bt_instance_t* ins,
     if (scan == NULL)
         return NULL;
 
-    scan->callback = (scanner_callbacks_t*)cbs;
+    scan->callbacks = (scanner_callbacks_t*)cbs;
     packet.scan_pl._bt_le_start_scan_with_filters.remote = PTR2INT(uint64_t) scan;
     if (settings)
         memcpy(&packet.scan_pl._bt_le_start_scan_with_filters.settings, settings, sizeof(*settings));
