@@ -324,6 +324,7 @@ static bool ble_on_process_event(state_machine_t* sm, uint32_t event, void* p_da
         break;
     case SYS_TURN_OFF:
     case TURN_OFF_BLE:
+    case SYS_TURN_OFF_SAFE:
         hsm_transition_to(sm, &ble_turning_off_state);
         break;
     default:
