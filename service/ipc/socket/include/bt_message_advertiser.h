@@ -39,8 +39,8 @@ BT_ADVERTISER_MESSAGE_START,
 #endif
 
 #include "bluetooth.h"
-#include "bt_le_advertiser.h"
 #include "bt_ipc_code.h"
+#include "bt_le_advertiser.h"
 
 #define BT_IPC_CODE_COMMAND_BLE_ADVERTISER_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_BLE_ADVERTISER, 0)
 // TODO: Add new BT IPC Code sequentially
@@ -60,7 +60,7 @@ BT_ADVERTISER_MESSAGE_START,
     typedef struct
     {
         bt_instance_t* ins;
-        advertiser_callback_t* callback;
+        advertiser_callback_t* callbacks;
         uint64_t remote;
     } bt_advertiser_remote_t;
 
