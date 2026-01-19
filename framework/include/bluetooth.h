@@ -56,6 +56,17 @@ extern "C" {
 #endif
 #endif // End of else
 
+#define CALLBACK_FOREACH(_list, _struct, _cback, ...) \
+    BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
+
+#define CALLBACK_REMOTE(_remote, _type, _cback, ...) \
+    do {                                             \
+        _type* _cbs = (_type*)_remote->callbacks;    \
+        if (_cbs && _cbs->_cback) {                  \
+            _cbs->_cback(_remote, ##__VA_ARGS__);    \
+        }                                            \
+    } while (0)
+
 #define PRIMARY_ADAPTER 0
 
 typedef uint8_t bt_controller_id_t;
