@@ -178,6 +178,11 @@ static void sal_invoke_async(service_work_t* work, void* userdata)
 
     SAL_ASSERT(req);
 
+    if (!bt_is_ready()) {
+        free(req);
+        return;
+    }
+
     if (!req->manager_list) {
         /* !req->user_data means a direct profile "disconnection" */
         req->handler(req->id, &req->device_addr, req->user_data);
