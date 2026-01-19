@@ -1570,11 +1570,7 @@ bt_status_t bt_sal_hfp_ag_send_at_cmd(bt_address_t* addr, const char* atcmd, uin
     const char* start;
     const char* end;
     size_t line_len;
-    char* line = (char*)malloc(HFP_AT_LEN_MAX + 1);
-    if (!line) {
-        BT_LOGE("%s, failed to allocate memory for AT command", __func__);
-        return BT_STATUS_NOMEM;
-    }
+    char* line;
 
     if (!addr || !atcmd || length == 0) {
         return BT_STATUS_PARM_INVALID;
@@ -1604,8 +1600,13 @@ bt_status_t bt_sal_hfp_ag_send_at_cmd(bt_address_t* addr, const char* atcmd, uin
 
     if (line_len == 0) {
         BT_LOGW("%s, empty AT payload after trimming", __func__);
-        free(line);
         return BT_STATUS_PARM_INVALID;
+    }
+
+    line = (char*)malloc(line_len + 1);
+    if (!line) {
+        BT_LOGE("%s, failed to allocate memory for AT command", __func__);
+        return BT_STATUS_NOMEM;
     }
 
     strlcpy(line, start, line_len + 1);
