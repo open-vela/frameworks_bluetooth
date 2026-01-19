@@ -604,6 +604,42 @@ static void l2cap_abort_channel(l2cap_channel_t* channel)
     }
 }
 
+static bool l2cap_config_param(l2cap_config_option_t* option)
+{
+    uint16_t min_credits;
+    uint16_t max_credits;
+
+    if (option->mtu > L2CAP_MAX_RX_BUF_SIZE) {
+        BT_LOGE("%s, MTU (%" PRIu16 ") exceeds maximum buffer size (%d)", __func__, option->mtu, L2CAP_MAX_RX_BUF_SIZE);
+        return false;
+    }
+
+    if (option->transport == BT_TRANSPORT_BLE) {
+        if (option->le_mps == 0) {
+            BT_LOGE("%s, invalid MPS value (0)", __func__);
+            return false;
+        }
+
+        if (option->mtu < option->le_mps) {
+            BT_LOGE("%s, MTU (%" PRIu16 ") must be >= MPS (%" PRIu16 ")", __func__, option->mtu, option->le_mps);
+            return false;
+        }
+
+        min_credits = (option->mtu + option->le_mps - 1) / option->le_mps;
+        max_credits = L2CAP_MAX_RX_BUF_SIZE / option->le_mps;
+
+        if (option->init_credits < min_credits) {
+            BT_LOGW("%s, initial credits (%" PRIu16 ") adjusted to minimum (%" PRIu16 ")", __func__, option->init_credits, min_credits);
+            option->init_credits = min_credits;
+        } else if (option->init_credits > max_credits) {
+            BT_LOGW("%s, initial credits (%" PRIu16 ") adjusted to maximum (%" PRIu16 ")", __func__, option->init_credits, max_credits);
+            option->init_credits = max_credits;
+        }
+    }
+
+    return true;
+}
+
 static void l2cap_add_incoming_credits(l2cap_channel_t* channel)
 {
     uint16_t remote_credits;
@@ -648,8 +684,13 @@ static void l2cap_send_sdu_to_app_cb(euv_pipe_t* handle, uint8_t* buf, int statu
 
     assert(buf == sdu->data);
     channel->rx_buf_size += sdu->len_total;
-    free(sdu);
+    if (channel->rx_buf_size > L2CAP_MAX_RX_BUF_SIZE) {
+        BT_LOGW("%s, L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") rx_buf_size exceeds max, clamping to %d",
+            __func__, channel->id, channel->local_cid, L2CAP_MAX_RX_BUF_SIZE);
+        channel->rx_buf_size = L2CAP_MAX_RX_BUF_SIZE;
+    }
 
+    free(sdu);
     if (channel->incoming.credits < L2CAP_LE_CREDITS_LOW_WATERMARK) {
         l2cap_add_incoming_credits(channel);
     }
@@ -1119,6 +1160,10 @@ bt_status_t l2cap_listen_channel(void* handle, l2cap_config_option_t* option)
         return BT_STATUS_UNSUPPORTED;
     }
 
+    if (l2cap_config_param(option) == false) {
+        return BT_STATUS_PARM_INVALID;
+    }
+
     pthread_mutex_lock(&g_l2cap_manager.l2cap_lock);
     if (option->psm == 0) {
         option->psm = alloc_le_dynamic_psm();
@@ -1175,6 +1220,10 @@ bt_status_t l2cap_connect_channel(void* handle, bt_address_t* addr, l2cap_config
     }
 
     CHECK_ADAPTER_ENABLED(BT_STATUS_NOT_ENABLED);
+
+    if (l2cap_config_param(option) == false) {
+        return BT_STATUS_PARM_INVALID;
+    }
 
     pthread_mutex_lock(&g_l2cap_manager.l2cap_lock);
     channel = alloc_free_channel(handle, addr, option->psm, L2CAP_CHANNEL_ROLE_CLIENT);
