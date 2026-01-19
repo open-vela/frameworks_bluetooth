@@ -41,6 +41,7 @@ void l2cap_on_channel_connected(bt_address_t* addr, l2cap_channel_param_t* param
 void l2cap_on_channel_disconnected(bt_address_t* addr, uint16_t cid, uint32_t reason);
 void l2cap_on_packet_received(bt_address_t* addr, uint16_t cid, uint8_t* packet_data, uint16_t packet_size);
 void l2cap_on_packet_sent(bt_address_t* addr, uint16_t cid);
+bool l2cap_on_segment_received(bt_address_t* addr, uint16_t cid, uint8_t* seg, uint16_t seg_len, uint16_t sdu_len, uint16_t seg_off);
 
 void* l2cap_register_callbacks(void* remote, const l2cap_callbacks_t* callbacks);
 bool l2cap_unregister_callbacks(void** remote, void* cookie);
