@@ -427,6 +427,28 @@ static void do_l2cap_speed_test(void* data)
     PRINT("transmit start, waiting for %" PRIu32 " bytes transmit done", trans_ctx->trans_total_size);
 }
 
+static void do_l2cap_flow_control(void* data)
+{
+    l2cap_msg_t* msg = (l2cap_msg_t*)data;
+    l2cap_chnl_t* channel;
+    int err;
+    uint16_t id = msg->id;
+    bool start_recv = msg->is_listening;
+    const char* action;
+
+    free(msg);
+    channel = find_channel_by_id(id);
+    if (channel == NULL || channel->pipe == NULL) {
+        PRINT("L2CAP channel(id: %" PRIu16 ") not found or pipe disconnected", id);
+        return;
+    }
+
+    action = start_recv ? "start" : "stop";
+    err = start_recv ? euv_pipe_read_start(channel->pipe, 2048, read_complete_cb, NULL)
+                     : euv_pipe_read_stop(channel->pipe);
+    PRINT("%s L2CAP channel(id: %" PRIu16 ") receive %s", action, id, err ? "failed" : "success");
+}
+
 static void on_connected(void* handle, l2cap_connect_params_t* params)
 {
     l2cap_msg_t* msg;
@@ -711,6 +733,58 @@ static int speed_test_cmd(void* handle, int argc, char* argv[])
     return CMD_OK;
 }
 
+static int stop_receive_cmd(void* handle, int argc, char* argv[])
+{
+    l2cap_msg_t* msg;
+
+    if (!handle || !g_l2cap_handle) {
+        PRINT("L2CAP tool not ready!");
+        return CMD_ERROR;
+    }
+
+    if (argc < 1) {
+        return CMD_PARAM_NOT_ENOUGH;
+    }
+
+    msg = (l2cap_msg_t*)malloc(sizeof(l2cap_msg_t));
+    if (!msg) {
+        PRINT("allocate msg failed");
+        return CMD_ERROR;
+    }
+
+    msg->id = strtoul(argv[0], NULL, 10);
+    msg->is_listening = false; /* stop receive*/
+    do_in_thread_loop(&g_l2cap_thread, do_l2cap_flow_control, msg);
+
+    return CMD_OK;
+}
+
+static int start_receive_cmd(void* handle, int argc, char* argv[])
+{
+    l2cap_msg_t* msg;
+
+    if (!handle || !g_l2cap_handle) {
+        PRINT("L2CAP tool not ready!");
+        return CMD_ERROR;
+    }
+
+    if (argc < 1) {
+        return CMD_PARAM_NOT_ENOUGH;
+    }
+
+    msg = (l2cap_msg_t*)malloc(sizeof(l2cap_msg_t));
+    if (!msg) {
+        PRINT("allocate msg failed");
+        return CMD_ERROR;
+    }
+
+    msg->id = strtoul(argv[0], NULL, 10);
+    msg->is_listening = true; /* start receive*/
+    do_in_thread_loop(&g_l2cap_thread, do_l2cap_flow_control, msg);
+
+    return CMD_OK;
+}
+
 static bt_command_t g_l2cap_commands[] = {
     { "connect", connect_cmd, 0, "\"connect l2cap channel      param: <address> <psm>\"" },
     { "listen", listen_cmd, 0, "\"listen l2cap channel        param: <psm>\"" },
@@ -718,6 +792,8 @@ static bt_command_t g_l2cap_commands[] = {
     { "stoplisten", stop_listen_cmd, 0, "\"stop listen l2cap channel  param: <psm>\"" },
     { "write", write_cmd, 0, "\"write data to peer   param: <id> <data>\"" },
     { "speed", speed_test_cmd, 0, "\"speed test l2cap channel    param: <id> <iteration>\"" },
+    { "stoprecv", stop_receive_cmd, 0, "\"stop receive data from specified L2CAP channel  param: <id>\"" },
+    { "startrecv", start_receive_cmd, 0, "\"start receive data from specified L2CAP channel  param: <id>\"" },
 };
 
 static void usage(void)
