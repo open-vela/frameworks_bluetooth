@@ -45,9 +45,7 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
-#define CALLBACK_FOREACH(_list, _struct, _cback, ...) \
-    BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
-#define CBLIST (ins->avrcp_control_callbacks)
+#define CBLIST (__async ? __async->avrcp_control_callbacks : ins->avrcp_control_callbacks)
 
 /****************************************************************************
  * Private Types
@@ -182,7 +180,24 @@ void bt_socket_server_avrcp_control_process(service_poll_t* poll,
                 packet->avrcp_control_pl._bt_avrcp_control_send_passthrough_cmd.cmd,
                 packet->avrcp_control_pl._bt_avrcp_control_send_passthrough_cmd.state);
             break;
-
+        case AVRCP_CT_SUBCODE_GET_UNIT_INFO_CMD:
+            packet->avrcp_control_r.status = BTSYMBOLS(bt_avrcp_control_get_unit_info)(ins,
+                &packet->avrcp_control_pl._bt_avrcp_control_get_unit_info.addr);
+            break;
+        case AVRCP_CT_SUBCODE_GET_SUBUNIT_INFO_CMD:
+            packet->avrcp_control_r.status = BTSYMBOLS(bt_avrcp_control_get_subunit_info)(ins,
+                &packet->avrcp_control_pl._bt_avrcp_control_get_subunit_info.addr);
+            break;
+        case AVRCP_CT_SUBCODE_GET_PLAYBACK_STATE_CMD:
+            packet->avrcp_control_r.status = BTSYMBOLS(bt_avrcp_control_get_playback_state)(ins,
+                &packet->avrcp_control_pl._bt_avrcp_control_get_playback_state.addr);
+            break;
+        case AVRCP_CT_SUBCODE_REGISTER_NOTIFICATION_CMD:
+            packet->avrcp_control_r.status = BTSYMBOLS(bt_avrcp_control_register_notification)(ins,
+                &packet->avrcp_control_pl._bt_avrcp_control_register_notification.addr,
+                packet->avrcp_control_pl._bt_avrcp_control_register_notification.event,
+                packet->avrcp_control_pl._bt_avrcp_control_register_notification.interval);
+            break;
         default:
             break;
         }
@@ -194,8 +209,13 @@ void bt_socket_server_avrcp_control_process(service_poll_t* poll,
 #endif
 
 int bt_socket_client_avrcp_control_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet)
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async)
 {
+    bt_socket_async_client_t* __async = NULL;
+
+    if (is_async)
+        __async = ins->priv;
+
     switch (packet->code) {
     case BT_AVRCP_CONTROL_ON_CONNECTION_STATE_CHANGED:
         CALLBACK_FOREACH(CBLIST, avrcp_control_callbacks_t,
@@ -235,6 +255,7 @@ int bt_socket_client_avrcp_control_callback(service_poll_t* poll,
                 attrs[i].text = NULL;
                 break;
             default:
+                attrs[i].text = NULL;
                 break;
             }
         }
@@ -243,6 +264,8 @@ int bt_socket_client_avrcp_control_callback(service_poll_t* poll,
             &packet->avrcp_control_cb._bt_avrcp_control_get_element_attribute.addr,
             packet->avrcp_control_cb._bt_avrcp_control_get_element_attribute.attrs_count,
             attrs);
+
+        free(attrs);
     }
 
     break;

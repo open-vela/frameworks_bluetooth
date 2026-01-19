@@ -45,9 +45,7 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
-#define CALLBACK_FOREACH(_list, _struct, _cback, ...) \
-    BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
-#define CBLIST (ins->a2dp_source_callbacks)
+#define CBLIST (__async ? __async->a2dp_source_callbacks : ins->a2dp_source_callbacks)
 
 /****************************************************************************
  * Private Types
@@ -178,8 +176,13 @@ void bt_socket_server_a2dp_source_process(service_poll_t* poll,
 #endif
 
 int bt_socket_client_a2dp_source_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet)
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async)
 {
+    bt_socket_async_client_t* __async = NULL;
+
+    if (is_async)
+        __async = ins->priv;
+
     switch (packet->code) {
     case BT_A2DP_SOURCE_CONNECTION_STATE_CHANGE: {
         CALLBACK_FOREACH(CBLIST, a2dp_source_callbacks_t,

@@ -59,14 +59,6 @@
             return BT_STATUS_SERVICE_NOT_FOUND;                                                \
     } while (0)
 
-#define CALLBACK_REMOTE(_remote, _type, _cback, ...) \
-    do {                                             \
-        _type* _cbs = (_type*)_remote->callbacks;    \
-        if (_cbs && _cbs->_cback) {                  \
-            _cbs->_cback(_remote, ##__VA_ARGS__);    \
-        }                                            \
-    } while (0)
-
 /****************************************************************************
  * Private Types
  ****************************************************************************/
