@@ -125,6 +125,7 @@ typedef struct adapter_state_machine {
     bool hfp_offloading;
     bool lea_offloading;
     bool turning_off_safe;
+    bool ble_turning_off_safe;
     service_timer_t* disable_safe_timer;
 } adapter_state_machine_t;
 
@@ -158,6 +159,7 @@ static const char* event_to_string(uint16_t event)
         CASE_RETURN_STR(BLE_DISABLE_TIMEOUT)
         CASE_RETURN_STR(BLE_ENABLE_PROFILE_TIMEOUT)
         CASE_RETURN_STR(BLE_DISABLE_PROFILE_TIMEOUT)
+        CASE_RETURN_STR(BLE_ACL_ALL_DISCONNECTED)
     default:
         return "unknown";
     }
@@ -330,6 +332,7 @@ static void ble_on_exit(state_machine_t* sm)
 
 static bool ble_on_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
+    adapter_state_machine_t* stm = (adapter_state_machine_t*)sm;
     ADAPTER_DBG_EVENT(sm, event);
 
     switch (event) {
@@ -338,8 +341,21 @@ static bool ble_on_process_event(state_machine_t* sm, uint32_t event, void* p_da
         break;
     case SYS_TURN_OFF:
     case TURN_OFF_BLE:
-    case SYS_TURN_OFF_SAFE:
         hsm_transition_to(sm, &ble_turning_off_state);
+        break;
+    case SYS_TURN_OFF_SAFE:
+        stm->ble_turning_off_safe = true;
+
+        adapter_le_disconnect_safe();
+
+        stm->disable_safe_timer = service_loop_timer(DISABLE_SAFE_TIMEOUT, 0,
+            turning_off_safe_timeout_callback, (void*)sm);
+        break;
+    case SYS_TURN_OFF_SAFE_TIMEOUT:
+    case BLE_ACL_ALL_DISCONNECTED:
+        if (stm->ble_turning_off_safe)
+            hsm_transition_to(sm, &ble_turning_off_state);
+
         break;
     default:
         return false;
@@ -487,6 +503,9 @@ static void ble_turning_off_enter(state_machine_t* sm)
 {
     ADAPTER_DBG_ENTER(sm);
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
+    adapter_state_machine_t* stm = (adapter_state_machine_t*)sm;
+    stm->ble_turning_off_safe = false;
+
     /* LE profile service shotdown */
     service_manager_shutdown(BT_TRANSPORT_BLE);
     adapter_on_le_disabled();
