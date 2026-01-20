@@ -890,6 +890,19 @@ static void connected_enter(state_machine_t* sm)
         if (bt_media_get_voice_call_volume(&agsm->media_volume) != BT_STATUS_SUCCESS) {
             BT_LOGE("Get voice call volume failed");
         }
+
+        if (agsm->media_volume != INVALID_MEDIA_VOLUME) {
+            uint8_t ag_vol = bt_media_volume_media_to_hfp(agsm->media_volume);
+
+            if (ag_vol != agsm->spk_volume) {
+                if (bt_sal_hfp_ag_set_volume(&agsm->addr, HFP_VOLUME_TYPE_SPK, ag_vol) != BT_STATUS_SUCCESS) {
+                    BT_LOGE("Could not set speaker volume");
+                } else {
+                    agsm->spk_volume = ag_vol;
+                }
+            }
+        }
+
         agsm->volume_listener = bt_media_listen_voice_call_volume_change(hfp_ag_voice_volume_change_callback, agsm);
         agsm->retry_cnt = 0;
         if (!agsm->volume_listener) {
