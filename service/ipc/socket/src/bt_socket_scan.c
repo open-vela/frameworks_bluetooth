@@ -297,8 +297,7 @@ int bt_socket_client_scan_callback(service_poll_t* poll,
         bt_scan_remote_t* scan = INT2PTR(bt_scan_remote_t*) packet->scan_cb._on_scan_stopped_cb.scanner;
 
         CALLBACK_REMOTE(scan, scanner_callbacks_t,
-            on_scan_start_status,
-            packet->scan_cb._on_scan_status_cb.status);
+            on_scan_stopped);
         free(scan);
         break;
     }
