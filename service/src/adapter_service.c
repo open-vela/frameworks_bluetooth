@@ -344,12 +344,12 @@ static void adapter_delete_device(void* data)
     device_delete(device);
 }
 
-static bool adapter_check_acl_all_disconnected(void)
+static bool adapter_check_acl_all_disconnected(bt_list_t* list)
 {
     bt_device_t* device;
     bt_list_node_t* node;
 
-    for (node = bt_list_head(g_adapter_service.devices); node != NULL; node = bt_list_next(g_adapter_service.devices, node)) {
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
         device = (bt_device_t*)bt_list_node(node);
         if (device_is_connected(device)) {
             return false;
@@ -1063,8 +1063,26 @@ static void process_connection_state_changed_evt(bt_address_t* addr, acl_state_p
 
     /* check acls connection is all disconnected in safe disable mode */
     if (acl_params->connection_state == CONNECTION_STATE_DISCONNECTED) {
-        if (adapter_check_acl_all_disconnected()) {
-            send_to_state_machine((state_machine_t*)adapter->stm, BREDR_ACL_ALL_DISCONNECTED, NULL);
+        bt_list_t* list = NULL;
+        uint16_t event_id;
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+        if (acl_params->transport == BT_TRANSPORT_BREDR) {
+            list = g_adapter_service.devices;
+            event_id = BREDR_ACL_ALL_DISCONNECTED;
+        }
+#endif
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
+        if (acl_params->transport == BT_TRANSPORT_BLE) {
+            list = g_adapter_service.le_devices;
+            event_id = BLE_ACL_ALL_DISCONNECTED;
+        }
+#endif
+
+        if (!list)
+            return;
+
+        if (adapter_check_acl_all_disconnected(list)) {
+            send_to_state_machine((state_machine_t*)adapter->stm, event_id, NULL);
         }
     }
 }
@@ -2889,7 +2907,7 @@ bt_status_t adapter_disconnect_safe(void)
     adapter_service_t* adapter = &g_adapter_service;
 
     /* check acls connection is all disconnected in safe disable mode */
-    if (adapter_check_acl_all_disconnected()) {
+    if (adapter_check_acl_all_disconnected(g_adapter_service.devices)) {
         send_to_state_machine((state_machine_t*)adapter->stm, BREDR_ACL_ALL_DISCONNECTED, NULL);
         return BT_STATUS_SUCCESS;
     }
@@ -2948,6 +2966,30 @@ bt_status_t adapter_le_disconnect(bt_address_t* addr)
 
     device_set_connection_state(device, CONNECTION_STATE_DISCONNECTING);
     adapter_unlock();
+    return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
+}
+
+bt_status_t adapter_le_disconnect_safe(void)
+{
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
+    bt_device_t* device;
+    bt_list_node_t* node;
+    adapter_service_t* adapter = &g_adapter_service;
+
+    /* check acls connection is all disconnected in safe disable mode */
+    if (adapter_check_acl_all_disconnected(g_adapter_service.le_devices)) {
+        send_to_state_machine((state_machine_t*)adapter->stm, BLE_ACL_ALL_DISCONNECTED, NULL);
+        return BT_STATUS_SUCCESS;
+    }
+
+    for (node = bt_list_head(g_adapter_service.le_devices); node != NULL; node = bt_list_next(g_adapter_service.le_devices, node)) {
+        device = (bt_device_t*)bt_list_node(node);
+        adapter_le_disconnect(device_get_address(device));
+    }
+
     return BT_STATUS_SUCCESS;
 #else
     return BT_STATUS_NOT_SUPPORTED;
