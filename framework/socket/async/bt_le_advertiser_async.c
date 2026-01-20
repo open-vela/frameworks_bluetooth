@@ -109,7 +109,7 @@ bt_status_t bt_le_start_advertising_async(bt_instance_t* ins, ble_adv_params_t* 
         return BT_STATUS_NOMEM;
 
     adv->ins = ins;
-    adv->callback = adv_cbs;
+    adv->callbacks = adv_cbs;
     packet.adv_pl._bt_le_start_advertising.adver = PTR2INT(uint64_t) adv;
     memcpy(&packet.adv_pl._bt_le_start_advertising.params, params, sizeof(*params));
     if ((adv_len && (adv_len > sizeof(packet.adv_pl._bt_le_start_advertising.adv_data)))
