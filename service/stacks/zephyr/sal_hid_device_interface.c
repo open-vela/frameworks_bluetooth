@@ -393,7 +393,11 @@ static void hid_accept_callback(struct bt_hid_device* hid)
 
     BT_LOGD("hid:%p accept", hid);
 
-    bt_sal_get_remote_address(hid->conn, &addr);
+    if (bt_sal_get_remote_address(hid->conn, &addr) != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, failed to get remote address", __func__);
+        return;
+    }
+
     hid_conn = hid_connection_new(&addr, hid->conn);
     if (!hid_conn) {
         BT_LOGE("Failed to create HID connection");
