@@ -107,7 +107,7 @@
 #define CONFIG_BLUETOOTH_RPMSG_CPUNAME "ap"
 
 /********************* O61 Project Only *********************/
-#elif defined(ANDROID_14)
+#elif defined(ANDROID_14) || defined(ANDROID_15)
 // Socket: RPMsg
 #define CONFIG_BLUETOOTH_RPMSG_CPUNAME "cp"
 // A2DP
