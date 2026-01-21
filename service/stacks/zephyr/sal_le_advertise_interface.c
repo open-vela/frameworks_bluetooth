@@ -74,6 +74,32 @@ static struct bt_le_ext_adv_cb g_adv_cb = {
     .connected = ext_adv_connected,
 };
 
+static bt_status_t parse_bt_adv_data(uint8_t* raw, uint16_t raw_len,
+    struct bt_data* out, size_t out_max, size_t* out_size)
+{
+    size_t index;
+
+    if (!out || !out_size) {
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    *out_size = 0;
+
+    if (!raw || raw_len == 0) {
+        return BT_STATUS_SUCCESS;
+    }
+
+    for (index = 0; index < raw_len;) {
+        out[*out_size].data_len = raw[index] - 1;
+        out[*out_size].type = raw[index + 1];
+        out[*out_size].data = &raw[index + 2];
+        index += out[*out_size].data_len + 2;
+        (*out_size)++;
+    }
+
+    return BT_STATUS_SUCCESS;
+}
+
 static void ext_adv_terminated_cb(struct bt_le_ext_adv* adv)
 {
     int index;
@@ -273,41 +299,6 @@ static struct bt_le_adv_set* zblue_le_ext_find_adv(uint8_t adv_id)
     return NULL;
 }
 
-static bt_status_t zblue_le_ext_adv_set_data(struct bt_le_ext_adv* adv, uint8_t* adv_data, uint16_t adv_len, uint8_t* scan_rsp_data, uint16_t scan_rsp_len)
-{
-    size_t index;
-    struct bt_data ad[CONFIG_BT_EXT_ADV_MAX_ADV_SEGMENT] = { 0 };
-    struct bt_data sd[CONFIG_BT_EXT_ADV_MAX_ADV_SEGMENT] = { 0 };
-    size_t ad_size = 0;
-    size_t sd_size = 0;
-    int ret;
-
-    for (index = 0; index < adv_len;) {
-        ad[ad_size].data_len = adv_data[index] - 1;
-        ad[ad_size].type = adv_data[index + 1];
-        ad[ad_size].data = &adv_data[index + 2];
-        index += ad[ad_size].data_len + 2;
-        ad_size++;
-    }
-
-    for (index = 0; index < scan_rsp_len;) {
-        sd[sd_size].data_len = scan_rsp_data[index] - 1;
-        sd[sd_size].type = scan_rsp_data[index + 1];
-        sd[sd_size].data = &scan_rsp_data[index + 2];
-        index += sd[sd_size].data_len + 2;
-        sd_size++;
-    }
-
-    ret = bt_le_ext_adv_set_data(adv, ad_size > 0 ? ad : NULL, ad_size,
-        sd_size > 0 ? sd : NULL, sd_size);
-    if (ret) {
-        BT_LOGE("%s, le ext adv set data fail, err:%d", __func__, ret);
-        return BT_STATUS_FAIL;
-    }
-
-    return BT_STATUS_SUCCESS;
-}
-
 static sal_adapter_req_t* sal_adapter_req(bt_controller_id_t id, uint8_t adv_id, sal_func_t func)
 {
     sal_adapter_req_t* req = calloc(sizeof(sal_adapter_req_t), 1);
@@ -351,6 +342,10 @@ static void STACK_CALL(start_adv)(void* args)
     sal_adapter_req_t* req = args;
     struct bt_le_ext_adv* adv;
     int ret;
+    struct bt_data ad[CONFIG_BT_EXT_ADV_MAX_ADV_SEGMENT] = { 0 };
+    struct bt_data sd[CONFIG_BT_EXT_ADV_MAX_ADV_SEGMENT] = { 0 };
+    size_t ad_size = 0;
+    size_t sd_size = 0;
 
     ret = zblue_le_ext_create(&req->adpt.start_adv.param, &adv, req->adv_id);
     if (ret) {
@@ -359,8 +354,22 @@ static void STACK_CALL(start_adv)(void* args)
         goto done;
     }
 
-    ret = zblue_le_ext_adv_set_data(adv, req->adpt.start_adv.adv_data, req->adpt.start_adv.adv_len,
-        req->adpt.start_adv.scan_rsp_data, req->adpt.start_adv.scan_rsp_len);
+    ret = parse_bt_adv_data(req->adpt.start_adv.adv_data, req->adpt.start_adv.adv_len,
+        ad, ARRAY_SIZE(ad), &ad_size);
+    if (ret) {
+        BT_LOGE("%s, parse adv_data fail, err:%d", __func__, ret);
+        goto done;
+    }
+
+    ret = parse_bt_adv_data(req->adpt.start_adv.scan_rsp_data, req->adpt.start_adv.scan_rsp_len,
+        sd, ARRAY_SIZE(sd), &sd_size);
+    if (ret) {
+        BT_LOGE("%s, parse scan_rsp_data fail, ret:%d", __func__, ret);
+        goto done;
+    }
+
+    ret = bt_le_ext_adv_set_data(adv, ad_size > 0 ? ad : NULL, ad_size,
+        sd_size > 0 ? sd : NULL, sd_size);
     if (ret) {
         BT_LOGE("%s, le ext adv set fail, err:%d", __func__, ret);
         ret = BT_STATUS_FAIL;
