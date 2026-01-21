@@ -33,6 +33,8 @@ func frameworkBluetoothHook(ctx android.LoadHookContext) {
         p.Cflags = append(p.Cflags, "-DANDROID_12")
     } else if (Version == "14") {
         p.Cflags = append(p.Cflags, "-DANDROID_14")
+    } else if (Version == "15") {
+        p.Cflags = append(p.Cflags, "-DANDROID_15")
     }
 
     ctx.AppendProperties(p)
