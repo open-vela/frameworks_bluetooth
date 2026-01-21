@@ -150,7 +150,14 @@ static bt_hfp_ag_connection_t* new_sal_connection(struct bt_conn* conn, struct b
         BT_LOGE("%s, malloc failed", __func__);
         return NULL;
     }
-    bt_sal_get_remote_address(conn, &sal_conn->addr);
+
+    bt_status_t status = bt_sal_get_remote_address(conn, &sal_conn->addr);
+    if (status != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, failed to get remote address", __func__);
+        free(sal_conn);
+        return NULL;
+    }
+
     sal_conn->context = conn;
     sal_conn->ag = ag;
     sal_conn->calls = bt_list_new(free_call);
