@@ -33,8 +33,7 @@ typedef struct _bt_list_node {
 bt_list_t* bt_list_new(bt_list_free_cb_t cb)
 {
     bt_list_t* list = malloc(sizeof(bt_list_t));
-    if (!list)
-        return NULL;
+    assert(list);
 
     list->length = 0;
     list->free_cb = cb;
@@ -45,8 +44,7 @@ bt_list_t* bt_list_new(bt_list_free_cb_t cb)
 
 void bt_list_free(bt_list_t* list)
 {
-    if (!list)
-        return;
+    assert(list);
 
     bt_list_clear(list);
     list_delete(&list->list);
@@ -101,8 +99,7 @@ bt_list_node_t* bt_list_tail(bt_list_t* list)
 bt_list_node_t* bt_list_next(bt_list_t* list, bt_list_node_t* bt_node)
 {
     assert(list);
-    if (!bt_node)
-        return NULL;
+    assert(bt_node);
 
     return (bt_list_node_t*)list_next(&list->list, &bt_node->node);
 }
@@ -110,8 +107,6 @@ bt_list_node_t* bt_list_next(bt_list_t* list, bt_list_node_t* bt_node)
 void* bt_list_node(bt_list_node_t* bt_node)
 {
     assert(bt_node);
-    if (!bt_node)
-        return NULL;
 
     return bt_node->data;
 }
@@ -140,6 +135,9 @@ void bt_list_add_tail(bt_list_t* list, void* data)
 
 void bt_list_remove_node(bt_list_t* list, bt_list_node_t* node)
 {
+    assert(list);
+    assert(node);
+
     list_delete(&node->node);
     list->length--;
     if (list->free_cb)
