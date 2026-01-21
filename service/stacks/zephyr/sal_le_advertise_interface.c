@@ -176,6 +176,22 @@ static bt_status_t zblue_le_ext_convert_param(ble_adv_params_t* params, struct b
         return BT_STATUS_PARM_INVALID;
     }
 
+    switch (params->filter_policy) {
+    case BT_LE_ADV_FILTER_WHITE_LIST_FOR_SCAN:
+        param->options |= BT_LE_ADV_OPT_FILTER_SCAN_REQ;
+        break;
+    case BT_LE_ADV_FILTER_WHITE_LIST_FOR_CONNECTION:
+        param->options |= BT_LE_ADV_OPT_FILTER_CONN;
+        break;
+    case BT_LE_ADV_FILTER_WHITE_LIST_FOR_ALL:
+        param->options |= BT_LE_ADV_OPT_FILTER_SCAN_REQ;
+        param->options |= BT_LE_ADV_OPT_FILTER_CONN;
+        break;
+    case BT_LE_ADV_FILTER_WHITE_LIST_FOR_NONE:
+    default:
+        param->options |= BT_LE_ADV_OPT_NONE;
+    }
+
     param->interval_min = params->interval;
     param->interval_max = params->interval;
 
