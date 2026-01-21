@@ -346,13 +346,7 @@ static void STACK_CALL(start_adv)(void* args)
     struct bt_data sd[CONFIG_BT_EXT_ADV_MAX_ADV_SEGMENT] = { 0 };
     size_t ad_size = 0;
     size_t sd_size = 0;
-
-    ret = zblue_le_ext_create(&req->adpt.start_adv.param, &adv, req->adv_id);
-    if (ret) {
-        BT_LOGE("%s, zblue le ext adv create fail, err:%d", __func__, ret);
-        ret = BT_STATUS_FAIL;
-        goto done;
-    }
+    bool ext_supported = bt_le_ext_adv_is_supported();
 
     ret = parse_bt_adv_data(req->adpt.start_adv.adv_data, req->adpt.start_adv.adv_len,
         ad, ARRAY_SIZE(ad), &ad_size);
@@ -368,19 +362,36 @@ static void STACK_CALL(start_adv)(void* args)
         goto done;
     }
 
-    ret = bt_le_ext_adv_set_data(adv, ad_size > 0 ? ad : NULL, ad_size,
-        sd_size > 0 ? sd : NULL, sd_size);
-    if (ret) {
-        BT_LOGE("%s, le ext adv set fail, err:%d", __func__, ret);
-        ret = BT_STATUS_FAIL;
-        goto done;
-    }
+    if (ext_supported) {
+        ret = zblue_le_ext_create(&req->adpt.start_adv.param, &adv, req->adv_id);
+        if (ret) {
+            BT_LOGE("%s, zblue le ext adv create fail, err:%d", __func__, ret);
+            ret = BT_STATUS_FAIL;
+            goto done;
+        }
 
-    ret = bt_le_ext_adv_start(adv, &req->adpt.start_adv.ext_param);
-    if (ret) {
-        BT_LOGE("%s, le ext adv start fail, err:%d", __func__, ret);
-        ret = BT_STATUS_FAIL;
-        goto done;
+        ret = bt_le_ext_adv_set_data(adv, ad_size > 0 ? ad : NULL, ad_size,
+            sd_size > 0 ? sd : NULL, sd_size);
+        if (ret) {
+            BT_LOGE("%s, le ext adv set fail, err:%d", __func__, ret);
+            ret = BT_STATUS_FAIL;
+            goto done;
+        }
+
+        ret = bt_le_ext_adv_start(adv, &req->adpt.start_adv.ext_param);
+        if (ret) {
+            BT_LOGE("%s, le ext adv start fail, err:%d", __func__, ret);
+            ret = BT_STATUS_FAIL;
+            goto done;
+        }
+    } else {
+        ret = bt_le_adv_start(&req->adpt.start_adv.param, ad_size > 0 ? ad : NULL, ad_size,
+            sd_size > 0 ? sd : NULL, sd_size);
+        if (ret) {
+            BT_LOGE("%s, legacy adv start fail, err:%d", __func__, ret);
+            ret = BT_STATUS_FAIL;
+            goto done;
+        }
     }
 
     advertising_on_state_changed(req->adv_id, LE_ADVERTISING_STARTED);
@@ -398,6 +409,7 @@ bt_status_t bt_sal_le_start_adv(bt_controller_id_t id, uint8_t adv_id, ble_adv_p
     sal_adapter_req_t* req;
     int ret;
     bool ext_adv;
+    bool ext_supported;
 
     req = sal_adapter_req(id, adv_id, STACK_CALL(start_adv));
     if (!req) {
@@ -412,7 +424,14 @@ bt_status_t bt_sal_le_start_adv(bt_controller_id_t id, uint8_t adv_id, ble_adv_p
         goto error;
     }
 
+    ext_supported = bt_le_ext_adv_is_supported();
     ext_adv = (req->adpt.start_adv.param.options & BT_LE_ADV_OPT_EXT_ADV) ? true : false;
+
+    if (ext_adv && !ext_supported) {
+        BT_LOGE("%s, controller not support ext adv", __func__);
+        ret = BT_STATUS_UNSUPPORTED;
+        goto error;
+    }
 
     if ((!(req->adpt.start_adv.param.options & BT_LE_ADV_OPT_SCANNABLE) && ext_adv)
         || !ext_adv) {
@@ -466,6 +485,19 @@ static void STACK_CALL(stop_adv)(void* args)
     sal_adapter_req_t* req = args;
     struct bt_le_adv_set* adv_set;
     int ret;
+    bool ext_supported;
+
+    ext_supported = bt_le_ext_adv_is_supported();
+
+    if (!ext_supported) {
+        ret = bt_le_adv_stop();
+        if (ret) {
+            BT_LOGE("%s, legacy adv stop fail", __func__);
+            return;
+        } else {
+            goto stopped;
+        }
+    }
 
     adv_set = zblue_le_ext_find_adv(req->adv_id);
     if (!adv_set) {
@@ -485,6 +517,7 @@ static void STACK_CALL(stop_adv)(void* args)
         return;
     }
 
+stopped:
     advertising_on_state_changed(req->adv_id, LE_ADVERTISING_STOPPED);
 }
 
