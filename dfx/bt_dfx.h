@@ -17,7 +17,9 @@
 #ifndef _BT_DFX_H_
 #define _BT_DFX_H_
 
+#ifdef CONFIG_DFX
 #include <dfx.h>
+#endif
 
 #include "bt_dfx_event.h"
 #include "bt_dfx_reason.h"
