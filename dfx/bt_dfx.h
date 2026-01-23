@@ -17,9 +17,8 @@
 #ifndef _BT_DFX_H_
 #define _BT_DFX_H_
 
-#if defined(CONFIG_DFX) && defined(CONFIG_DFX_EVENT)
-#include <dfx_debug.h>
-#include <dfx_event.h>
+#ifdef CONFIG_DFX
+#include <dfx.h>
 #endif
 
 #include "bt_dfx_event.h"

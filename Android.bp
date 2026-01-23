@@ -49,6 +49,7 @@ frameworkBluetooth_cc_library {
         "service/profiles",
         "service/profiles/include",
         "service/src",
+        "dfx",
     ],
 
     static_libs : [
