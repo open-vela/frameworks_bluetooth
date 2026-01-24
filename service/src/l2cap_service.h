@@ -23,7 +23,7 @@
 typedef struct {
     uint16_t mtu;
     uint16_t le_mps;
-    uint16_t init_credits;
+    uint16_t credits;
 } l2cap_endpoint_param_t;
 
 typedef struct {
