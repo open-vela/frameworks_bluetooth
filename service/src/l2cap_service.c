@@ -91,6 +91,17 @@
  */
 #define L2CAP_MAX_RX_BUF_SIZE 10240
 
+/**
+ * \def L2CAP LE credits low watermark for triggering refill mechanism
+ *
+ * \note When incoming credits drop below this watermark, the credits refill
+ * mechanism will be triggered to replenish credits and maintain flow control.
+ *
+ * TODO: Optimize this watermark based on performance testing and memory constraints
+ * to balance between flow control responsiveness and system overhead.
+ */
+#define L2CAP_LE_CREDITS_LOW_WATERMARK 10
+
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -589,8 +600,40 @@ static void l2cap_abort_channel(l2cap_channel_t* channel)
     }
 }
 
+static void l2cap_add_incoming_credits(l2cap_channel_t* channel)
+{
+}
+
 static void l2cap_send_sdu_to_app_cb(euv_pipe_t* handle, uint8_t* buf, int status)
 {
+    l2cap_channel_t* channel;
+    l2cap_pkt_t* sdu;
+
+    channel = find_l2cap_channel_by_pipe(handle);
+    if (!channel) {
+        BT_LOGE("%s, find null by pipe %p", __func__, handle);
+        return;
+    }
+
+    if (status != 0) {
+        BT_LOGE("%s, L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") write failed with status %d", __func__, channel->id, channel->local_cid, status);
+        l2cap_abort_channel(channel); /* release SDU when free l2cap channel */
+        return;
+    }
+
+    sdu = (l2cap_pkt_t*)list_remove_head(&channel->rx_list);
+    if (!sdu) {
+        BT_LOGE("%s, L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") rx_list is empty!", __func__, channel->id, channel->local_cid);
+        return;
+    }
+
+    assert(buf == sdu->data);
+    channel->rx_buf_size += sdu->len_total;
+    free(sdu);
+
+    if (channel->incoming.credits < L2CAP_LE_CREDITS_LOW_WATERMARK) {
+        l2cap_add_incoming_credits(channel);
+    }
 }
 
 static void l2cap_send_sdu_to_app(l2cap_channel_t* channel)
@@ -766,6 +809,14 @@ static void handle_packet_received(bt_address_t* addr, uint16_t cid, l2cap_pkt_t
         return;
     }
 
+    if (channel->incoming.credits == 0) {
+        BT_LOGE("%s, L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") has no incoming credits",
+            __func__, channel->id, channel->local_cid, packet->len_received);
+        free(packet);
+        l2cap_abort_channel(channel);
+        return;
+    }
+
     if (!channel->proxy_connected || !channel->pipe) {
         BT_LOGE("%s, L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") data path is not prepared, lost %" PRIu16 " bytes data",
             __func__, channel->id, channel->local_cid, packet->len_received);
@@ -775,6 +826,10 @@ static void handle_packet_received(bt_address_t* addr, uint16_t cid, l2cap_pkt_t
 
     --channel->incoming.credits; /* TODO: different transport and mode may need different handling*/
     channel->rx_buf_size -= packet->len_received;
+    if (channel->incoming.credits < L2CAP_LE_CREDITS_LOW_WATERMARK) {
+        l2cap_add_incoming_credits(channel);
+    }
+
     if (!channel->rx_sdu) {
         /* first segment */
         if (packet->len_received == packet->len_total) {
