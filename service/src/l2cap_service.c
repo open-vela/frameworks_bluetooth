@@ -119,6 +119,8 @@ typedef struct {
     char proxy_name[16];
     bool proxy_connected;
     remote_callback_t* app_handle;
+    /* sdu receive */
+    l2cap_pkt_t* rx_sdu;
 } l2cap_channel_t;
 
 typedef struct {
@@ -690,6 +692,58 @@ static void handle_packet_received(bt_address_t* addr, uint16_t cid, l2cap_pkt_t
     l2cap_channel_t* channel;
 
     channel = find_l2cap_channel_by_cid(cid);
+    if (!channel) {
+        BT_LOGE("%s, find L2CAP channel null, local cid: 0x%" PRIx16 ", lost %" PRIu16 " bytes data", __func__, cid, packet->len_received);
+        free(packet);
+        return;
+    }
+
+    if (packet->len_total > channel->incoming.mtu) {
+        BT_LOGE("%s, L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") received sdu length %" PRIu16 " is larger than mtu %" PRIu16,
+            __func__, channel->id, channel->local_cid, packet->len_total, channel->incoming.mtu);
+        free(packet);
+        return;
+    }
+
+    if (!channel->proxy_connected || !channel->pipe) {
+        BT_LOGE("%s, L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") data path is not prepared, lost %" PRIu16 " bytes data",
+            __func__, channel->id, channel->local_cid, packet->len_received);
+        free(packet);
+        return;
+    }
+
+    --channel->incoming.credits; /* TODO: different transport and mode may need different handling*/
+    if (!channel->rx_sdu) {
+        /* first segment */
+        if (packet->len_received == packet->len_total) {
+            /* single segment, send directly */
+            channel->rx_sdu = packet;
+            l2cap_send_sdu_to_app(channel);
+            return;
+        }
+
+        /* multi-segment, start reassembly */
+        channel->rx_sdu = packet;
+    } else {
+        /* append segment */
+        if (channel->rx_sdu->len_received + packet->len_received > channel->rx_sdu->len_total) {
+            BT_LOGE("%s, L2CAP channel (id:%" PRIu16 "/cid:0x%" PRIx16 ") append data overflow",
+                __func__, channel->id, channel->local_cid);
+            free(channel->rx_sdu);
+            channel->rx_sdu = NULL;
+            free(packet);
+            return;
+        }
+
+        memcpy(channel->rx_sdu->data + channel->rx_sdu->len_received, packet->data, packet->len_received);
+        channel->rx_sdu->len_received += packet->len_received;
+        free(packet);
+
+        if (channel->rx_sdu->len_received == channel->rx_sdu->len_total) {
+            /* reassembly complete */
+            l2cap_send_sdu_to_app(channel);
+        }
+    }
 }
 
 static void handle_packet_sent(bt_address_t* addr, uint16_t cid)
