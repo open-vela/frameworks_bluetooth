@@ -576,6 +576,19 @@ static bool prepare_data_path(l2cap_channel_t* channel)
     return true;
 }
 
+static void l2cap_abort_channel(l2cap_channel_t* channel)
+{
+    if (channel->pipe) {
+        euv_pipe_close(channel->pipe);
+        channel->proxy_connected = false;
+        channel->pipe = NULL;
+    }
+
+    if (channel->local_cid) {
+        bt_sal_l2cap_disconnect_channel(channel->local_cid);
+    }
+}
+
 static void l2cap_send_sdu_to_app_cb(euv_pipe_t* handle, uint8_t* buf, int status)
 {
 }
@@ -591,6 +604,7 @@ static void l2cap_send_sdu_to_app(l2cap_channel_t* channel)
         BT_LOGE("%s, L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") write %" PRIu16 " bytes to app failed!",
             __func__, channel->id, channel->local_cid, sdu->len_total);
         free(sdu);
+        l2cap_abort_channel(channel);
     } else {
         list_add_tail(&channel->rx_list, &sdu->node);
     }
@@ -628,14 +642,15 @@ static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* p
     channel = find_l2cap_channel_by_conn_param(addr, param->psm, role, false);
     if (!channel) {
         BT_LOGE("%s, find L2CAP channel null, local cid: 0x%" PRIx16, __func__, param->local_cid);
-        bt_sal_l2cap_disconnect_channel(param->local_cid);
-
+        if (param->local_cid) {
+            bt_sal_l2cap_disconnect_channel(param->local_cid);
+        }
         return;
     }
 
     if (!channel->proxy_connected) {
         BT_LOGE("L2CAP channel(id:%" PRIu16 "/cid:0x %" PRIx16 ") data path is not prepared", channel->id, channel->local_cid);
-        bt_sal_l2cap_disconnect_channel(channel->local_cid);
+        l2cap_abort_channel(channel);
         return;
     }
 
@@ -673,14 +688,14 @@ static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* p
     ret = euv_pipe_read_stop(channel->pipe);
     if (ret != 0) {
         BT_LOGE("L2CAP channel(id: %" PRIu16 "/cid: 0x%" PRIx16 ") read stop failed!", channel->id, channel->local_cid);
-        bt_sal_l2cap_disconnect_channel(channel->local_cid);
+        l2cap_abort_channel(channel);
         return;
     }
 
     ret = euv_pipe_read_start(channel->pipe, channel->tx_mtu, l2cap_receive_data_from_app, NULL);
     if (ret != 0) {
         BT_LOGE("L2CAP channel(id: %" PRIu16 "/cid: 0x%" PRIx16 ") read start failed!", channel->id, channel->local_cid);
-        bt_sal_l2cap_disconnect_channel(channel->local_cid);
+        l2cap_abort_channel(channel);
         return;
     }
 
@@ -747,6 +762,7 @@ static void handle_packet_received(bt_address_t* addr, uint16_t cid, l2cap_pkt_t
         BT_LOGE("%s, L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") received sdu length %" PRIu16 " is larger than mtu %" PRIu16,
             __func__, channel->id, channel->local_cid, packet->len_total, channel->incoming.mtu);
         free(packet);
+        l2cap_abort_channel(channel);
         return;
     }
 
@@ -778,6 +794,7 @@ static void handle_packet_received(bt_address_t* addr, uint16_t cid, l2cap_pkt_t
             free(channel->rx_sdu);
             channel->rx_sdu = NULL;
             free(packet);
+            l2cap_abort_channel(channel);
             return;
         }
 
