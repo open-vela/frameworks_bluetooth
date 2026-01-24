@@ -458,6 +458,10 @@ static void free_l2cap_channel(void* context)
         free_le_dynamic_psm(psm);
     }
 
+    if (channel->rx_sdu) {
+        free(channel->rx_sdu);
+    }
+
     list_for_every_safe(&channel->rx_list, node, next)
     {
         list_delete(node);
