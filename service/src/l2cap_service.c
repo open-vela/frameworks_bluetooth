@@ -602,6 +602,21 @@ static void l2cap_abort_channel(l2cap_channel_t* channel)
 
 static void l2cap_add_incoming_credits(l2cap_channel_t* channel)
 {
+    uint16_t remote_credits;
+    uint16_t additional_credits;
+
+    remote_credits = channel->rx_buf_size / channel->incoming.le_mps;
+    if (remote_credits <= channel->incoming.credits) {
+        return;
+    }
+
+    additional_credits = remote_credits - channel->incoming.credits;
+    if (bt_sal_l2cap_give_incoming_credits(&channel->addr, channel->local_cid, additional_credits) != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, give incoming credits failed", __func__);
+        return;
+    }
+
+    channel->incoming.credits = remote_credits;
 }
 
 static void l2cap_send_sdu_to_app_cb(euv_pipe_t* handle, uint8_t* buf, int status)
@@ -743,8 +758,8 @@ static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* p
     }
 
     BT_LOGI("L2CAP channel(id: %" PRIu16 "/cid: 0x%" PRIx16 ") connected", channel->id, channel->local_cid);
-    BT_LOGD("L2CAP channel(id: %" PRIu16 "/cid: 0x%" PRIx16 ") Tx mtu: %" PRIu16 ", Tx quota: %" PRIu16,
-        channel->id, channel->local_cid, channel->tx_mtu, channel->tx_quota);
+    BT_LOGD("L2CAP channel(id: %" PRIu16 "/cid: 0x%" PRIx16 ") Tx mtu: %" PRIu16 ", Tx quota: %" PRIu16 ", Rx buf size: %" PRIu16,
+        channel->id, channel->local_cid, channel->tx_mtu, channel->tx_quota, channel->rx_buf_size);
     channel->channel_connected = true;
 
     // notify app
