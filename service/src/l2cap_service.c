@@ -79,6 +79,13 @@
  */
 #define L2CAP_TX_QUOTA 16
 
+/**
+ * \def L2CAP dynamic CID minimum value per Bluetooth Core Spec
+ *
+ * \note CID 0x0001-0x003F are reserved for fixed channels
+ */
+#define L2CAP_CID_DYNAMIC_MIN 0x0040
+
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -87,6 +94,13 @@ typedef enum {
     L2CAP_CHANNEL_ROLE_SERVER_ACCEPT,
     L2CAP_CHANNEL_ROLE_CLIENT,
 } l2cap_channel_role_t;
+
+typedef struct {
+    struct list_node node;
+    uint16_t len_total; /* SDU total length */
+    uint16_t len_received; /* current length received */
+    uint8_t data[]; /* flexible array for SDU */
+} l2cap_pkt_t;
 
 typedef struct {
     bt_address_t addr;
@@ -121,7 +135,7 @@ typedef struct {
         CID_ALLOCATED_EVT,
         CHANNEL_CONNECTED_EVT,
         CHANNEL_DISCONNECTED_EVT,
-        PACKET_RECEVIED_EVT,
+        PACKET_RECEIVED_EVT,
         PACKET_SENT_EVT,
     } event;
 
@@ -152,13 +166,12 @@ typedef struct {
         } channel_disconnected;
 
         /**
-         * @brief PACKET_RECEVIED_EVT
+         * @brief PACKET_RECEIVED_EVT
          */
         struct packet_received_evt_param {
             bt_address_t addr;
             uint16_t cid;
-            uint16_t size;
-            uint8_t* data;
+            l2cap_pkt_t* packet;
         } packet_received;
 
         /**
@@ -545,11 +558,6 @@ static bool prepare_data_path(l2cap_channel_t* channel)
     return true;
 }
 
-static void euv_write_complete(euv_pipe_t* handle, uint8_t* buf, int status)
-{
-    free(buf);
-}
-
 static void handle_cid_allocated(bt_address_t* addr, uint16_t psm, uint16_t cid)
 {
     l2cap_channel_t* channel;
@@ -677,21 +685,11 @@ static void handle_channel_disconneted(bt_address_t* addr, uint16_t cid, uint32_
     bt_list_remove(g_l2cap_manager.channel_list, (void*)channel);
 }
 
-static void handle_packet_received(bt_address_t* addr, uint16_t cid, uint8_t* packet_data, uint16_t packet_size)
+static void handle_packet_received(bt_address_t* addr, uint16_t cid, l2cap_pkt_t* packet)
 {
     l2cap_channel_t* channel;
 
     channel = find_l2cap_channel_by_cid(cid);
-    if (channel && channel->pipe) {
-        int ret = euv_pipe_write(channel->pipe, packet_data, packet_size, euv_write_complete);
-        if (ret != 0) {
-            BT_LOGE("L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") write failed!", channel->id, channel->local_cid);
-            euv_pipe_close(channel->pipe);
-            channel->proxy_connected = false;
-            channel->pipe = NULL;
-            bt_sal_l2cap_disconnect_channel(channel->local_cid);
-        }
-    }
 }
 
 static void handle_packet_sent(bt_address_t* addr, uint16_t cid)
@@ -734,11 +732,10 @@ static void handle_l2cap_event(void* data)
             msg->channel_disconnected.cid,
             msg->channel_disconnected.reason);
         break;
-    case PACKET_RECEVIED_EVT:
+    case PACKET_RECEIVED_EVT:
         handle_packet_received(&msg->packet_received.addr,
             msg->packet_received.cid,
-            msg->packet_received.data,
-            msg->packet_received.size);
+            msg->packet_received.packet);
         break;
     case PACKET_SENT_EVT:
         handle_packet_sent(&msg->packet_sent.addr,
@@ -804,17 +801,18 @@ void l2cap_on_packet_received(bt_address_t* addr, uint16_t cid, uint8_t* packet_
         return;
     }
 
-    msg->packet_received.data = malloc(packet_size);
-    if (!msg->packet_received.data) {
+    msg->packet_received.packet = malloc(sizeof(l2cap_pkt_t) + packet_size);
+    if (!msg->packet_received.packet) {
         free(msg);
         return;
     }
 
-    msg->event = PACKET_RECEVIED_EVT;
+    msg->event = PACKET_RECEIVED_EVT;
     memcpy(&msg->packet_received.addr, addr, sizeof(msg->packet_received.addr));
     msg->packet_received.cid = cid;
-    msg->packet_received.size = packet_size;
-    memcpy(msg->packet_received.data, packet_data, packet_size);
+    msg->packet_received.packet->len_total = packet_size;
+    msg->packet_received.packet->len_received = packet_size;
+    memcpy(msg->packet_received.packet->data, packet_data, packet_size);
     do_in_service_loop(handle_l2cap_event, msg);
 }
 
@@ -829,6 +827,61 @@ void l2cap_on_packet_sent(bt_address_t* addr, uint16_t cid)
     memcpy(&msg->packet_sent.addr, addr, sizeof(msg->packet_sent.addr));
     msg->packet_sent.cid = cid;
     do_in_service_loop(handle_l2cap_event, msg);
+}
+
+bool l2cap_on_segment_received(bt_address_t* addr, uint16_t cid, uint8_t* seg, uint16_t seg_len, uint16_t sdu_len, uint16_t seg_off)
+{
+    uint16_t data_len;
+    l2cap_msg_t* msg;
+    char addr_str[BT_ADDR_STR_LENGTH];
+
+    if (!addr) {
+        BT_LOGE("%s, addr is NULL, cid: 0x%" PRIx16, __func__, cid);
+        return false;
+    }
+
+    if (!seg || seg_len == 0) {
+        bt_addr_ba2str(addr, addr_str);
+        BT_LOGE("%s, invalid seg (seg: %p, len: %" PRIu16 "), addr: %s, cid: 0x%" PRIx16,
+            __func__, seg, seg_len, addr_str, cid);
+        return false;
+    }
+
+    if (cid < L2CAP_CID_DYNAMIC_MIN) {
+        bt_addr_ba2str(addr, addr_str);
+        BT_LOGE("%s, invalid cid: 0x%" PRIx16 ", addr: %s", __func__, cid, addr_str);
+        return false;
+    }
+
+    if (sdu_len > 0 && seg_len > sdu_len) {
+        bt_addr_ba2str(addr, addr_str);
+        BT_LOGE("%s, seg_len (%" PRIu16 ") > sdu_len (%" PRIu16 "), addr: %s, cid: 0x%" PRIx16,
+            __func__, seg_len, sdu_len, addr_str, cid);
+        return false;
+    }
+
+    msg = malloc(sizeof(l2cap_msg_t));
+    if (!msg) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return false;
+    }
+
+    data_len = seg_off ? seg_len : sdu_len; // first segment malloc sdu_len, otherwise seg_len
+    msg->packet_received.packet = malloc(sizeof(l2cap_pkt_t) + data_len);
+    if (!msg->packet_received.packet) {
+        BT_LOGE("%s, malloc packet failed", __func__);
+        free(msg);
+        return false;
+    }
+
+    msg->event = PACKET_RECEIVED_EVT;
+    memcpy(&msg->packet_received.addr, addr, sizeof(msg->packet_received.addr));
+    msg->packet_received.cid = cid;
+    msg->packet_received.packet->len_total = sdu_len;
+    msg->packet_received.packet->len_received = seg_len;
+    memcpy(msg->packet_received.packet->data, seg, seg_len);
+    do_in_service_loop(handle_l2cap_event, msg);
+    return true;
 }
 
 void* l2cap_register_callbacks(void* remote, const l2cap_callbacks_t* callbacks)
