@@ -86,6 +86,11 @@
  */
 #define L2CAP_CID_DYNAMIC_MIN 0x0040
 
+/**
+ * \def L2CAP maximum receive buffer size per channel
+ */
+#define L2CAP_MAX_RX_BUF_SIZE 10240
+
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -121,6 +126,8 @@ typedef struct {
     remote_callback_t* app_handle;
     /* sdu receive */
     l2cap_pkt_t* rx_sdu;
+    struct list_node rx_list;
+    uint16_t rx_buf_size;
 } l2cap_channel_t;
 
 typedef struct {
@@ -261,6 +268,7 @@ static l2cap_channel_t* alloc_free_channel(void* handle, bt_address_t* addr, uin
     channel->role = role;
     channel->channel_connected = false;
     channel->proxy_connected = false;
+    list_initialize(&channel->rx_list);
 
     bt_list_add_tail(g_l2cap_manager.channel_list, (void*)channel);
 
@@ -418,6 +426,8 @@ static void free_l2cap_channel(void* context)
 {
     uint16_t psm;
     l2cap_channel_t* channel = (l2cap_channel_t*)context;
+    struct list_node* node;
+    struct list_node* next;
 
     BT_LOGD("%s, channel id: %" PRIu16, __func__, channel->id);
     if (!channel) {
@@ -435,6 +445,12 @@ static void free_l2cap_channel(void* context)
         channel->psm = 0; // remove this channel's psm
         BT_LOGD("%s, try to free le dynamic psm 0x%" PRIx16, __func__, psm);
         free_le_dynamic_psm(psm);
+    }
+
+    list_for_every_safe(&channel->rx_list, node, next)
+    {
+        list_delete(node);
+        free(list_entry(node, l2cap_pkt_t, node));
     }
 
     free(channel);
@@ -560,6 +576,26 @@ static bool prepare_data_path(l2cap_channel_t* channel)
     return true;
 }
 
+static void l2cap_send_sdu_to_app_cb(euv_pipe_t* handle, uint8_t* buf, int status)
+{
+}
+
+static void l2cap_send_sdu_to_app(l2cap_channel_t* channel)
+{
+    int ret;
+    l2cap_pkt_t* sdu = channel->rx_sdu;
+
+    channel->rx_sdu = NULL;
+    ret = euv_pipe_write(channel->pipe, sdu->data, sdu->len_total, l2cap_send_sdu_to_app_cb);
+    if (ret != 0) {
+        BT_LOGE("%s, L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") write %" PRIu16 " bytes to app failed!",
+            __func__, channel->id, channel->local_cid, sdu->len_total);
+        free(sdu);
+    } else {
+        list_add_tail(&channel->rx_list, &sdu->node);
+    }
+}
+
 static void handle_cid_allocated(bt_address_t* addr, uint16_t psm, uint16_t cid)
 {
     l2cap_channel_t* channel;
@@ -577,6 +613,7 @@ static void handle_cid_allocated(bt_address_t* addr, uint16_t psm, uint16_t cid)
 static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* param)
 {
     int ret;
+    uint32_t rx_buf_size;
     l2cap_channel_t* channel;
     l2cap_channel_t* new_listen_channel = NULL;
     l2cap_connect_params_t conn_param = { .listen_id = INVALID_L2CAP_LISTEN_ID };
@@ -623,6 +660,14 @@ static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* p
     memcpy(&channel->outgoing, &param->outgoing, sizeof(channel->outgoing));
     channel->tx_mtu = MIN(param->outgoing.mtu, CONFIG_BLUETOOTH_L2CAP_OUTGOING_MTU);
     channel->tx_quota = L2CAP_TX_QUOTA; // TODO: need to adjust quota according to mtu and memory
+    rx_buf_size = (uint32_t)channel->incoming.credits * channel->incoming.le_mps;
+    if (rx_buf_size > L2CAP_MAX_RX_BUF_SIZE) {
+        BT_LOGW("%s, L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") rx_buf_size %" PRIu32 " exceeds max, clamping to %d",
+            __func__, channel->id, channel->local_cid, rx_buf_size, L2CAP_MAX_RX_BUF_SIZE);
+        channel->rx_buf_size = L2CAP_MAX_RX_BUF_SIZE;
+    } else {
+        channel->rx_buf_size = (uint16_t)rx_buf_size;
+    }
 
     // restart read pipe to adjust mtu
     ret = euv_pipe_read_stop(channel->pipe);
@@ -713,6 +758,7 @@ static void handle_packet_received(bt_address_t* addr, uint16_t cid, l2cap_pkt_t
     }
 
     --channel->incoming.credits; /* TODO: different transport and mode may need different handling*/
+    channel->rx_buf_size -= packet->len_received;
     if (!channel->rx_sdu) {
         /* first segment */
         if (packet->len_received == packet->len_total) {
