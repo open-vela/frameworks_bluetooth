@@ -716,7 +716,7 @@ static void feature_on_mtu_updated(void* conn_handle, gatt_status_t status, uint
         client->conn, status, mtu);
 }
 
-static gattc_callbacks_t s_feature_gattc_cbs = {
+static const gattc_callbacks_t s_feature_gattc_cbs = {
     sizeof(s_feature_gattc_cbs),
     feature_on_connected,
     feature_on_disconnected,
@@ -806,7 +806,7 @@ bt_status_t bt_gattc_feature_create_client_async(bt_instance_t* ins, bt_address_
     bt_list_add_tail(g_gatt_client_list, client);
 
     status = bt_gattc_create_connect_async(
-        ins, &client->conn, &s_feature_gattc_cbs, create_client_cb, client);
+        ins, &client->conn, (gattc_callbacks_t*)&s_feature_gattc_cbs, create_client_cb, client);
 
     if (status != BT_STATUS_SUCCESS) {
         bt_list_remove(g_gatt_client_list, client);
