@@ -1271,7 +1271,7 @@ static int spp_dump(void)
     return 0;
 }
 
-static spp_interface_t sppInterface = {
+static const spp_interface_t sppInterface = {
     .size = sizeof(sppInterface),
     .register_app = spp_register_app,
     .unregister_app = spp_unregister_app,
