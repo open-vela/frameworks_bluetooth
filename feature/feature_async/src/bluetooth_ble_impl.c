@@ -299,7 +299,7 @@ static void on_advertising_stopped_cb(bt_advertiser_t* adv, uint8_t adv_id)
     adv_info->busy = false;
 }
 
-static advertiser_callback_t adv_callback = {
+static const advertiser_callback_t adv_callback = {
     sizeof(adv_callback),
     on_advertising_start_cb,
     on_advertising_stopped_cb
@@ -595,7 +595,7 @@ void system_bluetooth_ble_Advertiser_interface_adv_startAdvertising(FeatureInter
     adv_info->start_userdata = (void*)data;
 
     status = bt_le_start_advertising_async(adv_info->ins, &adv_params,
-        p_adv_data, adv_len, p_scan_rsp_data, scan_rsp_len, &adv_callback,
+        p_adv_data, adv_len, p_scan_rsp_data, scan_rsp_len, (advertiser_callback_t *)&adv_callback,
         start_adv_cb, (void*)data);
 
     if (status != BT_STATUS_SUCCESS) {
@@ -1563,7 +1563,7 @@ static void mtu_updated_callback(gattc_handle_t conn_handle, gatt_status_t statu
     bt_list_remove(gattc_info->userdata_list, data);
 }
 
-static bt_gattc_feature_callbacks_t gattc_cbs = {
+static const bt_gattc_feature_callbacks_t gattc_cbs = {
     sizeof(gattc_cbs),
     .on_connected = connect_callback,
     .on_disconnected = disconnect_callback,
@@ -1761,7 +1761,7 @@ void system_bluetooth_ble_GattClient_interface_gattc_connect(FeatureInterfaceHan
             gattc_info->gattc->addr_type, gattc_connect_cb, (void*)data);
     } else {
         status = bt_gattc_feature_create_client_async(gattc_info->ins, &gattc_info->gattc->remote_address, gattc_create_cb,
-            &gattc_cbs, (void*)data);
+            (bt_gattc_feature_callbacks_t *)&gattc_cbs, (void*)data);
     }
 
     if (status != BT_STATUS_SUCCESS) {
