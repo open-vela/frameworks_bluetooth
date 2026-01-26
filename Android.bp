@@ -78,7 +78,7 @@ frameworkBluetooth_cc_library {
     ],
 
     header_libs: [
-        "kernel_modules_headers",
+        "kernel_modules_headers_apex",
     ],
 }
 
