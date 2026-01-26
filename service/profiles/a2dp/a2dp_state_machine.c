@@ -175,22 +175,22 @@ static const state_t closing_state = {
 #if A2DP_STM_DEBUG
 static char* stack_event_to_string(a2dp_event_type_t event);
 
-#define A2DP_TRANS_DBG(_sm, _addr, _action)                                                     \
-    do {                                                                                        \
-        char __addr_str[BT_ADDR_STR_LENGTH] = { 0 };                                            \
-        bt_addr_ba2str(_addr, __addr_str);                                                      \
-        BT_LOGD("%s State=%s, Peer=[%s]", _action, hsm_get_current_state_name(sm), __addr_str); \
+#define A2DP_TRANS_DBG(_sm, _addr, _action)                                                      \
+    do {                                                                                         \
+        char __addr_str[BT_ADDR_STR_LENGTH] = { 0 };                                             \
+        bt_addr_ba2str(_addr, __addr_str);                                                       \
+        BT_LOGD("%s State=%s, Peer=[%s]", _action, hsm_get_current_state_name(_sm), __addr_str); \
     } while (0);
 
 #define A2DP_DBG_ENTER(__sm, __addr) A2DP_TRANS_DBG(__sm, __addr, "Enter")
 #define A2DP_DBG_EXIT(__sm, __addr) A2DP_TRANS_DBG(__sm, __addr, "Exit ")
-#define A2DP_DBG_EVENT(__sm, __addr, __event)                                                      \
-    do {                                                                                           \
-        char __addr_str[BT_ADDR_STR_LENGTH] = { 0 };                                               \
-        bt_addr_ba2str(__addr, __addr_str);                                                        \
-        if (__event != DATA_IND_EVT)                                                               \
-            BT_LOGD("ProcessEvent, State=%s, Peer=[%s], Event=%s", hsm_get_current_state_name(sm), \
-                __addr_str, stack_event_to_string(event));                                         \
+#define A2DP_DBG_EVENT(__sm, __addr, __event)                                                        \
+    do {                                                                                             \
+        char __addr_str[BT_ADDR_STR_LENGTH] = { 0 };                                                 \
+        bt_addr_ba2str(__addr, __addr_str);                                                          \
+        if (__event != DATA_IND_EVT)                                                                 \
+            BT_LOGD("ProcessEvent, State=%s, Peer=[%s], Event=%s", hsm_get_current_state_name(__sm), \
+                __addr_str, stack_event_to_string(__event));                                         \
     } while (0);
 #else
 #define A2DP_DBG_ENTER(__sm, __addr)

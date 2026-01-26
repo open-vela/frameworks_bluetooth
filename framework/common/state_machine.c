@@ -63,8 +63,8 @@ const state_t* hsm_get_previous_state(state_machine_t* sm)
 
 const char* hsm_get_current_state_name(state_machine_t* sm)
 {
-    if (!sm) {
-        return NULL;
+    if (!sm || !sm->current_state) {
+        return HSM_NONE_STR;
     }
 
     return sm->current_state->state_name;
@@ -73,7 +73,7 @@ const char* hsm_get_current_state_name(state_machine_t* sm)
 const char* hsm_get_state_name(const state_t* state)
 {
     if (!state) {
-        return NULL;
+        return HSM_NONE_STR;
     }
 
     return state->state_name;

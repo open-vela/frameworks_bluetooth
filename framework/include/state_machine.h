@@ -24,6 +24,9 @@ extern "C" {
 #include <stdint.h>
 #include <stdlib.h>
 
+/* Default string returned when state name is NULL */
+#define HSM_NONE_STR "None"
+
 typedef struct _state_machine state_machine_t;
 
 typedef struct _state {
