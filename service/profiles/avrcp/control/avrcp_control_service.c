@@ -212,6 +212,7 @@ static void bt_avrcp_absolute_volume_changed_notification(void* context, int vol
     bt_status_t status;
     avrcp_ct_device_t* device = (avrcp_ct_device_t*)context;
 
+    BT_LOGD("%s, media volume:%d", __func__, volume);
     uv_mutex_lock(&device->lock);
     if (device->set_abs_vol_cnt) {
         device->set_abs_vol_cnt--;
