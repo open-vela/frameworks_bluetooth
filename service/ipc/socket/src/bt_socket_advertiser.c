@@ -82,7 +82,7 @@ static void on_advertising_stopped_cb(bt_advertiser_t* adv, uint8_t adv_id)
     free(adv);
 }
 
-static advertiser_callback_t g_advertiser_socket_cb = {
+static const advertiser_callback_t g_advertiser_socket_cb = {
     sizeof(g_advertiser_socket_cb),
     on_advertising_start_cb,
     on_advertising_stopped_cb,
@@ -106,7 +106,7 @@ void bt_socket_server_advertiser_process(service_poll_t* poll,
             packet->adv_pl._bt_le_start_advertising.adv_len,
             packet->adv_pl._bt_le_start_advertising.scan_rsp_data,
             packet->adv_pl._bt_le_start_advertising.scan_rsp_len,
-            &g_advertiser_socket_cb);
+            (advertiser_callback_t*)&g_advertiser_socket_cb);
 
         if (!packet->adv_r.remote)
             free(adver);
