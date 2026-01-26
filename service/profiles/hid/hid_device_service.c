@@ -546,7 +546,7 @@ exit:
     return status;
 }
 
-static hid_device_interface_t deviceInterface = {
+static const hid_device_interface_t deviceInterface = {
     .size = sizeof(deviceInterface),
     .register_callbacks = hid_device_register_callbacks,
     .unregister_callbacks = hid_device_unregister_callbacks,
