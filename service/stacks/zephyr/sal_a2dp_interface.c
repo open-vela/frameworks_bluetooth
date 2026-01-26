@@ -139,7 +139,7 @@ NET_BUF_POOL_DEFINE(bt_a2dp_tx_pool, CONFIG_BT_MAX_CONN, CONFIG_ZBLUE_A2DP_SOURC
     CONFIG_BT_CONN_TX_USER_DATA_SIZE, NULL);
 
 /* codec information elements for the endpoint */
-static struct bt_a2dp_codec_ie sbc_src_ie = {
+static const struct bt_a2dp_codec_ie sbc_src_ie = {
     .len = 4, /* BT_A2DP_SBC_IE_LENGTH */
     .codec_ie = {
         0x2B, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
@@ -1112,7 +1112,7 @@ static void zblue_on_stream_recv(struct bt_a2dp_stream* stream,
 }
 #endif /* CONFIG_BLUETOOTH_A2DP_SINK */
 
-static struct bt_a2dp_stream_ops stream_ops = {
+static const struct bt_a2dp_stream_ops stream_ops = {
     .configured = zblue_on_stream_configured,
     .established = zblue_on_stream_established,
     .released = zblue_on_stream_released,
@@ -1180,7 +1180,7 @@ static uint8_t bt_a2dp_discover_endpoint_cb(struct bt_a2dp* a2dp,
     }
 
     a2dp_info->stream = (struct bt_a2dp_stream*)calloc(1, sizeof(struct bt_a2dp_stream));
-    bt_a2dp_stream_cb_register(a2dp_info->stream, &stream_ops);
+    bt_a2dp_stream_cb_register(a2dp_info->stream, (struct bt_a2dp_stream_ops *)&stream_ops);
 
     if (a2dp_info->role == SEP_SRC) {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
@@ -1486,7 +1486,7 @@ static int zblue_on_config_req(struct bt_a2dp* a2dp, struct bt_a2dp_ep* ep,
 
     a2dp_info->stream = (struct bt_a2dp_stream*)calloc(1, sizeof(struct bt_a2dp_stream));
     *stream = a2dp_info->stream; /* The a2dp_stream saved in SAL is assigned a value in zblue. */
-    bt_a2dp_stream_cb_register(a2dp_info->stream, &stream_ops);
+    bt_a2dp_stream_cb_register(a2dp_info->stream, (struct bt_a2dp_stream_ops *)&stream_ops);
     *rsp_err_code = BT_AVDTP_SUCCESS;
     return 0;
 }
@@ -1572,7 +1572,7 @@ static void zblue_on_suspend_rsp(struct bt_a2dp_stream* stream, uint8_t rsp_err_
         BT_LOGE("%s, suspend fail: %d", __func__, rsp_err_code);
 }
 
-static struct bt_a2dp_cb a2dp_cbks = {
+static const struct bt_a2dp_cb a2dp_cbks = {
     .connected = zblue_on_connected,
     .disconnected = zblue_on_disconnected,
     .config_req = zblue_on_config_req,
@@ -1621,7 +1621,7 @@ bt_status_t bt_sal_a2dp_source_init(uint8_t max_connections)
     }
 #endif /* CONFIG_BLUETOOTH_A2DP_AAC_CODEC */
 
-    SAL_CHECK_RET(bt_a2dp_register_cb(&a2dp_cbks), 0);
+    SAL_CHECK_RET(bt_a2dp_register_cb((struct bt_a2dp_cb *)&a2dp_cbks), 0);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -1661,7 +1661,7 @@ bt_status_t bt_sal_a2dp_sink_init(uint8_t max_connections)
     }
 #endif /* CONFIG_BLUETOOTH_A2DP_AAC_CODEC */
 
-    SAL_CHECK_RET(bt_a2dp_register_cb(&a2dp_cbks), 0);
+    SAL_CHECK_RET(bt_a2dp_register_cb((struct bt_a2dp_cb *)&a2dp_cbks), 0);
 
     return BT_STATUS_SUCCESS;
 #else
