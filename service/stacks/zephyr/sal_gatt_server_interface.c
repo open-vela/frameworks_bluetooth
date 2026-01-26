@@ -726,7 +726,8 @@ static struct bt_gatt_service* get_primary_service_from_element(gatt_element_t* 
 
 static void remove_service(gatt_element_t* element)
 {
-    size_t i, count, index;
+    size_t i, count;
+    size_t attr_index, svc_index;
     struct bt_gatt_attr* start;
     struct bt_gatt_service* svc = get_primary_service_from_element(element);
     if (!svc) {
@@ -738,16 +739,16 @@ static void remove_service(gatt_element_t* element)
 
     start = svc->attrs;
     count = svc->attr_count;
-    index = start - server_db;
+    attr_index = start - server_db;
 
     for (i = 0; i < count; i++) {
         free(start[i].user_data);
         free((void*)start[i].uuid);
     }
 
-    if (index + count < attr_count) {
-        memmove(&server_db[index], &server_db[index + count],
-            (attr_count - index - count) * sizeof(struct bt_gatt_attr));
+    if (attr_index + count < attr_count) {
+        memmove(&server_db[attr_index], &server_db[attr_index + count],
+            (attr_count - attr_index - count) * sizeof(struct bt_gatt_attr));
     }
 
     memset(&server_db[attr_count - count], 0, count * sizeof(struct bt_gatt_attr));
@@ -764,11 +765,17 @@ static void remove_service(gatt_element_t* element)
         }
     }
 
-    svc->attrs = NULL;
-    svc->attr_count = 0;
+    svc_index = svc - server_svcs;
+
+    if (svc_index < svc_count - 1) {
+        memmove(&server_svcs[svc_index], &server_svcs[svc_index + 1],
+            (svc_count - svc_index - 1) * sizeof(struct bt_gatt_service));
+    }
+
+    memset(&server_svcs[svc_count - 1], 0, sizeof(struct bt_gatt_service));
     svc_count--;
 
-    BT_LOGD("%s, removed service at index %zu, attr_count now %u", __func__, index, attr_count);
+    BT_LOGD("%s, removed service at index %zu, attr_count now %u", __func__, svc_index, attr_count);
 }
 
 bt_status_t bt_sal_gatt_server_remove_elements(gatt_element_t* elements, uint16_t size)
