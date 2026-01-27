@@ -1167,6 +1167,11 @@ static void STACK_CALL(acl_connection_reply)(void* args)
     sal_adapter_req_t* req = args;
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)&req->addr);
 
+    if (!conn) {
+        BT_LOGE("%s, conn null", __func__);
+        return;
+    }
+
     if (req->adpt.accept) {
         SAL_CHECK(bt_conn_accept_acl_conn(conn), 0);
     } else {
@@ -1206,6 +1211,11 @@ static void STACK_CALL(ssp_reply)(void* args)
 {
     sal_adapter_req_t* req = args;
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)&req->addr);
+
+    if (!conn) {
+        BT_LOGE("%s, conn null", __func__);
+        return;
+    }
 
     if (req->adpt.ssp.accept) {
         switch (req->adpt.ssp.type) {
@@ -1254,6 +1264,11 @@ static void STACK_CALL(pin_reply)(void* args)
     sal_adapter_req_t* req = args;
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)&req->addr);
 
+    if (!conn) {
+        BT_LOGE("%s, conn null", __func__);
+        return;
+    }
+
     if (req->adpt.pin.accept) {
         SAL_CHECK(bt_conn_auth_pincode_entry(conn, req->adpt.pin.pincode), 0);
     } else {
@@ -1294,6 +1309,11 @@ connection_state_t bt_sal_get_connection_state(bt_controller_id_t id, bt_address
     struct bt_conn_info info;
     connection_state_t state = CONNECTION_STATE_DISCONNECTED;
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
+
+    if (!conn) {
+        BT_LOGE("%s, conn null", __func__);
+        return CONNECTION_STATE_DISCONNECTED;
+    }
 
     bt_conn_get_info(conn, &info);
     switch (info.state) {
@@ -1526,6 +1546,11 @@ static void STACK_CALL(cancel_bond)(void* args)
 {
     sal_adapter_req_t* req = args;
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)&req->addr);
+
+    if (!conn) {
+        BT_LOGE("%s, conn null", __func__);
+        return;
+    }
 
     SAL_CHECK(bt_conn_auth_cancel(conn), 0);
     SAL_CHECK(bt_br_unpair((bt_addr_t*)&req->addr), 0);
@@ -1774,6 +1799,11 @@ static void STACK_CALL(set_power_mode)(void* args)
     bt_pm_mode_t* pm = &req->adpt.mode;
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)&req->addr);
 
+    if (!conn) {
+        BT_LOGE("%s, conn null", __func__);
+        return;
+    }
+
     if (pm->mode == BT_LINK_MODE_ACTIVE) {
         SAL_CHECK(bt_conn_exit_sniff_mode(conn), 0);
     } else {
@@ -1818,6 +1848,11 @@ static void STACK_CALL(set_link_role)(void* args)
     sal_adapter_req_t* req = args;
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)&req->addr);
 
+    if (!conn) {
+        BT_LOGE("%s, conn null", __func__);
+        return;
+    }
+
     SAL_CHECK(bt_conn_switch_role(conn, req->adpt.role), 0);
     bt_conn_unref(conn);
 }
@@ -1846,6 +1881,12 @@ static void STACK_CALL(set_link_policy)(void* args)
 {
     sal_adapter_req_t* req = args;
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)&req->addr);
+
+    if (!conn) {
+        BT_LOGE("%s, conn null", __func__);
+        return;
+    }
+
     uint16_t policy = 0;
 
     switch (req->adpt.policy) {
