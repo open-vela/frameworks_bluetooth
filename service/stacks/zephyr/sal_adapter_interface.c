@@ -49,6 +49,7 @@
 #include "utils/log.h"
 
 #define BT_INVALID_CONNECTION_HANDLE 0xFFFF
+#define BT_DISCOVERY_DEVICE_MAX 30
 
 #define STACK_CALL(func) zblue_##func
 
@@ -62,10 +63,7 @@ typedef union {
         bt_scan_mode_t scan_mode;
         bool bondable;
     } scanmode;
-    struct {
-        uint32_t timeout;
-        bool limited;
-    } discovery;
+    struct bt_br_discovery_param discovery;
     struct {
         bool inquiry;
         bt_scan_type_t type;
@@ -148,6 +146,7 @@ static int zblue_on_link_key_load(bt_addr_le_t* addr, uint8_t* key_value, uint8_
 #endif
 
 static bt_security_t g_security_level = BT_SECURITY_L2;
+static struct bt_br_discovery_result* g_discovery_results = NULL;
 
 static struct bt_conn_cb g_conn_cbs = {
 #ifndef CONFIG_BT_CONN_REQ_AUTO_HANDLE
@@ -639,7 +638,11 @@ static void zblue_on_discovery_recv_cb(const struct bt_br_discovery_result* resu
 static void zblue_on_discovery_complete_cb(const struct bt_br_discovery_result* results,
     size_t count)
 {
+    BT_LOGD("%s, %zu devices found", __func__, count);
+
     adapter_on_discovery_state_changed(BT_DISCOVERY_STOPPED);
+    free(g_discovery_results);
+    g_discovery_results = NULL;
 }
 
 static struct bt_br_discovery_cb g_br_discovery_cb = {
@@ -981,19 +984,35 @@ bool bt_sal_get_bondable(bt_controller_id_t id)
 /* Inquiry/page and inquiry/page scan */
 static void STACK_CALL(start_discovery)(void* args)
 {
-#define DISCOVERY_DEVICE_MAX 30
+    int err;
     sal_adapter_req_t* req = args;
-    struct bt_br_discovery_param param;
-    static struct bt_br_discovery_result g_discovery_results[DISCOVERY_DEVICE_MAX];
 
-    /* unlimited number of responses. */
-    param.limited = req->adpt.discovery.limited;
-    param.length = req->adpt.discovery.timeout;
+    BT_LOGD("%s, limited = %d, timeout = %d", __func__, req->adpt.discovery.limited,
+        req->adpt.discovery.length);
 
-    if (bt_br_discovery_start(&param, g_discovery_results,
-            SAL_ARRAY_SIZE(g_discovery_results))
-        == 0)
+    if (g_discovery_results != NULL) {
+        BT_LOGD("already started");
         adapter_on_discovery_state_changed(BT_DISCOVERY_STARTED);
+        return;
+    }
+
+    g_discovery_results = calloc(BT_DISCOVERY_DEVICE_MAX, sizeof(struct bt_br_discovery_result));
+    if (!g_discovery_results) {
+        BT_LOGD("malloc failed");
+        adapter_on_discovery_state_changed(BT_DISCOVERY_STOPPED);
+        return;
+    }
+
+    err = bt_br_discovery_start(&req->adpt.discovery, g_discovery_results, BT_DISCOVERY_DEVICE_MAX);
+    if (err != 0 && err != -EALREADY) {
+        BT_LOGD("failed to start discovery, err = %d", err);
+        free(g_discovery_results);
+        g_discovery_results = NULL;
+        adapter_on_discovery_state_changed(BT_DISCOVERY_STOPPED);
+        return;
+    }
+
+    adapter_on_discovery_state_changed(BT_DISCOVERY_STARTED);
 }
 #endif
 
@@ -1011,7 +1030,7 @@ bt_status_t bt_sal_start_discovery(bt_controller_id_t id, uint32_t timeout, bool
     if (!req)
         return BT_STATUS_NOMEM;
 
-    req->adpt.discovery.timeout = timeout;
+    req->adpt.discovery.length = timeout;
     req->adpt.discovery.limited = is_limited;
 
     return sal_send_req(req);
@@ -1023,7 +1042,22 @@ bt_status_t bt_sal_start_discovery(bt_controller_id_t id, uint32_t timeout, bool
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(stop_discovery)(void* args)
 {
-    SAL_CHECK(bt_br_discovery_stop(), 0);
+    int err;
+
+    BT_LOGD("%s", __func__);
+
+    if (!g_discovery_results) {
+        BT_LOGD("not started");
+        adapter_on_discovery_state_changed(BT_DISCOVERY_STOPPED);
+        return;
+    }
+
+    err = bt_br_discovery_stop();
+    if (err != 0 && err != -ENODEV && err != -EALREADY)
+        BT_LOGE("failed to stop discovery, err = %d", err);
+
+    free(g_discovery_results);
+    g_discovery_results = NULL;
     adapter_on_discovery_state_changed(BT_DISCOVERY_STOPPED);
 }
 #endif
