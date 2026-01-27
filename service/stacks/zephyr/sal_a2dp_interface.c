@@ -89,11 +89,6 @@ static bt_status_t a2dp_source_disconnect(bt_controller_id_t id, bt_address_t* a
 static bt_status_t a2dp_sink_disconnect(bt_controller_id_t id, bt_address_t* addr, void* user_data);
 #endif
 
-static void flag_reset(struct zblue_a2dp_info_t* a2dp_info)
-{
-    a2dp_info->state = 0x00;
-}
-
 static void flag_set(struct zblue_a2dp_info_t* a2dp_info, a2dp_state_bit_t flag)
 {
     a2dp_info->state |= (1 << flag);
@@ -118,6 +113,23 @@ static bool flag_is_conn_none(struct zblue_a2dp_info_t* a2dp_info)
         return false;
 
     return true;
+}
+
+static struct zblue_a2dp_info_t* a2dp_info_new(struct bt_a2dp* a2dp, struct bt_conn* conn,
+    const bt_address_t* addr, a2dp_int_acp_t int_acp, uint8_t role)
+{
+    struct zblue_a2dp_info_t* a2dp_info = (struct zblue_a2dp_info_t*)zalloc(sizeof(struct zblue_a2dp_info_t));
+    if (!a2dp_info)
+        return NULL;
+
+    if (addr)
+        memcpy(&a2dp_info->bd_addr, addr, sizeof(bt_address_t));
+
+    a2dp_info->a2dp = a2dp;
+    a2dp_info->conn = conn;
+    a2dp_info->int_acp = int_acp;
+    a2dp_info->role = role;
+    return a2dp_info;
 }
 
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
@@ -756,8 +768,19 @@ static bt_status_t check_local_remote_codec_sbc(uint8_t* local_ie, uint8_t* remo
     if (bit_pool_min > bit_pool_max)
         return BT_STATUS_FAIL;
 
-    a2dp_info->config = (struct bt_a2dp_codec_cfg*)malloc(sizeof(struct bt_a2dp_codec_cfg));
-    a2dp_info->config->codec_config = (struct bt_a2dp_codec_ie*)malloc(sizeof(struct bt_a2dp_codec_ie));
+    a2dp_info->config = (struct bt_a2dp_codec_cfg*)zalloc(sizeof(struct bt_a2dp_codec_cfg));
+    if (!a2dp_info->config) {
+        BT_LOGE("%s, info cfg alloc failed", __func__);
+        return BT_STATUS_FAIL;
+    }
+
+    a2dp_info->config->codec_config = (struct bt_a2dp_codec_ie*)zalloc(sizeof(struct bt_a2dp_codec_ie));
+    if (!a2dp_info->config->codec_config) {
+        BT_LOGE("%s, codec cfg alloc failed", __func__);
+        free(a2dp_info->config);
+        a2dp_info->config = NULL;
+        return BT_STATUS_FAIL;
+    }
 
     memcpy(a2dp_info->config->codec_config->codec_ie, prefered_ie, 2 * sizeof(uint8_t));
     a2dp_info->config->codec_config->codec_ie[2] = bit_pool_min;
@@ -819,9 +842,21 @@ static void find_remote_codec(struct bt_a2dp_ep* local_ep, struct zblue_a2dp_inf
     return;
 
 success:
-    a2dp_info->config->codec_config->len = found_peer_endpoint->codec_cap->len;
-    a2dp_info->selected_peer_endpoint = (struct bt_a2dp_ep*)malloc(sizeof(struct bt_a2dp_ep));
+    a2dp_info->selected_peer_endpoint = (struct bt_a2dp_ep*)zalloc(sizeof(struct bt_a2dp_ep));
+    if (!a2dp_info->selected_peer_endpoint) {
+        BT_LOGE("%s, alloc selected_peer_endpoint failed", __func__);
+        return;
+    }
+
     a2dp_info->selected_peer_endpoint->codec_cap = (struct bt_a2dp_codec_ie*)malloc(sizeof(struct bt_a2dp_codec_ie));
+    if (!a2dp_info->selected_peer_endpoint->codec_cap) {
+        BT_LOGE("%s, alloc selected_peer_endpoint codec_cap failed", __func__);
+        free(a2dp_info->selected_peer_endpoint);
+        a2dp_info->selected_peer_endpoint = NULL;
+        return;
+    }
+
+    a2dp_info->config->codec_config->len = found_peer_endpoint->codec_cap->len;
     a2dp_info->selected_peer_endpoint->codec_type = found_peer_endpoint->codec_type;
     memcpy(a2dp_info->selected_peer_endpoint->codec_cap, found_peer_endpoint->codec_cap, sizeof(struct bt_a2dp_codec_ie));
     memcpy(&a2dp_info->selected_peer_endpoint->sep, &found_peer_endpoint->sep, sizeof(struct bt_avdtp_sep));
@@ -1181,38 +1216,26 @@ static void zblue_on_connected(struct bt_a2dp* a2dp, int err)
         }
     }
 
-    a2dp_info = (struct zblue_a2dp_info_t*)malloc(sizeof(struct zblue_a2dp_info_t));
-    if (!a2dp_info) {
-        BT_LOGW("malloc fail");
-        return;
-    }
-
     conn = bt_a2dp_get_conn(a2dp);
     if (conn == NULL) {
         BT_LOGE("conn is null");
-        free(a2dp_info);
         return;
     }
 
+    a2dp_info = a2dp_info_new(a2dp, conn, NULL, A2DP_ACP, SEP_INVALID);
+    if (!a2dp_info) {
+        BT_LOGE("memory allocation failed");
+        bt_conn_unref(conn);
+        return;
+    }
+
+    flag_set(a2dp_info, A2DP_STATE_BIT_SIG_CONN);
     bt_conn_unref(conn);
 
     if (bt_sal_get_remote_address(conn, &a2dp_info->bd_addr) != BT_STATUS_SUCCESS) {
-        free(a2dp_info);
+        a2dp_info_destroy(a2dp_info);
         return;
     }
-
-    a2dp_info->a2dp = a2dp;
-    a2dp_info->conn = conn;
-    a2dp_info->stream = NULL;
-    a2dp_info->int_acp = A2DP_ACP;
-    a2dp_info->role = SEP_INVALID;
-    a2dp_info->is_cleanup = false;
-    flag_reset(a2dp_info);
-    flag_set(a2dp_info, A2DP_STATE_BIT_SIG_CONN);
-    a2dp_info->disconnecting = false;
-    a2dp_info->peer_endpoint = NULL;
-    a2dp_info->config = NULL;
-    a2dp_info->selected_peer_endpoint = NULL;
 
     bt_list_add_tail(bt_a2dp_conn, a2dp_info);
 }
@@ -1614,24 +1637,12 @@ static bt_status_t a2dp_source_profile_connect(bt_controller_id_t id, bt_address
         goto error;
     }
 
-    a2dp_info = (struct zblue_a2dp_info_t*)malloc(sizeof(struct zblue_a2dp_info_t));
+    a2dp_info = a2dp_info_new(a2dp, conn, addr, A2DP_INT, SEP_SRC);
     if (!a2dp_info) {
         BT_LOGE("%s, malloc failed", __func__);
+        bt_a2dp_disconnect(a2dp);
         goto error;
     }
-
-    memcpy(&a2dp_info->bd_addr, addr, sizeof(bt_address_t));
-    a2dp_info->a2dp = a2dp;
-    a2dp_info->conn = conn;
-    a2dp_info->stream = NULL;
-    a2dp_info->int_acp = A2DP_INT;
-    a2dp_info->role = SEP_SRC;
-    a2dp_info->is_cleanup = false;
-    flag_reset(a2dp_info);
-    a2dp_info->disconnecting = false;
-    a2dp_info->peer_endpoint = NULL;
-    a2dp_info->config = NULL;
-    a2dp_info->selected_peer_endpoint = NULL;
 
     bt_list_add_tail(bt_a2dp_conn, a2dp_info);
     bt_conn_unref(conn);
@@ -1676,24 +1687,11 @@ static bt_status_t a2dp_sink_profile_connect(bt_controller_id_t id, bt_address_t
         goto error;
     }
 
-    a2dp_info = (struct zblue_a2dp_info_t*)malloc(sizeof(struct zblue_a2dp_info_t));
+    a2dp_info = a2dp_info_new(a2dp, conn, addr, A2DP_INT, SEP_SNK);
     if (!a2dp_info) {
         BT_LOGE("%s, malloc failed", __func__);
         goto error;
     }
-
-    memcpy(&a2dp_info->bd_addr, addr, sizeof(bt_address_t));
-    a2dp_info->a2dp = a2dp;
-    a2dp_info->conn = conn;
-    a2dp_info->stream = NULL;
-    a2dp_info->int_acp = A2DP_INT;
-    a2dp_info->role = SEP_SNK;
-    a2dp_info->is_cleanup = false;
-    flag_reset(a2dp_info);
-    a2dp_info->disconnecting = false;
-    a2dp_info->peer_endpoint = NULL;
-    a2dp_info->config = NULL;
-    a2dp_info->selected_peer_endpoint = NULL;
 
     bt_list_add_tail(bt_a2dp_conn, a2dp_info);
     bt_conn_unref(conn);
