@@ -1299,8 +1299,8 @@ static void zblue_on_tg_passthrough_req(struct bt_avrcp_tg* tg, uint8_t tid, str
     case PASSTHROUGH_CMD_ID_PLAY:
     case PASSTHROUGH_CMD_ID_STOP:
     case PASSTHROUGH_CMD_ID_PAUSE:
-    case PASSTHROUGH_CMD_ID_RECORD:
-    case PASSTHROUGH_CMD_ID_REWIND:
+    case PASSTHROUGH_CMD_ID_FORWARD:
+    case PASSTHROUGH_CMD_ID_BACKWARD:
         break;
     default:
         BT_LOGW("%s, operation 0x%x not recognized", __func__, opid);
