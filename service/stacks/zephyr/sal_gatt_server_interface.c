@@ -448,12 +448,6 @@ static void add_service(gatt_element_t* element, bool is_over_br)
     }
 
     size = u.uuid.type == BT_UUID_TYPE_16 ? sizeof(u.u16) : sizeof(u.u128);
-    if (svc_attr_count) {
-        if (register_service(false)) {
-            BT_LOGE("%s, register service fail", __func__);
-            return;
-        }
-    }
 
     switch (element->type) {
     case GATT_PRIMARY_SERVICE:
