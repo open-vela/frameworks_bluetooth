@@ -17,6 +17,7 @@
 #ifndef __SAL_ZBLUE_H_
 #define __SAL_ZBLUE_H_
 
+#include "bluetooth.h"
 #include "bt_addr.h"
 #include "bt_status.h"
 
