@@ -18,6 +18,7 @@
 
 #include <zephyr/bluetooth/att.h>
 #include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/classic/sdp.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/l2cap.h>
@@ -148,12 +149,59 @@ typedef struct {
     sal_adapter_args_t adpt;
 } sal_adapter_req_t;
 
+typedef struct {
+    struct bt_gatt_service* srv;
+    struct bt_sdp_record* record;
+} sal_gatt_sdp_record_t;
+
 static uint8_t attr_count;
 static uint8_t svc_attr_count;
 static uint8_t svc_count;
 
 static struct bt_gatt_service server_svcs[CONFIG_GATT_SERVER_MAX_SERVICES];
 static struct bt_gatt_attr server_db[CONFIG_GATT_SERVER_MAX_ATTRIBUTES];
+static sal_gatt_sdp_record_t gatt_sdp_records[CONFIG_GATT_SERVER_MAX_SERVICES];
+
+/* Generic ATT SDP record */
+static struct bt_sdp_attribute gatt_attrs_template[] = {
+    BT_SDP_NEW_SERVICE,
+    BT_SDP_LIST(
+        BT_SDP_ATTR_SVCLASS_ID_LIST,
+        BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 3), /* 35 03 */
+        BT_SDP_DATA_ELEM_LIST(
+            {
+                BT_SDP_TYPE_SIZE(BT_SDP_UUID16), /* 19 */
+                BT_SDP_ARRAY_16(BT_SDP_GENERIC_ATTRIB_SVCLASS) /* 18 01 */
+            }, )),
+    BT_SDP_LIST(
+        BT_SDP_ATTR_PROTO_DESC_LIST,
+        BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 19), /* 35 13 */
+        BT_SDP_DATA_ELEM_LIST(
+            { BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 6), /* 35 06 */
+                BT_SDP_DATA_ELEM_LIST(
+                    {
+                        BT_SDP_TYPE_SIZE(BT_SDP_UUID16), /* 19 */
+                        BT_SDP_ARRAY_16(BT_SDP_PROTO_L2CAP) /* 01 00 */
+                    },
+                    {
+                        BT_SDP_TYPE_SIZE(BT_SDP_UINT16), /* 09 */
+                        BT_SDP_ARRAY_16(BT_L2CAP_PSM_ATT) /* 00 1F */
+                    }, ) },
+            { BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 9), /* 35 09 */
+                BT_SDP_DATA_ELEM_LIST(
+                    {
+                        BT_SDP_TYPE_SIZE(BT_SDP_UUID16), /* 19 */
+                        BT_SDP_ARRAY_16(BT_SDP_PROTO_ATT) /* 00 07 */
+                    },
+                    {
+                        BT_SDP_TYPE_SIZE(BT_SDP_UINT16), /* 09 */
+                        BT_SDP_ARRAY_16(0) /* 00 00, assigned in gatt_sdp_create_record */
+                    },
+                    {
+                        BT_SDP_TYPE_SIZE(BT_SDP_UINT16), /* 09 */
+                        BT_SDP_ARRAY_16(0) /* 00 00, assigned in gatt_sdp_create_record */
+                    }, ) }, )),
+};
 
 static ssize_t read_value(struct bt_conn* conn, const struct bt_gatt_attr* attr,
     void* buf, uint16_t len, uint16_t offset)
@@ -268,9 +316,90 @@ static struct bt_gatt_attr* gatt_db_add(const struct bt_gatt_attr* pattern, size
     return attr;
 }
 
-static bt_status_t register_service(void)
+static struct bt_sdp_record* gatt_sdp_create_record(struct bt_gatt_service* srv)
+{
+    struct bt_sdp_record* record;
+    size_t attrs_count;
+    struct bt_sdp_attribute* attrs;
+    sal_gatt_sdp_record_t* gatt_record;
+    union uuid* uuid;
+
+    /* First attribute of services is service declaration(primary or secondary) */
+    uuid = srv->attrs->user_data;
+    if (uuid->uuid.type != BT_UUID_TYPE_16) {
+        BT_LOGE("Invalid UUID type: %d, only for UUID16", uuid->uuid.type);
+        return NULL;
+    }
+
+    record = zalloc(sizeof(struct bt_sdp_record));
+    if (!record) {
+        BT_LOGE("Failed to allocate memory for SDP record");
+        return NULL;
+    }
+
+    attrs = zalloc(sizeof(gatt_attrs_template));
+    if (!attrs) {
+        BT_LOGE("Failed to allocate memory for SDP attributes");
+        free(record);
+        return NULL;
+    }
+
+    attrs_count = ARRAY_SIZE(gatt_attrs_template);
+    memcpy(attrs, gatt_attrs_template, sizeof(gatt_attrs_template));
+
+    SDP_GATT_START_HDL_PTR_FROM_ATTR(attrs) = &srv->attrs->handle;
+    SDP_GATT_END_HDL_PTR_FROM_ATTR(attrs) = &srv->attrs[svc_attr_count - 1].handle;
+    SDP_GATT_SVCLS_PTR_FROM_ATTR(attrs) = &uuid->u16.val;
+
+    record->attr_count = attrs_count;
+    record->attrs = attrs;
+
+    for (gatt_record = gatt_sdp_records; gatt_record < gatt_sdp_records + CONFIG_GATT_SERVER_MAX_SERVICES; gatt_record++) {
+        if (gatt_record->srv) {
+            continue;
+        }
+
+        gatt_record->srv = srv;
+        gatt_record->record = record;
+        break;
+    }
+
+    return record;
+}
+
+static void gatt_sdp_delete_record(struct bt_sdp_record* record)
+{
+    sal_gatt_sdp_record_t* gatt_record;
+
+    if (!record) {
+        BT_LOGE("Invalid SDP record");
+        return;
+    }
+
+    for (gatt_record = gatt_sdp_records; gatt_record < gatt_sdp_records + CONFIG_GATT_SERVER_MAX_SERVICES; gatt_record++) {
+        if (!gatt_record->srv) {
+            continue;
+        }
+
+        if (gatt_record->record == record) {
+            gatt_record->srv = NULL;
+            gatt_record->record = NULL;
+            break;
+        }
+    }
+
+    if (record->attrs) {
+        free(record->attrs);
+        record->attrs = NULL;
+    }
+
+    free(record);
+}
+
+static bt_status_t register_service(bool is_over_br)
 {
     int err;
+    struct bt_sdp_record* record;
 
     server_svcs[svc_count].attrs = server_db + (attr_count - svc_attr_count);
     server_svcs[svc_count].attr_count = svc_attr_count;
@@ -281,13 +410,32 @@ static bt_status_t register_service(void)
         return BT_STATUS_FAIL;
     }
 
+    if (!is_over_br) {
+        goto out;
+    }
+
+    record = gatt_sdp_create_record(&server_svcs[svc_count]);
+
+    if (!record) {
+        BT_LOGE("Failed to create SDP record");
+        return BT_STATUS_FAIL;
+    }
+
+    err = bt_sdp_register_service(record);
+    if (err != 0) {
+        BT_LOGE("GATT SDP record register fail");
+        gatt_sdp_delete_record(record);
+        return BT_STATUS_FAIL;
+    }
+
+out:
     svc_count++;
 
     svc_attr_count = 0U;
     return BT_STATUS_SUCCESS;
 }
 
-static void add_service(gatt_element_t* element)
+static void add_service(gatt_element_t* element, bool is_over_br)
 {
     struct bt_gatt_attr* attr_svc;
     union uuid u;
@@ -300,7 +448,7 @@ static void add_service(gatt_element_t* element)
 
     size = u.uuid.type == BT_UUID_TYPE_16 ? sizeof(u.u16) : sizeof(u.u128);
     if (svc_attr_count) {
-        if (register_service()) {
+        if (register_service(false)) {
             BT_LOGE("%s, register service fail", __func__);
             return;
         }
@@ -651,6 +799,7 @@ bt_status_t bt_sal_gatt_server_add_elements(gatt_element_t* elements, uint16_t s
     size_t index;
     bt_status_t status;
     sal_adapter_req_t* req;
+    bool is_over_bredr = false;
 
     if (!elements || size == 0)
         return BT_STATUS_PARM_INVALID;
@@ -661,10 +810,10 @@ bt_status_t bt_sal_gatt_server_add_elements(gatt_element_t* elements, uint16_t s
         case GATT_SECONDARY_SERVICE:
             /* Workaround: BR/EDR services to be registered over BLE as well */
             if (elements[index].properties & GATT_PROP_EXPOSED_OVER_BREDR) {
-                elements[index].properties &= ~GATT_PROP_EXPOSED_OVER_BREDR;
+                is_over_bredr = true;
                 BT_LOGD("BR/EDR service to be registered over BLE");
             }
-            add_service(&elements[index]);
+            add_service(&elements[index], is_over_bredr);
             break;
         case GATT_CHARACTERISTIC:
             add_characteristic(&elements[index]);
@@ -682,7 +831,7 @@ bt_status_t bt_sal_gatt_server_add_elements(gatt_element_t* elements, uint16_t s
     if (!req)
         return BT_STATUS_NOMEM;
 
-    status = register_service();
+    status = register_service(is_over_bredr);
     if (status != BT_STATUS_SUCCESS) {
         free(req);
         return status;
@@ -694,6 +843,27 @@ bt_status_t bt_sal_gatt_server_add_elements(gatt_element_t* elements, uint16_t s
     req->adpt.attr_op.type = GATTS_CB_TYPE_ADDED;
 
     return sal_send_req((void*)req);
+}
+
+static sal_gatt_sdp_record_t* get_sdp_from_service(struct bt_gatt_service* srv)
+{
+    sal_gatt_sdp_record_t* record;
+
+    if (!srv) {
+        return NULL;
+    }
+
+    for (record = gatt_sdp_records; record < gatt_sdp_records + CONFIG_GATT_SERVER_MAX_SERVICES; record++) {
+        if (!record->srv) {
+            continue;
+        }
+        if (record->srv == srv) {
+            return record;
+        }
+    }
+
+    BT_LOGW("%s not found sdp_record", __func__);
+    return NULL;
 }
 
 static struct bt_gatt_service* get_primary_service_from_element(gatt_element_t* element)
@@ -731,9 +901,16 @@ static void remove_service(gatt_element_t* element)
     size_t i, count, index;
     struct bt_gatt_attr* start;
     struct bt_gatt_service* svc = get_primary_service_from_element(element);
+    sal_gatt_sdp_record_t* record;
     if (!svc) {
         BT_LOGW("%s, service not found", __func__);
         return;
+    }
+
+    record = get_sdp_from_service(svc);
+    if (record && record->record) {
+        bt_sdp_unregister_service(record->record);
+        gatt_sdp_delete_record(record->record);
     }
 
     bt_gatt_service_unregister(svc);
