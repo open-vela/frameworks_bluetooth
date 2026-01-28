@@ -32,6 +32,7 @@
 #include "sal_adapter_le_interface.h"
 #include "sal_connection_manager.h"
 #include "sal_interface.h"
+#include "sal_zblue.h"
 #include "service_loop.h"
 #include "utils/log.h"
 
@@ -60,8 +61,8 @@
 #define GATT_OPS_READ_REQUEST 1
 #define GATT_WRITE_FLAGS_RELIABLE_WRITE (BT_GATT_WRITE_FLAG_PREPARE | BT_GATT_WRITE_FLAG_EXECUTE)
 
-#define MAKE_REQUEST_ID(handle, op_type) (((uint32_t)(op_type) << 31) | ((handle)&0xFFFF))
-#define REQUEST_ID_HANDLE(id) ((uint16_t)((id)&0xFFFF))
+#define MAKE_REQUEST_ID(handle, op_type) (((uint32_t)(op_type) << 31) | ((handle) & 0xFFFF))
+#define REQUEST_ID_HANDLE(id) ((uint16_t)((id) & 0xFFFF))
 #define REQUEST_ID_OP_TYPE(id) (((id) >> 31) & 0x1)
 #define REQUEST_ID_NORSP ((uint32_t)0xFFFFFFFF)
 
