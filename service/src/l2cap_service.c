@@ -861,6 +861,14 @@ static void handle_packet_received(bt_address_t* addr, uint16_t cid, l2cap_pkt_t
         return;
     }
 
+    if (packet->len_received > channel->incoming.le_mps) {
+        BT_LOGE("%s, L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") received segment length %" PRIu16 " is larger than MPS %" PRIu16,
+            __func__, channel->id, channel->local_cid, packet->len_received, channel->incoming.le_mps);
+        free(packet);
+        l2cap_abort_channel(channel);
+        return;
+    }
+
     if (packet->len_total > channel->incoming.mtu) {
         BT_LOGE("%s, L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") received sdu length %" PRIu16 " is larger than mtu %" PRIu16,
             __func__, channel->id, channel->local_cid, packet->len_total, channel->incoming.mtu);
