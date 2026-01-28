@@ -16,6 +16,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include <zephyr/bluetooth/att.h>
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/gatt.h>
@@ -28,6 +29,7 @@
 #include "gatt_define.h"
 #include "gatts_service.h"
 #include "sal_adapter_le_interface.h"
+#include "sal_connection_manager.h"
 #include "sal_interface.h"
 #include "sal_zephyr_interface.h"
 #include "service_loop.h"
@@ -827,9 +829,100 @@ static void STACK_CALL(conn_connect)(void* args)
     }
 }
 
+static bt_status_t gatts_br_profile_connect(bt_controller_id_t id, bt_address_t* addr, void* user_data)
+{
+    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
+    int err;
+
+    if (!conn) {
+        BT_LOGE("%s, acl not connected", __func__);
+        return BT_STATUS_FAIL;
+    }
+
+    err = bt_att_br_connect(conn);
+    if (err) {
+        BT_LOGE("%s, ATT over BR connect failed", __func__);
+        goto error;
+    }
+
+    bt_conn_unref(conn);
+    return BT_STATUS_SUCCESS;
+
+error:
+    bt_conn_unref(conn);
+    return BT_STATUS_FAIL;
+}
+
+static void STACK_CALL(conn_br_connect)(void* args)
+{
+    sal_adapter_req_t* req = args;
+    bt_status_t status;
+
+    if (le_conn_set_role(&req->addr, GATT_ROLE_SERVER) != BT_STATUS_SUCCESS) {
+        return;
+    }
+
+    status = bt_sal_profile_connect_request(&req->addr, PROFILE_GATTS, CONN_ID_DEFAULT, req->id, gatts_br_profile_connect, NULL);
+    if (status != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, PROFILE_GATTS connect failed", __func__);
+    }
+}
+
 bt_status_t bt_sal_gatt_server_connect_bear(bt_controller_id_t id, bt_address_t* addr, ble_addr_type_t addr_type, uint8_t bear_type)
 {
-    return BT_STATUS_UNSUPPORTED;
+    sal_adapter_req_t* req;
+    uint8_t type;
+
+    switch (bear_type) {
+    case ATT_BEAR_TYPE_LE_ATT:
+        req = sal_adapter_req(id, addr, STACK_CALL(conn_connect));
+        break;
+    case ATT_BEAR_TYPE_BR_ATT:
+        req = sal_adapter_req(id, addr, STACK_CALL(conn_br_connect));
+        break;
+    default:
+        BT_LOGE("%s, unsupported bear_type:%d", __func__, bear_type);
+        return BT_STATUS_UNSUPPORTED;
+    }
+
+    if (!req) {
+        BT_LOGE("%s, req null", __func__);
+        return BT_STATUS_NOMEM;
+    }
+
+    if (bear_type == ATT_BEAR_TYPE_BR_ATT) {
+        /* ATT_BEAR_TYPE_BR_ATT Skip addr_type convert */
+        return sal_send_req(req);
+    }
+
+    switch (addr_type) {
+    case BT_LE_ADDR_TYPE_PUBLIC:
+        type = BT_ADDR_LE_PUBLIC;
+        break;
+    case BT_LE_ADDR_TYPE_RANDOM:
+        type = BT_ADDR_LE_RANDOM;
+        break;
+    case BT_LE_ADDR_TYPE_PUBLIC_ID:
+        type = BT_ADDR_LE_PUBLIC_ID;
+        break;
+    case BT_LE_ADDR_TYPE_RANDOM_ID:
+        type = BT_ADDR_LE_RANDOM_ID;
+        break;
+    case BT_LE_ADDR_TYPE_ANONYMOUS:
+        type = BT_ADDR_LE_ANONYMOUS;
+        break;
+    case BT_LE_ADDR_TYPE_UNKNOWN:
+        type = BT_ADDR_LE_RANDOM;
+        break;
+    default:
+        BT_LOGE("%s, invalid type:%d", __func__, addr_type);
+        assert(0);
+    }
+
+    BT_LOGD("%s, addr_type:%d, type:%d", __func__, addr_type, type);
+    req->addr_type = type;
+
+    return sal_send_req(req);
 }
 
 bt_status_t bt_sal_gatt_server_connect(bt_controller_id_t id, bt_address_t* addr, ble_addr_type_t addr_type)
