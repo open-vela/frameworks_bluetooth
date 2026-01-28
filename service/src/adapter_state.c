@@ -216,6 +216,8 @@ static void off_enter(state_machine_t* sm)
 
     stm->ble_enabled = false;
     stm->pending_turn_on = false;
+    stm->turning_off_safe = false;
+    stm->ble_turning_off_safe = false;
     const state_t* prev = hsm_get_previous_state(sm);
     if (prev) {
         adapter_notify_state_change(hsm_get_state_value(prev), BT_ADAPTER_STATE_OFF);
@@ -457,8 +459,6 @@ static void turning_off_enter(state_machine_t* sm)
     adapter_state_machine_t* stm = (adapter_state_machine_t*)sm;
     ADAPTER_DBG_ENTER(sm);
 
-    stm->turning_off_safe = false;
-
     /* Cancel the timer in safe disable mode */
     service_loop_cancel_timer(stm->disable_safe_timer);
     stm->disable_safe_timer = NULL;
@@ -476,6 +476,8 @@ static void turning_off_exit(state_machine_t* sm)
 
 static bool turning_off_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
+    adapter_state_machine_t* stm = (adapter_state_machine_t*)sm;
+
     ADAPTER_DBG_EVENT(sm, event);
 
     switch (event) {
@@ -483,11 +485,28 @@ static bool turning_off_process_event(state_machine_t* sm, uint32_t event, void*
         bt_sal_disable(PRIMARY_ADAPTER);
         break;
     case BREDR_DISABLED:
-        if (adapter_is_support_le()) {
+        if (!adapter_is_support_le()) {
+            hsm_transition_to(sm, &off_state);
+            break;
+        }
+
+        if (!stm->turning_off_safe) {
             hsm_transition_to(sm, &ble_turning_off_state);
             break;
         }
-        hsm_transition_to(sm, &off_state);
+
+        stm->ble_turning_off_safe = true;
+        adapter_le_disconnect_safe();
+
+        stm->disable_safe_timer = service_loop_timer(DISABLE_SAFE_TIMEOUT, 0,
+            turning_off_safe_timeout_callback, (void*)sm);
+
+        break;
+    case SYS_TURN_OFF_SAFE_TIMEOUT:
+    case BLE_ACL_ALL_DISCONNECTED:
+        if (stm->ble_turning_off_safe)
+            hsm_transition_to(sm, &ble_turning_off_state);
+
         break;
     case BREDR_DISABLE_TIMEOUT:
     case BREDR_DISABLE_PROFILE_TIMEOUT:
@@ -504,7 +523,9 @@ static void ble_turning_off_enter(state_machine_t* sm)
     ADAPTER_DBG_ENTER(sm);
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     adapter_state_machine_t* stm = (adapter_state_machine_t*)sm;
-    stm->ble_turning_off_safe = false;
+
+    service_loop_cancel_timer(stm->disable_safe_timer);
+    stm->disable_safe_timer = NULL;
 
     /* LE profile service shotdown */
     service_manager_shutdown(BT_TRANSPORT_BLE);
