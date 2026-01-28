@@ -40,6 +40,7 @@
 #include "sal_adapter_le_interface.h"
 #include "sal_connection_manager.h"
 #include "sal_interface.h"
+#include "sal_zblue.h"
 #include "sal_zephyr_interface.h"
 
 #include <settings_zblue.h>
