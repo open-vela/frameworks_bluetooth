@@ -1343,10 +1343,16 @@ bt_status_t bt_sal_gatt_server_send_notification(bt_controller_id_t id, bt_addre
         .element = element,
     };
 
+    /* FIXME: If the LE address matches the BREDR address, only the LE connection will be notified. */
     context.conn = get_le_conn_from_addr(addr);
     if (!context.conn) {
-        BT_LOGE("%s, conn null", __func__);
-        return BT_STATUS_FAIL;
+        BT_LOGW("%s, le conn null", __func__);
+
+        context.conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
+        if (!context.conn) {
+            BT_LOGE("%s, br conn null", __func__);
+            return BT_STATUS_FAIL;
+        }
     }
 
     bt_gatt_foreach_attr(0x0001, 0xffff, gatt_send_notification, (void*)&context);
@@ -1434,10 +1440,16 @@ bt_status_t bt_sal_gatt_server_send_indication(bt_controller_id_t id, bt_address
         .element = element,
     };
 
+    /* FIXME: If the LE address matches the BREDR address, only the LE connection will be indicated. */
     context.conn = get_le_conn_from_addr(addr);
     if (!context.conn) {
-        BT_LOGE("%s, conn null", __func__);
-        return BT_STATUS_FAIL;
+        BT_LOGW("%s, le conn null", __func__);
+
+        context.conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
+        if (!context.conn) {
+            BT_LOGE("%s, br conn null", __func__);
+            return BT_STATUS_FAIL;
+        }
     }
 
     bt_gatt_foreach_attr(0x0001, 0xffff, gatt_send_indication, (void*)&context);
