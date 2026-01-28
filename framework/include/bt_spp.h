@@ -456,6 +456,58 @@ void app_disconnect_spp_server(bt_instance_t* ins, void* handle)
  */
 bt_status_t BTSYMBOLS(bt_spp_disconnect)(bt_instance_t* ins, void* handle, bt_address_t* addr, uint16_t port);
 
+/**
+ * @brief Enable SPP data dump for debugging
+ *
+ * This function enables SPP data dump for debugging purposes. When enabled,
+ * SPP will dump transmission data (first 16 bytes) with detailed information
+ * including function name, SPP port, proxy handle, and transmission byte count.
+ *
+ * @param ins - Bluetooth client instance.
+ * @param handle - SPP APP handle.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ *
+ * **Example:**
+ * @code
+void app_enable_spp_dump(bt_instance_t* ins, void* handle)
+{
+    bt_status_t status;
+
+    status = bt_spp_enable_dump(ins, handle);
+    if(status != BT_STATUS_SUCCESS)
+        printf("enable spp dump failed\n");
+    else
+        printf("enable spp dump success\n");
+}
+ * @endcode
+ */
+bt_status_t BTSYMBOLS(bt_spp_enable_dump)(bt_instance_t* ins, void* handle);
+
+/**
+ * @brief Disable SPP data dump for debugging
+ *
+ * This function disables SPP data dump for debugging purposes.
+ *
+ * @param ins - Bluetooth client instance.
+ * @param handle - SPP APP handle.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ *
+ * **Example:**
+ * @code
+void app_disable_spp_dump(bt_instance_t* ins, void* handle)
+{
+    bt_status_t status;
+
+    status = bt_spp_disable_dump(ins, handle);
+    if(status != BT_STATUS_SUCCESS)
+        printf("disable spp dump failed\n");
+    else
+        printf("disable spp dump success\n");
+}
+ * @endcode
+ */
+bt_status_t BTSYMBOLS(bt_spp_disable_dump)(bt_instance_t* ins, void* handle);
+
 #ifdef __cplusplus
 }
 #endif

@@ -54,6 +54,15 @@
 #define spp_dumpbuffer(m, a, n)
 #endif
 
+#define spp_dump_trans_data(device, buffer, length)                                   \
+    do {                                                                              \
+        if (g_spp_handle.dump_enabled) {                                              \
+            BT_LOGD("%s, dump spp port %d, proxy %p transmission %d bytes data",      \
+                __func__, (int)device->conn_id, device->handle, (int)(length));       \
+            lib_dumpbuffer("data:", buffer, (size_t)((length) > 16 ? 16 : (length))); \
+        }                                                                             \
+    } while (0)
+
 #define STACK_SVR_PORT(scn) (((scn << 1) & 0x3E) + 1)
 #define STACK_CONN_PORT(scn, conn_id, accept) \
     ((conn_id << 6) + (accept ? STACK_SVR_PORT(scn) : ((scn << 1) & 0x3E)))
@@ -77,6 +86,7 @@ struct spp_service_global {
     struct list_node devices;
     struct list_node servers;
     struct list_node apps;
+    uint8_t dump_enabled;
 };
 
 typedef struct spp_handle {
@@ -157,6 +167,8 @@ static void spp_proxy_connection_callback(euv_pipe_t* handle, int status, void* 
 static bt_status_t spp_unregister_app(void** remote, void* handle);
 static bool spp_rx_buffer_empty(spp_device_t* device);
 static void euv_close_complete(euv_pipe_t* handle);
+static bt_status_t spp_enable_dump(void* handle);
+static bt_status_t spp_disable_dump(void* handle);
 
 /****************************************************************************
  * Private Data
@@ -574,6 +586,7 @@ static void euv_read_complete(euv_pipe_t* handle, const uint8_t* buf, ssize_t si
     }
 
     spp_dumpbuffer("master read:", buf, size);
+    spp_dump_trans_data(device, (uint8_t*)buf, size);
     do_spp_write(device, (uint8_t*)buf, size);
 }
 
@@ -614,6 +627,7 @@ static void spp_rx_buffer_send(spp_device_t* device)
     {
         buf = (spp_rx_buf_t*)node;
         device->rx_bytes += buf->length;
+        spp_dump_trans_data(device, buf->buffer, buf->length);
         if (euv_pipe_write(device->handle, buf->buffer, buf->length, euv_write_complete) != 0) {
             BT_LOGE("Spp write to slave port %d failed", device->conn_port);
             break;
@@ -744,6 +758,7 @@ static int do_spp_write(spp_device_t* device, uint8_t* buffer, uint16_t length)
         }
 
         bt_pm_busy(PROFILE_SPP, &device->addr);
+        spp_dump_trans_data(device, tmpbuf, size);
         status = bt_sal_spp_write(device->conn_port, tmpbuf, size);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("%s write to stack failed", __func__);
@@ -838,6 +853,7 @@ static void spp_on_incoming_data_received(bt_address_t* addr, uint16_t port,
 
     spp_dumpbuffer("master write:", buffer, length);
     device->rx_bytes += length;
+    spp_dump_trans_data(device, buffer, length);
     ret = euv_pipe_write(device->handle, buffer, length, euv_write_complete);
     if (ret != 0) {
         BT_LOGE("Spp write to slave port %d failed", device->conn_port);
@@ -942,6 +958,7 @@ static bt_status_t spp_init(void)
 
     memset(&g_spp_handle, 0, sizeof(g_spp_handle));
     g_spp_handle.started = 0;
+    g_spp_handle.dump_enabled = 0;
 
     return BT_STATUS_SUCCESS;
 }
@@ -1205,6 +1222,40 @@ static bt_status_t spp_disconnect(void* handle, bt_address_t* addr, uint16_t por
     return ret;
 }
 
+static bt_status_t spp_enable_dump(void* handle)
+{
+    if (!handle)
+        return BT_STATUS_FAIL;
+
+    pthread_mutex_lock(&g_spp_handle.spp_lock);
+    if (!g_spp_handle.started) {
+        pthread_mutex_unlock(&g_spp_handle.spp_lock);
+        return BT_STATUS_NOT_ENABLED;
+    }
+
+    g_spp_handle.dump_enabled = 1;
+    BT_LOGI("SPP data dump enabled");
+    pthread_mutex_unlock(&g_spp_handle.spp_lock);
+    return BT_STATUS_SUCCESS;
+}
+
+static bt_status_t spp_disable_dump(void* handle)
+{
+    if (!handle)
+        return BT_STATUS_FAIL;
+
+    pthread_mutex_lock(&g_spp_handle.spp_lock);
+    if (!g_spp_handle.started) {
+        pthread_mutex_unlock(&g_spp_handle.spp_lock);
+        return BT_STATUS_NOT_ENABLED;
+    }
+
+    g_spp_handle.dump_enabled = 0;
+    BT_LOGI("SPP data dump disabled");
+    pthread_mutex_unlock(&g_spp_handle.spp_lock);
+    return BT_STATUS_SUCCESS;
+}
+
 static void spp_cleanup(void)
 {
 }
@@ -1260,6 +1311,8 @@ static spp_interface_t sppInterface = {
     .server_stop = spp_server_stop,
     .connect = spp_connect,
     .disconnect = spp_disconnect,
+    .enable_dump = spp_enable_dump,
+    .disable_dump = spp_disable_dump,
 };
 
 static const void* get_spp_profile_interface(void)

@@ -30,6 +30,8 @@ typedef struct spp_interface {
     bt_status_t (*server_stop)(void* handle, uint16_t scn);
     bt_status_t (*connect)(void* handle, bt_address_t* addr, int16_t scn, bt_uuid_t* uuid, uint16_t* port);
     bt_status_t (*disconnect)(void* handle, bt_address_t* addr, uint16_t port);
+    bt_status_t (*enable_dump)(void* handle);
+    bt_status_t (*disable_dump)(void* handle);
 } spp_interface_t;
 
 void spp_on_connection_state_changed(bt_address_t* addr, uint16_t conn_port,

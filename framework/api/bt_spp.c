@@ -80,3 +80,23 @@ bt_status_t BTSYMBOLS(bt_spp_disconnect)(bt_instance_t* ins, void* handle, bt_ad
 
     return profile->disconnect(handle, addr, port);
 }
+
+bt_status_t BTSYMBOLS(bt_spp_enable_dump)(bt_instance_t* ins, void* handle)
+{
+    spp_interface_t* profile = get_profile_service();
+
+    if (profile->enable_dump) {
+        return profile->enable_dump(handle);
+    }
+    return BT_STATUS_UNSUPPORTED;
+}
+
+bt_status_t BTSYMBOLS(bt_spp_disable_dump)(bt_instance_t* ins, void* handle)
+{
+    spp_interface_t* profile = get_profile_service();
+
+    if (profile->disable_dump) {
+        return profile->disable_dump(handle);
+    }
+    return BT_STATUS_UNSUPPORTED;
+}
