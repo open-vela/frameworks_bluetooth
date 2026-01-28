@@ -347,7 +347,7 @@ static void STACK_CALL(conn_connect)(void* args)
     struct bt_conn* conn = NULL;
     int err;
 
-    if (le_conn_set_role(&req->addr, GATT_ROLE_CLIENT) != BT_STATUS_SUCCESS) {
+    if (bt_conn_set_role(BT_TRANSPORT_BLE, &req->addr, GATT_ROLE_CLIENT) != BT_STATUS_SUCCESS) {
         return;
     }
 
@@ -356,7 +356,7 @@ static void STACK_CALL(conn_connect)(void* args)
 
     err = bt_conn_le_create(&address, BT_CONN_LE_CREATE_CONN, BT_LE_CONN_PARAM_DEFAULT, &conn);
     if (err) {
-        le_conn_remove(&req->addr);
+        bt_conn_remove(&req->addr, BT_TRANSPORT_BLE);
         BT_LOGE("%s, failed to create connection (%d)", __func__, err);
         return;
     }
