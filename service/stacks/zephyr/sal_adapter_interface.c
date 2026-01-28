@@ -253,6 +253,7 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
         return;
     }
 
+    bt_conn_info_t* slot;
     acl_state_param_t state = {
         .transport = BT_TRANSPORT_BREDR,
         .connection_state = CONNECTION_STATE_CONNECTED
@@ -262,6 +263,10 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
     if (err) {
         state.connection_state = CONNECTION_STATE_DISCONNECTED;
         state.status = err;
+        slot = bt_conn_find(&state.addr, BT_TRANSPORT_BREDR);
+        if (slot) {
+            bt_conn_remove(&state.addr, BT_TRANSPORT_BREDR);
+        }
         bt_sal_cm_acl_disconnected_callback(cm_data_new(&state.addr, PROFILE_UNKOWN, CONN_ID_DEFAULT));
         goto error;
     }
@@ -279,6 +284,7 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
         return;
     }
 
+    bt_conn_info_t* slot;
     acl_state_param_t state = {
         .transport = BT_TRANSPORT_BREDR,
         .connection_state = CONNECTION_STATE_DISCONNECTED,
@@ -287,6 +293,11 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
 
     zblue_conn_get_addr(conn, &state.addr);
     adapter_on_connection_state_changed(&state);
+    slot = bt_conn_find(&state.addr, BT_TRANSPORT_BREDR);
+    if (slot) {
+        bt_conn_remove(&state.addr, BT_TRANSPORT_BREDR);
+    }
+
     bt_sal_cm_acl_disconnected_callback(cm_data_new(&state.addr, PROFILE_UNKOWN, CONN_ID_DEFAULT));
 }
 
