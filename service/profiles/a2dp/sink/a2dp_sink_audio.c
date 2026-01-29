@@ -299,7 +299,10 @@ static void a2dp_sink_stop_audio_req()
         stream->media_alarm = NULL;
     }
 
+    uv_mutex_lock(&stream->queue_lock);
     a2dp_sink_flush_packet_queue();
+    uv_mutex_unlock(&stream->queue_lock);
+
     stream->underflow_ts = 0;
     stream->last_ts = 0;
     stream->block_ticks = 0;
