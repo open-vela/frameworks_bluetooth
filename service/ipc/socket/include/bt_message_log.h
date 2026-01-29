@@ -46,6 +46,10 @@ BT_LOG_MESSAGE_START,
         uint32_t filter_flag;
     } _bt_log_set_flag,
         _bt_log_remove_flag;
+    struct {
+        uint8_t log_type;
+        uint8_t reserved[3];
+    } _bt_log_set_type;
 } bt_message_log_t;
 
 #endif /* _BT_MESSAGE_LOG_H__ */

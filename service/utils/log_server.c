@@ -49,6 +49,7 @@ enum {
 struct bt_logger {
     uint8_t stack_enable;
     uint8_t snoop_enable;
+    uint8_t spp_dump_enable;
 
     uint8_t framework_level;
     int stack_mask;
@@ -59,7 +60,7 @@ struct bt_logger {
     service_poll_t* poll;
 };
 
-static struct bt_logger g_logger = { 0, 0, BT_LOG_LEVEL_OFF, 0, 0, 0, -1 };
+static struct bt_logger g_logger = { 0, 0, 0, BT_LOG_LEVEL_OFF, 0, 0, 0, -1 };
 
 static const char* log_id_str(uint8_t id)
 {
@@ -70,6 +71,8 @@ static const char* log_id_str(uint8_t id)
         return "STACK";
     case LOG_ID_FRAMEWORK:
         return "FRAMEWORK";
+    case LOG_ID_SPP_DUMP:
+        return "SPP_DUMP";
     default:
         return "";
     }
@@ -140,10 +143,17 @@ void bt_log_module_enable(int id, bool changed)
     case LOG_ID_FRAMEWORK: {
         return;
     }
+    case LOG_ID_SPP_DUMP: {
+        if (g_logger.spp_dump_enable)
+            return;
+
+        g_logger.spp_dump_enable = 1;
+        break;
+    }
     }
 
 #if defined(CONFIG_KVDB) && defined(__NuttX__)
-    if (!changed) {
+    if (!changed && property != NULL) {
         property_set_int32(property, 1);
         property_commit();
     }
@@ -178,10 +188,17 @@ void bt_log_module_disable(int id, bool changed)
         g_logger.framework_level = BT_LOG_LEVEL_OFF;
         return;
     }
+    case LOG_ID_SPP_DUMP: {
+        if (!g_logger.spp_dump_enable)
+            return;
+
+        g_logger.spp_dump_enable = 0;
+        break;
+    }
     }
 
 #if defined(CONFIG_KVDB) && defined(__NuttX__)
-    if (!changed) {
+    if (!changed && property != NULL) {
         property_set_int32(property, 0);
         property_commit();
     }
@@ -316,4 +333,9 @@ bool bt_log_print_check(uint8_t level)
         return false;
 
     return true;
+}
+
+bool bt_log_spp_dump_is_enable(void)
+{
+    return g_logger.spp_dump_enable != 0;
 }

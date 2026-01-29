@@ -60,13 +60,13 @@ void bt_socket_server_log_process(service_poll_t* poll,
 {
     switch (packet->code) {
     case BT_LOG_ENABLE: {
-        BTSYMBOLS(bluetooth_enable_btsnoop_log)
-        (ins);
+        BTSYMBOLS(bluetooth_enable_log)
+        (ins, packet->log_pl._bt_log_set_type.log_type);
         break;
     }
     case BT_LOG_DISABLE: {
-        BTSYMBOLS(bluetooth_disable_btsnoop_log)
-        (ins);
+        BTSYMBOLS(bluetooth_disable_log)
+        (ins, packet->log_pl._bt_log_set_type.log_type);
         break;
     }
     case BT_LOG_SET_FILTER: {

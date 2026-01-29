@@ -41,6 +41,7 @@
 #include "bt_tools.h"
 #include "bt_trace.h"
 #include "utils/btsnoop_log.h"
+#include "utils/log.h"
 
 static int enable_cmd(void* handle, int argc, char* argv[]);
 static int disable_cmd(void* handle, int argc, char* argv[]);
@@ -51,8 +52,8 @@ static int unmask_cmd(void* handle, int argc, char* argv[]);
 static int level_cmd(void* handle, int argc, char* argv[]);
 
 static bt_command_t g_log_tables[] = {
-    { "enable", enable_cmd, 0, "\"Enable param: (\"snoop\" or \"stack\")\"" },
-    { "disable", disable_cmd, 0, "\"Disable param: (\"snoop\" or \"stack\")\"" },
+    { "enable", enable_cmd, 0, "\"Enable param: (\"snoop\" or \"stack\" or \"spp\")\"" },
+    { "disable", disable_cmd, 0, "\"Disable param: (\"snoop\" or \"stack\" or \"spp\")\"" },
     { "mask", mask_cmd, 0, "\"Enable Stack Profile & Protocol Log <bit>\"\n"
                            "\t\t\tExample enable HCI and L2CAP: \"bttool> log mask 1 4\" \n"
                            "\t\t\tProfile && Protocol Enum:\n"
@@ -107,6 +108,11 @@ static int log_control(void* handle, char* id, int enable)
             bluetooth_enable_btsnoop_log(handle);
         else
             bluetooth_disable_btsnoop_log(handle);
+    } else if (strncmp(id, "spp", strlen("spp")) == 0) {
+        if (enable)
+            bluetooth_enable_log(handle, LOG_ID_SPP_DUMP);
+        else
+            bluetooth_disable_log(handle, LOG_ID_SPP_DUMP);
     } else
         return CMD_INVALID_PARAM;
 

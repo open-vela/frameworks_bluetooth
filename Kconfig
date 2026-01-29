@@ -757,8 +757,15 @@ config BLUETOOTH_SPP_RPMSG_NET
 	default n
 	depends on NET_RPMSG
 
+config BLUETOOTH_SPP_DUMP_ENABLE
+	bool "Enable SPP data dump"
+	default y
+	help
+		Enable SPP data dump for debugging transmission issues.
+		When enabled, SPP data packets will be dumped to logs for debugging.
+
 endif #BLUETOOTH_SPP
-	
+
 config BLUETOOTH_HID_DEVICE
 	bool "Human Interface Device Profile (HID)"
 	default n

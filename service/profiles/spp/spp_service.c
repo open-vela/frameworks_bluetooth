@@ -48,11 +48,7 @@
 #define DEFAULT_PACKET_SIZE (255)
 #define SENDING_BUFS_QUOTA 13
 #define CACHE_SEND_TIMEOUT 15
-#ifdef CONFIG_BLUETOOTH_SPP_DUMPBUFFER
-#define spp_dumpbuffer(m, a, n) lib_dumpbuffer(m, a, n)
-#else
-#define spp_dumpbuffer(m, a, n)
-#endif
+#define SPP_DUMP_MAX_BYTES 16
 
 #define STACK_SVR_PORT(scn) (((scn << 1) & 0x3E) + 1)
 #define STACK_CONN_PORT(scn, conn_id, accept) \
@@ -151,6 +147,9 @@ typedef struct {
 /****************************************************************************
  * Private Function Prototypes
  ****************************************************************************/
+#ifdef CONFIG_BLUETOOTH_SPP_DUMP_ENABLE
+static void spp_dump_buffer(const spp_device_t* device, const char* direction, const uint8_t* buffer, uint32_t length);
+#endif
 static int do_spp_write(spp_device_t* device, uint8_t* buffer, uint16_t length);
 static void spp_server_cleanup_devices(spp_server_t* server);
 static void spp_proxy_connection_callback(euv_pipe_t* handle, int status, void* user_data);
@@ -166,6 +165,28 @@ static struct spp_service_global g_spp_handle = { .started = 0 };
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
+#ifdef CONFIG_BLUETOOTH_SPP_DUMP_ENABLE
+static void spp_dump_buffer(const spp_device_t* device, const char* direction, const uint8_t* buffer, uint32_t length)
+{
+    if (!bt_log_spp_dump_is_enable())
+        return;
+
+    if (!device) {
+        BT_LOGD("SPP port [null] device %s: skip dump", direction);
+        return;
+    }
+
+    if (!buffer) {
+        BT_LOGD("SPP port %" PRIu16 " %s: [null] buffer", device->conn_id, direction);
+        return;
+    }
+
+    BT_LOGD("SPP port %" PRIu16 " %s: %" PRIu32 " bytes", device->conn_id, direction, length);
+
+    lib_dumpbuffer("data:", buffer, length > SPP_DUMP_MAX_BYTES ? SPP_DUMP_MAX_BYTES : length);
+}
+#endif
+
 #if 0
 static const char* spp_event_to_string(uint8_t event)
 {
@@ -573,7 +594,9 @@ static void euv_read_complete(euv_pipe_t* handle, const uint8_t* buf, ssize_t si
         return;
     }
 
-    spp_dumpbuffer("master read:", buf, size);
+#ifdef CONFIG_BLUETOOTH_SPP_DUMP_ENABLE
+    spp_dump_buffer(device, "master read", buf, size);
+#endif
     do_spp_write(device, (uint8_t*)buf, size);
 }
 
@@ -614,11 +637,13 @@ static void spp_rx_buffer_send(spp_device_t* device)
     {
         buf = (spp_rx_buf_t*)node;
         device->rx_bytes += buf->length;
+#ifdef CONFIG_BLUETOOTH_SPP_DUMP_ENABLE
+        spp_dump_buffer(device, "master write", buf->buffer, buf->length);
+#endif
         if (euv_pipe_write(device->handle, buf->buffer, buf->length, euv_write_complete) != 0) {
             BT_LOGE("Spp write to slave port %d failed", device->conn_port);
             break;
         }
-        spp_dumpbuffer("master buffer write:", buf->buffer, buf->length);
         list_delete(node);
         free(node);
     }
@@ -743,6 +768,10 @@ static int do_spp_write(spp_device_t* device, uint8_t* buffer, uint16_t length)
             tmpbuf = buffer;
         }
 
+#ifdef CONFIG_BLUETOOTH_SPP_DUMP_ENABLE
+        spp_dump_buffer(device, "slave write", tmpbuf, size);
+#endif
+
         bt_pm_busy(PROFILE_SPP, &device->addr);
         status = bt_sal_spp_write(device->conn_port, tmpbuf, size);
         if (status != BT_STATUS_SUCCESS) {
@@ -836,7 +865,9 @@ static void spp_on_incoming_data_received(bt_address_t* addr, uint16_t port,
         return;
     }
 
-    spp_dumpbuffer("master write:", buffer, length);
+#ifdef CONFIG_BLUETOOTH_SPP_DUMP_ENABLE
+    spp_dump_buffer(device, "master write", buffer, length);
+#endif
     device->rx_bytes += length;
     ret = euv_pipe_write(device->handle, buffer, length, euv_write_complete);
     if (ret != 0) {

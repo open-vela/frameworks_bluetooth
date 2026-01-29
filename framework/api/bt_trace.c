@@ -19,6 +19,16 @@
 #include "utils/btsnoop_log.h"
 #include "utils/log.h"
 
+void BTSYMBOLS(bluetooth_enable_log)(bt_instance_t* ins, uint8_t log_type)
+{
+    bt_log_module_enable((int)log_type, false);
+}
+
+void BTSYMBOLS(bluetooth_disable_log)(bt_instance_t* ins, uint8_t log_type)
+{
+    bt_log_module_disable((int)log_type, false);
+}
+
 void BTSYMBOLS(bluetooth_enable_btsnoop_log)(bt_instance_t* ins)
 {
     bt_log_module_enable(LOG_ID_SNOOP, false);

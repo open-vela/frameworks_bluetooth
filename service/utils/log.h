@@ -35,6 +35,7 @@
 #define LOG_ID_SNOOP 0
 #define LOG_ID_STACK 1
 #define LOG_ID_FRAMEWORK 2
+#define LOG_ID_SPP_DUMP 3
 
 enum bt_log_level_ {
     BT_LOG_LEVEL_OFF = 0x0,
@@ -100,4 +101,5 @@ void bt_log_server_init(void);
 void bt_log_server_cleanup(void);
 void bt_log_module_enable(int id, bool changed);
 void bt_log_module_disable(int id, bool changed);
+bool bt_log_spp_dump_is_enable(void);
 #endif

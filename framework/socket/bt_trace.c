@@ -19,22 +19,34 @@
 #include "bt_socket.h"
 #include "utils/btsnoop_log.h"
 
-void bluetooth_enable_btsnoop_log(bt_instance_t* ins)
+void bluetooth_enable_log(bt_instance_t* ins, uint8_t log_type)
 {
     bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, );
 
+    packet.log_pl._bt_log_set_type.log_type = log_type;
     (void)bt_socket_client_sendrecv(ins, &packet, BT_LOG_ENABLE);
+}
+
+void bluetooth_disable_log(bt_instance_t* ins, uint8_t log_type)
+{
+    bt_message_packet_t packet;
+
+    BT_SOCKET_INS_VALID(ins, );
+
+    packet.log_pl._bt_log_set_type.log_type = log_type;
+    (void)bt_socket_client_sendrecv(ins, &packet, BT_LOG_DISABLE);
+}
+
+void bluetooth_enable_btsnoop_log(bt_instance_t* ins)
+{
+    bluetooth_enable_log(ins, 0);
 }
 
 void bluetooth_disable_btsnoop_log(bt_instance_t* ins)
 {
-    bt_message_packet_t packet;
-
-    BT_SOCKET_INS_VALID(ins, );
-
-    (void)bt_socket_client_sendrecv(ins, &packet, BT_LOG_DISABLE);
+    bluetooth_disable_log(ins, 0);
 }
 
 void bluetooth_set_btsnoop_filter(bt_instance_t* ins, btsnoop_filter_flag_t filter_flag)

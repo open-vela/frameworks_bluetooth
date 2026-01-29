@@ -20,22 +20,34 @@
 #include "bt_trace.h"
 #include "utils/btsnoop_log.h"
 
-bt_status_t bluetooth_enable_btsnoop_log_async(bt_instance_t* ins, bt_status_cb_t cb, void* userdata)
+bt_status_t bluetooth_enable_log_async(bt_instance_t* ins, uint8_t log_type, bt_status_cb_t cb, void* userdata)
 {
     bt_message_packet_t packet = { 0 };
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
+    packet.log_pl._bt_log_set_type.log_type = log_type;
     return bt_socket_client_send_with_reply(ins, &packet, BT_LOG_ENABLE, NULL, (void*)cb, userdata);
+}
+
+bt_status_t bluetooth_disable_log_async(bt_instance_t* ins, uint8_t log_type, bt_status_cb_t cb, void* userdata)
+{
+    bt_message_packet_t packet = { 0 };
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    packet.log_pl._bt_log_set_type.log_type = log_type;
+    return bt_socket_client_send_with_reply(ins, &packet, BT_LOG_DISABLE, NULL, (void*)cb, userdata);
+}
+
+bt_status_t bluetooth_enable_btsnoop_log_async(bt_instance_t* ins, bt_status_cb_t cb, void* userdata)
+{
+    return bluetooth_enable_log_async(ins, 0, cb, userdata);
 }
 
 bt_status_t bluetooth_disable_btsnoop_log_async(bt_instance_t* ins, bt_status_cb_t cb, void* userdata)
 {
-    bt_message_packet_t packet = { 0 };
-
-    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
-
-    return bt_socket_client_send_with_reply(ins, &packet, BT_LOG_DISABLE, NULL, (void*)cb, userdata);
+    return bluetooth_disable_log_async(ins, 0, cb, userdata);
 }
 
 bt_status_t bluetooth_set_btsnoop_filter_async(bt_instance_t* ins, btsnoop_filter_flag_t filter_flag,
