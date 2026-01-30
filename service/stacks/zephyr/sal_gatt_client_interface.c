@@ -26,6 +26,7 @@
 #include "sal_gatt_client_interface.h"
 #include "sal_interface.h"
 #include "sal_zblue.h"
+#include "sal_zephyr_interface.h"
 #include "service_loop.h"
 #include "utils/log.h"
 

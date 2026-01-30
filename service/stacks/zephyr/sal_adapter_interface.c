@@ -40,6 +40,7 @@
 #include "sal_adapter_le_interface.h"
 #include "sal_connection_manager.h"
 #include "sal_interface.h"
+#include "sal_zephyr_interface.h"
 #include "sal_zblue.h"
 
 #include <settings_zblue.h>
@@ -48,8 +49,6 @@
 #include "keys.h"
 
 #include "utils/log.h"
-
-#define BT_INVALID_CONNECTION_HANDLE 0xFFFF
 
 #define STACK_CALL(func) zblue_##func
 

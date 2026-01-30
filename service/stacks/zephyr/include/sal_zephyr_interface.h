@@ -25,13 +25,8 @@
 #include "power_manager.h"
 #include "vhal/bt_vhal.h"
 
-#define GATT_ROLE_SERVER (1UL << 0)
-#define GATT_ROLE_CLIENT (1UL << 1)
-
 struct bt_conn* get_le_conn_from_addr(bt_address_t* addr);
 bt_status_t get_le_addr_from_conn(struct bt_conn* conn, bt_address_t* addr);
-bt_status_t le_conn_set_role(bt_address_t* addr, uint8_t flag);
-bt_status_t le_conn_remove(bt_address_t* addr);
 
 #if defined(CONFIG_BT_USER_PHY_UPDATE)
 ble_phy_type_t le_phy_convert_from_stack(uint8_t mode);
