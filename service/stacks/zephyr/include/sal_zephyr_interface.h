@@ -25,6 +25,9 @@
 #include "power_manager.h"
 #include "vhal/bt_vhal.h"
 
+#define GATT_ROLE_SERVER (1UL << 0)
+#define GATT_ROLE_CLIENT (1UL << 1)
+
 struct bt_conn* get_le_conn_from_addr(bt_address_t* addr);
 bt_status_t get_le_addr_from_conn(struct bt_conn* conn, bt_address_t* addr);
 
