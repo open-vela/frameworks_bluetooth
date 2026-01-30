@@ -25,9 +25,6 @@
 #include "power_manager.h"
 #include "vhal/bt_vhal.h"
 
-#define GATT_ROLE_SERVER (1UL << 0)
-#define GATT_ROLE_CLIENT (1UL << 1)
-
 bt_status_t bt_sal_le_init(const bt_vhal_interface* vhal);
 void bt_sal_le_cleanup(void);
 bt_status_t bt_sal_le_enable(bt_controller_id_t id);
