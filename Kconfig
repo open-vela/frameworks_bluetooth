@@ -712,7 +712,7 @@ menuconfig BLUETOOTH_SPP
 if BLUETOOTH_SPP
 config BLUETOOTH_SPP_MAX_CONNECTIONS
 	int "SPP max connections"
-	default 1
+	default 8
 
 config BLUETOOTH_SPP_SERVER_MAX_CONNECTIONS
 	int "SPP Server max connections"
