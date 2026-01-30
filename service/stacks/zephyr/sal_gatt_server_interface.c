@@ -62,8 +62,8 @@
 #define GATT_OPS_READ_REQUEST 1
 #define GATT_WRITE_FLAGS_RELIABLE_WRITE (BT_GATT_WRITE_FLAG_PREPARE | BT_GATT_WRITE_FLAG_EXECUTE)
 
-#define MAKE_REQUEST_ID(handle, op_type) (((uint32_t)(op_type) << 31) | ((handle) & 0xFFFF))
-#define REQUEST_ID_HANDLE(id) ((uint16_t)((id) & 0xFFFF))
+#define MAKE_REQUEST_ID(handle, op_type) (((uint32_t)(op_type) << 31) | ((handle) & (0xFFFF)))
+#define REQUEST_ID_HANDLE(id) ((uint16_t)((id) & (0xFFFF)))
 #define REQUEST_ID_OP_TYPE(id) (((id) >> 31) & 0x1)
 #define REQUEST_ID_NORSP ((uint32_t)0xFFFFFFFF)
 
@@ -158,11 +158,23 @@ typedef struct {
 
 static uint8_t attr_count;
 static uint8_t svc_attr_count;
-static uint8_t svc_count;
 
 static struct bt_gatt_service server_svcs[CONFIG_GATT_SERVER_MAX_SERVICES];
 static struct bt_gatt_attr server_db[CONFIG_GATT_SERVER_MAX_ATTRIBUTES];
 static sal_gatt_sdp_record_t gatt_sdp_records[CONFIG_GATT_SERVER_MAX_SERVICES];
+
+static int find_free_service_index(void)
+{
+    int i;
+
+    for (i = 0; i < ARRAY_SIZE(server_svcs); i++) {
+        if (server_svcs[i].attrs == NULL && server_svcs[i].attr_count == 0) {
+            return i;
+        }
+    }
+
+    return -1;
+}
 
 /* Generic ATT SDP record */
 static struct bt_sdp_attribute gatt_attrs_template[] = {
@@ -401,14 +413,23 @@ static void gatt_sdp_delete_record(struct bt_sdp_record* record)
 static bt_status_t register_service(bool is_over_br)
 {
     int err;
+    int service_index;
     struct bt_sdp_record* record;
 
-    server_svcs[svc_count].attrs = server_db + (attr_count - svc_attr_count);
-    server_svcs[svc_count].attr_count = svc_attr_count;
+    service_index = find_free_service_index();
+    if (service_index < 0) {
+        BT_LOGE("%s, service full", __func__);
+        return BT_STATUS_FAIL;
+    }
 
-    err = bt_gatt_service_register(&server_svcs[svc_count]);
+    server_svcs[service_index].attrs = server_db + (attr_count - svc_attr_count);
+    server_svcs[service_index].attr_count = svc_attr_count;
+
+    err = bt_gatt_service_register(&server_svcs[service_index]);
     if (err) {
-        BT_LOGD("%s, gatt service register", __func__);
+        server_svcs[service_index].attrs = NULL;
+        server_svcs[service_index].attr_count = 0;
+        BT_LOGD("%s, gatt service register %d", __func__, err);
         return BT_STATUS_FAIL;
     }
 
@@ -416,7 +437,7 @@ static bt_status_t register_service(bool is_over_br)
         goto out;
     }
 
-    record = gatt_sdp_create_record(&server_svcs[svc_count]);
+    record = gatt_sdp_create_record(&server_svcs[service_index]);
 
     if (!record) {
         BT_LOGE("Failed to create SDP record");
@@ -431,8 +452,6 @@ static bt_status_t register_service(bool is_over_br)
     }
 
 out:
-    svc_count++;
-
     svc_attr_count = 0U;
     return BT_STATUS_SUCCESS;
 }
@@ -469,7 +488,6 @@ static void add_service(gatt_element_t* element, bool is_over_br)
     }
 
     if (!attr_svc) {
-        svc_count--;
         BT_LOGE("%s, attr_svc is null", __func__);
         return;
     }
@@ -1011,7 +1029,7 @@ static void remove_service(gatt_element_t* element)
     memset(&server_db[attr_count - count], 0, count * sizeof(struct bt_gatt_attr));
     attr_count -= count;
 
-    for (i = 0; i < svc_count; i++) {
+    for (i = 0; i < ARRAY_SIZE(server_svcs); i++) {
         struct bt_gatt_service* s = &server_svcs[i];
         if (!s->attrs) {
             continue;
@@ -1024,7 +1042,6 @@ static void remove_service(gatt_element_t* element)
 
     svc->attrs = NULL;
     svc->attr_count = 0;
-    svc_count--;
 
     BT_LOGD("%s, removed service at index %zu, attr_count now %u", __func__, index, attr_count);
 }
