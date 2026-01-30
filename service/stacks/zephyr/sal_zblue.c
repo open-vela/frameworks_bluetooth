@@ -17,6 +17,7 @@
 
 #include "sal_zblue.h"
 #include "sal_interface.h"
+#include "sal_zephyr_interface.h"
 #include "utils/log.h"
 
 static bt_conn_info_t g_conn_info[CONFIG_BT_MAX_CONN];
