@@ -14,7 +14,7 @@
  * limitations under the License.
  ***************************************************************************/
 #define LOG_TAG "hf_stm"
-
+// gogogo
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
