@@ -879,7 +879,7 @@ static void handle_packet_received(bt_address_t* addr, uint16_t cid, l2cap_pkt_t
 
     if (channel->incoming.credits == 0) {
         BT_LOGE("%s, L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") has no incoming credits",
-            __func__, channel->id, channel->local_cid, packet->len_received);
+            __func__, channel->id, channel->local_cid);
         free(packet);
         l2cap_abort_channel(channel);
         return;
