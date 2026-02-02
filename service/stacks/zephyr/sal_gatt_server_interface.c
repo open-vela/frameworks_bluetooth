@@ -156,8 +156,8 @@ typedef struct {
     struct bt_sdp_record* record;
 } sal_gatt_sdp_record_t;
 
-static uint8_t attr_count;
-static uint8_t svc_attr_count;
+static size_t attr_count;
+static size_t svc_attr_count;
 
 static struct bt_gatt_service server_svcs[CONFIG_GATT_SERVER_MAX_SERVICES];
 static struct bt_gatt_attr server_db[CONFIG_GATT_SERVER_MAX_ATTRIBUTES];
@@ -174,6 +174,40 @@ static int find_free_service_index(void)
     }
 
     return -1;
+}
+
+static void remove_from_server_db(const struct bt_gatt_attr* start, size_t count)
+{
+    size_t index, i;
+
+    if (!start || count == 0) {
+        return;
+    }
+
+    index = start - server_db;
+
+    if (start < server_db || index >= attr_count) {
+        BT_LOGE("%s, invalid start pointer", __func__);
+        return;
+    }
+
+    if (count > attr_count || index + count > attr_count) {
+        BT_LOGE("%s, invalid count: %zu (index=%zu, attr_count=%zu)", __func__, count, index, attr_count);
+        return;
+    }
+
+    for (i = 0; i < count; i++) {
+        free(start[i].user_data);
+        free((void*)start[i].uuid);
+    }
+
+    if (index + count < attr_count) {
+        memmove(&server_db[index], &server_db[index + count],
+            (attr_count - index - count) * sizeof(struct bt_gatt_attr));
+    }
+
+    memset(&server_db[attr_count - count], 0, count * sizeof(struct bt_gatt_attr));
+    attr_count -= count;
 }
 
 /* Generic ATT SDP record */
@@ -415,11 +449,13 @@ static bt_status_t register_service(bool is_over_br)
     int err;
     int service_index;
     struct bt_sdp_record* record;
+    bt_status_t status = BT_STATUS_SUCCESS;
 
     service_index = find_free_service_index();
     if (service_index < 0) {
         BT_LOGE("%s, service full", __func__);
-        return BT_STATUS_FAIL;
+        status = BT_STATUS_FAIL;
+        goto out;
     }
 
     server_svcs[service_index].attrs = server_db + (attr_count - svc_attr_count);
@@ -430,7 +466,8 @@ static bt_status_t register_service(bool is_over_br)
         server_svcs[service_index].attrs = NULL;
         server_svcs[service_index].attr_count = 0;
         BT_LOGD("%s, gatt service register %d", __func__, err);
-        return BT_STATUS_FAIL;
+        status = BT_STATUS_FAIL;
+        goto out;
     }
 
     if (!is_over_br) {
@@ -441,19 +478,22 @@ static bt_status_t register_service(bool is_over_br)
 
     if (!record) {
         BT_LOGE("Failed to create SDP record");
-        return BT_STATUS_FAIL;
+        goto out;
     }
 
     err = bt_sdp_register_service(record);
     if (err != 0) {
         BT_LOGE("GATT SDP record register fail");
         gatt_sdp_delete_record(record);
-        return BT_STATUS_FAIL;
+        goto out;
     }
 
 out:
     svc_attr_count = 0U;
-    return BT_STATUS_SUCCESS;
+    if (status != BT_STATUS_SUCCESS) {
+        remove_from_server_db(server_db + (attr_count - svc_attr_count), svc_attr_count);
+    }
+    return status;
 }
 
 static void add_service(gatt_element_t* element, bool is_over_br)
@@ -1010,18 +1050,7 @@ static void remove_service(gatt_element_t* element)
     count = svc->attr_count;
     index = start - server_db;
 
-    for (i = 0; i < count; i++) {
-        free(start[i].user_data);
-        free((void*)start[i].uuid);
-    }
-
-    if (index + count < attr_count) {
-        memmove(&server_db[index], &server_db[index + count],
-            (attr_count - index - count) * sizeof(struct bt_gatt_attr));
-    }
-
-    memset(&server_db[attr_count - count], 0, count * sizeof(struct bt_gatt_attr));
-    attr_count -= count;
+    remove_from_server_db(start, count);
 
     for (i = 0; i < ARRAY_SIZE(server_svcs); i++) {
         struct bt_gatt_service* s = &server_svcs[i];
