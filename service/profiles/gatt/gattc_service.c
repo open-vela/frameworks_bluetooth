@@ -221,9 +221,8 @@ static void gattc_service_delete(gattc_service_t* service)
         return;
 
     if (service->elements)
-#ifndef CONFIG_BLUETOOTH_STACK_LE_ZBLUE
         free(service->elements);
-#endif
+
     free(service);
 }
 
