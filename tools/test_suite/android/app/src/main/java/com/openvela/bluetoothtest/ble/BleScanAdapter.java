@@ -163,8 +163,10 @@ public class BleScanAdapter extends RecyclerAdapter<BtDevice> {
 
         bluetoothScanner = bluetoothAdapter.getBluetoothLeScanner();
         if (bluetoothScanner != null) {
-            super.mItems.clear();
-            deviceIndexMap.clear();
+            synchronized (mItems) {
+                super.mItems.clear();
+                deviceIndexMap.clear();
+            }
             super.notifyDataSetChanged();
             startScanTimer(scanPeriod);
 
@@ -243,19 +245,20 @@ public class BleScanAdapter extends RecyclerAdapter<BtDevice> {
             }
 
             synchronized (mItems) {
-                final String address = result.getDevice().getAddress();
                 Integer index = deviceIndexMap.get(address);
-                if (index != null) {
+                if (index == null || index >= mItems.size() || !TextUtils.equals(mItems.get(index).getAddress(), address)) {
+                    rebuildDeviceIndexMap();
+                    index = deviceIndexMap.get(address);
+                }
+                if (index != null && index < mItems.size()) {
                     BtDevice device = mItems.get(index);
-                    if (TextUtils.equals(device.getAddress(), address)) {
-                        if (device.getRssi() != result.getRssi() && System.currentTimeMillis() - device.getRssiUpdateTime() > RSSI_UPDATE_INTERVAL_MS) {
-                            device.setRssi(result.getRssi());
-                            device.setRssiUpdateTime(System.currentTimeMillis());
-                            mItems.set(index, device);
-                            notifyItemChanged(index);
-                        }
-                        return;
+                    if (device.getRssi() != result.getRssi() && System.currentTimeMillis() - device.getRssiUpdateTime() > RSSI_UPDATE_INTERVAL_MS) {
+                        device.setRssi(result.getRssi());
+                        device.setRssiUpdateTime(System.currentTimeMillis());
+                        mItems.set(index, device);
+                        notifyItemChanged(index);
                     }
+                    return;
                 }
 
                 BtDevice newDevice = new BtDevice(address, name);
@@ -269,6 +272,16 @@ public class BleScanAdapter extends RecyclerAdapter<BtDevice> {
 
                 if (bleDiscoveryCallback != null) {
                     bleDiscoveryCallback.onDiscoveryResult(newDevice);
+                }
+            }
+        }
+
+        private void rebuildDeviceIndexMap() {
+            deviceIndexMap.clear();
+            for (int i = 0; i < mItems.size(); i++) {
+                BtDevice device = mItems.get(i);
+                if (device.getAddress() != null) {
+                    deviceIndexMap.put(device.getAddress(), i);
                 }
             }
         }
