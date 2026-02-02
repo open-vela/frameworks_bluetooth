@@ -472,6 +472,7 @@ static uint8_t zblue_gatt_client_disc_desc_callback(struct bt_conn* conn, const 
     gatt_element_t* element;
     bt_address_t addr;
     uint16_t start_HDL, end_HDL;
+    gatt_element_t* element_db;
 
     get_le_addr_from_conn(conn, &addr);
     instance = gatt_find_instance_by_addr(&addr);
@@ -491,7 +492,10 @@ static uint8_t zblue_gatt_client_disc_desc_callback(struct bt_conn* conn, const 
                 uint8_t base = instance->current_element_base_idx;
                 uint8_t size = instance->element_size - base;
 
-                if_gattc_on_service_discovered(&instance->addr, &instance->element[base], size);
+                element_db = calloc(size, sizeof(gatt_element_t));
+                memcpy(element_db, &instance->element[base], size * sizeof(gatt_element_t));
+
+                if_gattc_on_service_discovered(&instance->addr, element_db, size);
 
                 service = &instance->service[instance->service_idx];
                 instance->current_element_base_idx = instance->element_size;
@@ -513,7 +517,10 @@ static uint8_t zblue_gatt_client_disc_desc_callback(struct bt_conn* conn, const 
                 uint8_t base = instance->current_element_base_idx;
                 uint8_t size = instance->element_size - base;
 
-                if_gattc_on_service_discovered(&instance->addr, &instance->element[base], size);
+                element_db = calloc(size, sizeof(gatt_element_t));
+                memcpy(element_db, &instance->element[base], size * sizeof(gatt_element_t));
+
+                if_gattc_on_service_discovered(&instance->addr, element_db, size);
                 if_gattc_on_discover_completed(&addr, GATT_STATUS_SUCCESS);
                 gatt_discover_cleanup(instance);
             }
@@ -552,7 +559,10 @@ static uint8_t zblue_gatt_client_disc_desc_callback(struct bt_conn* conn, const 
                 uint8_t base = instance->current_element_base_idx;
                 uint8_t size = instance->element_size - base;
 
-                if_gattc_on_service_discovered(&instance->addr, &instance->element[base], size);
+                element_db = calloc(size, sizeof(gatt_element_t));
+                memcpy(element_db, &instance->element[base], size * sizeof(gatt_element_t));
+
+                if_gattc_on_service_discovered(&instance->addr, element_db, size);
 
                 service = &instance->service[instance->service_idx];
                 instance->current_element_base_idx = instance->element_size;
@@ -574,7 +584,10 @@ static uint8_t zblue_gatt_client_disc_desc_callback(struct bt_conn* conn, const 
                 uint8_t base = instance->current_element_base_idx;
                 uint8_t size = instance->element_size - base;
 
-                if_gattc_on_service_discovered(&instance->addr, &instance->element[base], size);
+                element_db = calloc(size, sizeof(gatt_element_t));
+                memcpy(element_db, &instance->element[base], size * sizeof(gatt_element_t));
+
+                if_gattc_on_service_discovered(&instance->addr, element_db, size);
                 if_gattc_on_discover_completed(&addr, GATT_STATUS_SUCCESS);
                 gatt_discover_cleanup(instance);
             }
@@ -615,6 +628,7 @@ static uint8_t zblue_gatt_client_disc_chrc_callback(struct bt_conn* conn, const 
     gatt_element_t* element;
     bt_address_t addr;
     uint16_t start_HDL, end_HDL;
+    gatt_element_t* element_db;
 
     get_le_addr_from_conn(conn, &addr);
 
@@ -662,7 +676,10 @@ static uint8_t zblue_gatt_client_disc_chrc_callback(struct bt_conn* conn, const 
                 uint8_t base = instance->current_element_base_idx;
                 uint8_t size = instance->element_size - base;
 
-                if_gattc_on_service_discovered(&instance->addr, &instance->element[base], size);
+                element_db = calloc(size, sizeof(gatt_element_t));
+                memcpy(element_db, &instance->element[base], size * sizeof(gatt_element_t));
+
+                if_gattc_on_service_discovered(&instance->addr, element_db, size);
 
                 instance->current_element_base_idx = instance->element_size;
                 service = &instance->service[instance->service_idx];
@@ -683,7 +700,10 @@ static uint8_t zblue_gatt_client_disc_chrc_callback(struct bt_conn* conn, const 
                 uint8_t base = instance->current_element_base_idx;
                 uint8_t size = instance->element_size - base;
 
-                if_gattc_on_service_discovered(&instance->addr, &instance->element[base], size);
+                element_db = calloc(size, sizeof(gatt_element_t));
+                memcpy(element_db, &instance->element[base], size * sizeof(gatt_element_t));
+
+                if_gattc_on_service_discovered(&instance->addr, element_db, size);
                 if_gattc_on_discover_completed(&addr, GATT_STATUS_SUCCESS);
                 gatt_discover_cleanup(instance);
             }
