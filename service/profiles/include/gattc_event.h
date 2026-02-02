@@ -187,6 +187,7 @@ typedef struct
         struct gattc_discover_req_param {
             void* conn_handle;
             gatt_discover_type_t type;
+            bt_uuid_t filter_uuid;
         } discover;
 
         /**
