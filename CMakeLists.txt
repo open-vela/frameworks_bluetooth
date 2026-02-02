@@ -177,7 +177,7 @@ if(CONFIG_BLUETOOTH)
 
     if(CONFIG_BLUETOOTH_BLE_SCAN)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/socket/bt_le_scan.c)
-      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_le_scan.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_scan.c)
     endif()
 
     if(CONFIG_BLUETOOTH_PAN)
