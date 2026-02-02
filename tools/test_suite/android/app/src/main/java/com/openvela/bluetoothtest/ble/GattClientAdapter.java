@@ -64,7 +64,8 @@ public class GattClientAdapter extends RecyclerAdapter<BluetoothGattService> {
         String serviceUuid = gattService.getUuid().toString();
         StringBuilder builder = new StringBuilder();
         builder.append("UUID: 0x");
-        if (serviceUuid.toLowerCase().matches(BASE_UUID_REGEX)) {
+        if (serviceUuid.length() == 36 &&
+            serviceUuid.regionMatches(true, 8, "-0000-1000-8000-00805f9b34fb", 0, 28)) {
             builder.append(serviceUuid.substring(4, 8).toUpperCase());
         } else {
             builder.append(serviceUuid);

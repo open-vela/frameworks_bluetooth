@@ -18,6 +18,8 @@ package com.openvela.bluetoothtest.ble;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -52,6 +54,8 @@ public class BleScanAdapter extends RecyclerAdapter<BtDevice> {
     private volatile BluetoothLeScanner bluetoothScanner;
     private ScanSettings scanSettings;
     private String[] scanFilters;
+    private String[] lowerScanFilters;
+    private final Map<String, Integer> deviceIndexMap = new HashMap<>();
     private BluetoothDiscoveryCallback<BtDevice> bleDiscoveryCallback;
     private int view_position = -1;
 
@@ -160,10 +164,19 @@ public class BleScanAdapter extends RecyclerAdapter<BtDevice> {
         bluetoothScanner = bluetoothAdapter.getBluetoothLeScanner();
         if (bluetoothScanner != null) {
             super.mItems.clear();
+            deviceIndexMap.clear();
             super.notifyDataSetChanged();
             startScanTimer(scanPeriod);
 
             this.scanFilters = scanFilters;
+            if (scanFilters != null) {
+                lowerScanFilters = new String[scanFilters.length];
+                for (int i = 0; i < scanFilters.length; i++) {
+                    lowerScanFilters[i] = scanFilters[i] != null ? scanFilters[i].toLowerCase() : null;
+                }
+            } else {
+                lowerScanFilters = null;
+            }
             scanSettings = new ScanSettings.Builder()
                             .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
                             .setReportDelay(0L)
@@ -206,33 +219,40 @@ public class BleScanAdapter extends RecyclerAdapter<BtDevice> {
         @SuppressLint("NotifyDataSetChanged")
         @Override
         public void onScanResult(final int callbackType, final ScanResult result) {
-            synchronized (this) {
-                final String address = result.getDevice().getAddress();
-                final String name = result.getDevice().getName();
-                boolean found = true;
+            final String address = result.getDevice().getAddress();
+            final String name = result.getDevice().getName();
+            final String lowerAddress = address != null ? address.toLowerCase() : null;
+            final String lowerName = name != null ? name.toLowerCase() : null;
+            boolean found = true;
 
-                if (scanFilters != null) {
-                    found = false;
-                    for (String filter : scanFilters) {
-                        if ((address != null && address.toLowerCase().contains(filter.toLowerCase())) ||
-                            (name != null && name.toLowerCase().contains(filter.toLowerCase()))) {
-                            found = true;
-                            break;
-                        }
+            if (lowerScanFilters != null) {
+                found = false;
+                for (String filter : lowerScanFilters) {
+                    if (filter == null) {
+                        continue;
+                    }
+                    if ((lowerAddress != null && lowerAddress.contains(filter)) ||
+                        (lowerName != null && lowerName.contains(filter))) {
+                        found = true;
+                        break;
                     }
                 }
-                if (!found) {
-                    return;
-                }
+            }
+            if (!found) {
+                return;
+            }
 
-                for (int i = 0; i < getItemCount(); i++) {
-                    BtDevice device = mItems.get(i);
+            synchronized (mItems) {
+                final String address = result.getDevice().getAddress();
+                Integer index = deviceIndexMap.get(address);
+                if (index != null) {
+                    BtDevice device = mItems.get(index);
                     if (TextUtils.equals(device.getAddress(), address)) {
                         if (device.getRssi() != result.getRssi() && System.currentTimeMillis() - device.getRssiUpdateTime() > RSSI_UPDATE_INTERVAL_MS) {
                             device.setRssi(result.getRssi());
                             device.setRssiUpdateTime(System.currentTimeMillis());
-                            mItems.set(i, device);
-                            notifyItemChanged(i);
+                            mItems.set(index, device);
+                            notifyItemChanged(index);
                         }
                         return;
                     }
@@ -244,6 +264,7 @@ public class BleScanAdapter extends RecyclerAdapter<BtDevice> {
                 newDevice.setRssi(result.getRssi());
                 newDevice.setRssiUpdateTime(System.currentTimeMillis());
                 mItems.add(newDevice);
+                deviceIndexMap.put(address, mItems.size() - 1);
                 notifyDataSetChanged();
 
                 if (bleDiscoveryCallback != null) {

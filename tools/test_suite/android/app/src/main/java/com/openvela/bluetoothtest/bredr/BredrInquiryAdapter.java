@@ -45,6 +45,7 @@ public class BredrInquiryAdapter extends RecyclerAdapter<BtDevice> {
     private final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     private volatile BluetoothDiscoveryObserver bluetoothDiscoveryObserver;
     private String[] discoveryFilters;
+    private String[] lowerDiscoveryFilters;
     private BluetoothDiscoveryCallback<BtDevice> bluetoothDiscoveryCallback;
     private int view_position = -1;
 
@@ -97,6 +98,14 @@ public class BredrInquiryAdapter extends RecyclerAdapter<BtDevice> {
         startDiscoveryTimer(discoveryPeriod);
 
         this.discoveryFilters = discoveryFilters;
+        if (discoveryFilters != null) {
+            lowerDiscoveryFilters = new String[discoveryFilters.length];
+            for (int i = 0; i < discoveryFilters.length; i++) {
+                lowerDiscoveryFilters[i] = discoveryFilters[i] != null ? discoveryFilters[i].toLowerCase() : null;
+            }
+        } else {
+            lowerDiscoveryFilters = null;
+        }
         bluetoothDiscoveryObserver.startDiscovery();
     }
 
@@ -130,13 +139,18 @@ public class BredrInquiryAdapter extends RecyclerAdapter<BtDevice> {
         public void onDiscoveryResult(final BtDevice foundDevice) {
             final String address = foundDevice.getAddress();
             final String name = foundDevice.getName();
+            final String lowerAddress = address != null ? address.toLowerCase() : null;
+            final String lowerName = name != null ? name.toLowerCase() : null;
             boolean found = true;
 
-            if (discoveryFilters != null) {
+            if (lowerDiscoveryFilters != null) {
                 found = false;
-                for (String filter : discoveryFilters) {
-                    if ((address != null && address.toLowerCase().contains(filter.toLowerCase())) ||
-                        (name != null && name.toLowerCase().contains(filter.toLowerCase()))) {
+                for (String filter : lowerDiscoveryFilters) {
+                    if (filter == null) {
+                        continue;
+                    }
+                    if ((lowerAddress != null && lowerAddress.contains(filter)) ||
+                        (lowerName != null && lowerName.contains(filter))) {
                         found = true;
                         break;
                     }
