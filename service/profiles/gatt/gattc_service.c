@@ -985,6 +985,58 @@ void* if_gattc_get_remote(void* conn_handle)
     return connection->remote;
 }
 
+uint16_t if_gattc_find_ccc_handle_by_value_handle(bt_address_t* addr, uint16_t value_handle)
+{
+    static const bt_uuid_t uuid_ccc = BT_UUID_DECLARE_16(BT_UUID_GATT_CCCD);
+    bt_list_node_t* node;
+    gattc_connection_t* connection;
+
+    if (!addr || !value_handle) {
+        return 0;
+    }
+
+    connection = find_gattc_connection_by_addr(addr);
+    if (!connection || !connection->services) {
+        return 0;
+    }
+
+    for (node = bt_list_head(connection->services); node != NULL; node = bt_list_next(connection->services, node)) {
+        gattc_service_t* service = (gattc_service_t*)bt_list_node(node);
+        int start = -1;
+
+        if (!service || !service->elements || service->element_size <= 0) {
+            continue;
+        }
+
+        for (int i = 0; i < service->element_size; i++) {
+            if (service->elements[i].handle == value_handle) {
+                start = i + 1;
+                break;
+            }
+        }
+
+        if (start < 0) {
+            continue;
+        }
+
+        for (int i = start; i < service->element_size; i++) {
+            const gatt_element_t* elem = &service->elements[i];
+
+            if (elem->type != GATT_DESCRIPTOR) {
+                break;
+            }
+
+            if (!bt_uuid_compare(&elem->uuid, &uuid_ccc)) {
+                return elem->handle;
+            }
+        }
+
+        return 0;
+    }
+
+    return 0;
+}
+
 static const profile_service_t gattc_service = {
     .auto_start = true,
     .name = PROFILE_GATTC_NAME,
