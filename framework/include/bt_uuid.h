@@ -32,6 +32,12 @@ extern "C" {
 #define BT_UUID_HFP 0x111E
 #define BT_UUID_HFP_AG 0x111F
 
+/* GATT Descriptor UUIDs (16-bit) */
+#define BT_UUID_GATT_CEPD 0x2900
+#define BT_UUID_GATT_CUDD 0x2901
+#define BT_UUID_GATT_CCCD 0x2902
+#define BT_UUID_GATT_CPFD 0x2904
+
 typedef enum {
     BT_UUID16_TYPE = 2,
     BT_UUID32_TYPE = 4,

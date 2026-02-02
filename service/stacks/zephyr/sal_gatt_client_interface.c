@@ -174,47 +174,6 @@ static void gatt_delete_subscribe_slot_by_param(struct gatt_instance* instance, 
     }
 }
 
-static void gatt_clear_all_subscribe_slots(struct gatt_instance* instance)
-{
-    memset(instance->subscribe_slot, 0, sizeof(instance->subscribe_slot));
-}
-
-static uint16_t gatt_find_ccc_handle_by_value_handle(struct gatt_instance* instance, uint16_t value_handle)
-{
-    static const struct bt_uuid_16 uuid_ccc = BT_UUID_INIT_16(BT_UUID_GATT_CCC_VAL);
-    static union uuid u;
-    int start = -1;
-
-    for (int i = 0; i < CONFIG_GATT_CLIENT_ELEMENT_MAX; i++) {
-        if (instance->element[i].handle == value_handle) {
-            start = i + 1;
-            break;
-        }
-    }
-
-    if (start < 0) {
-        return 0;
-    }
-
-    for (int i = start; i < CONFIG_GATT_CLIENT_ELEMENT_MAX; i++) {
-        const gatt_element_t* elem = &instance->element[i];
-
-        if ((elem->handle == 0) || (elem->type == GATT_CHARACTERISTIC)) {
-            break;
-        }
-
-        if (!zblue_uuid2_to_uuid1(&u.uuid, &elem->uuid)) {
-            continue;
-        }
-
-        if (!bt_uuid_cmp(&u.uuid, &uuid_ccc.uuid)) {
-            return elem->handle;
-        }
-    }
-
-    return 0;
-}
-
 static struct gatt_instance* gatt_find_instance_by_addr(bt_address_t* addr)
 {
     for (int i = 0; i < CONFIG_BLUETOOTH_GATTC_MAX_CONNECTIONS; i++) {
@@ -1007,17 +966,11 @@ bt_status_t bt_sal_gatt_client_discover_all_services(bt_controller_id_t id, bt_a
     static struct bt_gatt_discover_params disc_params = { 0 };
     struct bt_conn* conn;
     int err;
-    struct gatt_instance* instance;
 
     conn = get_le_conn_from_addr(addr);
     if (!conn) {
         BT_LOGE("%s, conn null", __func__);
         return BT_STATUS_FAIL;
-    }
-
-    instance = gatt_find_instance_by_addr(addr);
-    if (instance) {
-        gatt_clear_all_subscribe_slots(instance);
     }
 
     disc_params.uuid = NULL;
@@ -1041,7 +994,6 @@ bt_status_t bt_sal_gatt_client_discover_service_by_uuid(bt_controller_id_t id, b
     struct bt_conn* conn;
     int err;
     static union uuid u;
-    struct gatt_instance* instance;
 
     conn = get_le_conn_from_addr(addr);
     if (!conn) {
@@ -1052,11 +1004,6 @@ bt_status_t bt_sal_gatt_client_discover_service_by_uuid(bt_controller_id_t id, b
     if (!zblue_uuid2_to_uuid1(&u.uuid, uuid)) {
         BT_LOGE("%s, uuid convert fail", __func__);
         return BT_STATUS_FAIL;
-    }
-
-    instance = gatt_find_instance_by_addr(addr);
-    if (instance) {
-        gatt_clear_all_subscribe_slots(instance);
     }
 
     disc_params.uuid = &u.uuid;
@@ -1223,7 +1170,7 @@ bt_status_t bt_sal_gatt_client_register_notifications(bt_controller_id_t id, bt_
         return BT_STATUS_FAIL;
     }
 
-    ccc_handle = gatt_find_ccc_handle_by_value_handle(instance, element_id);
+    ccc_handle = if_gattc_find_ccc_handle_by_value_handle(&instance->addr, element_id);
     if (!ccc_handle) {
         BT_LOGE("%s, no CCC handle found for element:0x%04x", __func__, element_id);
         return BT_STATUS_FAIL;
