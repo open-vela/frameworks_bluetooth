@@ -244,6 +244,10 @@ public class BleScanAdapter extends RecyclerAdapter<BtDevice> {
                 return;
             }
 
+            if (address == null) {
+                return;
+            }
+
             synchronized (mItems) {
                 Integer index = deviceIndexMap.get(address);
                 if (index == null || index >= mItems.size() || !TextUtils.equals(mItems.get(index).getAddress(), address)) {
