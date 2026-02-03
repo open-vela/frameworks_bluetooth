@@ -80,7 +80,7 @@ typedef struct {
         }                                                \
     }
 
-static bt_command_t g_gattc_async_tables[] = {
+static const bt_command_t g_gattc_async_tables[] = {
     { "create", create_cmd, 0, "\"create gatt client :\"" },
     { "delete", delete_cmd, 0, "\"delete gatt client :<conn id>\"" },
     { "connect", connect_cmd, 0, "\"connect remote device :<conn id><address>[addr type(0:public,1:random,2:public_id,3:random_id)]\"" },
@@ -729,7 +729,7 @@ static void conn_param_updated_callback(void* conn_handle, bt_status_t status, u
         status, connection_interval, peripheral_latency, supervision_timeout);
 }
 
-static gattc_callbacks_t gattc_cbs = {
+static const gattc_callbacks_t gattc_cbs = {
     sizeof(gattc_cbs),
     connect_callback,
     disconnect_callback,
@@ -761,7 +761,7 @@ static int create_cmd(void* handle, int argc, char* argv[])
 
     int* conn_id = (int*)malloc(sizeof(int));
     *conn_id = index;
-    if (bt_gattc_create_connect_async(handle, &g_gattc_devies[index].handle, &gattc_cbs, create_connect_cb,
+    if (bt_gattc_create_connect_async(handle, &g_gattc_devies[index].handle, (gattc_callbacks_t *)&gattc_cbs, create_connect_cb,
             conn_id)
         != BT_STATUS_SUCCESS) {
         free(conn_id);
@@ -812,7 +812,7 @@ int gattc_command_exec_async(void* handle, int argc, char* argv[])
     int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
-        ret = execute_command_in_table(handle, g_gattc_async_tables, ARRAY_SIZE(g_gattc_async_tables), argc, argv);
+        ret = execute_command_in_table(handle, (bt_command_t *)g_gattc_async_tables, ARRAY_SIZE(g_gattc_async_tables), argc, argv);
 
     if (ret < 0)
         usage();
