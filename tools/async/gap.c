@@ -80,7 +80,7 @@ static int set_phy_cmd(void* handle, int argc, char** argv);
 static int dump_cmd(void* handle, int argc, char** argv);
 static int quit_cmd(void* handle, int argc, char** argv);
 
-static struct option le_conn_options[] = {
+static const struct option le_conn_options[] = {
     { "addr", required_argument, 0, 'a' },
     { "type", required_argument, 0, 't' },
     { "defaults", no_argument, 0, 'd' },
@@ -210,7 +210,7 @@ static bt_command_t g_async_cmd_tables[] = {
 #define SET_CLASS_USAGE "params: <local class of device>, range in 0x0-0xFFFFFC, the 2 least significant shall be 0b00, example: 0x00640404"
 #define SET_SCANPARAMS_USAGE "set scan parameters, params: <mode>(0: INQUIRY, 1: PAGE), <type>(0: standard, 1: interlaced), <interval>(range in 18-4096), <window>(range in 17-4096)"
 
-static bt_command_t g_set_cmd_tables[] = {
+static const bt_command_t g_set_cmd_tables[] = {
     { "scanmode", set_scanmode_cmd, 0, "params: <scan mode> (0:none, 1:connectable 2:connectable&discoverable)" },
     { "iocap", set_iocap_cmd, 0, SET_IOCAP_USAGE },
     { "name", set_local_name_cmd, 0, "params: <local name>, example \"vela-bt\"" },
@@ -223,7 +223,7 @@ static bt_command_t g_set_cmd_tables[] = {
     //{ "", , "set " },
 };
 
-static bt_command_t g_get_cmd_tables[] = {
+static const bt_command_t g_get_cmd_tables[] = {
     { "scanmode", get_scanmode_cmd, 0, "get adapter scan mode" },
     { "iocap", get_iocap_cmd, 0, "get adapter io capability" },
     { "addr", get_local_addr_cmd, 0, "get adapter local addr" },
@@ -240,7 +240,7 @@ static bt_command_t g_get_cmd_tables[] = {
 #define PAIR_PASSKEY_USAGE "input ssp passkey, params: <addr> <transport>(0:BLE, 1:BREDR)<reply>(0 :reject, 1: accept)<passkey>"
 #define PAIR_CONFIRM_USAGE "set ssp confirmation, params: <addr> <transport> (0:BLE, 1:BREDR)<conform>(0 :reject, 1: accept)"
 
-static bt_command_t g_pair_cmd_tables[] = {
+static const bt_command_t g_pair_cmd_tables[] = {
     { "auto", pair_set_auto_cmd, 0, "enable pair auto reply, params: <enable>(0:disable, 1:enable)" },
     { "reply", pair_reply_cmd, 0, "reply the pair request, params: <addr><accept?>(0 :reject, 1: accept)" },
     { "pin", pair_set_pincode_cmd, 0, "input pin code, params: <addr><accept?>(0 :reject, 1: accept)<pincode>" },
@@ -399,7 +399,7 @@ static int set_adapter_cmd(void* handle, int argc, char** argv)
         return CMD_PARAM_NOT_ENOUGH;
     }
 
-    int ret = execute_command_in_table(handle, g_set_cmd_tables, ARRAY_SIZE(g_set_cmd_tables), argc, argv);
+    int ret = execute_command_in_table(handle, (bt_command_t *)g_set_cmd_tables, ARRAY_SIZE(g_set_cmd_tables), argc, argv);
     if (ret != CMD_OK)
         set_usage();
 
@@ -413,7 +413,7 @@ static int get_adapter_cmd(void* handle, int argc, char** argv)
         return CMD_PARAM_NOT_ENOUGH;
     }
 
-    int ret = execute_command_in_table(handle, g_get_cmd_tables, ARRAY_SIZE(g_get_cmd_tables), argc, argv);
+    int ret = execute_command_in_table(handle, (bt_command_t *)g_get_cmd_tables, ARRAY_SIZE(g_get_cmd_tables), argc, argv);
     if (ret != CMD_OK)
         get_usage();
 
@@ -649,7 +649,7 @@ static int pair_cmd(void* handle, int argc, char** argv)
         return CMD_PARAM_NOT_ENOUGH;
     }
 
-    int ret = execute_command_in_table(handle, g_pair_cmd_tables, ARRAY_SIZE(g_pair_cmd_tables), argc, argv);
+    int ret = execute_command_in_table(handle, (bt_command_t *)g_pair_cmd_tables, ARRAY_SIZE(g_pair_cmd_tables), argc, argv);
     if (ret != CMD_OK)
         pair_usage();
 
