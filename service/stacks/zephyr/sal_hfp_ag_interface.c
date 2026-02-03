@@ -952,7 +952,7 @@ static void zblue_on_ag_transmit_dtmf_code(struct bt_hfp_ag* ag, char code)
     hfp_ag_on_received_dtmf(&sal_conn->addr, code);
 }
 
-static struct bt_hfp_ag_cb g_hfp_ag_cb = {
+static const struct bt_hfp_ag_cb g_hfp_ag_cb = {
     .connected = zblue_on_ag_connected,
     .disconnected = zblue_on_ag_disconnected,
     .sco_connected = zblue_on_ag_sco_connected,
@@ -992,7 +992,7 @@ bt_status_t bt_sal_hfp_ag_init(uint32_t features, uint8_t max_connection)
     BT_LOGD("%s, HFP AG init", __func__);
     g_sal_ag_conn_list = bt_list_new(free_connection);
 
-    SAL_CHECK_RET(Z_API(bt_hfp_ag_register)(&g_hfp_ag_cb), 0);
+    SAL_CHECK_RET(Z_API(bt_hfp_ag_register)((struct bt_hfp_ag_cb *)&g_hfp_ag_cb), 0);
     return BT_STATUS_SUCCESS;
 }
 
