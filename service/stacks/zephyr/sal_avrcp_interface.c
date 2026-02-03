@@ -129,7 +129,7 @@ static void zblue_on_tg_register_notification_req(struct bt_avrcp_tg* tg, uint8_
 static void zblue_on_tg_set_absolute_volume_req(struct bt_avrcp_tg* tg, uint8_t tid, uint8_t absolute_volume);
 #endif
 
-static struct bt_avrcp_tg_cb avrcp_tg_cbks = {
+static const struct bt_avrcp_tg_cb avrcp_tg_cbks = {
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
     .unit_info_req = zblue_on_tg_unit_info_req,
     .subunit_info_req = zblue_on_tg_subunit_info_req,
