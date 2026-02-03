@@ -287,7 +287,7 @@ struct bt_sdp_record* spp_sdp_create_record(uint16_t channel, bt_uuid_t* uuid)
     attrs_count = ARRAY_SIZE(spp_attrs_template);
     memcpy(spp_record->attrs, spp_attrs_template, sizeof(spp_attrs_template));
 
-    sys_memcpy_swap(spp_record->uuid128, uuid->val.u128, BT_UUID_SIZE_128);
+    memcpy(spp_record->uuid128, uuid->val.u128, BT_UUID_SIZE_128);
     spp_record->channel = channel;
 
     for (int i = 0; i < attrs_count; i++) {
