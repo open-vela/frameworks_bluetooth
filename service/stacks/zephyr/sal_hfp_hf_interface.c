@@ -888,7 +888,7 @@ static void zblue_on_current_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_current
     hfp_hf_on_current_call_response(&sal_conn->addr, idx, dir, status, mpty, call->number, call->type);
 }
 
-static struct bt_hfp_hf_cb hf_callbacks = {
+static const struct bt_hfp_hf_cb hf_callbacks = {
     .connected = zblue_on_connected,
     .disconnected = zblue_hf_disconnected,
     .sco_connected = zblue_on_sco_connected,
@@ -932,7 +932,7 @@ bt_status_t bt_sal_hfp_hf_init(uint32_t hf_features, uint8_t max_connection)
     int err;
     g_sal_hf_conn_list = bt_list_new(free_connection);
 
-    err = Z_API(bt_hfp_hf_register)(&hf_callbacks);
+    err = Z_API(bt_hfp_hf_register)((struct bt_hfp_hf_cb *)&hf_callbacks);
 
     if (err) {
         bt_list_free(g_sal_hf_conn_list);
