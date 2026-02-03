@@ -61,7 +61,7 @@ typedef struct sal_bt_hid_device_mgr {
     uint8_t* description;
 } sal_bt_hid_device_mgr_t;
 
-static struct bt_sdp_attribute hid_attrs_template[] = {
+static const struct bt_sdp_attribute hid_attrs_template[] = {
     BT_SDP_NEW_SERVICE,
     BT_SDP_LIST(
         BT_SDP_ATTR_SVCLASS_ID_LIST,
@@ -539,7 +539,7 @@ void hid_vc_unplug_callback(struct bt_hid_device* hid)
     hid_device_on_virtual_cable_unplug(&hid_conn->addr);
 }
 
-static struct bt_hid_device_cb hid_callback = {
+static const struct bt_hid_device_cb hid_callback = {
     .accept = hid_accept_callback,
     .connected = hid_connect_callback,
     .disconnected = hid_disconnected_callback,
@@ -556,7 +556,7 @@ bt_status_t bt_sal_hid_device_init()
     int err;
     sal_bt_hid_device_mgr_t* hid_mgr = &g_hid_device_mgr;
 
-    err = Z_API(bt_hid_device_register)(&hid_callback);
+    err = Z_API(bt_hid_device_register)((struct bt_hid_device_cb*)&hid_callback);
     if (err != 0) {
         BT_LOGE("HID register cb fail,err:%d", err);
         return BT_STATUS_FAIL;
