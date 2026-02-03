@@ -27,7 +27,7 @@ static int connect_cmd(void* handle, int argc, char* argv[]);
 static int disconnect_cmd(void* handle, int argc, char* argv[]);
 static int get_state_cmd(void* handle, int argc, char* argv[]);
 
-static bt_command_t g_a2dp_tables[] = {
+static const bt_command_t g_a2dp_tables[] = {
     { "connect", connect_cmd, 0, "\"establish a2dp signal and stream connection, params: <address>\"" },
     { "disconnect", disconnect_cmd, 0, "\"disconnect a2dp signal and stream connection, params: <address>\"" },
     { "state", get_state_cmd, 0, "\"get a2dp connection or audio state , params: <address>\"" },
@@ -131,7 +131,7 @@ int a2dp_src_command_exec(void* handle, int argc, char* argv[])
     int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
-        ret = execute_command_in_table(handle, g_a2dp_tables, ARRAY_SIZE(g_a2dp_tables), argc, argv);
+        ret = execute_command_in_table(handle, (bt_command_t *)g_a2dp_tables, ARRAY_SIZE(g_a2dp_tables), argc, argv);
 
     if (ret < 0)
         usage();
