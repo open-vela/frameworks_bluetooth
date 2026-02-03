@@ -95,7 +95,7 @@ extern struct net_buf_pool sdp_pool;
 NET_BUF_POOL_FIXED_DEFINE(rfcomm_tx_pool, SPP_DEFAULT_CREDITS,
     SAL_SPP_RFCOMM_MFS + SPP_MFS_EXTRA_SIZE, CONFIG_BT_CONN_TX_USER_DATA_SIZE, NULL);
 
-static struct bt_sdp_attribute spp_attrs_template[] = {
+static const struct bt_sdp_attribute spp_attrs_template[] = {
     BT_SDP_NEW_SERVICE,
     BT_SDP_LIST(
         BT_SDP_ATTR_SVCLASS_ID_LIST,
@@ -438,7 +438,7 @@ static void spp_rfcomm_sent(struct bt_rfcomm_dlc* rfcomm_dlc, int err)
     spp_conn_unlock();
 }
 
-static struct bt_rfcomm_dlc_ops g_rfcomm_ops = {
+static const struct bt_rfcomm_dlc_ops g_rfcomm_ops = {
     .connected = spp_rfcomm_connected,
     .disconnected = spp_rfcomm_disconnected,
     .recv = spp_rfcomm_recv,
@@ -523,7 +523,7 @@ static sal_spp_connection_t* spp_connection_new(bt_address_t* addr, uint16_t con
         return NULL;
     }
 
-    spp_conn->rfcomm_dlc.ops = &g_rfcomm_ops;
+    spp_conn->rfcomm_dlc.ops = (struct bt_rfcomm_dlc_ops *)&g_rfcomm_ops;
     spp_conn->rfcomm_dlc.mtu = SAL_SPP_RFCOMM_MFS;
     memcpy(&spp_conn->addr, addr, sizeof(bt_address_t));
 
