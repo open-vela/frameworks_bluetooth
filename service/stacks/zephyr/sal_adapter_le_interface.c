@@ -127,7 +127,10 @@ static void zblue_on_cs_procedure_enabled(struct bt_conn* conn,
     struct bt_conn_le_cs_procedure_enable_complete* params);
 #endif /* CONFIG_BLUETOOTH_LE_CS &&  CONFIG_BT_CHANNEL_SOUNDING*/
 
-static struct bt_conn_cb g_conn_cbs = {
+static le_conn_info_t* le_conn_add(const bt_address_t* addr);
+static le_conn_info_t* le_conn_find(const bt_address_t* addr);
+
+static const struct bt_conn_cb g_conn_cbs = {
     .connected = zblue_on_connected,
     .disconnected = zblue_on_disconnected,
 #ifdef CONFIG_BT_SMP
@@ -148,7 +151,7 @@ static struct bt_conn_cb g_conn_cbs = {
 #endif /* CONFIG_BLUETOOTH_LE_CS && CONFIG_BT_CHANNEL_SOUNDING */
 };
 
-static struct bt_conn_auth_info_cb g_conn_auth_info_cbs = {
+static const struct bt_conn_auth_info_cb g_conn_auth_info_cbs = {
     .pairing_complete_ctkd = zblue_on_pairing_complete_ctkd,
     .pairing_complete = zblue_on_pairing_complete,
     .pairing_failed = zblue_on_pairing_failed,
@@ -156,7 +159,7 @@ static struct bt_conn_auth_info_cb g_conn_auth_info_cbs = {
 };
 
 #if defined(CONFIG_SETTINGS_ZBLUE)
-static struct bt_settings_zblue_cb g_setting_cbs = {
+static const struct bt_settings_zblue_cb g_setting_cbs = {
     .irk_notify = zblue_on_irk_notify,
     .irk_load = zblue_on_irk_load,
     .ltk_notify = zblue_on_ltk_notify,
@@ -1412,22 +1415,22 @@ static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer)
 
 static void zblue_register_callback(void)
 {
-    bt_conn_cb_register(&g_conn_cbs);
+    bt_conn_cb_register((struct bt_conn_cb*)&g_conn_cbs);
 #ifdef CONFIG_BT_SMP
-    bt_conn_le_auth_cb_register(&g_conn_auth_cbs);
-    bt_conn_auth_info_cb_register(&g_conn_auth_info_cbs);
+    bt_conn_le_auth_cb_register((struct bt_conn_auth_cb*)&g_conn_auth_cbs);
+    bt_conn_auth_info_cb_register((struct bt_conn_auth_info_cb*)&g_conn_auth_info_cbs);
 #endif
 #ifdef CONFIG_SETTINGS_ZBLUE
-    bt_setting_cb_register(&g_setting_cbs);
+    bt_setting_cb_register((struct bt_settings_zblue_cb*)&g_setting_cbs);
 #endif
 }
 
 static void zblue_unregister_callback(void)
 {
-    bt_conn_cb_unregister(&g_conn_cbs);
+    bt_conn_cb_unregister((struct bt_conn_cb*)&g_conn_cbs);
 #ifdef CONFIG_BT_SMP
     bt_conn_le_auth_cb_register(NULL);
-    bt_conn_auth_info_cb_unregister(&g_conn_auth_info_cbs);
+    bt_conn_auth_info_cb_unregister((struct bt_conn_auth_info_cb*)&g_conn_auth_info_cbs);
 #endif
 }
 
