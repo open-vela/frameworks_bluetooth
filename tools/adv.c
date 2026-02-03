@@ -28,7 +28,7 @@ static int stop_adv_cmd(void* handle, int argc, char* argv[]);
 static int set_adv_data_cmd(void* handle, int argc, char* argv[]);
 static int dump_adv_cmd(void* handle, int argc, char* argv[]);
 
-static struct option adv_options[] = {
+static const struct option adv_options[] = {
     { "adv_type", required_argument, 0, 't' },
     { "mode", required_argument, 0, 'm' },
     { "interval", required_argument, 0, 'i' },
@@ -45,13 +45,13 @@ static struct option adv_options[] = {
     { 0, 0, 0, 0 }
 };
 
-static struct option adv_stop_options[] = {
+static const struct option adv_stop_options[] = {
     { "advid", required_argument, 0, 'i' },
     { "handle", required_argument, 0, 'h' },
     { 0, 0, 0, 0 }
 };
 
-static bt_command_t g_adv_tables[] = {
+static const bt_command_t g_adv_tables[] = {
     { "start", start_adv_cmd, 1, "start advertising\n"
                                  "\t  -t or --adv_type, advertising type opt(adv_ind/direct_ind/nonconn_ind/scan_ind)\n"
                                  "\t  -m or --mode,     advertising mode opt(legacy/ext/auto, default auto)\n"
@@ -98,7 +98,7 @@ static void on_advertising_stopped_cb(bt_advertiser_t* adv, uint8_t adv_id)
     PRINT("%s, handle:%p, adv_id:%d", __func__, adv, adv_id);
 }
 
-static advertiser_callback_t adv_callback = {
+static const advertiser_callback_t adv_callback = {
     sizeof(adv_callback),
     on_advertising_start_cb,
     on_advertising_stopped_cb
@@ -404,7 +404,7 @@ static int start_adv_cmd(void* handle, int argc, char* argv[])
     adv_handle = bt_le_start_advertising(handle, &params,
         p_adv_data, adv_len,
         p_scan_rsp_data, scan_rsp_len,
-        &adv_callback);
+        (advertiser_callback_t *)&adv_callback);
 
     PRINT("Advertising handle:%p", adv_handle);
     /* free advertiser data */
@@ -482,7 +482,7 @@ int adv_command_exec(void* handle, int argc, char* argv[])
     int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
-        ret = execute_command_in_table_offset(handle, g_adv_tables, ARRAY_SIZE(g_adv_tables), argc, argv, 0);
+        ret = execute_command_in_table_offset(handle, (bt_command_t *)g_adv_tables, ARRAY_SIZE(g_adv_tables), argc, argv, 0);
 
     if (ret < 0)
         usage();
