@@ -205,7 +205,7 @@ const uint8_t pnp_id[7] = {
     0x00, 0x01 // pnp_ver
 };
 
-static gatt_attr_db_t s_dis_attr_db[] = {
+static const gatt_attr_db_t s_dis_attr_db[] = {
     GATT_H_PRIMARY_SERVICE(BT_UUID_DECLARE_16(0x180A), DIS_SERVICE_ID),
     GATT_H_CHARACTERISTIC_AUTO_RSP(BT_UUID_DECLARE_16(0x2A24), GATT_PROP_READ, GATT_PERM_READ, (uint8_t*)model_number_str, sizeof(model_number_str), DIS_MODEL_NUMBER_CHR_ID),
     GATT_H_CHARACTERISTIC_AUTO_RSP(BT_UUID_DECLARE_16(0x2A29), GATT_PROP_READ, GATT_PERM_READ, (uint8_t*)manufacturer_name_str, sizeof(manufacturer_name_str), DIS_MANUFACTURER_NAME_CHR_ID),
@@ -213,24 +213,24 @@ static gatt_attr_db_t s_dis_attr_db[] = {
 };
 
 static gatt_srv_db_t s_dis_service_db = {
-    .attr_db = s_dis_attr_db,
+    .attr_db = (gatt_attr_db_t *)s_dis_attr_db,
     .attr_num = sizeof(s_dis_attr_db) / sizeof(gatt_attr_db_t),
 };
 
 static uint8_t battery_level = 100U;
 
-static gatt_attr_db_t s_bas_attr_db[] = {
+static const gatt_attr_db_t s_bas_attr_db[] = {
     GATT_H_PRIMARY_SERVICE(BT_UUID_DECLARE_16(0x180F), BAS_SERVICE_ID),
     GATT_H_CHARACTERISTIC_AUTO_RSP(BT_UUID_DECLARE_16(0x2A19), GATT_PROP_READ | GATT_PROP_NOTIFY, GATT_PERM_READ, &battery_level, sizeof(battery_level), BAS_BATTERY_LEVEL_CHR_ID),
     GATT_H_CCCD(GATT_PERM_READ | GATT_PERM_WRITE, tx_char_ccc_changed, BAS_BATTERY_LEVEL_CHR_CCC_ID),
 };
 
 static gatt_srv_db_t s_bas_service_db = {
-    .attr_db = s_bas_attr_db,
+    .attr_db = (gatt_attr_db_t *)s_bas_attr_db,
     .attr_num = sizeof(s_bas_attr_db) / sizeof(gatt_attr_db_t),
 };
 
-static gatt_attr_db_t s_iot_attr_db[] = {
+static const gatt_attr_db_t s_iot_attr_db[] = {
     /* Private IOT Service - 0xFF00 */
     GATT_H_PRIMARY_SERVICE(BT_UUID_DECLARE_16(0xFF00), IOT_SERVICE_ID),
     /* Private Characteristic for TX - 0xFF01 */
@@ -250,11 +250,11 @@ static gatt_attr_db_t s_iot_attr_db[] = {
 };
 
 static gatt_srv_db_t s_iot_service_db = {
-    .attr_db = s_iot_attr_db,
+    .attr_db = (gatt_attr_db_t *)s_iot_attr_db,
     .attr_num = sizeof(s_iot_attr_db) / sizeof(gatt_attr_db_t),
 };
 
-static bt_command_t g_gatts_tables[] = {
+static const bt_command_t g_gatts_tables[] = {
     { "register", register_cmd, 0, "\"register gatt service(DIS = 1, BAS = 2, CUSTOM = 3) :<id>\"" },
     { "unregister", unregister_cmd, 0, "\"unregister gatt service :<id>\"" },
     { "start", start_cmd, 0, "\"start gatt service :<id>\"" },
