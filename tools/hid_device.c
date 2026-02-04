@@ -31,7 +31,7 @@ static int send_consumer_cmd(void* handle, int argc, char* argv[]);
 static int unplug_cmd(void* handle, int argc, char* argv[]);
 static int dump_cmd(void* handle, int argc, char* argv[]);
 
-static bt_command_t g_hidd_tables[] = {
+static const bt_command_t g_hidd_tables[] = {
     { "register", register_cmd, 0, "\"register HID app: <type>(1:KEYBOARD, 2:MOUSE, 3:KBMS_COMBO) <transport>(0:BLE, 1:BREDR)\"" },
     { "unregister", unregister_cmd, 0, "\"unregister HID app \"" },
     { "connect", connect_cmd, 0, "\"connect HID host param: <address> \"" },
@@ -565,7 +565,7 @@ int hidd_command_exec(void* handle, int argc, char* argv[])
     int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
-        ret = execute_command_in_table(handle, g_hidd_tables, ARRAY_SIZE(g_hidd_tables), argc, argv);
+        ret = execute_command_in_table(handle, (bt_command_t *)g_hidd_tables, ARRAY_SIZE(g_hidd_tables), argc, argv);
 
     if (ret < 0)
         usage();
