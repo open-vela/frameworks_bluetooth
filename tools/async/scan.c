@@ -34,7 +34,7 @@ static int dump_scan_cmd(void* handle, int argc, char* argv[]);
 
 static bt_scanner_t* g_scanner = NULL;
 
-static struct option scan_options[] = {
+static const struct option scan_options[] = {
     { "type", required_argument, 0, 't' },
     { "phy", required_argument, 0, 'p' },
     { "mode", required_argument, 0, 'm' },
@@ -43,7 +43,7 @@ static struct option scan_options[] = {
     { 0, 0, 0, 0 }
 };
 
-static bt_command_t g_scanner_async_tables[] = {
+static const bt_command_t g_scanner_async_tables[] = {
     { "start", start_scan_cmd, 0, "start scan\n"
                                   "\t  -t or --type, le scan type (0: passive, 1: active)\n"
                                   "\t  -p or --phy, le scan phy (1M/2M/Coded)\n"
@@ -226,7 +226,7 @@ int scan_command_exec_async(void* handle, int argc, char* argv[])
     int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
-        ret = execute_command_in_table_offset(handle, g_scanner_async_tables,
+        ret = execute_command_in_table_offset(handle, (bt_command_t *)g_scanner_async_tables,
             ARRAY_SIZE(g_scanner_async_tables),
             argc, argv, 0);
 
