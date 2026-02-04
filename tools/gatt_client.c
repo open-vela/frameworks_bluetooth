@@ -68,7 +68,7 @@ static volatile uint32_t throughtput_cursor = 0;
         }                                                \
     }
 
-static bt_command_t g_gattc_tables[] = {
+static const bt_command_t g_gattc_tables[] = {
     { "create", create_cmd, 0, "\"create gatt client :\"" },
     { "delete", delete_cmd, 0, "\"delete gatt client :<conn id>\"" },
     { "connect", connect_cmd, 0, "\"connect remote device :<conn id><address>[addr type(0:public,1:random,2:public_id,3:random_id)]\"" },
@@ -678,7 +678,7 @@ static void conn_param_updated_callback(void* conn_handle, bt_status_t status, u
         status, connection_interval, peripheral_latency, supervision_timeout);
 }
 
-static gattc_callbacks_t gattc_cbs = {
+static const gattc_callbacks_t gattc_cbs = {
     sizeof(gattc_cbs),
     connect_callback,
     disconnect_callback,
@@ -708,7 +708,7 @@ static int create_cmd(void* handle, int argc, char* argv[])
         return CMD_OK;
     }
 
-    if (bt_gattc_create_connect(handle, &g_gattc_devies[conn_id].handle, &gattc_cbs) != BT_STATUS_SUCCESS)
+    if (bt_gattc_create_connect(handle, &g_gattc_devies[conn_id].handle, (gattc_callbacks_t *)&gattc_cbs) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     PRINT("create connection success, conn_id: %d", conn_id);
@@ -752,7 +752,7 @@ int gattc_command_exec(void* handle, int argc, char* argv[])
     int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
-        ret = execute_command_in_table(handle, g_gattc_tables, ARRAY_SIZE(g_gattc_tables), argc, argv);
+        ret = execute_command_in_table(handle, (bt_command_t *)g_gattc_tables, ARRAY_SIZE(g_gattc_tables), argc, argv);
 
     if (ret < 0)
         usage();
