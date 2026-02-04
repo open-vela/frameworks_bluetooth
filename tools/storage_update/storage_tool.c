@@ -45,7 +45,7 @@ static char* bt_storage_update_version_str[BT_STORAGE_VERSION_MAX] = {
     "v5_0_2",
 };
 
-static struct option set_options[] = {
+static const struct option set_options[] = {
     { "default", no_argument, 0, 'D' },
     { "version", required_argument, 0, 'v' },
     { "scanmode", required_argument, 0, 's' },
@@ -57,7 +57,7 @@ static struct option set_options[] = {
     { 0, 0, 0, 0 }
 };
 
-static struct option delete_options[] = {
+static const struct option delete_options[] = {
     { "scanmode", required_argument, 0, 's' },
     { "iocap", required_argument, 0, 'i' },
     { "name", required_argument, 0, 'n' },
@@ -69,7 +69,7 @@ static struct option delete_options[] = {
 #define SET_IOCAP_USAGE "set io capability (0:displayonly, 1:yes&no, 2:keyboardonly, 3:no-in/no-out 4:keyboard&display)"
 #define SET_CLASS_USAGE "set local class of device, range in 0x0-0xFFFFFC, the 2 least significant shall be 0b00, example: 0x00640404"
 
-static bt_command_t g_storage_tables[] = {
+static const bt_command_t g_storage_tables[] = {
     { "add", storage_add_cmd, 0, "\"add storage information :<version_idx><storage_info(1:btbond,2:blebond,3:whitelist(accept list))><num>\"" },
     { "clear", storage_clear_cmd, 0, "clear storage information  \n" },
     { "set", storage_set_cmd, 1, "set adapter information(only for V5_0_2 version and above),"
@@ -480,7 +480,7 @@ int storage_command_exec(void* handle, int argc, char* argv[])
     int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
-        ret = execute_command_in_table_offset(handle, g_storage_tables, ARRAY_SIZE(g_storage_tables), argc, argv, 0);
+        ret = execute_command_in_table_offset(handle, (bt_command_t*)g_storage_tables, ARRAY_SIZE(g_storage_tables), argc, argv, 0);
 
     if (ret < 0)
         usage();
