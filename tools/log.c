@@ -50,7 +50,7 @@ static int unfilter_cmd(void* handle, int argc, char* argv[]);
 static int unmask_cmd(void* handle, int argc, char* argv[]);
 static int level_cmd(void* handle, int argc, char* argv[]);
 
-static bt_command_t g_log_tables[] = {
+static const bt_command_t g_log_tables[] = {
     { "enable", enable_cmd, 0, "\"Enable param: (\"snoop\" or \"stack\")\"" },
     { "disable", disable_cmd, 0, "\"Disable param: (\"snoop\" or \"stack\")\"" },
     { "mask", mask_cmd, 0, "\"Enable Stack Profile & Protocol Log <bit>\"\n"
@@ -243,7 +243,7 @@ int log_command(void* handle, int argc, char* argv[])
     int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
-        ret = execute_command_in_table(handle, g_log_tables, ARRAY_SIZE(g_log_tables), argc, argv);
+        ret = execute_command_in_table(handle, (bt_command_t *)g_log_tables, ARRAY_SIZE(g_log_tables), argc, argv);
 
     if (ret < 0)
         usage();
