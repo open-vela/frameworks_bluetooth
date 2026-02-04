@@ -78,7 +78,7 @@ static int get_subscriber_number(void* handle, int argc, char* argv[]);
                          "\t\t\t1: CONNECTION_POLICY_FORBIDDEN \n"                          \
                          "\t\t\t2: CONNECTION_POLICY_UNKNOWN \n"
 
-static bt_command_t g_hfp_tables[] = {
+static const bt_command_t g_hfp_tables[] = {
     { "connect", connect_cmd, 0, "Establish hfp SLC connection         params: <address>" },
     { "disconnect", disconnect_cmd, 0, "Disconnect hfp SLC connection        params: <address>" },
     { "policy", set_policy_cmd, 0, SET_POLICY_USAGE },
@@ -595,7 +595,7 @@ int hfp_hf_command_exec(void* handle, int argc, char* argv[])
     int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
-        ret = execute_command_in_table(handle, g_hfp_tables, ARRAY_SIZE(g_hfp_tables), argc, argv);
+        ret = execute_command_in_table(handle, (bt_command_t*)g_hfp_tables, ARRAY_SIZE(g_hfp_tables), argc, argv);
 
     if (ret < 0)
         usage();
