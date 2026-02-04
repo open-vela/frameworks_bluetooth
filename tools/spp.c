@@ -88,7 +88,7 @@ static void* spp_app_handle = NULL;
 static uv_loop_t spp_thread_loop = { 0 };
 static transmit_context_t trans_ctx = { 0 };
 
-static struct option spp_ping_options[] = {
+static const struct option spp_ping_options[] = {
     { "port", required_argument, 0, 'p' },
     { "size", required_argument, 0, 's' },
     { "count", required_argument, 0, 'c' },
@@ -97,7 +97,7 @@ static struct option spp_ping_options[] = {
     { 0, 0, 0, 0 }
 };
 
-static bt_command_t g_spp_tables[] = {
+static const bt_command_t g_spp_tables[] = {
     { "start", start_server_cmd, 0, "\"start spp server        param: <scn>(range in [1,28]) <uuid>\"" },
     { "stop", stop_server_cmd, 0, "\"stop  spp server        param: <scn>(range in [1,28])\"" },
     { "connect", connect_cmd, 0, "\"connect spp device      param: <address> <port> <uuid>\"" },
