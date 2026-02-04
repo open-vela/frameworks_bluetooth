@@ -34,7 +34,7 @@ static int stop_voice_recognition_cmd(void* handle, int argc, char* argv[]);
 static int send_at_cmd_cmd(void* handle, int argc, char* argv[]);
 static int send_vendor_result_cmd(void* handle, int argc, char* argv[]);
 
-static bt_command_t g_hfp_ag_tables[] = {
+static const bt_command_t g_hfp_ag_tables[] = {
     { "connect", connect_cmd, 0, "\"establish hfp SLC connection     , params: <address>\"" },
     { "disconnect", disconnect_cmd, 0, "\"disconnect hfp SLC connection    , params: <address>\"" },
     { "connectaudio", connect_audio_cmd, 0, "\"establish hfp SCO connection     , params: <address>\"" },
@@ -326,7 +326,7 @@ int hfp_ag_command_exec(void* handle, int argc, char* argv[])
     int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
-        ret = execute_command_in_table(handle, g_hfp_ag_tables, ARRAY_SIZE(g_hfp_ag_tables), argc, argv);
+        ret = execute_command_in_table(handle, (bt_command_t *)g_hfp_ag_tables, ARRAY_SIZE(g_hfp_ag_tables), argc, argv);
 
     if (ret < 0)
         usage();
