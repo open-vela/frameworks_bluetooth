@@ -2271,6 +2271,7 @@ bt_status_t adapter_set_scan_mode(bt_scan_mode_t mode, bool bondable)
     adapter->properties.bondable = bondable;
 
 error:
+    BT_LOGI("scanmode: %d, bondable: %d", (int)adapter->properties.scan_mode, (int)adapter->properties.bondable);
     adapter_unlock();
     return status;
 }
