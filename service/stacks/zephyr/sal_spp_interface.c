@@ -994,6 +994,8 @@ bt_status_t bt_sal_spp_data_received_response(uint16_t conn_port, uint8_t* buf)
     }
 
     spp_conn_unlock();
+
+    bt_rfcomm_dlc_update_credits(&spp_conn->rfcomm_dlc);
     return BT_STATUS_SUCCESS;
 }
 
