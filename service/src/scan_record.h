@@ -19,6 +19,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define BT_EIR_UUID16_INCOMPLETE 0x02 // 16-bit UUID, more available
+#define BT_EIR_UUID16_COMPLETE 0x03 // 16-bit UUID, all listed
 #define BT_EIR_SVC_DATA_16 0x16 // 16-bit UUID
 
 typedef struct {
