@@ -78,8 +78,9 @@ static bt_status_t parse_bt_adv_data(uint8_t* raw, uint16_t raw_len,
     struct bt_data* out, size_t out_max, size_t* out_size)
 {
     size_t index;
+    uint8_t item_len;
 
-    if (!out || !out_size) {
+    if (!out || !out_size || out_max == 0) {
         return BT_STATUS_PARM_INVALID;
     }
 
@@ -90,7 +91,28 @@ static bt_status_t parse_bt_adv_data(uint8_t* raw, uint16_t raw_len,
     }
 
     for (index = 0; index < raw_len;) {
-        out[*out_size].data_len = raw[index] - 1;
+        item_len = raw[index];
+        if (item_len == 0) {
+            break;
+        }
+
+        if (item_len < 2) {
+            BT_LOGE("%s, invalid adv data item len:%d", __func__, item_len);
+            return BT_STATUS_PARM_INVALID;
+        }
+
+        if (index + 1 + item_len > raw_len) {
+            BT_LOGE("%s, adv data overflow: raw_len=%d idx=%d item_len=%d", __func__,
+                raw_len, index, item_len);
+            return BT_STATUS_PARM_INVALID;
+        }
+
+        if (*out_size >= out_max) {
+            BT_LOGE("too many segments: out_max=%d idx=%d", out_max, index);
+            return BT_STATUS_PARM_INVALID;
+        }
+
+        out[*out_size].data_len = item_len - 1;
         out[*out_size].type = raw[index + 1];
         out[*out_size].data = &raw[index + 2];
         index += out[*out_size].data_len + 2;
@@ -433,8 +455,9 @@ bt_status_t bt_sal_le_start_adv(bt_controller_id_t id, uint8_t adv_id, ble_adv_p
         goto error;
     }
 
-    if ((!(req->adpt.start_adv.param.options & BT_LE_ADV_OPT_SCANNABLE) && ext_adv)
-        || !ext_adv) {
+    if (((!(req->adpt.start_adv.param.options & BT_LE_ADV_OPT_SCANNABLE) && ext_adv)
+            || !ext_adv)
+        && adv_data && adv_len > 0) {
         req->adpt.start_adv.adv_data = malloc(adv_len);
         if (!req->adpt.start_adv.adv_data) {
             BT_LOGE("%s, malloc fail", __func__);
@@ -449,8 +472,9 @@ bt_status_t bt_sal_le_start_adv(bt_controller_id_t id, uint8_t adv_id, ble_adv_p
         req->adpt.start_adv.adv_len = 0;
     }
 
-    if (((req->adpt.start_adv.param.options & BT_LE_ADV_OPT_SCANNABLE) && ext_adv)
-        || !ext_adv) {
+    if ((((req->adpt.start_adv.param.options & BT_LE_ADV_OPT_SCANNABLE) && ext_adv)
+            || !ext_adv)
+        && scan_rsp_data && scan_rsp_len > 0) {
         req->adpt.start_adv.scan_rsp_data = malloc(scan_rsp_len);
         if (!req->adpt.start_adv.scan_rsp_data) {
             BT_LOGE("%s, malloc fail", __func__);
@@ -478,7 +502,7 @@ error:
         free(req->adpt.start_adv.scan_rsp_data);
     free(req);
     return ret;
-};
+}
 
 static void STACK_CALL(stop_adv)(void* args)
 {
