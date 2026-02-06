@@ -82,6 +82,9 @@ typedef struct {
     struct bt_sdp_attribute* attrs;
     uint8_t uuid128[BT_UUID_SIZE_128];
     uint16_t channel;
+    struct bt_sdp_data_elem svclass_id_list[1];
+    struct bt_sdp_data_elem proto_desc_list[2];
+    struct bt_sdp_data_elem proto_desc_rfcomm[2];
 } spp_sdp_record_t;
 
 typedef struct {
@@ -292,27 +295,36 @@ struct bt_sdp_record* spp_sdp_create_record(uint16_t channel, bt_uuid_t* uuid)
 
     for (int i = 0; i < attrs_count; i++) {
         if (spp_record->attrs[i].id == BT_SDP_ATTR_SVCLASS_ID_LIST) {
-            struct bt_sdp_data_elem* element = (struct bt_sdp_data_elem*)&spp_record->attrs[i].val;
+            spp_record->svclass_id_list[0] = (struct bt_sdp_data_elem) {
+                BT_SDP_TYPE_SIZE(BT_SDP_UUID128),
+                .data = spp_record->uuid128,
+            };
 
-            element = (struct bt_sdp_data_elem*)element[0].data;
-            element->type = BT_SDP_UUID128;
-            element->data = spp_record->uuid128;
+            spp_record->attrs[i].val.data = spp_record->svclass_id_list;
         } else if (spp_record->attrs[i].id == BT_SDP_ATTR_PROTO_DESC_LIST) {
-            struct bt_sdp_data_elem* element = (struct bt_sdp_data_elem*)&spp_record->attrs[i].val;
+            struct bt_sdp_data_elem* list_tmpl = (struct bt_sdp_data_elem*)spp_record->attrs[i].val.data;
+            struct bt_sdp_data_elem* rfcomm_tmpl = NULL;
 
-            element = (struct bt_sdp_data_elem*)element->data;
-            if (!element) {
+            if (!list_tmpl) {
                 BT_LOGE("SPP Descriptor List PROTO_DESC is NULL");
                 goto fail;
             }
 
-            element = (struct bt_sdp_data_elem*)element[1].data;
-            if (!element) {
+            spp_record->proto_desc_list[0] = list_tmpl[0];
+            spp_record->proto_desc_list[1] = list_tmpl[1];
+
+            rfcomm_tmpl = (struct bt_sdp_data_elem*)spp_record->proto_desc_list[1].data;
+            if (!rfcomm_tmpl) {
                 BT_LOGE("SPP Descriptor List Channel is NULL");
                 goto fail;
             }
 
-            element[1].data = &spp_record->channel;
+            spp_record->proto_desc_rfcomm[0] = rfcomm_tmpl[0];
+            spp_record->proto_desc_rfcomm[1] = rfcomm_tmpl[1];
+            spp_record->proto_desc_rfcomm[1].data = &spp_record->channel;
+
+            spp_record->proto_desc_list[1].data = spp_record->proto_desc_rfcomm;
+            spp_record->attrs[i].val.data = spp_record->proto_desc_list;
         }
     }
 
