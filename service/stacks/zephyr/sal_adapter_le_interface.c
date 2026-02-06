@@ -1135,6 +1135,7 @@ static void STACK_CALL(le_set_bond)(void* args)
 
 #ifdef CONFIG_SETTINGS_ZBLUE
     bt_settings_load(req->id, req->adpt.le_set_bond.id, req->adpt.le_set_bond.key, &le_addr);
+    bt_settings_commit(req->id, req->adpt.le_set_bond.id, req->adpt.le_set_bond.key, &le_addr);
 #endif
 }
 
