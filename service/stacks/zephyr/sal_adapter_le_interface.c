@@ -1436,11 +1436,19 @@ bt_status_t bt_sal_le_get_local_oob_data(bt_controller_id_t id, bt_address_t* ad
 static void STACK_CALL(add_white_list)(void* args)
 {
     sal_adapter_req_t* req = args;
+    bt_address_t id_addr;
     bt_addr_le_t addr;
     int err;
 
-    addr.type = req->addr_type;
-    memcpy(&addr.a, &req->addr, sizeof(addr.a));
+    if (adapter_get_remote_identity_address(&req->addr, &id_addr) == BT_STATUS_SUCCESS) {
+        memcpy(&addr.a, &id_addr, sizeof(addr.a));
+        /** TODO: consider random (static) identity address */
+        addr.type = BT_LE_ADDR_TYPE_PUBLIC;
+    } else {
+        memcpy(&addr.a, &req->addr, sizeof(addr.a));
+        addr.type = adapter_get_le_remote_address_type(&req->addr);
+        BT_LOGD("%s, no public identity address", __func__);
+    }
 
     err = bt_le_filter_accept_list_add(&addr);
     if (err) {
@@ -1475,13 +1483,21 @@ bt_status_t bt_sal_le_add_white_list(bt_controller_id_t id, bt_address_t* addres
 static void STACK_CALL(remove_white_list)(void* args)
 {
     sal_adapter_req_t* req = args;
+    bt_address_t id_addr;
     bt_addr_le_t addr;
     int err;
 
-    addr.type = req->addr_type;
-    memcpy(&addr.a, &req->addr, sizeof(addr.a));
+    if (adapter_get_remote_identity_address(&req->addr, &id_addr) == BT_STATUS_SUCCESS) {
+        memcpy(&addr.a, &id_addr, sizeof(addr.a));
+        addr.type = BT_LE_ADDR_TYPE_PUBLIC;
+        /** TODO: consider random (static) identity address */
+    } else {
+        memcpy(&addr.a, &req->addr, sizeof(addr.a));
+        addr.type = adapter_get_le_remote_address_type(&req->addr);
+        BT_LOGD("%s, no public identity address", __func__);
+    }
 
-    err = bt_le_filter_accept_list_add(&addr);
+    err = bt_le_filter_accept_list_remove(&addr);
     if (err) {
         BT_LOGE("%s, remove white list fail, err:%d", __func__, err);
         adapter_on_whitelist_update(&req->addr, false, BT_STATUS_FAIL);
