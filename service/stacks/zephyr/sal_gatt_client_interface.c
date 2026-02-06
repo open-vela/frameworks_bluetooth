@@ -871,22 +871,20 @@ static bt_status_t zblue_gatt_client_discover_chrc(struct bt_conn* conn, const s
 static uint8_t gatt_client_read_element_callback(struct bt_conn* conn, uint8_t err,
     struct bt_gatt_read_params* params, const void* data, uint16_t length)
 {
-    struct bt_conn_info info;
     bt_address_t addr;
+
+    get_le_addr_from_conn(conn, &addr);
 
     if (err) {
         BT_LOGE("%s, gatt read fail err:%d", __func__, err);
-        if_gattc_on_element_read(&addr, params->single.handle, (uint8_t*)data, length, BT_STATUS_FAIL);
+        if_gattc_on_element_read(&addr, params->single.handle, (uint8_t*)data, length, GATT_STATUS_FAILURE);
         return BT_GATT_ITER_STOP;
     }
 
     BT_LOGD("%s, [DATA] len:%d, handle:0x%0x", __func__, length, params->single.handle);
     lib_dumpbuffer("read element", data, length);
 
-    bt_conn_get_info(conn, &info);
-    memcpy(&addr, info.le.dst->a.val, sizeof(addr));
-
-    if_gattc_on_element_read(&addr, params->single.handle, (uint8_t*)data, length, BT_STATUS_SUCCESS);
+    if_gattc_on_element_read(&addr, params->single.handle, (uint8_t*)data, length, GATT_STATUS_SUCCESS);
 
     return BT_GATT_ITER_STOP;
 }
@@ -894,20 +892,18 @@ static uint8_t gatt_client_read_element_callback(struct bt_conn* conn, uint8_t e
 static void gatt_client_write_cmd_callback(struct bt_conn* conn, uint8_t err,
     struct bt_gatt_write_params* params)
 {
-    struct bt_conn_info info;
     bt_address_t addr;
+
+    get_le_addr_from_conn(conn, &addr);
 
     if (err) {
         BT_LOGE("%s, gatt write fail err:%d", __func__, err);
-        if_gattc_on_element_written(&addr, params->handle, BT_STATUS_FAIL);
+        if_gattc_on_element_written(&addr, params->handle, GATT_STATUS_FAILURE);
         free(params);
         return;
     }
 
-    bt_conn_get_info(conn, &info);
-    memcpy(&addr, info.le.dst->a.val, sizeof(addr));
-
-    if_gattc_on_element_written(&addr, params->handle, BT_STATUS_SUCCESS);
+    if_gattc_on_element_written(&addr, params->handle, GATT_STATUS_SUCCESS);
 
     free(params);
 }
@@ -915,13 +911,11 @@ static void gatt_client_write_cmd_callback(struct bt_conn* conn, uint8_t err,
 static void gatt_client_write_callback(struct bt_conn* conn, void* user_data)
 {
     uint16_t* handle = user_data;
-    struct bt_conn_info info;
     bt_address_t addr;
 
-    bt_conn_get_info(conn, &info);
-    memcpy(&addr, info.le.dst->a.val, sizeof(addr));
+    get_le_addr_from_conn(conn, &addr);
 
-    if_gattc_on_element_written(&addr, *handle, BT_STATUS_SUCCESS);
+    if_gattc_on_element_written(&addr, *handle, GATT_STATUS_SUCCESS);
 
     free(handle);
 }
@@ -930,11 +924,9 @@ static uint8_t bt_gatt_notify_handler(struct bt_conn* conn, struct bt_gatt_subsc
     const void* data, uint16_t length)
 {
     uint16_t handle;
-    struct bt_conn_info info;
     bt_address_t addr;
 
-    bt_conn_get_info(conn, &info);
-    memcpy(&addr, info.le.dst->a.val, sizeof(addr));
+    get_le_addr_from_conn(conn, &addr);
 
     handle = params->value_handle;
     if (data == NULL) {
@@ -957,7 +949,7 @@ static void bt_gatt_subscribe_response(struct bt_conn* conn, uint8_t err,
 
     BT_LOGD("%s, err:%d", __func__, err);
 
-    if_gattc_on_element_subscribed(&addr, params->value_handle, err ? BT_STATUS_FAIL : BT_STATUS_SUCCESS, true);
+    if_gattc_on_element_subscribed(&addr, params->value_handle, err ? GATT_STATUS_FAILURE : GATT_STATUS_SUCCESS, true);
 }
 
 static void bt_gatt_unsubscribe_response(struct bt_conn* conn, uint8_t err,
@@ -972,9 +964,9 @@ static void bt_gatt_unsubscribe_response(struct bt_conn* conn, uint8_t err,
 
     BT_LOGD("%s, err:%d", __func__, err);
 
-    if_gattc_on_element_subscribed(&addr, params->value_handle, err ? BT_STATUS_FAIL : BT_STATUS_SUCCESS, false);
+    if_gattc_on_element_subscribed(&addr, params->value_handle, err ? GATT_STATUS_FAILURE : GATT_STATUS_SUCCESS, false);
 
-    if (err == BT_STATUS_SUCCESS) {
+    if (err == 0) {
         instance = gatt_find_instance_by_addr(&addr);
         if (instance) {
             gatt_delete_subscribe_slot_by_param(instance, params);
@@ -1231,10 +1223,15 @@ bt_status_t bt_sal_gatt_client_register_notifications(bt_controller_id_t id, bt_
             err = bt_gatt_unsubscribe(conn, notify);
         }
 
-        if (err) {
+        if (err && err != -EALREADY) {
             BT_LOGE("%s, %s NOTIFY failed, err:%d", __func__,
                 enable ? "subscribe" : "unsubscribe", err);
+            if_gattc_on_element_subscribed(addr, element_id, GATT_STATUS_FAILURE, enable);
             return BT_STATUS_FAIL;
+        }
+
+        if (err == -EALREADY) {
+            if_gattc_on_element_subscribed(addr, element_id, GATT_STATUS_SUCCESS, enable);
         }
     }
 
@@ -1254,10 +1251,15 @@ bt_status_t bt_sal_gatt_client_register_notifications(bt_controller_id_t id, bt_
             err = bt_gatt_unsubscribe(conn, indicate);
         }
 
-        if (err) {
+        if (err && err != -EALREADY) {
             BT_LOGE("%s, %s INDICATE failed, err:%d", __func__,
                 enable ? "subscribe" : "unsubscribe", err);
+            if_gattc_on_element_subscribed(addr, element_id, GATT_STATUS_FAILURE, enable);
             return BT_STATUS_FAIL;
+        }
+
+        if (err == -EALREADY) {
+            if_gattc_on_element_subscribed(addr, element_id, GATT_STATUS_SUCCESS, enable);
         }
     }
 
@@ -1271,27 +1273,25 @@ static void zblue_gattc_mtu_updated_callback(struct bt_conn* conn, uint16_t tx, 
     uint16_t att_payload = (att_mtu >= 23) ? (att_mtu - 3) : 20;
 
     get_le_addr_from_conn(conn, &addr);
-    if_gattc_on_mtu_changed(&addr, att_payload, BT_STATUS_SUCCESS);
+    if_gattc_on_mtu_changed(&addr, att_payload, GATT_STATUS_SUCCESS);
 }
 
 static void gatt_exchange_mtu_func(struct bt_conn* conn, uint8_t err,
     struct bt_gatt_exchange_params* params)
 {
-    struct bt_conn_info info;
     bt_address_t addr;
     uint16_t mtu;
 
-    bt_conn_get_info(conn, &info);
-    memcpy(&addr, info.le.dst->a.val, sizeof(addr));
+    get_le_addr_from_conn(conn, &addr);
 
     if (err) {
         BT_LOGE("%s, exchange MTU failed err: %u", __func__, err);
-        if_gattc_on_mtu_changed(&addr, 0, BT_STATUS_FAIL);
+        if_gattc_on_mtu_changed(&addr, 0, GATT_STATUS_FAILURE);
         return;
     }
 
     mtu = bt_gatt_get_mtu(conn);
-    if_gattc_on_mtu_changed(&addr, mtu, BT_STATUS_SUCCESS);
+    if_gattc_on_mtu_changed(&addr, mtu, GATT_STATUS_SUCCESS);
 }
 
 static struct bt_gatt_exchange_params gatt_exchange_params = {
