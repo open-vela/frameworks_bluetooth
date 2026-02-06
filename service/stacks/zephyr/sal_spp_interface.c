@@ -353,6 +353,8 @@ static void spp_rfcomm_connected(struct bt_rfcomm_dlc* rfcomm_dlc)
 
     BT_LOGD("%s, rfcomm_dlc: %p", __func__, rfcomm_dlc);
 
+    bt_rfcomm_dlc_set_rx_credit_mode(rfcomm_dlc, BT_RFCOMM_RX_CREDIT_MANUAL);
+
     spp_conn_lock();
     spp_conn = spp_find_connection_by_dlc(rfcomm_dlc);
     if (!spp_conn) {
