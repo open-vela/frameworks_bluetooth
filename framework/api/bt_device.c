@@ -30,7 +30,7 @@ bt_status_t BTSYMBOLS(bt_device_get_identity_address)(bt_instance_t* ins, bt_add
 
 ble_addr_type_t BTSYMBOLS(bt_device_get_address_type)(bt_instance_t* ins, bt_address_t* addr)
 {
-    return 0;
+    return adapter_get_le_remote_address_type(addr);
 }
 
 bt_device_type_t BTSYMBOLS(bt_device_get_device_type)(bt_instance_t* ins, bt_address_t* addr)
