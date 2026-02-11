@@ -79,7 +79,8 @@ void bt_socket_server_device_process(service_poll_t* poll,
         break;
     }
     case BT_DEVICE_GET_ADDRESS_TYPE: {
-        packet->devs_r.atype = BT_LE_ADDR_TYPE_PUBLIC;
+        packet->devs_r.atype = BTSYMBOLS(bt_device_get_address_type)(ins,
+            &packet->devs_pl._bt_device_addr.addr);
         break;
     }
     case BT_DEVICE_GET_DEVICE_TYPE: {
