@@ -2166,7 +2166,7 @@ bt_status_t adapter_disable(uint8_t opt)
     }
 
     if (opt == SYS_SET_BT_ALL)
-        send_to_state_machine((state_machine_t*)adapter->stm, SYS_TURN_OFF, NULL);
+        send_to_state_machine((state_machine_t*)adapter->stm, SYS_TURN_OFF_SAFE, NULL);
     else
         send_to_state_machine((state_machine_t*)adapter->stm, TURN_OFF_BLE, NULL);
 
@@ -2175,12 +2175,7 @@ bt_status_t adapter_disable(uint8_t opt)
 
 bt_status_t adapter_disable_safe(uint8_t opt)
 {
-    adapter_service_t* adapter = &g_adapter_service;
-
-    if (opt == SYS_SET_BT_ALL)
-        send_to_state_machine((state_machine_t*)adapter->stm, SYS_TURN_OFF_SAFE, NULL);
-
-    return BT_STATUS_SUCCESS;
+    return adapter_disable(opt);
 }
 
 void adapter_cleanup(void)
