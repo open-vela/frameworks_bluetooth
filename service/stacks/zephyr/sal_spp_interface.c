@@ -659,8 +659,8 @@ bt_status_t bt_sal_spp_server_start(uint16_t port, bt_uuid_t* uuid, uint8_t max_
     server->sdp_record = (struct bt_sdp_record*)spp_sdp_create_record(scn, uuid);
     ret = bt_sdp_register_service(server->sdp_record);
     if (ret < 0) {
-        // TODO: unregister rfcomm server
         BT_LOGE("Failed to register SDP record: %d", ret);
+        bt_rfcomm_server_unregister(&server->rfcomm_server);
         spp_sdp_remove_record(server->sdp_record);
         free(server);
         return BT_STATUS_FAIL;
