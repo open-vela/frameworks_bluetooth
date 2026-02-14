@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
+#define LOG_TAG "zblue_sal_ag"
+
 #include "sal_hfp_ag_interface.h"
 #include "bt_debug.h"
 #include "bt_hfp.h"
@@ -26,11 +28,17 @@
 #undef BT_UUID_DECLARE_32
 #undef BT_UUID_DECLARE_128
 
+#include <errno.h>
+#include <inttypes.h>
 #include <string.h>
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/classic/at.h>
 #include <zephyr/bluetooth/classic/hfp_ag.h>
 #include <zephyr/bluetooth/classic/sdp.h>
+
+#define HFP_AG_CODEC_Z_BIT_CVSD BIT(BT_HFP_AG_CODEC_CVSD)
+#define HFP_AG_CODEC_Z_BIT_MSBC BIT(BT_HFP_AG_CODEC_MSBC)
+#define HFP_AG_CODEC_Z_BIT_LC3_SWB BIT(BT_HFP_AG_CODEC_LC3_SWB)
 
 static bt_list_t* g_sal_ag_conn_list = NULL;
 
@@ -58,6 +66,7 @@ typedef struct _bt_hfp_ag_connection {
     struct bt_conn* context;
     struct bt_conn* sco_context;
     struct bt_hfp_ag* ag;
+    uint8_t preferred_codec;
     bt_list_t* calls;
 } bt_hfp_ag_connection_t;
 
@@ -160,6 +169,7 @@ static bt_hfp_ag_connection_t* new_sal_connection(struct bt_conn* conn, struct b
 
     sal_conn->context = conn;
     sal_conn->ag = ag;
+    sal_conn->preferred_codec = BT_HFP_AG_CODEC_CVSD; /* Initialize to default CVSD codec */
     sal_conn->calls = bt_list_new(free_call);
 
     bt_list_add_tail(g_sal_ag_conn_list, sal_conn);
@@ -411,12 +421,36 @@ bt_status_t do_ag_disconnect(bt_controller_id_t id, bt_address_t* addr, void* us
     return BT_STATUS_SUCCESS;
 }
 
+static int hfp_codec_to_service_cfg(uint8_t codec_id, hfp_codec_config_t* cfg)
+{
+    if (!cfg) {
+        return -EINVAL;
+    }
+
+    switch (codec_id) {
+    case BT_HFP_AG_CODEC_MSBC:
+        cfg->codec = HFP_CODEC_MSBC;
+        cfg->sample_rate = 16000;
+        cfg->bit_width = 16;
+        return 0;
+    case BT_HFP_AG_CODEC_CVSD:
+        cfg->codec = HFP_CODEC_CVSD;
+        cfg->sample_rate = 8000;
+        cfg->bit_width = 16;
+        return 0;
+    default:
+        return -ENOTSUP;
+    }
+}
+
 static void do_ag_sco_connect(service_work_t* work, void* userdata)
 {
     ag_connect_sco_params_t* params;
     struct bt_hfp_ag* ag;
     uint8_t codec;
     bt_hfp_ag_connection_t* sal_conn;
+    hfp_codec_config_t cfg = { 0 };
+    int err;
 
     params = (ag_connect_sco_params_t*)userdata;
     if (!params) {
@@ -442,9 +476,22 @@ static void do_ag_sco_connect(service_work_t* work, void* userdata)
 
     hfp_ag_on_audio_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_CONNECTING, 0xFFFF); // sco conn handle not supported
 
-    if (Z_API(bt_hfp_ag_audio_connect)(ag, codec)) {
-        BT_LOGE("%s, Failed to connect HFP AG SCO", __func__);
-
+    err = Z_API(bt_hfp_ag_audio_connect)(ag, codec);
+    if (err == -EALREADY) {
+        BT_LOGW("%s, Audio already connected, notify CONNECTED", __func__);
+        hfp_ag_on_audio_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_CONNECTED, 0xFFFF);
+    } else if ((err == -ENOTSUP || err == -EINVAL) && codec != BT_HFP_AG_CODEC_CVSD) {
+        BT_LOGW("%s, codec=%d not supported, fallback to CVSD", __func__, codec);
+        sal_conn->preferred_codec = BT_HFP_AG_CODEC_CVSD;
+        hfp_codec_to_service_cfg(BT_HFP_AG_CODEC_CVSD, &cfg);
+        hfp_ag_on_codec_changed(&sal_conn->addr, &cfg);
+        err = Z_API(bt_hfp_ag_audio_connect)(ag, BT_HFP_AG_CODEC_CVSD);
+        if (err) {
+            BT_LOGE("%s, Failed to connect HFP AG SCO with CVSD fallback, err=%d", __func__, err);
+            hfp_ag_on_audio_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_DISCONNECTED, 0xFFFF);
+        }
+    } else if (err) {
+        BT_LOGE("%s, Failed to connect HFP AG SCO, err=%d", __func__, err);
         hfp_ag_on_audio_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_DISCONNECTED, 0xFFFF);
     }
 }
@@ -884,6 +931,143 @@ static void zblue_on_ag_terminate(struct bt_hfp_ag_call* call)
     hfp_ag_on_call_control(&sal_conn->addr, HFP_HF_CALL_CONTROL_CHLD_1);
 }
 
+static void zblue_on_ag_available_codec(struct bt_hfp_ag* ag, uint32_t codec_ids)
+{
+    bt_hfp_ag_connection_t* sal_conn;
+    hfp_codec_config_t cfg = { 0 };
+    int err;
+
+    if (!ag) {
+        return;
+    }
+
+    sal_conn = find_connection_by_ag(ag);
+    if (!sal_conn) {
+        struct bt_conn* conn = Z_API(bt_hfp_ag_get_conn)(ag);
+        if (!conn) {
+            BT_LOGE("%s, failed to get conn for ag=%p", __func__, ag);
+            return;
+        }
+        BT_LOGD("%s, connection not found for ag=%p", __func__, ag);
+        sal_conn = new_sal_connection(conn, ag);
+        bt_conn_unref(conn);
+        if (!sal_conn) {
+            BT_LOGE("%s, failed to create new sal conn", __func__);
+            return;
+        }
+
+        hfp_ag_on_connection_state_changed(&sal_conn->addr, PROFILE_STATE_CONNECTING, 0, 0);
+    }
+
+    if (codec_ids & HFP_AG_CODEC_Z_BIT_MSBC) {
+        BT_LOGD("%s, prefer mSBC", __func__);
+        sal_conn->preferred_codec = BT_HFP_AG_CODEC_MSBC;
+    } else if (codec_ids & HFP_AG_CODEC_Z_BIT_CVSD) {
+        BT_LOGD("%s, prefer CVSD", __func__);
+        sal_conn->preferred_codec = BT_HFP_AG_CODEC_CVSD;
+    } else {
+        BT_LOGW("%s, could not find support codec in codec_ids: %" PRIu32,
+            __func__, codec_ids);
+        sal_conn->preferred_codec = 0;
+    }
+
+    err = hfp_codec_to_service_cfg(sal_conn->preferred_codec, &cfg);
+    if (err != 0) {
+        if (err == -EINVAL) {
+            BT_LOGE("%s, invalid cfg pointer", __func__);
+        } else {
+            BT_LOGE("%s, unsupported codec id: %d", __func__, sal_conn->preferred_codec);
+        }
+        return;
+    }
+
+    hfp_ag_on_codec_changed(&sal_conn->addr, &cfg);
+}
+
+static void zblue_on_ag_audio_connect_req(struct bt_hfp_ag* ag)
+{
+    bt_hfp_ag_connection_t* sal_conn;
+    hfp_codec_config_t cfg = { 0 };
+    ag_connect_sco_params_t* params;
+    uint8_t codec;
+    int err;
+
+    if (!ag) {
+        BT_LOGE("%s, ag is NULL", __func__);
+        return;
+    }
+
+    sal_conn = find_connection_by_ag(ag);
+    if (!sal_conn) {
+        BT_LOGE("%s, connection not found for ag=%p", __func__, ag);
+        return;
+    }
+
+    codec = sal_conn->preferred_codec ? sal_conn->preferred_codec : BT_HFP_AG_CODEC_CVSD;
+
+    BT_LOGD("%s, HF requested audio connect, using codec=%d", __func__, codec);
+
+    err = hfp_codec_to_service_cfg(codec, &cfg);
+    if (err != 0) {
+        if (err == -EINVAL) {
+            BT_LOGE("%s, invalid cfg pointer", __func__);
+            return;
+        }
+        BT_LOGE("%s, unsupported codec id: %d, fallback to CVSD", __func__, codec);
+        codec = BT_HFP_AG_CODEC_CVSD;
+        hfp_codec_to_service_cfg(BT_HFP_AG_CODEC_CVSD, &cfg);
+    }
+
+    /* Report the actual codec that will be used for this audio connection */
+    hfp_ag_on_codec_changed(&sal_conn->addr, &cfg);
+
+    params = (ag_connect_sco_params_t*)zalloc(sizeof(ag_connect_sco_params_t));
+    if (!params) {
+        BT_LOGE("%s, Failed to allocate memory", __func__);
+        return;
+    }
+
+    params->ag = ag;
+    params->codec = codec;
+
+    if (!service_loop_work(params, do_ag_sco_connect, NULL)) {
+        BT_LOGE("%s, service loop work submit failed", __func__);
+        free(params);
+    }
+}
+
+static void zblue_on_ag_codec_negotiation(struct bt_hfp_ag* ag, int zblue_err)
+{
+    bt_hfp_ag_connection_t* sal_conn;
+    hfp_codec_config_t cfg = { 0 };
+    int err;
+
+    if (!ag) {
+        return;
+    }
+
+    if (!zblue_err) {
+        BT_LOGD("%s, codec negotiation success", __func__);
+        return;
+    }
+
+    BT_LOGE("%s, fail: %d, fallback to CVSD", __func__, zblue_err);
+
+    sal_conn = find_connection_by_ag(ag);
+    if (!sal_conn) {
+        BT_LOGE("%s, connection not found for ag=%p", __func__, ag);
+        return;
+    }
+
+    sal_conn->preferred_codec = BT_HFP_AG_CODEC_CVSD;
+    err = hfp_codec_to_service_cfg(BT_HFP_AG_CODEC_CVSD, &cfg);
+    if (err != 0) {
+        BT_LOGE("%s, fallback codec config failed: %d", __func__, err);
+        return;
+    }
+    hfp_ag_on_codec_changed(&sal_conn->addr, &cfg);
+}
+
 static void zblue_on_ag_vgm(struct bt_hfp_ag* ag, uint8_t gain)
 {
     bt_hfp_ag_connection_t* sal_conn;
@@ -969,9 +1153,9 @@ static struct bt_hfp_ag_cb g_hfp_ag_cb = {
     .retrieve = zblue_on_ag_retrieve,
     .reject = zblue_on_ag_reject,
     .terminate = zblue_on_ag_terminate,
-    .codec = NULL,
-    .codec_negotiate = NULL,
-    .audio_connect_req = NULL,
+    .codec = zblue_on_ag_available_codec,
+    .codec_negotiate = zblue_on_ag_codec_negotiation,
+    .audio_connect_req = zblue_on_ag_audio_connect_req,
     .vgm = zblue_on_ag_vgm,
     .vgs = zblue_on_ag_vgs,
     .ecnr_turn_off = NULL,
@@ -1046,7 +1230,7 @@ bt_status_t bt_sal_hfp_ag_connect_audio(bt_address_t* addr)
     }
 
     params->ag = sal_conn->ag;
-    params->codec = BT_HFP_AG_CODEC_CVSD; // default codec
+    params->codec = sal_conn->preferred_codec ? sal_conn->preferred_codec : BT_HFP_AG_CODEC_CVSD;
 
     if (!service_loop_work(params, do_ag_sco_connect, NULL)) {
         free(params);
