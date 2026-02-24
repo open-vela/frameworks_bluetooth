@@ -863,7 +863,7 @@ static void zblue_on_clip(struct bt_hfp_hf_call* call, char* number, uint8_t typ
     hfp_hf_on_clip(&conn->addr, num, "");
 }
 
-static void zblue_on_vendor_specific(struct bt_hfp_hf* hf, const char* response)
+static void zblue_on_vendor_specific(struct bt_hfp_hf* hf, const char* cmd, const char* value)
 {
     bt_hfp_hf_connection_t* conn = find_connection_by_hf(hf);
     if (!conn) {
@@ -871,11 +871,23 @@ static void zblue_on_vendor_specific(struct bt_hfp_hf* hf, const char* response)
         return;
     }
 
-    if (!response) {
+    if (!cmd || !value) {
         return;
     }
 
-    hfp_hf_on_received_at_cmd_resp(&conn->addr, (char*)response, strlen(response));
+    size_t cmd_len = strlen(cmd);
+    size_t val_len = strlen(value);
+    size_t len = cmd_len + val_len + 2; /* '+' and ':' */
+
+    char* rsp = malloc(len + 1);
+    if (!rsp) {
+        BT_LOGE("%s, Failed to allocate vendor response", __func__);
+        return;
+    }
+
+    snprintf(rsp, len + 1, "+%s:%s", cmd, value);
+    hfp_hf_on_received_at_cmd_resp(&conn->addr, rsp, len);
+    free(rsp);
 }
 
 static hfp_atcmd_code_t zblue_at_cmd_to_service_cmd(
