@@ -617,7 +617,7 @@ endif # BLUETOOTH_LEAUDIO_SERVER
 endmenu #Bluetooth LE Audio
 
 menu "Bluetooth Audio Transport"
-config BLUETOOTH_AUDIO_TRANS_RPSMG_SERVER
+config BLUETOOTH_AUDIO_TRANS_RPMSG_SERVER
 	bool "RPMsg audio transport server"
 	default n
 
