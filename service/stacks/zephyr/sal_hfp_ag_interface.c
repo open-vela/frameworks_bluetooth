@@ -690,12 +690,22 @@ static int zblue_on_ag_vendor_at_cmd(struct bt_hfp_ag* ag, const char* cmd, uint
 
 static int zblue_on_ag_get_ongoing_call(struct bt_hfp_ag* ag)
 {
-    bt_hfp_ag_connection_t* sal_conn;
+    bt_hfp_ag_connection_t* sal_conn = find_connection_by_ag(ag);
 
-    sal_conn = find_connection_by_ag(ag);
     if (!sal_conn) {
-        BT_LOGE("%s, connection not found for ag=%p", __func__, ag);
-        return -EINVAL;
+        struct bt_conn* conn = Z_API(bt_hfp_ag_get_conn)(ag);
+        if (!conn) {
+            BT_LOGE("%s, failed to get conn for ag=%p", __func__, ag);
+            return -EINVAL;
+        }
+        BT_LOGD("%s, connection not found for ag=%p, creating new", __func__, ag);
+        sal_conn = new_sal_connection(conn, ag);
+        bt_conn_unref(conn);
+        if (!sal_conn) {
+            BT_LOGE("%s, failed to create new sal conn", __func__);
+            return -EINVAL;
+        }
+        hfp_ag_on_connection_state_changed(&sal_conn->addr, PROFILE_STATE_CONNECTING, 0, 0);
     }
 
     hfp_ag_on_call_sync(&sal_conn->addr);
@@ -948,7 +958,7 @@ static void zblue_on_ag_available_codec(struct bt_hfp_ag* ag, uint32_t codec_ids
             BT_LOGE("%s, failed to get conn for ag=%p", __func__, ag);
             return;
         }
-        BT_LOGD("%s, connection not found for ag=%p", __func__, ag);
+        BT_LOGD("%s, connection not found for ag=%p, creating new", __func__, ag);
         sal_conn = new_sal_connection(conn, ag);
         bt_conn_unref(conn);
         if (!sal_conn) {
