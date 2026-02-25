@@ -433,7 +433,7 @@ static uint8_t zblue_gatt_client_disc_desc_callback(struct bt_conn* conn, const 
     uint16_t start_HDL, end_HDL;
     gatt_element_t* element_db;
 
-    get_le_addr_from_conn(conn, &addr);
+    bt_sal_get_remote_address(conn, &addr);
     instance = gatt_find_instance_by_addr(&addr);
     if (!instance) {
         BT_LOGE("%s, instance null", __func__);
@@ -589,7 +589,7 @@ static uint8_t zblue_gatt_client_disc_chrc_callback(struct bt_conn* conn, const 
     uint16_t start_HDL, end_HDL;
     gatt_element_t* element_db;
 
-    get_le_addr_from_conn(conn, &addr);
+    bt_sal_get_remote_address(conn, &addr);
 
     instance = gatt_find_instance_by_addr(&addr);
     if (!instance) {
@@ -702,7 +702,7 @@ static uint8_t zblue_gatt_client_disc_service_callback(struct bt_conn* conn, con
     struct gatt_service* service;
     bt_address_t addr;
 
-    get_le_addr_from_conn(conn, &addr);
+    bt_sal_get_remote_address(conn, &addr);
 
     instance = gatt_find_alloc_instance_by_addr(&addr);
     if (!instance) {
@@ -761,7 +761,7 @@ static uint8_t zblue_gatt_client_disc_include_callback(struct bt_conn* conn,
     struct gatt_service* service;
     bt_address_t addr;
 
-    get_le_addr_from_conn(conn, &addr);
+    bt_sal_get_remote_address(conn, &addr);
 
     instance = gatt_find_alloc_instance_by_addr(&addr);
     if (!instance) {
@@ -852,7 +852,7 @@ static uint8_t gatt_client_read_element_callback(struct bt_conn* conn, uint8_t e
 {
     bt_address_t addr;
 
-    get_le_addr_from_conn(conn, &addr);
+    bt_sal_get_remote_address(conn, &addr);
 
     if (err) {
         BT_LOGE("%s, gatt read fail err:%d", __func__, err);
@@ -873,7 +873,7 @@ static void gatt_client_write_cmd_callback(struct bt_conn* conn, uint8_t err,
 {
     bt_address_t addr;
 
-    get_le_addr_from_conn(conn, &addr);
+    bt_sal_get_remote_address(conn, &addr);
 
     if (err) {
         BT_LOGE("%s, gatt write fail err:%d", __func__, err);
@@ -892,7 +892,7 @@ static void gatt_client_write_callback(struct bt_conn* conn, void* user_data)
     uint16_t* handle = user_data;
     bt_address_t addr;
 
-    get_le_addr_from_conn(conn, &addr);
+    bt_sal_get_remote_address(conn, &addr);
 
     if_gattc_on_element_written(&addr, *handle, GATT_STATUS_SUCCESS);
 
@@ -905,7 +905,7 @@ static uint8_t bt_gatt_notify_handler(struct bt_conn* conn, struct bt_gatt_subsc
     uint16_t handle;
     bt_address_t addr;
 
-    get_le_addr_from_conn(conn, &addr);
+    bt_sal_get_remote_address(conn, &addr);
 
     handle = params->value_handle;
     if (data == NULL) {
@@ -922,7 +922,7 @@ static void bt_gatt_subscribe_response(struct bt_conn* conn, uint8_t err,
 {
     bt_address_t addr;
 
-    if (get_le_addr_from_conn(conn, &addr) != BT_STATUS_SUCCESS) {
+    if (bt_sal_get_remote_address(conn, &addr) != BT_STATUS_SUCCESS) {
         return;
     }
 
@@ -937,7 +937,7 @@ static void bt_gatt_unsubscribe_response(struct bt_conn* conn, uint8_t err,
     bt_address_t addr;
     struct gatt_instance* instance;
 
-    if (get_le_addr_from_conn(conn, &addr) != BT_STATUS_SUCCESS) {
+    if (bt_sal_get_remote_address(conn, &addr) != BT_STATUS_SUCCESS) {
         return;
     }
 
@@ -1239,7 +1239,7 @@ static void zblue_gattc_mtu_updated_callback(struct bt_conn* conn, uint16_t tx, 
     uint16_t att_mtu = MIN(tx, rx);
     uint16_t att_payload = (att_mtu >= 23) ? (att_mtu - 3) : 20;
 
-    get_le_addr_from_conn(conn, &addr);
+    bt_sal_get_remote_address(conn, &addr);
     if_gattc_on_mtu_changed(&addr, att_payload, GATT_STATUS_SUCCESS);
 }
 
@@ -1249,7 +1249,7 @@ static void gatt_exchange_mtu_func(struct bt_conn* conn, uint8_t err,
     bt_address_t addr;
     uint16_t mtu;
 
-    get_le_addr_from_conn(conn, &addr);
+    bt_sal_get_remote_address(conn, &addr);
 
     if (err) {
         BT_LOGE("%s, exchange MTU failed err: %u", __func__, err);
