@@ -1320,7 +1320,7 @@ bt_status_t bt_sal_gatt_server_send_response(bt_controller_id_t id, bt_address_t
         BT_LOGW("%s, le conn null", __func__);
 
         info = bt_conn_find(addr, BT_TRANSPORT_BREDR);
-        conn = info->conn;
+        conn = info ? info->conn : NULL;
         if (!conn) {
             BT_LOGE("%s, br conn null", __func__);
             return BT_STATUS_NOT_FOUND;
@@ -1408,7 +1408,7 @@ bt_status_t bt_sal_gatt_server_send_notification(bt_controller_id_t id, bt_addre
         BT_LOGW("%s, le conn null", __func__);
 
         info = bt_conn_find(addr, BT_TRANSPORT_BREDR);
-        context.conn = info->conn;
+        context.conn = info ? info->conn : NULL;
         if (!context.conn) {
             BT_LOGE("%s, br conn null", __func__);
             return BT_STATUS_FAIL;
@@ -1507,7 +1507,7 @@ bt_status_t bt_sal_gatt_server_send_indication(bt_controller_id_t id, bt_address
         BT_LOGW("%s, le conn null", __func__);
 
         info = bt_conn_find(addr, BT_TRANSPORT_BREDR);
-        context.conn = info->conn;
+        context.conn = info ? info->conn : NULL;
         if (!context.conn) {
             BT_LOGE("%s, br conn null", __func__);
             return BT_STATUS_FAIL;
