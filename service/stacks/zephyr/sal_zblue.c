@@ -42,6 +42,10 @@ bt_status_t bt_sal_get_remote_address(struct bt_conn* conn, bt_address_t* addr)
         return BT_STATUS_FAIL;
     }
 
+    if (info.type == BT_CONN_TYPE_LE) {
+        return get_le_addr_from_conn(conn, addr);
+    }
+
     bt_addr_set(addr, info.br.dst->val);
     return BT_STATUS_SUCCESS;
 }

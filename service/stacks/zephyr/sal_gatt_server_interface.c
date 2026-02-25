@@ -259,7 +259,7 @@ static ssize_t read_value(struct bt_conn* conn, const struct bt_gatt_attr* attr,
 
     element = (gatt_element_t*)attr->user_data;
 
-    get_le_addr_from_conn(conn, &addr);
+    bt_sal_get_remote_address(conn, &addr);
 
     request_id = MAKE_REQUEST_ID(element->handle, GATT_OPS_READ_REQUEST);
     if_gatts_on_received_element_read_request(&addr, request_id, element->handle);
@@ -295,7 +295,7 @@ static ssize_t write_value(struct bt_conn* conn, const struct bt_gatt_attr* attr
         ret = -EINPROGRESS;
     }
 
-    get_le_addr_from_conn(conn, &addr);
+    bt_sal_get_remote_address(conn, &addr);
 
     if_gatts_on_received_element_write_request(&addr, request_id, element->handle, (uint8_t*)buf, offset, len);
 
@@ -624,7 +624,7 @@ static ssize_t bt_sal_on_ccc_written(struct bt_conn* conn, const struct bt_gatt_
 
     value = ccc->cfg[index].value;
 
-    get_le_addr_from_conn(conn, &addr);
+    bt_sal_get_remote_address(conn, &addr);
 
     if_gatts_on_received_element_write_request(&addr, GATT_OPS_WRITE_REQUEST,
         element->handle, (uint8_t*)&value, 0, sizeof(value));
@@ -748,7 +748,7 @@ static void zblue_gatts_mtu_updated_callback(struct bt_conn* conn, uint16_t tx, 
     uint16_t att_mtu = MIN(tx, rx);
     uint16_t att_payload = (att_mtu >= 23) ? (att_mtu - 3) : 20;
 
-    get_le_addr_from_conn(conn, &addr);
+    bt_sal_get_remote_address(conn, &addr);
     if_gatts_on_mtu_changed(&addr, att_payload);
 }
 
@@ -1332,7 +1332,7 @@ static void send_notification_result(struct bt_conn* conn, void* user_data)
         return;
     }
 
-    get_le_addr_from_conn(conn, &addr);
+    bt_sal_get_remote_address(conn, &addr);
 
     if_gatts_on_notification_sent(&addr, element->handle, GATT_STATUS_SUCCESS);
 }
@@ -1420,7 +1420,7 @@ static void send_indication_result(struct bt_conn* conn, struct bt_gatt_indicate
         return;
     }
 
-    get_le_addr_from_conn(conn, &addr);
+    bt_sal_get_remote_address(conn, &addr);
 
     if (err) {
         BT_LOGE("%s, send indication failed for handle:0x%04x", __func__, element->handle);
