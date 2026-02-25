@@ -791,6 +791,7 @@ static bt_status_t do_gatts_disconnect(bt_controller_id_t id, bt_address_t* bd_a
     }
 
     err = bt_att_br_disconnect(conn);
+    bt_conn_unref(conn);
     if (err) {
         BT_LOGE("%s, disconnect fail err:%d", __func__, err);
         return BT_STATUS_FAIL;
@@ -1389,9 +1390,11 @@ bt_status_t bt_sal_gatt_server_send_notification(bt_controller_id_t id, bt_addre
     /* FIXME: If the LE address matches the BREDR address, only the LE connection will be notified. */
     context.conn = get_le_conn_from_addr(addr);
     if (!context.conn) {
+        bt_conn_info_t* info;
         BT_LOGW("%s, le conn null", __func__);
 
-        context.conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
+        info = bt_conn_find(addr, BT_TRANSPORT_BREDR);
+        context.conn = info->conn;
         if (!context.conn) {
             BT_LOGE("%s, br conn null", __func__);
             return BT_STATUS_FAIL;
@@ -1486,9 +1489,11 @@ bt_status_t bt_sal_gatt_server_send_indication(bt_controller_id_t id, bt_address
     /* FIXME: If the LE address matches the BREDR address, only the LE connection will be indicated. */
     context.conn = get_le_conn_from_addr(addr);
     if (!context.conn) {
+        bt_conn_info_t* info;
         BT_LOGW("%s, le conn null", __func__);
 
-        context.conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
+        info = bt_conn_find(addr, BT_TRANSPORT_BREDR);
+        context.conn = info->conn;
         if (!context.conn) {
             BT_LOGE("%s, br conn null", __func__);
             return BT_STATUS_FAIL;
