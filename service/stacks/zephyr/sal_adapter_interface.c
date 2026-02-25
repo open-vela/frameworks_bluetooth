@@ -873,6 +873,11 @@ bt_status_t bt_sal_set_io_capability(bt_controller_id_t id, bt_io_capability_t c
     bt_conn_auth_cb_register(NULL);
     bt_conn_auth_cb_register(&g_conn_auth_cbs);
 
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
+    /* Keep consistency with legacy stack: sync LE IO capability with BR/EDR IO capability */
+    bt_sal_le_set_io_capability(id, cap);
+#endif
+
     return BT_STATUS_SUCCESS;
 #else
     return BT_STATUS_NOT_SUPPORTED;
