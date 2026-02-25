@@ -389,10 +389,12 @@ static struct bt_sdp_record* gatt_sdp_create_record(struct bt_gatt_service* srv)
 
         gatt_record->srv = srv;
         gatt_record->record = record;
-        break;
+        return record;
     }
 
-    return record;
+    free(attrs);
+    free(record);
+    return NULL;
 }
 
 static void gatt_sdp_delete_record(struct bt_sdp_record* record)
