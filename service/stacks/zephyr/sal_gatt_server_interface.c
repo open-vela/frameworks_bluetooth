@@ -790,13 +790,16 @@ static void zblue_gatts_connected_callback(struct bt_conn* conn)
     bt_conn_get_info(conn, &info);
     bt_addr_set(&addr, info.br.dst->val);
 
-    slot = bt_conn_find(&addr, BT_TRANSPORT_BREDR);
+    slot = bt_conn_add(&addr, BT_TRANSPORT_BREDR);
     if (!slot) {
         BT_LOGE("%s, conn slot null", __func__);
         return;
     }
 
     slot->conn = conn;
+    if (!slot->role) {
+        slot->role |= GATT_ROLE_SERVER;
+    }
 
     if_gatts_on_connection_state_changed(&addr, PROFILE_STATE_CONNECTED);
     bt_sal_cm_profile_connected_callback(&addr, PROFILE_GATTS, CONN_ID_DEFAULT);
@@ -1286,10 +1289,21 @@ bt_status_t bt_sal_gatt_server_send_response(bt_controller_id_t id, bt_address_t
     if (!addr || request_id == REQUEST_ID_NORSP) {
         return BT_STATUS_PARM_INVALID;
     }
+
+    /* FIXME: If the LE address matches the BREDR address, only the LE connection will send rsp. */
     conn = get_le_conn_from_addr(addr);
     if (!conn) {
-        return BT_STATUS_NOT_FOUND;
+        bt_conn_info_t* info;
+        BT_LOGW("%s, le conn null", __func__);
+
+        info = bt_conn_find(addr, BT_TRANSPORT_BREDR);
+        conn = info->conn;
+        if (!conn) {
+            BT_LOGE("%s, br conn null", __func__);
+            return BT_STATUS_NOT_FOUND;
+        }
     }
+
     handle = REQUEST_ID_HANDLE(request_id);
     op_type = REQUEST_ID_OP_TYPE(request_id);
     switch (op_type) {
