@@ -241,7 +241,10 @@ static bt_status_t gattc_discover_start(gattc_connection_t* connection, bt_uuid_
 
     bt_status_t status;
 
-    if (!filter_uuid) {
+    /* bt_gattc_discover_service sets filter_uuid.type = 0 when caller passes NULL,
+     * so a non-NULL pointer with type==0 still means "discover all services".
+     */
+    if (!filter_uuid || !filter_uuid->type) {
         status = bt_sal_gatt_client_discover_all_services(PRIMARY_ADAPTER, &connection->remote_addr);
     } else {
         status = bt_sal_gatt_client_discover_service_by_uuid(PRIMARY_ADAPTER, &connection->remote_addr, filter_uuid);
