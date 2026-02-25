@@ -1016,6 +1016,9 @@ bt_status_t bt_sal_le_set_io_capability(bt_controller_id_t id, bt_io_capability_
         g_conn_auth_cbs.cancel = zblue_on_auth_cancel;
         break;
     case BT_IO_CAPABILITY_NOINPUTNOOUTPUT:
+#ifndef CONFIG_HCI_AUTO_REPLY_IN_JUST_WORK
+        g_conn_auth_cbs.passkey_confirm = zblue_on_auth_passkey_confirm;
+#endif
         g_conn_auth_cbs.cancel = zblue_on_auth_cancel;
         break;
     default:
@@ -1397,6 +1400,8 @@ bt_status_t bt_sal_le_smp_reply(bt_controller_id_t id, bt_address_t* addr, bool 
 
     switch (type) {
     case PAIR_TYPE_PASSKEY_CONFIRMATION:
+        SAL_CHECK(bt_conn_auth_passkey_confirm(conn), 0);
+        break;
     case PAIR_TYPE_CONSENT:
         SAL_CHECK(bt_conn_auth_pairing_confirm(conn), 0);
         break;
