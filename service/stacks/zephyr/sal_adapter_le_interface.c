@@ -56,6 +56,7 @@ typedef union {
     } le_set_bond;
     int security_level;
     bool bondable;
+    uint8_t ctkd_mode;
 } sal_adapter_args_t;
 
 typedef struct {
@@ -1653,10 +1654,43 @@ uint16_t bt_sal_le_get_appearance(bt_controller_id_t id)
 #endif /* CONFIG_BT_DEVICE_APPEARANCE_GATT_WRITABLE */
 }
 
+#ifdef CONFIG_BT_CLASSIC
+static void STACK_CALL(enable_key_derivation)(void* args)
+{
+    sal_adapter_req_t* req = args;
+
+    bt_smp_set_ctkd_mode_mc(req->id, req->adpt.ctkd_mode);
+}
+#endif
+
 bt_status_t bt_sal_le_enable_key_derivation(bt_controller_id_t id, bool brkey_to_lekey, bool lekey_to_brkey)
 {
-    /* todo: */
+#ifdef CONFIG_BT_CLASSIC
+    sal_adapter_req_t* req;
+    uint8_t ctkd_mode = 0;
+
+    if (brkey_to_lekey) {
+        ctkd_mode |= BT_SMP_CTKD_BR_TO_LE;
+    }
+    if (lekey_to_brkey) {
+        ctkd_mode |= BT_SMP_CTKD_LE_TO_BR;
+    }
+
+    req = sal_adapter_req(id, NULL, STACK_CALL(enable_key_derivation));
+    if (!req) {
+        BT_LOGE("%s, req null", __func__);
+        return BT_STATUS_NOMEM;
+    }
+
+    req->adpt.ctkd_mode = ctkd_mode;
+
+    BT_LOGD("%s, brkey_to_lekey: %d, lekey_to_brkey: %d, mode: 0x%02x",
+        __func__, brkey_to_lekey, lekey_to_brkey, ctkd_mode);
+
+    return sal_send_req(req);
+#else
     SAL_NOT_SUPPORT;
+#endif
 }
 
 #endif /* CONFIG_BLUETOOTH_BLE_SUPPORT */
