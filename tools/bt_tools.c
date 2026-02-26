@@ -51,6 +51,7 @@ static int get_le_addr_cmd(void* handle, int argc, char** argv);
 static int set_identity_addr_cmd(void* handle, int argc, char** argv);
 static int set_scan_parameters_cmd(void* handle, int argc, char** argv);
 static int set_debug_mode_cmd(void* handle, int argc, char** argv);
+static int set_ctkd_mode_cmd(void* handle, int argc, char** argv);
 static int get_local_name_cmd(void* handle, int argc, char** argv);
 static int set_local_name_cmd(void* handle, int argc, char** argv);
 static int get_local_cod_cmd(void* handle, int argc, char** argv);
@@ -269,6 +270,7 @@ static bt_command_t g_set_cmd_tables[] = {
                                       "\t\t\t<mode>:\n"
                                       "\t\t\t  \"pts\"\n"
                                       "\t\t\t  \"rssi\"\n" },
+    { "ctkd", set_ctkd_mode_cmd, 0, "set ctkd mode, params: <br_to_le> <le_to_br> (0: disable, 1: enable)" },
     { "help", NULL, 0, "show set help info" },
     //{ "", , "set " },
 };
@@ -1458,6 +1460,31 @@ static int enhance_mode_cmd(void* handle, int argc, char** argv)
         bt_device_enable_enhanced_mode(handle, &addr, mode);
     else
         bt_device_disable_enhanced_mode(handle, &addr, mode);
+
+    return CMD_OK;
+}
+
+static int set_ctkd_mode_cmd(void* handle, int argc, char** argv)
+{
+    if (argc < 2) {
+        PRINT("Usage: set ctkd mode <br_to_le> <le_to_br>");
+        PRINT("  br_to_le: 0=disable, 1=enable BR->LE CTKD");
+        PRINT("  le_to_br: 0=disable, 1=enable LE->BR CTKD");
+        return CMD_PARAM_NOT_ENOUGH;
+    }
+
+    bool br_to_le = atoi(argv[0]) != 0;
+    bool le_to_br = atoi(argv[1]) != 0;
+
+    bt_status_t status = bt_adapter_le_enable_key_derivation(g_bttool_ins, br_to_le, le_to_br);
+    if (status != BT_STATUS_SUCCESS) {
+        PRINT("Failed to set CTKD mode: %d", status);
+        return CMD_ERROR;
+    }
+
+    PRINT("CTKD mode set: BR->LE=%s, LE->BR=%s",
+        br_to_le ? "enabled" : "disabled",
+        le_to_br ? "enabled" : "disabled");
 
     return CMD_OK;
 }
