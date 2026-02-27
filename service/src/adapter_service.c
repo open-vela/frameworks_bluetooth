@@ -1025,7 +1025,7 @@ static const char* acl_connection_str(connection_state_t state)
     }
 }
 
-static void bt_dfx_connection_state_changed(uint32_t hci_reason_code, uint8_t transport)
+static void bt_dfx_connection_state_changed(uint8_t hci_reason_code, uint8_t transport)
 {
     if (transport == BT_TRANSPORT_BREDR) {
         switch (hci_reason_code) {
@@ -1061,9 +1061,9 @@ static void process_connection_state_changed_evt(bt_address_t* addr, acl_state_p
     adapter_service_t* adapter = &g_adapter_service;
     const char* conn_str = acl_connection_str(acl_params->connection_state);
 
-    BT_ADDR_LOG("ACL connection state changed, addr:%s, link:%d, state:%s, status:%d, reason:%" PRIu32 "", addr,
-        acl_params->transport, conn_str,
-        acl_params->status, acl_params->hci_reason_code);
+    BT_ADDR_LOG("ACL connection state changed, addr:%s, link:%d, state:%s, status:%d, "
+                "reason:0x%02" PRIx8,
+        addr, acl_params->transport, conn_str, acl_params->status, acl_params->hci_reason_code);
     UNUSED(conn_str);
 
     adapter_lock();
@@ -1114,8 +1114,14 @@ static void process_connection_state_changed_evt(bt_address_t* addr, acl_state_p
     bt_dfx_connection_state_changed(acl_params->hci_reason_code, acl_params->transport);
 
 #ifdef CONFIG_BLUETOOTH_CONNECTION_MANAGER
-    if (acl_params->connection_state == CONNECTION_STATE_DISCONNECTED)
-        bt_cm_process_disconnect_event(addr, acl_params->transport, acl_params->hci_reason_code);
+    if (acl_params->connection_state == CONNECTION_STATE_DISCONNECTED) {
+        int8_t rssi;
+        adapter_lock();
+        rssi = device_get_rssi(device);
+        adapter_unlock();
+        bt_cm_process_disconnect_event(addr, acl_params->transport, rssi,
+            acl_params->hci_reason_code);
+    }
 #endif
 
     /* send connection changed notification */
