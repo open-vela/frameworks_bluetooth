@@ -1605,6 +1605,24 @@ static void process_link_policy_changed_evt(bt_address_t* addr, bt_link_policy_t
     adapter_unlock();
 }
 
+static void process_rssi_update_evt(bt_address_t* addr, int8_t rssi, uint8_t transport)
+{
+    bt_device_t* device;
+
+#if 0 /** TODO: Add BT_LOGV() */
+    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+    bt_addr_ba2str(addr, addr_str);
+    BT_LOGD("rssi updated at %s, rssi: %d, transport: %d", addr_str, rssi, transport);
+#endif
+
+    adapter_lock();
+    device = adapter_find_device(addr, transport);
+    if (device)
+        device_set_rssi(device, rssi);
+
+    adapter_unlock();
+}
+
 static void handle_link_event(void* data)
 {
     adapter_remote_event_t* evt = (adapter_remote_event_t*)data;
@@ -1617,6 +1635,9 @@ static void handle_link_event(void* data)
         break;
     case LINK_POLICY_CHANGED_EVT:
         process_link_policy_changed_evt(&evt->addr, evt->link_policy.policy);
+        break;
+    case RSSI_UPDATE_EVT:
+        process_rssi_update_evt(&evt->addr, evt->rssi.rssi, evt->rssi.transport);
         break;
     }
 
@@ -1835,6 +1856,17 @@ void adapter_on_link_policy_changed(bt_address_t* addr, bt_link_policy_t policy)
         return;
 
     evt->link_policy.policy = policy;
+    do_in_service_loop(handle_link_event, evt);
+}
+
+void adapter_on_rssi_read(bt_address_t* addr, int8_t rssi, uint8_t transport)
+{
+    adapter_remote_event_t* evt = create_remote_event(addr, RSSI_UPDATE_EVT);
+    if (!evt)
+        return;
+
+    evt->rssi.rssi = rssi;
+    evt->rssi.transport = transport;
     do_in_service_loop(handle_link_event, evt);
 }
 
@@ -2472,9 +2504,12 @@ bool adapter_get_pts_mode(void)
 bt_status_t adapter_set_debug_mode(bt_debug_mode_t mode, uint8_t operation)
 {
     switch (mode) {
-    case BT_DEBUG_MODE_PTS: {
+    case BT_DEBUG_MODE_PTS:
         adapter_set_pts_mode(operation);
-    } break;
+        break;
+    case BT_DEBUG_MODE_RSSI:
+        /** do something here */
+        break;
     default:
         return BT_STATUS_PARM_INVALID;
     }
@@ -2721,6 +2756,11 @@ uint16_t adapter_get_remote_appearance(bt_address_t* addr)
     return 0;
 }
 
+bt_status_t adapter_read_remote_rssi(bt_address_t* addr, bt_transport_t transport)
+{
+    return bt_sal_read_rssi(PRIMARY_ADAPTER, addr, transport);
+}
+
 int8_t adapter_get_remote_rssi(bt_address_t* addr)
 {
     bt_device_t* device;
@@ -2736,6 +2776,39 @@ int8_t adapter_get_remote_rssi(bt_address_t* addr)
     adapter_unlock();
 
     return rssi;
+}
+
+bt_status_t adapter_dump_rssi(bt_transport_t transport)
+{
+    int8_t rssi;
+    bt_list_node_t* node;
+    bt_list_t* list = NULL;
+    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+    if (transport == BT_TRANSPORT_BREDR)
+        list = g_adapter_service.devices;
+#endif
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
+    if (transport == BT_TRANSPORT_BLE)
+        list = g_adapter_service.le_devices;
+#endif
+    if (list == NULL)
+        return BT_STATUS_PARM_INVALID;
+
+    adapter_lock();
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        bt_device_t* device = bt_list_node(node);
+        if (!device_is_connected(device))
+            continue;
+
+        rssi = device_get_rssi(device);
+        bt_addr_ba2str(device_get_address(device), addr_str);
+        BT_LOGD("%s, device %s, transport %d, rssi: %d", __func__, addr_str, transport, rssi);
+    }
+    adapter_unlock();
+
+    return BT_STATUS_SUCCESS;
 }
 
 bool adapter_get_remote_alias(bt_address_t* addr, char* alias)
