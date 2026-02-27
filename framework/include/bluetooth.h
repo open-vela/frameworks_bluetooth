@@ -233,6 +233,7 @@ typedef enum {
 
 typedef enum {
     BT_DEBUG_MODE_PTS,
+    BT_DEBUG_MODE_RSSI,
 } bt_debug_mode_t;
 
 typedef uint8_t bt_128key_t[16];
