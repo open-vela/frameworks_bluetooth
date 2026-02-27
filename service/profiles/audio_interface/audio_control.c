@@ -43,6 +43,11 @@
 #define AUDIO_CTRL_MSG_STOP 3
 #define AUDIO_CTRL_MSG_PAUSE 4
 #define AUDIO_CTRL_MSG_RESUME 5
+// TODO:
+// In the short term, Media using AUDIO_MSG_IOERR to notify Bluetooth compress that it has terminated is acceptable.
+// However, in the long term, using AUDIO_MSG_IOERR as an error code to represent a correct termination process is not entirely as expected.
+// A unique message should be used to respond to "unavailable".
+#define AUDIO_CTRL_MSG_IOERR 13
 
 static const char* audio_transport_device[] = {
     CONFIG_BLUETOOTH_A2DP_SOURCE_DEVICE,
@@ -95,6 +100,7 @@ static char* audio_ctrl_msg_dump(int event)
         CASE_RETURN_STR(AUDIO_CTRL_MSG_STOP);
         CASE_RETURN_STR(AUDIO_CTRL_MSG_PAUSE);
         CASE_RETURN_STR(AUDIO_CTRL_MSG_RESUME);
+        CASE_RETURN_STR(AUDIO_CTRL_MSG_IOERR);
     default:
         return "UNKNOWN_EVENT";
         break;
@@ -132,6 +138,10 @@ static void audio_ctrl_callback(FAR void* cookie, int event, const FAR void* ext
         break;
     case AUDIO_CTRL_MSG_STOP:
         audio->cmd_flag = AUDIO_CTRL_MSG_STOP;
+        audio->callbacks->stop_cb();
+        break;
+    case AUDIO_CTRL_MSG_IOERR:
+        audio->cmd_flag = AUDIO_CTRL_MSG_IOERR;
         audio->callbacks->stop_cb();
         break;
     case AUDIO_CTRL_MSG_PAUSE:
@@ -448,6 +458,11 @@ void audio_control_stop(uint8_t profile_id)
         audio->cps = NULL;
         bt_list_remove(g_audio_list, audio);
         BT_LOGD("%s, stopped audio", __func__);
+    } else if (audio->cmd_flag == AUDIO_CTRL_MSG_IOERR) {
+        BT_LOGD("%s, reset audio", __func__);
+        service_loop_remove_poll(audio->poll);
+        audio->cps = NULL;
+        bt_list_remove(g_audio_list, audio);
     } else if (audio->cmd_flag == AUDIO_CTRL_MSG_PAUSE) {
         BT_LOGD("%s, pause audio", __func__);
         audio_transport_pause(audio->cps);
