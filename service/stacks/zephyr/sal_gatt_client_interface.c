@@ -1346,7 +1346,7 @@ bt_status_t bt_sal_gatt_client_read_remote_rssi(bt_controller_id_t id, bt_addres
         return BT_STATUS_FAIL;
     }
 
-    err = bt_conn_le_read_rssi(conn, &rssi);
+    err = bt_conn_read_rssi(conn, &rssi);
     if (err) {
         BT_LOGE("%s, read rssi failed err:%d", __func__, err)
         return BT_STATUS_FAIL;

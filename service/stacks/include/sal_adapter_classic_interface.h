@@ -102,6 +102,8 @@ bt_status_t bt_sal_set_afh_channel_classification(bt_controller_id_t id, uint16_
     uint16_t band_width, uint16_t number);
 bt_status_t bt_sal_set_afh_channel_classification_1(bt_controller_id_t id, uint8_t* map);
 
+bt_status_t bt_sal_read_rssi(bt_controller_id_t id, bt_address_t* addr, bt_transport_t transport);
+
 /* VSC */
 bt_status_t bt_sal_send_hci_command(bt_controller_id_t id, uint8_t ogf, uint16_t ocf, uint8_t length, uint8_t* buf,
     bt_hci_event_callback_t cb, void* context);

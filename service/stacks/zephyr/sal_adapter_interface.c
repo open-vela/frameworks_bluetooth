@@ -88,6 +88,7 @@ typedef union {
         bt_transport_t transport;
         bt_addr_type_t type;
     } bond;
+    bt_transport_t transport;
     bt_pm_mode_t mode;
     bt_link_role_t role;
     bt_link_policy_t policy;
@@ -1986,6 +1987,60 @@ bt_status_t bt_sal_set_afh_channel_classification_1(bt_controller_id_t id, uint8
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif
+}
+
+static void STACK_CALL(read_rssi)(void* args)
+{
+    int err;
+    int8_t rssi;
+    struct bt_conn* conn = NULL;
+    sal_adapter_req_t* req = args;
+
+    switch (req->adpt.transport) {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+    case BT_TRANSPORT_BREDR:
+        conn = bt_conn_lookup_addr_br((bt_addr_t*)&req->addr);
+        break;
+#endif
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
+    case BT_TRANSPORT_BLE:
+        conn = get_le_conn_from_addr(&req->addr);
+        if (conn)
+            bt_conn_ref(conn);
+
+        break;
+#endif
+    default:
+        BT_LOGW("%s, unsupported transport: %d", __func__, req->adpt.transport);
+        return;
+    }
+
+    if (!conn) {
+        BT_LOGE("%s, conn null", __func__);
+        return;
+    }
+
+    err = bt_conn_read_rssi(conn, &rssi);
+    bt_conn_unref(conn);
+    if (err) {
+        BT_LOGE("%s, failed to read rssi, err = %d", __func__, err);
+        return;
+    }
+
+    adapter_on_rssi_read(&req->addr, rssi, req->adpt.transport);
+}
+
+bt_status_t bt_sal_read_rssi(bt_controller_id_t id, bt_address_t* addr, bt_transport_t transport)
+{
+    UNUSED(id);
+    sal_adapter_req_t* req;
+
+    req = sal_adapter_req(id, addr, STACK_CALL(read_rssi));
+    if (!req)
+        return BT_STATUS_NOMEM;
+
+    req->adpt.transport = transport;
+    return sal_send_req(req);
 }
 
 /* VSC */
