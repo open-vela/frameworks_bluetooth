@@ -62,7 +62,7 @@ typedef struct {
     uint8_t transport;
     bt_status_t status;
     connection_state_t connection_state;
-    uint32_t hci_reason_code;
+    uint8_t hci_reason_code;
 } acl_state_param_t;
 
 typedef struct {

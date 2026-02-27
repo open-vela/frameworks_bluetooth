@@ -490,12 +490,13 @@ static bool bt_cm_start_timer(bt_address_t* peer_addr)
         service_loop_cancel_timer(cm_timer->timer);
     }
 
-    cm_timer->timer = service_loop_timer(CM_RECONNECT_INTERVAL, CM_RECONNECT_INTERVAL, bt_cm_timeout_cb, cm_timer);
+    cm_timer->timer = service_loop_timer(CM_RECONNECT_INTERVAL, CM_RECONNECT_INTERVAL,
+        bt_cm_timeout_cb, cm_timer);
 
     return true;
 }
 
-static void bt_cm_process_reconnection(bt_address_t* addr, uint32_t hci_reason_code)
+static void bt_cm_process_reconnection(bt_address_t* addr, uint8_t hci_reason_code)
 {
     bt_connection_manager_t* manager = &g_connection_manager;
     bt_cm_timer_t* cm_timer = &manager->cm_timer;
@@ -519,9 +520,14 @@ static void bt_cm_process_reconnection(bt_address_t* addr, uint32_t hci_reason_c
         bt_cm_profile_connect(addr, BT_TRANSPORT_BREDR);
 }
 
-void bt_cm_process_disconnect_event(bt_address_t* addr, uint8_t transport, uint32_t hci_reason_code)
+void bt_cm_process_disconnect_event(bt_address_t* addr, uint8_t transport, int8_t rssi,
+    uint8_t hci_reason_code)
 {
     bt_connection_manager_t* manager = &g_connection_manager;
+
+    if (manager->rssi_update_timer) /**< rssi is updating */
+        BT_ADDR_LOG("acl disconnected at %s, transport: %d, rssi: %d, reason: 0x%02" PRIx8, addr,
+            transport, rssi, hci_reason_code);
 
     if (transport == BT_TRANSPORT_BLE) {
 #ifdef CONFIG_LE_DLF_SUPPORT
