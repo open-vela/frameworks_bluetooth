@@ -2611,9 +2611,10 @@ bt_status_t adapter_set_debug_mode(bt_debug_mode_t mode, uint8_t operation)
     case BT_DEBUG_MODE_PTS:
         adapter_set_pts_mode(operation);
         break;
+#ifdef CONFIG_BLUETOOTH_CONNECTION_MANAGER
     case BT_DEBUG_MODE_RSSI:
-        /** do something here */
-        break;
+        return operation ? bt_cm_enable_rssi_statistic() : bt_cm_disable_rssi_statistic();
+#endif
     default:
         return BT_STATUS_PARM_INVALID;
     }
