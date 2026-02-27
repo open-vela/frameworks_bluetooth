@@ -47,6 +47,7 @@ enum {
     LE_WHITELIST_UPDATE_EVT,
     LE_BONDED_DEVICE_UPDATE_EVT,
     LE_SC_LOCAL_OOB_DATA_GOT_EVT,
+    RSSI_UPDATE_EVT,
 };
 
 typedef struct {
@@ -168,6 +169,10 @@ typedef struct {
             uint16_t uuid_size;
             bt_uuid_t* uuids;
         } sdp;
+        struct {
+            int8_t rssi;
+            uint8_t transport;
+        } rssi;
     };
 } adapter_remote_event_t;
 
@@ -322,7 +327,9 @@ bool adapter_get_remote_name(bt_address_t* addr, char* name);
 uint32_t adapter_get_remote_device_class(bt_address_t* addr);
 bt_status_t adapter_get_remote_uuids(bt_address_t* addr, bt_uuid_t** uuids, uint16_t* size, bt_allocator_t allocator);
 uint16_t adapter_get_remote_appearance(bt_address_t* addr);
+bt_status_t adapter_read_remote_rssi(bt_address_t* addr, bt_transport_t transport);
 int8_t adapter_get_remote_rssi(bt_address_t* addr);
+bt_status_t adapter_dump_rssi(bt_transport_t transport);
 bool adapter_get_remote_alias(bt_address_t* addr, char* alias);
 bt_status_t adapter_set_remote_alias(bt_address_t* addr, const char* alias);
 bool adapter_is_remote_connected(bt_address_t* addr, bt_transport_t transport);

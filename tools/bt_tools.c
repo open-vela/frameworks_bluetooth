@@ -269,7 +269,10 @@ static bt_command_t g_set_cmd_tables[] = {
     { "security", set_security_level_cmd, 0, "set bond security level, params: <level> <transport>" },
     { "id", set_identity_addr_cmd, 0, "set ble identity addr, params: <identity addr> <addr type>" },
     { "scanparams", set_scan_parameters_cmd, 0, SET_SCANPARAMS_USAGE },
-    { "debug", set_debug_mode_cmd, 0, "set debug mode, params: <mode> (e.g. pts) <enable> (0: disable, 1: enable)" },
+    { "debug", set_debug_mode_cmd, 0, "set debug mode, params: <mode> <enable> (0: disable, 1: enable)\n"
+                                      "\t\t\t<mode>:\n"
+                                      "\t\t\t  \"pts\"\n"
+                                      "\t\t\t  \"rssi\"\n" },
     { "help", NULL, 0, "show set help info" },
     //{ "", , "set " },
 };
@@ -806,6 +809,8 @@ static int set_debug_mode_cmd(void* handle, int argc, char** argv)
 
     if (!strncasecmp(argv[0], "pts", strlen("pts"))) {
         mode = BT_DEBUG_MODE_PTS;
+    } else if (!strncasecmp(argv[0], "rssi", strlen("rssi"))) {
+        mode = BT_DEBUG_MODE_RSSI;
     } else {
         PRINT("error mode: %s", argv[0]);
         return CMD_INVALID_PARAM;
