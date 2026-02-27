@@ -259,6 +259,7 @@ void adapter_on_le_phy_update(bt_address_t* addr, ble_phy_type_t tx_phy,
 void adapter_on_whitelist_update(bt_address_t* addr, bool is_add, bt_status_t status);
 void adapter_on_le_bonded_device_update(remote_device_le_properties_t* props, uint16_t bonded_devices_cnt);
 void adapter_on_le_local_oob_data_got(bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val);
+void adapter_on_rssi_read(bt_address_t* addr, int8_t rssi, uint8_t transport);
 
 /* adapter sal invoke functions */
 uint8_t* adapter_get_smp_data(bt_address_t* addr);
