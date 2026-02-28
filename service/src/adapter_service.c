@@ -351,7 +351,7 @@ static bool adapter_check_acl_all_disconnected(bt_list_t* list)
 
     for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
         device = (bt_device_t*)bt_list_node(node);
-        if (device_is_connected(device)) {
+        if (device_get_connection_state(device) != CONNECTION_STATE_DISCONNECTED) {
             return false;
         }
     }
@@ -505,7 +505,7 @@ static void bonded_device_loaded(void* data, uint16_t length, uint16_t items)
 
         BT_LOGD("load classic bonded device successfully:");
         for (int i = 0; i < items; i++) {
-            bt_device_t* device = br_device_create(&remote->addr);
+            bt_device_t* device = adapter_find_create_classic_device(&remote->addr);
             device_set_name(device, remote->name);
             device_set_alias(device, remote->alias);
             device_set_device_class(device, remote->class_of_device);
@@ -514,7 +514,6 @@ static void bonded_device_loaded(void* data, uint16_t length, uint16_t items)
             device_set_link_key_type(device, remote->link_key_type);
             device_set_bond_state(device, BOND_STATE_BONDED, false, NULL);
             load_remote_uuids(remote, device);
-            bt_list_add_tail(g_adapter_service.devices, device);
             bt_addr_ba2str(&remote->addr, addr_str);
             uint8_t* lk = remote->link_key;
             BT_LOGD("BONDED DEVICE[%d], Name:[%s] Addr:[%s] LinkKey: [%02X] | [%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X]",
@@ -2165,7 +2164,7 @@ static void adapter_remove_found_devices()
             continue;
         }
 
-        if (device_is_connected(device)) {
+        if (device_get_connection_state(device) != CONNECTION_STATE_DISCONNECTED) {
             continue;
         }
 
