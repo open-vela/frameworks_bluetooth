@@ -808,7 +808,8 @@ static void process_ssp_request_evt(bt_address_t* addr, uint8_t transport,
         return;
     }
 
-    if (!device_check_flag(device, DFLAG_NAME_SET | DFLAG_GET_RMT_NAME)) {
+    if (transport == BT_TRANSPORT_BREDR
+        && !device_check_flag(device, DFLAG_NAME_SET | DFLAG_GET_RMT_NAME)) {
         BT_LOGD("ssp, request remote name...");
         bt_sal_get_remote_name(PRIMARY_ADAPTER, addr);
         device_set_flags(device, DFLAG_GET_RMT_NAME);
@@ -908,14 +909,16 @@ static void process_enc_state_change_evt(bt_address_t* addr, bool encrypted,
 }
 
 static void process_link_key_update_evt(bt_address_t* addr, bt_128key_t link_key,
-    bt_link_key_type_t type)
+    bt_link_key_type_t type, bool is_ctkd)
 {
     bt_device_t* device;
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     adapter_lock();
     device = adapter_find_create_classic_device(addr);
-    if (!device_check_flag(device, DFLAG_NAME_SET | DFLAG_GET_RMT_NAME)) {
+    /* skip RNR for CTKD-derived keys to avoid paging conflict with the ongoing pairing process */
+    if (!is_ctkd
+        && !device_check_flag(device, DFLAG_NAME_SET | DFLAG_GET_RMT_NAME)) {
         BT_LOGD("linkkey notify, request remote name...");
         bt_sal_get_remote_name(PRIMARY_ADAPTER, addr);
         device_set_flags(device, DFLAG_GET_RMT_NAME);
@@ -977,7 +980,8 @@ static void handle_security_event(void* data)
             evt->enc_state.transport);
         break;
     case LINK_KEY_UPDATE_EVT:
-        process_link_key_update_evt(&evt->addr, evt->link_key.key, evt->link_key.type);
+        process_link_key_update_evt(&evt->addr, evt->link_key.key, evt->link_key.type,
+            evt->link_key.is_ctkd);
         break;
     case LINK_KEY_REMOVED_EVT:
         process_link_key_removed_evt(&evt->addr, evt->link_key.status);
@@ -1914,7 +1918,8 @@ void adapter_on_encryption_state_changed(bt_address_t* addr, bool encrypted, uin
     do_in_service_loop(handle_security_event, evt);
 }
 
-void adapter_on_link_key_update(bt_address_t* addr, bt_128key_t link_key, bt_link_key_type_t type)
+void adapter_on_link_key_update(bt_address_t* addr, bt_128key_t link_key, bt_link_key_type_t type,
+    bool is_ctkd)
 {
     adapter_remote_event_t* evt = create_remote_event(addr, LINK_KEY_UPDATE_EVT);
     if (!evt)
@@ -1922,6 +1927,7 @@ void adapter_on_link_key_update(bt_address_t* addr, bt_128key_t link_key, bt_lin
 
     memcpy(evt->link_key.key, link_key, sizeof(bt_128key_t));
     evt->link_key.type = type;
+    evt->link_key.is_ctkd = is_ctkd;
     do_in_service_loop(handle_security_event, evt);
 }
 
