@@ -745,6 +745,15 @@ static int do_spp_write(spp_device_t* device, uint8_t* buffer, uint16_t length)
 
         bt_pm_busy(PROFILE_SPP, &device->addr);
         status = bt_sal_spp_write(device->conn_port, tmpbuf, size);
+        if (status == BT_STATUS_NOMEM) {
+            BT_LOGW("%s tx pool full, caching data", __func__);
+            bt_pm_idle(PROFILE_SPP, &device->addr);
+            spp_cache_fragement(device, tmpbuf, size);
+            euv_pipe_read_stop(device->handle);
+            device->remaining_quota = 0;
+            return length - remaining;
+        }
+
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("%s write to stack failed", __func__);
             bt_pm_idle(PROFILE_SPP, &device->addr);

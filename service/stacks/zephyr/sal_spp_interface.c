@@ -1018,7 +1018,13 @@ bt_status_t bt_sal_spp_write(uint16_t conn_port, uint8_t* buf, uint16_t size)
 
     spp_conn_unlock();
 
-    nbuf = bt_rfcomm_create_pdu(&rfcomm_tx_pool);
+    nbuf = net_buf_alloc(&rfcomm_tx_pool, K_NO_WAIT);
+    if (!nbuf) {
+        BT_LOGW("rfcomm_tx_pool exhausted");
+        return BT_STATUS_NOMEM;
+    }
+
+    net_buf_reserve(nbuf, SPP_MFS_EXTRA_SIZE - 1); /* exclude trailing FCS byte */
     net_buf_add_mem(nbuf, buf, size);
 
     ret = bt_rfcomm_dlc_send(&spp_conn->rfcomm_dlc, nbuf);
