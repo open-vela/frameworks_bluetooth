@@ -450,6 +450,7 @@ bt_status_t bt_sal_cm_try_disconnect_profiles(bt_address_t* addr, bool is_unpair
     }
 
     if (bt_conn_get_info(conn, &info) < 0) {
+        bt_conn_unref(conn);
         return BT_STATUS_FAIL;
     }
 
@@ -512,6 +513,7 @@ static bt_status_t bt_sal_try_profile_connect(bt_address_t* addr)
     }
 
     if (bt_conn_get_info(conn, &info) < 0) {
+        bt_conn_unref(conn);
         return BT_STATUS_FAIL;
     }
 
