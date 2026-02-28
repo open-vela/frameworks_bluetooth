@@ -471,7 +471,7 @@ static int zblue_on_link_key_notify(uint8_t dev_id, bt_addr_le_t* addr, const ch
     key_type = link_key->key_type;
     free(link_key);
 
-    adapter_on_link_key_update(&br_addr, key, key_type);
+    adapter_on_link_key_update(&br_addr, key, key_type, false);
     return 0;
 }
 
