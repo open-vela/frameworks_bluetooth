@@ -22,6 +22,7 @@
 #include "sal_connection_manager.h"
 #include "sal_interface.h"
 #include "sal_zblue.h"
+#include "sal_zblue_hfp.h"
 #include "service_loop.h"
 
 #undef BT_UUID_DECLARE_16
@@ -430,13 +431,13 @@ static int hfp_codec_to_service_cfg(uint8_t codec_id, hfp_codec_config_t* cfg)
     switch (codec_id) {
     case BT_HFP_AG_CODEC_MSBC:
         cfg->codec = HFP_CODEC_MSBC;
-        cfg->sample_rate = 16000;
-        cfg->bit_width = 16;
+        cfg->sample_rate = HFP_CODEC_MSBC_SAMPLE_RATE;
+        cfg->bit_width = HFP_CODEC_BIT_WIDTH;
         return 0;
     case BT_HFP_AG_CODEC_CVSD:
         cfg->codec = HFP_CODEC_CVSD;
-        cfg->sample_rate = 8000;
-        cfg->bit_width = 16;
+        cfg->sample_rate = HFP_CODEC_CVSD_SAMPLE_RATE;
+        cfg->bit_width = HFP_CODEC_BIT_WIDTH;
         return 0;
     default:
         return -ENOTSUP;
