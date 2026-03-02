@@ -29,8 +29,15 @@
 #include "power_manager.h"
 #include "service_loop.h"
 
+#include "bt_uuid.h"
+
+#undef BT_UUID_DECLARE_16
+#undef BT_UUID_DECLARE_32
+#undef BT_UUID_DECLARE_128
+
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/classic/hfp_hf.h>
+#include <zephyr/bluetooth/classic/sdp.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/hci.h>
 #include <zephyr/bluetooth/hci_types.h>
@@ -155,6 +162,20 @@ static int zblue_on_link_key_load(bt_addr_le_t* addr, uint8_t* key_value, uint8_
 #endif
 
 static bt_security_t g_security_level = BT_SECURITY_L2;
+extern struct net_buf_pool sdp_pool;
+
+/*
+ * zblue does not support setting the attribute ID list during SDP (Service Discovery Protocol).
+ * SDP must be implemented according to SSA (Service Search Attribute) logic. Currently, only
+ * mandatory profiles are searched; after synchronizing code from the Zephyr community,
+ * this logic needs to be reimplemented.
+ */
+static const struct bt_uuid* sdp_discover_uuids[] = {
+    BT_UUID_DECLARE_16(BT_SDP_HANDSFREE_SVCLASS),
+    BT_UUID_DECLARE_16(BT_SDP_AUDIO_SINK_SVCLASS),
+    BT_UUID_DECLARE_16(BT_SDP_AV_REMOTE_TARGET_SVCLASS),
+    BT_UUID_DECLARE_16(BT_SDP_AV_REMOTE_CONTROLLER_SVCLASS),
+};
 
 static struct bt_conn_cb g_conn_cbs = {
 #ifndef CONFIG_BT_CONN_REQ_AUTO_HANDLE
@@ -190,6 +211,32 @@ static struct bt_conn_auth_cb g_conn_auth_cbs = {
     .cancel = zblue_on_cancel,
     .pincode_entry = zblue_on_pincode_entry
 };
+
+union uuid {
+    struct bt_uuid uuid;
+    struct bt_uuid_16 u16;
+    struct bt_uuid_32 u32;
+    struct bt_uuid_128 u128;
+};
+
+typedef struct {
+    bt_uuid_t profile_uuid;
+    struct bt_sdp_discover_params* param;
+} profile_sdp_info_t;
+
+static bool sdp_params_cmp(void* data, void* context)
+{
+    profile_sdp_info_t* sdp_info = (profile_sdp_info_t*)data;
+
+    return sdp_info->param == context;
+}
+
+void sdp_profile_uuids_destroy(void* data)
+{
+    profile_sdp_info_t* sdp_info = (profile_sdp_info_t*)data;
+    free(sdp_info->param);
+    free(data);
+}
 
 static sal_adapter_req_t* sal_adapter_req(bt_controller_id_t id, bt_address_t* addr, sal_func_t func)
 {
@@ -278,6 +325,9 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
         bt_sal_cm_acl_disconnected_callback(cm_data_new(&state.addr, PROFILE_UNKOWN, CONN_ID_DEFAULT));
         goto error;
     }
+
+    slot = bt_conn_add(&state.addr, BT_TRANSPORT_BREDR);
+    slot->conn = conn;
 
     bt_sal_get_remote_name(BT_TRANSPORT_BREDR, &state.addr);
     bt_sal_cm_acl_connected_callback(cm_data_new(&state.addr, PROFILE_UNKOWN, CONN_ID_DEFAULT));
@@ -1902,11 +1952,106 @@ bt_status_t bt_sal_get_connected_devices(bt_controller_id_t id, remote_device_pr
 #endif
 }
 
+static uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_result* result,
+    const struct bt_sdp_discover_params* params)
+{
+    bt_address_t* addr = bt_conn_get_addr(conn);
+    bt_conn_info_t* conn_info = bt_conn_find(addr, BT_TRANSPORT_BREDR);
+    profile_sdp_info_t* sdp_info = bt_list_find(conn_info->profile_uuid_list, sdp_params_cmp, (void*)params);
+
+    if (sdp_info)
+        return BT_SDP_DISCOVER_UUID_STOP;
+
+    sdp_info = calloc(1, sizeof(*sdp_info));
+    if (!sdp_info) {
+        free(params);
+        params = NULL;
+        return BT_SDP_DISCOVER_UUID_STOP;
+    }
+
+    sdp_info->param = (struct bt_sdp_discover_params*)params;
+    sdp_info->profile_uuid.type = 0;
+
+    if (result && result->resp_buf) {
+        const union uuid* u = CONTAINER_OF(params->uuid, union uuid, uuid);
+        switch (u->uuid.type) {
+        case BT_UUID_TYPE_16: {
+            bt_uuid_t uuid16;
+            bt_uuid16_create(&uuid16, u->u16.val);
+            bt_uuid_to_uuid128(&uuid16, &sdp_info->profile_uuid);
+            break;
+        }
+        case BT_UUID_TYPE_32: {
+            bt_uuid_t uuid32;
+            bt_uuid32_create(&uuid32, u->u32.val);
+            bt_uuid_to_uuid128(&uuid32, &sdp_info->profile_uuid);
+            break;
+        }
+        case BT_UUID_TYPE_128:
+            bt_uuid128_create(&sdp_info->profile_uuid, u->u128.val);
+            break;
+        default:
+            break;
+        }
+    }
+
+    bt_list_add_tail(conn_info->profile_uuid_list, sdp_info);
+
+    if (bt_list_length(conn_info->profile_uuid_list) < ARRAY_SIZE(sdp_discover_uuids))
+        return BT_SDP_DISCOVER_UUID_CONTINUE;
+
+    bt_uuid_t uuids[ARRAY_SIZE(sdp_discover_uuids)];
+    bt_list_node_t* node;
+    uint8_t cnt = 0;
+
+    for (node = bt_list_head(conn_info->profile_uuid_list); node != NULL; node = bt_list_next(conn_info->profile_uuid_list, node)) {
+        sdp_info = bt_list_node(node);
+        if (sdp_info->profile_uuid.type == 0)
+            continue;
+
+        if (cnt >= ARRAY_SIZE(sdp_discover_uuids))
+            break;
+
+        memcpy(&uuids[cnt++], &sdp_info->profile_uuid, sizeof(sdp_info->profile_uuid));
+    }
+
+    adapter_on_service_search_done(addr, uuids, cnt);
+
+    return BT_SDP_DISCOVER_UUID_STOP;
+}
+
 /* Service discovery */
 bt_status_t bt_sal_start_service_discovery(bt_controller_id_t id, bt_address_t* addr, bt_uuid_t* uuid)
 {
     UNUSED(id);
-    SAL_NOT_SUPPORT;
+    if (uuid != NULL)
+        return BT_STATUS_UNSUPPORTED;
+
+    bt_conn_info_t* conn_info = bt_conn_find(addr, BT_TRANSPORT_BREDR);
+    if (!conn_info)
+        return BT_STATUS_FAIL;
+
+    if (conn_info->profile_uuid_list)
+        return BT_STATUS_BUSY;
+
+    conn_info->profile_uuid_list = bt_list_new(sdp_profile_uuids_destroy);
+
+    for (int i = 0; i < ARRAY_SIZE(sdp_discover_uuids); i++) {
+        struct bt_sdp_discover_params* param = calloc(1, sizeof(struct bt_sdp_discover_params));
+        param->func = zblue_on_sdp_done;
+        param->pool = &sdp_pool;
+        param->uuid = sdp_discover_uuids[i];
+        param->type = BT_SDP_DISCOVER_SERVICE_SEARCH_ATTR;
+
+        int err = bt_sdp_discover(conn_info->conn, param);
+        if (err < 0) {
+            BT_LOGE("%s, Failed to start a SDP discovery", __func__);
+            free(param);
+            return BT_STATUS_FAIL;
+        }
+    }
+
+    return BT_STATUS_SUCCESS;
 }
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT

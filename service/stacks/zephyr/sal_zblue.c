@@ -84,6 +84,7 @@ bt_conn_info_t* bt_conn_add(const bt_address_t* addr, uint8_t transport)
         if (!g_conn_info[i].conn && bt_addr_is_empty(&g_conn_info[i].addr)) {
             memcpy(g_conn_info[i].addr.addr, addr->addr, BT_ADDR_LENGTH);
             g_conn_info[i].transport = transport;
+            g_conn_info[i].profile_uuid_list = NULL;
             return &g_conn_info[i];
         }
     }
@@ -96,6 +97,7 @@ bt_status_t bt_conn_remove(bt_address_t* addr, uint8_t transport)
 {
     bt_conn_info_t* info = bt_conn_find(addr, transport);
     if (info) {
+        bt_list_free(info->profile_uuid_list);
         memset(info, 0, sizeof(*info));
         return BT_STATUS_SUCCESS;
     }

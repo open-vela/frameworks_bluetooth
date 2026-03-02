@@ -31,6 +31,7 @@ typedef struct {
     bt_address_t addr;
     uint8_t transport;
     uint8_t role; // e.g., GATT_ROLE_SERVER
+    bt_list_t* profile_uuid_list;
 } bt_conn_info_t;
 
 bt_status_t bt_conn_set_role(bt_transport_t transport, bt_address_t* addr, uint8_t flag);
