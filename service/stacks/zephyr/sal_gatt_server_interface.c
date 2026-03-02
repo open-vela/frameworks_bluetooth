@@ -364,6 +364,110 @@ static struct bt_gatt_attr* gatt_db_add(const struct bt_gatt_attr* pattern, size
     return attr;
 }
 
+static int gatt_sdp_set_srv_cls(struct bt_sdp_attribute* attr, union uuid* uuid)
+{
+    struct bt_sdp_data_elem *element, *tmp_elem;
+
+    if (!attr || !uuid) {
+        BT_LOGE("%s, invalid params", __func__);
+        return -EINVAL;
+    }
+
+    if (attr->id != BT_SDP_ATTR_SVCLASS_ID_LIST) {
+        BT_LOGE("Invalid attribute id: %d, only for BT_SDP_ATTR_SVCLASS_ID_LIST", attr->id);
+        return -EINVAL;
+    }
+
+    tmp_elem = (struct bt_sdp_data_elem*)zalloc(sizeof(struct bt_sdp_data_elem));
+    if (!tmp_elem) {
+        BT_LOGE("malloc failed!");
+        return -ENOMEM;
+    }
+
+    if (uuid->uuid.type == BT_UUID_TYPE_16) {
+        /* Modify BT_SDP_ATTR_SVCLASS_ID_LIST attribute (index 1):
+         * - Redirect data pointer to the passed uuid16
+         */
+        element = (struct bt_sdp_data_elem*)&attr->val;
+
+        memcpy(tmp_elem, element->data, sizeof(struct bt_sdp_data_elem));
+        tmp_elem->data = &uuid->u16.val;
+        element->data = tmp_elem;
+    } else if (uuid->uuid.type == BT_UUID_TYPE_128) {
+        /* Modify BT_SDP_ATTR_SVCLASS_ID_LIST attribute (index 1):
+         * - Change sequence length from 3 to 17 (1 byte type + 16 bytes UUID128)
+         * - Change UUID type from BT_SDP_UUID16 to BT_SDP_UUID128
+         * - Redirect data pointer to the passed uuid128
+         */
+        element = (struct bt_sdp_data_elem*)&attr->val;
+        element->data_size = BT_UUID_SIZE_128 + 1;
+        element->total_size = BIT((element->type & BT_SDP_SIZE_DESC_MASK) - BT_SDP_SIZE_INDEX_OFFSET) + element->data_size + 1;
+
+        element->data = tmp_elem;
+
+        element = (struct bt_sdp_data_elem*)element->data;
+        element->type = BT_SDP_UUID128;
+        element->data_size = BIT(element->type & BT_SDP_SIZE_DESC_MASK);
+        element->total_size = BIT(element->type & BT_SDP_SIZE_DESC_MASK) + 1;
+        element->data = uuid->u128.val;
+    }
+
+    return 0;
+}
+
+static int gatt_sdp_set_hdl(struct bt_sdp_attribute* attr, uint16_t* start_hdl, uint16_t* end_hdl)
+{
+    struct bt_sdp_data_elem *element, *tmp_element, *start_hdl_elem, *end_hdl_elem;
+    struct bt_sdp_data_elem *prot_desc_elem, *handle_desc_elem;
+
+    if (!attr) {
+        BT_LOGE("%s, invalid params", __func__);
+        return -EINVAL;
+    }
+
+    if (attr->id != BT_SDP_ATTR_PROTO_DESC_LIST) {
+        BT_LOGE("Invalid attribute id: %d, only for BT_SDP_ATTR_PROTO_DESC_LIST", attr->id);
+        return -EINVAL;
+    }
+
+    /* Modify BT_SDP_ATTR_PROTO_DESC_LIST attribute (index 1, pointer depth 0):
+     * - Redirect data pointer to the passed start_hdl & end_hdl
+     */
+
+    /* Get the GATT protocol descriptor list (index 0, pointer depth 1): */
+    element = (struct bt_sdp_data_elem*)attr->val.data;
+    prot_desc_elem = (struct bt_sdp_data_elem*)zalloc(sizeof(struct bt_sdp_data_elem) * 2);
+    if (!prot_desc_elem) {
+        BT_LOGE("malloc failed!");
+        return -ENOMEM;
+    }
+
+    memcpy(prot_desc_elem, element, sizeof(struct bt_sdp_data_elem) * 2);
+    attr->val.data = prot_desc_elem;
+
+    /* Get the start_hdl/end_hdl element of GATT protocol descriptor list (index 0, pointer depth 2): */
+    tmp_element = (struct bt_sdp_data_elem*)prot_desc_elem[DATA_ELEM_GATT_PROT_DESC_POS].data;
+    handle_desc_elem = (struct bt_sdp_data_elem*)zalloc(sizeof(struct bt_sdp_data_elem) * 3);
+    if (!handle_desc_elem) {
+        BT_LOGE("malloc failed!");
+        free(prot_desc_elem);
+        return -ENOMEM;
+    }
+
+    memcpy(handle_desc_elem, tmp_element, sizeof(struct bt_sdp_data_elem) * 3);
+    prot_desc_elem[DATA_ELEM_GATT_PROT_DESC_POS].data = handle_desc_elem;
+
+    /* Modify start handle attribute (index 1, pointer depth 2): */
+    start_hdl_elem = &handle_desc_elem[DATA_ELEM_GATT_START_HANDLE_POS];
+    start_hdl_elem->data = start_hdl;
+
+    /* Modify end handle attribute (index 2, pointer depth 2): */
+    end_hdl_elem = &handle_desc_elem[DATA_ELEM_GATT_END_HANDLE_POS];
+    end_hdl_elem->data = end_hdl;
+
+    return 0;
+}
+
 static struct bt_sdp_record* gatt_sdp_create_record(struct bt_gatt_service* srv)
 {
     struct bt_sdp_record* record;
@@ -371,11 +475,14 @@ static struct bt_sdp_record* gatt_sdp_create_record(struct bt_gatt_service* srv)
     struct bt_sdp_attribute* attrs;
     sal_gatt_sdp_record_t* gatt_record;
     union uuid* uuid;
+    struct bt_sdp_data_elem* prot_desc_elem;
+    int err = 0;
+    uint32_t* srv_hdl;
 
     /* First attribute of services is service declaration(primary or secondary) */
     uuid = srv->attrs->user_data;
-    if (uuid->uuid.type != BT_UUID_TYPE_16) {
-        BT_LOGE("Invalid UUID type: %d, only for UUID16", uuid->uuid.type);
+    if (uuid->uuid.type == BT_UUID_TYPE_32) {
+        BT_LOGE("Invalid UUID type: %d, only for UUID16/UUID128", uuid->uuid.type);
         return NULL;
     }
 
@@ -395,9 +502,30 @@ static struct bt_sdp_record* gatt_sdp_create_record(struct bt_gatt_service* srv)
     attrs_count = ARRAY_SIZE(gatt_attrs_template);
     memcpy(attrs, gatt_attrs_template, sizeof(gatt_attrs_template));
 
-    SDP_GATT_START_HDL_PTR_FROM_ATTR(attrs) = &srv->attrs->handle;
-    SDP_GATT_END_HDL_PTR_FROM_ATTR(attrs) = &srv->attrs[svc_attr_count - 1].handle;
-    SDP_GATT_SVCLS_PTR_FROM_ATTR(attrs) = &uuid->u16.val;
+    /* Modify SDP service handle */
+    srv_hdl = (uint32_t*)malloc(sizeof(uint32_t));
+    if (!srv_hdl) {
+        BT_LOGE("Failed to allocate memory for SDP service handle");
+        goto err_free_attrs;
+    }
+
+    attrs[0].val.data = srv_hdl;
+
+    if (gatt_sdp_set_hdl(&attrs[SDP_ATTR_PROT_GATT_POS], &srv->attrs->handle, &srv->attrs[svc_attr_count - 1].handle)) {
+        BT_LOGE("Failed to set SDP GATT handle");
+        free(srv_hdl);
+        goto err_free_attrs;
+    }
+
+    err = gatt_sdp_set_srv_cls(&attrs[SDP_ATTR_SVCLS_GATT_POS], uuid);
+
+    if (err) {
+        prot_desc_elem = (struct bt_sdp_data_elem*)attrs[SDP_ATTR_PROT_GATT_POS].val.data;
+        free(srv_hdl);
+        free((struct bt_sdp_data_elem*)prot_desc_elem[DATA_ELEM_GATT_PROT_DESC_POS].data);
+        free(prot_desc_elem);
+        goto err_free_attrs;
+    }
 
     record->attr_count = attrs_count;
     record->attrs = attrs;
@@ -412,9 +540,40 @@ static struct bt_sdp_record* gatt_sdp_create_record(struct bt_gatt_service* srv)
         return record;
     }
 
+err_free_attrs:
     free(attrs);
     free(record);
     return NULL;
+}
+
+static void gatt_sdp_free_record_attr(struct bt_sdp_attribute* attrs)
+{
+    struct bt_sdp_attribute *srv_cls_attr, *prot_desc_attr;
+    struct bt_sdp_data_elem *prot_desc_elem, *handle_desc_elem, *srv_cls_elem;
+    uint32_t* srv_hdl;
+
+    if (!attrs) {
+        BT_LOGE("Invalid SDP attributes");
+        return;
+    }
+
+    /* free SDP service handle element data */
+    srv_hdl = (uint32_t*)attrs[0].val.data;
+    free(srv_hdl);
+
+    /* free service class id element data */
+    srv_cls_attr = &attrs[SDP_ATTR_SVCLS_GATT_POS];
+    srv_cls_elem = (struct bt_sdp_data_elem*)srv_cls_attr->val.data;
+    free(srv_cls_elem);
+
+    /* free start/end handle protocol descriptor element data */
+    prot_desc_attr = &attrs[SDP_ATTR_PROT_GATT_POS];
+    prot_desc_elem = (struct bt_sdp_data_elem*)prot_desc_attr->val.data;
+    handle_desc_elem = (struct bt_sdp_data_elem*)prot_desc_elem[DATA_ELEM_GATT_PROT_DESC_POS].data;
+    free(handle_desc_elem);
+    free(prot_desc_elem);
+
+    free(attrs);
 }
 
 static void gatt_sdp_delete_record(struct bt_sdp_record* record)
@@ -439,7 +598,7 @@ static void gatt_sdp_delete_record(struct bt_sdp_record* record)
     }
 
     if (record->attrs) {
-        free(record->attrs);
+        gatt_sdp_free_record_attr(record->attrs);
         record->attrs = NULL;
     }
 
