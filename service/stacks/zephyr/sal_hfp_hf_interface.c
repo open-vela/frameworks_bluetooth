@@ -19,6 +19,7 @@
 #include "sal_connection_manager.h"
 #include "sal_interface.h"
 #include "sal_zblue.h"
+#include "sal_zblue_hfp.h"
 
 #include "bt_debug.h"
 #include "bt_list.h"
@@ -925,14 +926,14 @@ static void zblue_on_codec_negotiate(struct bt_hfp_hf* hf, uint8_t id)
     switch (id) {
     case BT_HFP_HF_CODEC_MSBC:
         cfg.codec = HFP_CODEC_MSBC;
-        cfg.sample_rate = 16000;
-        cfg.bit_width = 16;
+        cfg.sample_rate = HFP_CODEC_MSBC_SAMPLE_RATE;
+        cfg.bit_width = HFP_CODEC_BIT_WIDTH;
         break;
     case BT_HFP_HF_CODEC_CVSD:
     default:
         cfg.codec = HFP_CODEC_CVSD;
-        cfg.sample_rate = 8000;
-        cfg.bit_width = 16;
+        cfg.sample_rate = HFP_CODEC_CVSD_SAMPLE_RATE;
+        cfg.bit_width = HFP_CODEC_BIT_WIDTH;
         break;
     }
 
