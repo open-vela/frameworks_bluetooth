@@ -66,6 +66,8 @@ static int pair_set_oob_cmd(void* handle, int argc, char** argv);
 static int pair_get_oob_cmd(void* handle, int argc, char** argv);
 static int connect_cmd(void* handle, int argc, char** argv);
 static int disconnect_cmd(void* handle, int argc, char** argv);
+static int bg_connect_cmd(void* handle, int argc, char** argv);
+static int bg_disconnect_cmd(void* handle, int argc, char** argv);
 static int le_connect_cmd(void* handle, int argc, char** argv);
 static int le_disconnect_cmd(void* handle, int argc, char** argv);
 static int create_bond_cmd(void* handle, int argc, char** argv);
@@ -161,6 +163,8 @@ static bt_command_t g_cmd_tables[] = {
     { "pair", pair_cmd, 0, "reply pair request, input \'pair help\' show usage" },
     { "connect", connect_cmd, 0, "connect classic peer device, params: <addr>" },
     { "disconnect", disconnect_cmd, 0, "disconnect peer device, params: <addr>" },
+    { "bgconnect", bg_connect_cmd, 0, "background connect with auto-reconnect, params: <addr> <transport>(0:BLE, 1:BREDR)" },
+    { "bgdisconnect", bg_disconnect_cmd, 0, "background disconnect, params: <addr> <transport>(0:BLE, 1:BREDR)" },
     { "leconnect", le_connect_cmd, 1, "connect le peer device, input \'leconnect -h\' show usage" },
     { "ledisconnect", le_disconnect_cmd, 0, "disconnect le peer device, params: <addr>" },
     { "createbond", create_bond_cmd, 0, "create bond, params: <addr> <transport>(0:BLE, 1:BREDR)" },
@@ -1154,6 +1158,52 @@ static int disconnect_cmd(void* handle, int argc, char** argv)
         return CMD_ERROR;
 
     PRINT("Device[%s] disconnecting", argv[0]);
+    return CMD_OK;
+}
+
+static int bg_connect_cmd(void* handle, int argc, char** argv)
+{
+    if (argc < 2)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    char* endptr;
+    long transport = strtol(argv[1], &endptr, 10);
+    if (*endptr != '\0' || endptr == argv[1])
+        return CMD_INVALID_PARAM;
+    if (transport != BT_TRANSPORT_BREDR && transport != BT_TRANSPORT_BLE)
+        return CMD_INVALID_PARAM;
+
+    if (bt_device_background_connect(handle, &addr, transport) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    PRINT("Device [%s] background connect", argv[0]);
+    return CMD_OK;
+}
+
+static int bg_disconnect_cmd(void* handle, int argc, char** argv)
+{
+    if (argc < 2)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    char* endptr;
+    long transport = strtol(argv[1], &endptr, 10);
+    if (*endptr != '\0' || endptr == argv[1])
+        return CMD_INVALID_PARAM;
+    if (transport != BT_TRANSPORT_BREDR && transport != BT_TRANSPORT_BLE)
+        return CMD_INVALID_PARAM;
+
+    if (bt_device_background_disconnect(handle, &addr, transport) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    PRINT("Device [%s] background disconnect", argv[0]);
     return CMD_OK;
 }
 
