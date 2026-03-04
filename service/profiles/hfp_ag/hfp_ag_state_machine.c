@@ -576,6 +576,17 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
     case AG_OFFLOAD_STOP_EVT:
         audio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
         break;
+    case AG_STACK_EVENT_CALL_SYNC:
+        if (agsm->virtual_call_started) {
+            bt_sal_hfp_ag_call_sync(&agsm->addr, HFP_CALL_DIRECTION_INCOMING,
+                HFP_AG_CALL_STATE_ACTIVE, HFP_CALL_MODE_VOICE, HFP_CALL_MPTY_TYPE_SINGLE,
+                HFP_CALL_ADDRTYPE_UNKNOWN, HFP_FAKE_NUMBER);
+        } else {
+#ifdef CONFIG_PHONE_SERVICE
+            tele_service_get_current_calls(&agsm->addr);
+#endif
+        }
+        break;
     default:
         BT_LOGW("Unexpected event:%" PRId32 "", event);
         break;
