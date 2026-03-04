@@ -290,7 +290,8 @@ static void dial_out_timeout(service_timer_t* timer, void* data)
     hfp_ag_dial_result(HFP_ATCMD_RESULT_TIMEOUT);
 }
 
-#ifdef CONFIG_LIB_DBUS
+#ifdef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+#ifdef CONFIG_PHONE_SERVICE
 static uint8_t callstate_to_callsetup(hfp_ag_call_state_t call_state)
 {
     switch (call_state) {
@@ -304,11 +305,14 @@ static uint8_t callstate_to_callsetup(hfp_ag_call_state_t call_state)
         return HFP_CALLSETUP_NONE;
     }
 }
+#endif
 
 static void process_cind_request(ag_state_machine_t* agsm)
 {
-    uint8_t num_active, num_held, call_state;
     hfp_ag_cind_resopnse_t resp;
+
+#ifdef CONFIG_PHONE_SERVICE
+    uint8_t num_active, num_held, call_state;
 
     /* 1. system interface get calls */
     /* 2. get network state */
@@ -319,6 +323,9 @@ static void process_cind_request(ag_state_machine_t* agsm)
     resp.call = num_active ? HFP_CALL_CALLS_IN_PROGRESS : HFP_CALL_NO_CALLS_IN_PROGRESS;
     resp.call_held = num_held ? HFP_CALLHELD_HELD : HFP_CALLHELD_NONE;
     resp.call_setup = callstate_to_callsetup(call_state);
+#else
+    memset(&resp, 0, sizeof(resp));
+#endif
     BT_LOGD("AT+CIND=? response");
     bt_sal_hfp_ag_cind_response(&agsm->addr, &resp);
 }
@@ -551,7 +558,7 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
         agsm->codec = data->valueint1 == HFP_CODEC_MSBC ? HFP_CODEC_MSBC : HFP_CODEC_CVSD;
         break;
     case AG_STACK_EVENT_AT_CIND_REQUEST:
-#ifdef CONFIG_LIB_DBUS
+#ifdef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
         process_cind_request(agsm);
 #else
         ag_service_notify_cind_cmd(&agsm->addr);
@@ -715,7 +722,7 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
         break;
     }
     case AG_STACK_EVENT_AT_CIND_REQUEST:
-#ifdef CONFIG_LIB_DBUS
+#ifdef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
         process_cind_request(agsm);
 #else
         ag_service_notify_cind_cmd(&agsm->addr);
@@ -728,7 +735,7 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
                 HFP_CALL_ADDRTYPE_UNKNOWN, HFP_FAKE_NUMBER);
             bt_sal_hfp_ag_clcc_response(&agsm->addr, 0, 0, 0, 0, 0, 0, NULL);
         } else {
-#ifdef CONFIG_LIB_DBUS
+#ifdef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
             /* system call interface */
             tele_service_query_current_call(&agsm->addr);
 #else
