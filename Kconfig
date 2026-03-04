@@ -390,6 +390,15 @@ config BLUETOOTH_HFP_AG_PRIMARY_SLOT
 	int "HFP select primary modem slot"
 	default 0
 
+config BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+	bool "Handle telephony AT commands locally instead of notifying upper layer"
+	default y
+	help
+		If enabled, the HFP AG service handles telephony-related AT commands
+		(AT+CIND, AT+CLCC, AT+COPS, ATA, AT+CHUP, ATD, AT+CHLD) locally by
+		calling telephony service directly. If disabled, these requests are
+		forwarded to the upper layer (e.g. AP core) via callback.
+
 endif # BLUETOOTH_HFP_AG
 
 config BLUETOOTH_SCO_CTRL_PATH
