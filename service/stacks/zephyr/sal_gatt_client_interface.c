@@ -1180,6 +1180,8 @@ bt_status_t bt_sal_gatt_client_register_notifications(bt_controller_id_t id, bt_
         notify->value_handle = element_id;
         notify->ccc_handle = ccc_handle;
         notify->notify = bt_gatt_notify_handler;
+        /* Set VOLATILE flag to clear subscription on disconnect */
+        atomic_set_bit(notify->flags, BT_GATT_SUBSCRIBE_FLAG_VOLATILE);
         notify->value = BT_GATT_CCC_NOTIFY;
 
         if (enable) {
@@ -1208,6 +1210,8 @@ bt_status_t bt_sal_gatt_client_register_notifications(bt_controller_id_t id, bt_
         indicate->value_handle = element_id;
         indicate->ccc_handle = ccc_handle;
         indicate->notify = bt_gatt_notify_handler;
+        /* Set VOLATILE flag to clear subscription on disconnect */
+        atomic_set_bit(indicate->flags, BT_GATT_SUBSCRIBE_FLAG_VOLATILE);
         indicate->value = BT_GATT_CCC_INDICATE;
 
         if (enable) {
