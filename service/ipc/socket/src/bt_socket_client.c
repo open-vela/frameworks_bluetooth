@@ -508,6 +508,14 @@ void bt_socket_client_free_callbacks(bt_instance_t* ins, callbacks_list_t* cbsl)
 void bt_socket_client_deinit(bt_instance_t* ins)
 {
     uv_sem_destroy(&ins->message_processed);
+
+    /* Wait for any in-progress sendrecv to release the mutex before
+     * destroying it. sem_post was already called (by UV_DISCONNECT handler)
+     * to unblock sendrecv, but sendrecv may not have been scheduled yet to
+     * call uv_mutex_unlock. Acquiring the mutex here ensures sendrecv has
+     * fully exited before we destroy it, preventing UAF on the mutex. */
+    uv_mutex_lock(&ins->mutex);
+    uv_mutex_unlock(&ins->mutex);
     uv_mutex_destroy(&ins->mutex);
 
     if (ins->packet)
