@@ -41,6 +41,8 @@
 #define HFP_AG_CODEC_Z_BIT_MSBC BIT(BT_HFP_AG_CODEC_MSBC)
 #define HFP_AG_CODEC_Z_BIT_LC3_SWB BIT(BT_HFP_AG_CODEC_LC3_SWB)
 
+#define HFP_AG_INDICATOR_INVALID UINT8_MAX
+
 static bt_list_t* g_sal_ag_conn_list = NULL;
 
 extern struct net_buf_pool sdp_pool;
@@ -62,6 +64,13 @@ typedef struct _bt_hfp_ag_call_info {
     enum bt_hfp_ag_call_status state;
 } bt_hfp_ag_call_info_t;
 
+typedef struct {
+    uint8_t network;
+    uint8_t roam;
+    uint8_t signal;
+    uint8_t battery;
+} hfp_ag_indicators_t;
+
 typedef struct _bt_hfp_ag_connection {
     bt_address_t addr;
     struct bt_conn* context;
@@ -69,6 +78,7 @@ typedef struct _bt_hfp_ag_connection {
     struct bt_hfp_ag* ag;
     uint8_t preferred_codec;
     bt_list_t* calls;
+    hfp_ag_indicators_t indicators;
 } bt_hfp_ag_connection_t;
 
 typedef struct _ag_connect_params {
@@ -172,6 +182,12 @@ static bt_hfp_ag_connection_t* new_sal_connection(struct bt_conn* conn, struct b
     sal_conn->ag = ag;
     sal_conn->preferred_codec = BT_HFP_AG_CODEC_CVSD; /* Initialize to default CVSD codec */
     sal_conn->calls = bt_list_new(free_call);
+    /* Initialize indicators to 0xff to ensure first update is detected as change,
+     * in case bt_sal_hfp_ag_cind_response is not called properly */
+    sal_conn->indicators.network = HFP_AG_INDICATOR_INVALID;
+    sal_conn->indicators.roam = HFP_AG_INDICATOR_INVALID;
+    sal_conn->indicators.signal = HFP_AG_INDICATOR_INVALID;
+    sal_conn->indicators.battery = HFP_AG_INDICATOR_INVALID;
 
     bt_list_add_tail(g_sal_ag_conn_list, sal_conn);
 
@@ -1561,14 +1577,19 @@ bt_status_t bt_sal_hfp_ag_cind_response(bt_address_t* addr, hfp_ag_cind_resopnse
         return BT_STATUS_FAIL;
     }
 
+    sal_conn->indicators.network = response->network ? 1 : 0;
+    sal_conn->indicators.roam = response->roam ? 1 : 0;
+    sal_conn->indicators.signal = response->signal > 5 ? 5 : (uint8_t)response->signal;
+    sal_conn->indicators.battery = response->battery > 5 ? 5 : (uint8_t)response->battery;
+
     indicators[0].indicator = BT_HFP_AG_SERVICE_IND;
-    indicators[0].value = response->network ? 1 : 0;
+    indicators[0].value = sal_conn->indicators.network;
     indicators[1].indicator = BT_HFP_AG_ROAM_IND;
-    indicators[1].value = response->roam ? 1 : 0;
+    indicators[1].value = sal_conn->indicators.roam;
     indicators[2].indicator = BT_HFP_AG_SIGNAL_IND;
-    indicators[2].value = response->signal > 5 ? 5 : response->signal;
+    indicators[2].value = sal_conn->indicators.signal;
     indicators[3].indicator = BT_HFP_AG_BATTERY_IND;
-    indicators[3].value = response->battery > 5 ? 5 : response->battery;
+    indicators[3].value = sal_conn->indicators.battery;
 
     memset(calls, 0, sizeof(calls));
 
@@ -1586,6 +1607,7 @@ bt_status_t bt_sal_hfp_ag_cind_response(bt_address_t* addr, hfp_ag_cind_resopnse
     }
 
     SAL_CHECK_RET(Z_API(bt_hfp_ag_ongoing_calls)(sal_conn->ag, calls, count, indicators, 4), 0);
+
     return BT_STATUS_SUCCESS;
 }
 
@@ -1646,6 +1668,10 @@ bt_status_t bt_sal_hfp_ag_notify_device_status_changed(bt_address_t* addr, hfp_n
     hfp_roaming_state_t roam, uint8_t signal, uint8_t battery)
 {
     bt_hfp_ag_connection_t* sal_conn;
+    uint8_t net_val;
+    uint8_t roam_val;
+    uint8_t sig_val;
+    uint8_t bat_val;
 
     if (!addr) {
         return BT_STATUS_PARM_INVALID;
@@ -1657,13 +1683,30 @@ bt_status_t bt_sal_hfp_ag_notify_device_status_changed(bt_address_t* addr, hfp_n
         return BT_STATUS_PARM_INVALID;
     }
 
-    SAL_CHECK_RET(Z_API(bt_hfp_ag_service_availability)(sal_conn->ag, network ? true : false), 0);
+    net_val = network ? 1 : 0;
+    roam_val = roam ? 1 : 0;
+    sig_val = signal > 5 ? 5 : (uint8_t)signal;
+    bat_val = battery > 5 ? 5 : (uint8_t)battery;
 
-    SAL_CHECK_RET(Z_API(bt_hfp_ag_roaming_status)(sal_conn->ag, roam ? 1 : 0), 0);
+    if (net_val != sal_conn->indicators.network) {
+        SAL_CHECK_RET(Z_API(bt_hfp_ag_service_availability)(sal_conn->ag, network ? true : false), 0);
+        sal_conn->indicators.network = net_val;
+    }
 
-    SAL_CHECK_RET(Z_API(bt_hfp_ag_signal_strength)(sal_conn->ag, signal > 5 ? 5 : signal), 0);
+    if (roam_val != sal_conn->indicators.roam) {
+        SAL_CHECK_RET(Z_API(bt_hfp_ag_roaming_status)(sal_conn->ag, roam ? 1 : 0), 0);
+        sal_conn->indicators.roam = roam_val;
+    }
 
-    SAL_CHECK_RET(Z_API(bt_hfp_ag_battery_level)(sal_conn->ag, battery > 5 ? 5 : battery), 0);
+    if (sig_val != sal_conn->indicators.signal) {
+        SAL_CHECK_RET(Z_API(bt_hfp_ag_signal_strength)(sal_conn->ag, sig_val), 0);
+        sal_conn->indicators.signal = sig_val;
+    }
+
+    if (bat_val != sal_conn->indicators.battery) {
+        SAL_CHECK_RET(Z_API(bt_hfp_ag_battery_level)(sal_conn->ag, bat_val), 0);
+        sal_conn->indicators.battery = bat_val;
+    }
 
     return BT_STATUS_SUCCESS;
 }
