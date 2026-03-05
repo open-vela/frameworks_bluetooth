@@ -847,6 +847,8 @@ static void zblue_on_ag_accept(struct bt_hfp_ag_call* call)
         return;
     }
 
+    sal_call->state = BT_HFP_AG_CALL_STATUS_ACTIVE;
+
     hfp_ag_on_answer_call(&sal_conn->addr);
 }
 
@@ -873,6 +875,8 @@ static void zblue_on_ag_held(struct bt_hfp_ag_call* call)
     if (sal_call->state != BT_HFP_AG_CALL_STATUS_ACTIVE) {
         return;
     }
+
+    sal_call->state = BT_HFP_AG_CALL_STATUS_HELD;
 
     hfp_ag_on_hangup_call(&sal_conn->addr);
 }
@@ -901,6 +905,8 @@ static void zblue_on_ag_retrieve(struct bt_hfp_ag_call* call)
         return;
     }
 
+    sal_call->state = BT_HFP_AG_CALL_STATUS_ACTIVE;
+
     hfp_ag_on_call_control(&sal_conn->addr, HFP_HF_CALL_CONTROL_CHLD_2);
 }
 
@@ -924,9 +930,12 @@ static void zblue_on_ag_reject(struct bt_hfp_ag_call* call)
         return;
     }
 
-    if (sal_call->state != BT_HFP_AG_CALL_STATUS_INCOMING) {
+    if (sal_call->state != BT_HFP_AG_CALL_STATUS_INCOMING
+        && sal_call->state != BT_HFP_AG_CALL_STATUS_WAITING) {
         return;
     }
+
+    sal_call->state = BT_HFP_AG_CALL_STATUS_UNKNOWN;
 
     hfp_ag_on_reject_call(&sal_conn->addr);
 }
@@ -951,9 +960,12 @@ static void zblue_on_ag_terminate(struct bt_hfp_ag_call* call)
         return;
     }
 
-    if (sal_call->state != BT_HFP_AG_CALL_STATUS_ACTIVE) {
+    if (sal_call->state != BT_HFP_AG_CALL_STATUS_ACTIVE
+        && sal_call->state != BT_HFP_AG_CALL_STATUS_HELD) {
         return;
     }
+
+    sal_call->state = BT_HFP_AG_CALL_STATUS_UNKNOWN;
 
     hfp_ag_on_call_control(&sal_conn->addr, HFP_HF_CALL_CONTROL_CHLD_1);
 }
@@ -1334,51 +1346,71 @@ typedef int (*call_operation_t)(hfp_ag_operation_context_t* operation_context);
 
 static int accept_call(hfp_ag_operation_context_t* operation_context)
 {
+    BT_LOGD("%s, number: %s, state: %d", __func__,
+        operation_context->call_info->number, operation_context->call_info->state);
     return Z_API(bt_hfp_ag_accept)(operation_context->call_info->context);
 }
 
 static int remote_accept_call(hfp_ag_operation_context_t* operation_context)
 {
+    BT_LOGD("%s, number: %s, state: %d", __func__,
+        operation_context->call_info->number, operation_context->call_info->state);
     return Z_API(bt_hfp_ag_remote_accept)(operation_context->call_info->context);
 }
 
 static int hold_call(hfp_ag_operation_context_t* operation_context)
 {
+    BT_LOGD("%s, number: %s, state: %d", __func__,
+        operation_context->call_info->number, operation_context->call_info->state);
     return Z_API(bt_hfp_ag_hold)(operation_context->call_info->context);
 }
 
 static int hold_incoming_call(hfp_ag_operation_context_t* operation_context)
 {
+    BT_LOGD("%s, number: %s, state: %d", __func__,
+        operation_context->call_info->number, operation_context->call_info->state);
     return Z_API(bt_hfp_ag_hold_incoming)(operation_context->call_info->context);
 }
 
 static int retrieve_call(hfp_ag_operation_context_t* operation_context)
 {
+    BT_LOGD("%s, number: %s, state: %d", __func__,
+        operation_context->call_info->number, operation_context->call_info->state);
     return Z_API(bt_hfp_ag_retrieve)(operation_context->call_info->context);
 }
 
 static int remote_ringing_call(hfp_ag_operation_context_t* operation_context)
 {
+    BT_LOGD("%s, number: %s, state: %d", __func__,
+        operation_context->call_info->number, operation_context->call_info->state);
     return Z_API(bt_hfp_ag_remote_ringing)(operation_context->call_info->context);
 }
 
 static int terminate_call(hfp_ag_operation_context_t* operation_context)
 {
+    BT_LOGD("%s, number: %s, state: %d", __func__,
+        operation_context->call_info->number, operation_context->call_info->state);
     return Z_API(bt_hfp_ag_terminate)(operation_context->call_info->context);
 }
 
 static int reject_call(hfp_ag_operation_context_t* operation_context)
 {
+    BT_LOGD("%s, number: %s, state: %d", __func__,
+        operation_context->call_info->number, operation_context->call_info->state);
     return Z_API(bt_hfp_ag_reject)(operation_context->call_info->context);
 }
 
 static int remote_reject_call(hfp_ag_operation_context_t* operation_context)
 {
+    BT_LOGD("%s, number: %s, state: %d", __func__,
+        operation_context->call_info->number, operation_context->call_info->state);
     return Z_API(bt_hfp_ag_remote_reject)(operation_context->call_info->context);
 }
 
 static int outgoing_call(hfp_ag_operation_context_t* operation_context)
 {
+    BT_LOGD("%s, number: %s, state: %d", __func__,
+        operation_context->call_info->number, operation_context->call_info->state);
     return Z_API(bt_hfp_ag_outgoing)(
         operation_context->connection->ag,
         operation_context->call_info->number);
@@ -1386,6 +1418,8 @@ static int outgoing_call(hfp_ag_operation_context_t* operation_context)
 
 static int incoming_call(hfp_ag_operation_context_t* operation_context)
 {
+    BT_LOGD("%s, number: %s, state: %d", __func__,
+        operation_context->call_info->number, operation_context->call_info->state);
     return Z_API(bt_hfp_ag_remote_incoming)(
         operation_context->connection->ag,
         operation_context->call_info->number);
@@ -1488,6 +1522,8 @@ bt_status_t bt_sal_hfp_ag_phone_state_change(bt_address_t* addr, uint8_t num_act
 
         const new_call_entry_t* entry = find_new_call_entry(tele_call_state_to_sal_status(call_state));
         if (!entry) {
+            BT_LOGE("%s, no new_call_entry for state %d, number: %s",
+                __func__, call_state, number ? number : "(null)");
             return BT_STATUS_FAIL;
         }
 
@@ -1507,18 +1543,33 @@ bt_status_t bt_sal_hfp_ag_phone_state_change(bt_address_t* addr, uint8_t num_act
     const call_transition_t* transition = find_call_transition(call_info->state, call_state);
 
     if (!transition) {
+        enum bt_hfp_ag_call_status new_state = tele_call_state_to_sal_status(call_state);
+
+        if (call_info->state == new_state) {
+            /* state already updated by a zblue callback, nothing to do */
+            BT_LOGI("%s, state already %d, skip transition", __func__, new_state);
+            if (new_state == BT_HFP_AG_CALL_STATUS_UNKNOWN) {
+                /* call ended, remove it from tracking list */
+                bt_list_remove(sal_conn->calls, call_info);
+            }
+            return BT_STATUS_SUCCESS;
+        }
+
         BT_LOGE("%s, no valid transition from %d to %d",
             __func__, call_info->state, call_state);
         return BT_STATUS_FAIL;
     }
 
     SAL_CHECK_RET(transition->op(&operation_context), 0);
-    call_info->state = tele_call_state_to_sal_status(call_state);
 
-    /* remove call entry on terminal states */
-    if (call_info->state == BT_HFP_AG_CALL_STATUS_UNKNOWN) {
+    enum bt_hfp_ag_call_status new_state = tele_call_state_to_sal_status(call_state);
+    if (new_state == BT_HFP_AG_CALL_STATUS_UNKNOWN) {
+        /* call ended (IDLE/DISCONNECTED), remove it from tracking list */
         bt_list_remove(sal_conn->calls, call_info);
+        return BT_STATUS_SUCCESS;
     }
+
+    call_info->state = new_state;
 
     return BT_STATUS_SUCCESS;
 }
