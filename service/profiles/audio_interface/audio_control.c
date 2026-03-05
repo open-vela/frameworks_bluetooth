@@ -451,18 +451,13 @@ void audio_control_stop(uint8_t profile_id)
         return;
     }
 
-    if (audio->cmd_flag == AUDIO_CTRL_MSG_STOP) {
+    if (audio->cmd_flag == AUDIO_CTRL_MSG_STOP || audio->cmd_flag == AUDIO_CTRL_MSG_IOERR) {
         BT_LOGD("%s, stop audio", __func__);
         service_loop_remove_poll(audio->poll);
         audio_transport_close(audio->cps);
         audio->cps = NULL;
         bt_list_remove(g_audio_list, audio);
         BT_LOGD("%s, stopped audio", __func__);
-    } else if (audio->cmd_flag == AUDIO_CTRL_MSG_IOERR) {
-        BT_LOGD("%s, reset audio", __func__);
-        service_loop_remove_poll(audio->poll);
-        audio->cps = NULL;
-        bt_list_remove(g_audio_list, audio);
     } else if (audio->cmd_flag == AUDIO_CTRL_MSG_PAUSE) {
         BT_LOGD("%s, pause audio", __func__);
         audio_transport_pause(audio->cps);
