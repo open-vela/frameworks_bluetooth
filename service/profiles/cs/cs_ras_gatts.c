@@ -330,19 +330,19 @@ static void cs_ras_notify_complete_cb(gatts_handle_t srv_handle, bt_address_t* a
 
     ras_attr_notify_t attr_ntf;
     switch (attr_handle) {
-    case RAS_RANGING_REAL_TIME_CCC_ID:
+    case RAS_RANGING_REAL_TIME_ATTR_ID:
         attr_ntf = RAS_REAL_TIME_CHAR_SEND;
         break;
-    case RAS_RANGING_ON_DEMAND_CCC_ID:
+    case RAS_RANGING_ON_DEMAND_ATTR_ID:
         attr_ntf = RAS_ON_DEMAND_CHAR_SEND;
         break;
-    case RAS_RANGING_CONTROL_POINT_CCC_ID:
+    case RAS_RANGING_CONTROL_POINT_ATTR_ID:
         attr_ntf = RAS_CONTROL_POINT_CHAR_SEND;
         break;
-    case RAS_RANGING_DATA_READY_CCC_ID:
+    case RAS_RANGING_DATA_READY_ATTR_ID:
         attr_ntf = RAS_DATA_READY_CHAR_SEND;
         break;
-    case RAS_RANGING_DATA_OVER_WRITE_CCC_ID:
+    case RAS_RANGING_DATA_OVER_WRITE_ATTR_ID:
         attr_ntf = RAS_OVER_WRITE_CHAR_SEND;
         break;
     default:
