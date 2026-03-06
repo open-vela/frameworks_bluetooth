@@ -117,30 +117,26 @@ static bt_status_t ras_ondemand_send_ranging_data(bt_address_t* addr, uint16_t c
     const cs_node_t* on_demand_pdu = cs_list_peek_head(&on_demand_sub->seg_list);
     struct ras_segment_t* seg = container_of(on_demand_pdu, ras_segment_t, seg_node);
 
+    BT_LOGD("seg:%p, seg->data(%d)", seg, seg->len);
+    BT_DUMPBUFFER("seg->data", seg->data, seg->len);
+
     if (ras_state_get_bit(&ras_srv->char_notify_state, RAS_ON_DEMAND_DATA_NOTIFY)) {
-        BT_LOGD("seg:%p, seg->data(%d)", seg, seg->len);
-        BT_DUMPBUFFER("seg->data", seg->data, seg->len);
-
         status = BT_GATT_NOTIFY_CB(RAS_ON_DEMAND_CHAR_SEND, addr, seg->data, seg->len);
-
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("On-demand ranging data notify fail, status(%d).", status);
             return status;
         }
 
     } else if (ras_state_get_bit(&ras_srv->char_notify_state, RAS_ON_DEMAND_DATA_INDICATE)) {
-        BT_LOGD("seg:%p, seg->data(%d)", seg, seg->len);
-        BT_DUMPBUFFER("seg->data", seg->data, seg->len);
-        // Set the current node to the next.
-        ras_srv->on_demand_curr_node = on_demand_pdu->next;
         status = BT_GATT_INDICATE(RAS_ON_DEMAND_CHAR_SEND, addr, seg->data, seg->len);
-
         if (status != 0) {
             BT_LOGE("On-demand ranging data indicate fail, err(%d).", status);
             return status;
         }
     }
 
+    // Set the current node to the next.
+    ras_srv->on_demand_curr_node = on_demand_pdu->next;
     ras_srv->procedure_count = count;
 
     return status;
