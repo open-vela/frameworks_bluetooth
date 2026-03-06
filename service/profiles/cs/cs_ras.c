@@ -1084,13 +1084,20 @@ static uint8_t* ras_subevent_data_conversion(bt_address_t* addr, bt_srv_conn_le_
 
     uint8_t* stream_buf = ras_srv->latest_local_steps;
     int bit_offset = 0;
-    uint16_t count_id = ((result->header.procedure_counter & 0x0FFF) << 12) | (result->header.config_id & 0x0F);
-    /**
-     * CS configuration identifier.
-     * Range: 0 to 3
-     * Rangging Counter is lower 12-bits of CS Procedure_Counter Provided by the Core Controller
+
+     /**
+     * Rangging Counter.
+     * Rangging Counter is lower 12-bits of CS Procedure_Counter Provided by the Core Controller.
      */
-    ras_write_bits(stream_buf, &bit_offset, count_id, 16);
+    ras_write_bits(stream_buf, &bit_offset, result->header.procedure_counter, 12);
+
+     /**
+     * Configuration ID.
+     * Range: 0 to 3
+     * CS configuration identifier.
+     */
+    ras_write_bits(stream_buf, &bit_offset, result->header.config_id, 4);
+
     /**
      * Transmit power level used for the CS Procedure.
      * Range: -127 to 20
