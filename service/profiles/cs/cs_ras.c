@@ -512,6 +512,8 @@ static void range_rtt_dt_ccc_cfg_changed(bt_address_t* addr, uint16_t value)
             (value == CS_RAS_GATT_NOTIFY) ? RAS_RTT_DATA_NOTIFY : RAS_RTT_DATA_INDICATE);
     }
 
+    ras_srv->rt_dt_ccc_cfg = value;
+
     BT_LOGD("The range real-time data ccc value is change to (%d)", value);
     return;
 }
