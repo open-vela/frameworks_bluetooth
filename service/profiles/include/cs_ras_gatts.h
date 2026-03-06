@@ -82,7 +82,7 @@ bt_status_t ras_gatts_data_send_notify(ras_attr_notify_t attr, bt_address_t* add
     uint16_t len, bool is_notify);
 void ras_gatts_set_feature_value(uint32_t feature);
 void bt_cs_ras_gatts_init(const ras_gatts_callbacks_t* callback);
-bt_status_t ras_send_feature_read_rsp(bt_address_t* addr, uint32_t feature);
+bt_status_t ras_send_feature_read_rsp(bt_address_t* addr, uint32_t feature, uint32_t req_handle);
 void ras_gatts_deinit(void);
 
 #endif /* _CS_RAS_GATTS_H_ */

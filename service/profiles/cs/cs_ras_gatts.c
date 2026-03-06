@@ -191,8 +191,10 @@ static uint16_t cs_ras_feature_read_cb(void* srv_handle, bt_address_t* addr, uin
     return 0;
 }
 
-bt_status_t ras_send_feature_read_rsp(bt_address_t* addr, uint32_t feature)
+bt_status_t ras_send_feature_read_rsp(bt_address_t* addr, uint32_t feature, uint32_t req_handle)
 {
+    const gatts_interface_t* interface = gatts_info->ras_gatts_interface;
+
     if (!gatts_info || gatts_info->ras_gatts_handle == NULL) {
         BT_LOGE("Invalid gatts handle.");
         return BT_STATUS_FAIL;
@@ -201,10 +203,8 @@ bt_status_t ras_send_feature_read_rsp(bt_address_t* addr, uint32_t feature)
     uint8_t feature_val[4];
     uint8_t* p = feature_val;
     UINT32_TO_STREAM(p, feature);
-    bt_status_t status = bt_gatts_response(gatts_info->ras_gatts_handle, addr, RAS_RANGING_FEATURE_ATTR_ID,
-        feature_val, sizeof(feature_val));
 
-    return status;
+    return interface->response(gatts_info->ras_gatts_handle, addr, req_handle, feature_val, sizeof(feature_val));
 }
 
 static gatts_callbacks_t ras_gatts_callbacks = {
