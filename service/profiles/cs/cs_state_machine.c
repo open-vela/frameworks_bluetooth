@@ -325,7 +325,6 @@ static void wait_for_procedure_complete_exit(state_machine_t* sm)
 static bool wait_for_procedure_complete_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
-    cs_msg_data_t* data = (cs_msg_data_t*)p_data;
 
     CS_DBG_EVENT(sm, &cs_sm->addr, event);
     switch (event) {

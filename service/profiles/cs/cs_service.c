@@ -137,7 +137,7 @@ static void cs_service_handle_event(void* data)
     case SUBEVENT_RESULT_EVT:
         cs_subevent_result_callbacks(&msg->cs_data.bd_addr, msg->cs_data.data);
         if (msg->cs_data.data) {
-            free((bt_srv_conn_le_cs_subevent_result_t*)(msg->cs_data.data)->step_data_buf);
+            free(((bt_srv_conn_le_cs_subevent_result_t*)(msg->cs_data.data))->step_data_buf);
         }
 
         break;
@@ -346,7 +346,7 @@ void register_cs_service(void)
     register_service(&cs_service);
 }
 
-void bt_cs_register_subevent_cb(subevent_result_cb_t* cb)
+void bt_cs_register_subevent_cb(subevent_result_cb_t cb)
 {
     result_cb = cb;
     return;

@@ -1404,7 +1404,7 @@ int bt_cs_ras_enable(void)
 {
     if (ras_srv) {
         BT_LOGW("CS RAS Profile already eanble.");
-        return;
+        return 0;
     }
 
     BT_LOGD("Enable Channel Sounding RAS Profile.");

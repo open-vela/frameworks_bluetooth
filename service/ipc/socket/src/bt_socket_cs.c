@@ -134,11 +134,6 @@ void bt_socket_server_cs_process(service_poll_t* poll,
 int bt_socket_client_cs_callback(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async)
 {
-    bt_socket_async_client_t* __async = NULL;
-
-    if (is_async)
-        __async = ins->priv;
-
     switch (packet->code) {
     default:
         return BT_STATUS_PARM_INVALID;
