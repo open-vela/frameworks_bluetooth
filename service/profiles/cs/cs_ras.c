@@ -49,7 +49,7 @@ static void cs_ras_on_demand_notify_finished(bt_address_t* addr)
 
     if (!on_demand_pdu) {
         BT_LOGD("Complete segment data sent.");
-        cs_ras_on_demand_send_cmp_ranging_data_rsp(addr, 10);
+        cs_ras_on_demand_send_cmp_ranging_data_rsp(addr, ras_srv->procedure_count);
         return;
     }
 
@@ -76,7 +76,7 @@ static void ras_on_demand_indicate_finished(bt_address_t* addr)
 
     if (!on_demand_pdu) {
         BT_LOGD("Complete segment data sent.");
-        cs_ras_on_demand_send_cmp_ranging_data_rsp(addr, 10);
+        cs_ras_on_demand_send_cmp_ranging_data_rsp(addr, ras_srv->procedure_count);
         return;
     }
 
@@ -138,6 +138,8 @@ static bt_status_t ras_ondemand_send_ranging_data(bt_address_t* addr, uint16_t c
             return status;
         }
     }
+
+    ras_srv->procedure_count = count;
 
     return status;
 }
