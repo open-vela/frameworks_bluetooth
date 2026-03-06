@@ -170,6 +170,8 @@ static bt_status_t cs_ras_on_demand_send_cmp_ranging_data_rsp(bt_address_t* addr
         return BT_STATUS_FAIL;
     }
 
+    ras_srv->on_demand_state = CS_RAS_ON_DEMAND_STATE_COMPLETE;
+
     return BT_STATUS_SUCCESS;
 }
 
@@ -267,12 +269,8 @@ static bt_status_t ras_on_demand_retrieve_send_lost_data(bt_address_t* addr, uin
         return BT_STATUS_PARM_INVALID;
     }
 
-    if (!ras_state_get_bit(&ras_srv->on_demand_state, CS_RAS_ON_DEMAND_STATE_RANGING_DATA_RSP)) {
-        BT_LOGW("Invalid on_demand state.");
-        return -1;
-    }
-
     bt_status_t status;
+
     // Free the on-demand segment list when response the ack to the Client.
     ras_segment_t *seg_prev, *seg_next;
     CS_LIST_FOR_EACH_CONTAINER_SAFE(&on_demand_data->seg_list,
@@ -1177,12 +1175,24 @@ static uint8_t* ras_subevent_data_conversion(bt_address_t* addr, bt_srv_conn_le_
 
 static void cs_ras_process_real_time_ranging_data(bt_address_t* addr, bt_srv_conn_le_cs_subevent_result_t* result)
 {
+    if (result->len > CS_RAS_STEP_DATA_BUF_LEN) {
+        BT_LOGD("Not enough memory to store step data. (%d > %d)\n",
+            result->len, CS_RAS_STEP_DATA_BUF_LEN);
+        return;
+    }
+
     uint8_t* stream_buf = ras_subevent_data_conversion(addr, result);
     cs_ras_split_real_time_segment(addr, stream_buf, ras_srv->remaining_len);
 }
 
 static void cs_ras_process_on_demand_ranging_data(bt_address_t* addr, bt_srv_conn_le_cs_subevent_result_t* result)
 {
+    if (result->len > CS_RAS_STEP_DATA_BUF_LEN) {
+        BT_LOGD("Not enough memory to store step data. (%d > %d)\n",
+            result->len, CS_RAS_STEP_DATA_BUF_LEN);
+        return;
+    }
+
     ras_rang_on_demand_t* subevent = ras_rang_on_demand_subevent_pool_find(addr);
 
     if (!subevent) {
@@ -1195,10 +1205,10 @@ static void cs_ras_process_on_demand_ranging_data(bt_address_t* addr, bt_srv_con
     subevent->count = result->header.procedure_counter;
     uint8_t* stream_buf = ras_subevent_data_conversion(addr, result);
     cs_ras_split_on_demand_segment(addr, stream_buf, ras_srv->remaining_len, subevent);
-    if (ras_state_get_bit(&ras_srv->on_demand_state, CS_RAS_ON_DEMAND_STATE_IDLE)) {
+    if (ras_srv->on_demand_state == CS_RAS_ON_DEMAND_STATE_IDLE) {
         cs_ras_data_ready_send(addr, subevent->count);
         // Set the on-demand state to ready.
-        ras_state_set_bit(&ras_srv->on_demand_state, CS_RAS_ON_DEMAND_STATE_DATA_READY_INDICATE);
+        ras_srv->on_demand_state = CS_RAS_ON_DEMAND_STATE_BUSY;
     }
 
     return;
@@ -1333,6 +1343,28 @@ static void cs_ras_gatts_feature_read_cb(bt_address_t* addr, uint32_t req_handle
     return;
 }
 
+static void ras_rang_on_demand_send_ready(bt_address_t* addr)
+{
+    uint16_t count = CS_RAS_STORE_PROCEDURE_NUM_MAX; 
+    if (!ras_srv) {
+        BT_LOGE("Invalid ras_srv environment, init it first.");
+        return;
+    }
+
+    for (int i = 0; i < CS_RAS_STORE_PROCEDURE_NUM_MAX; i++) {
+        if (ras_srv->subevent[i].proc_used != true)
+            continue;
+
+        count = ras_srv->subevent[i].count < count ? ras_srv->subevent[i].count : count;
+    }
+
+    if (count < CS_RAS_STORE_PROCEDURE_NUM_MAX && cs_ras_data_ready_send(addr, count) == BT_STATUS_SUCCESS) {
+            // Set the on-demand state to ready.
+            ras_srv->on_demand_state = CS_RAS_ON_DEMAND_STATE_BUSY;
+            return;
+    }
+}
+
 static void ras_notify_cb(bt_address_t* addr, gatt_status_t status, ras_attr_notify_t attr)
 {
     if (status != GATT_STATUS_SUCCESS) {
@@ -1354,6 +1386,12 @@ static void ras_notify_cb(bt_address_t* addr, gatt_status_t status, ras_attr_not
             ras_on_demand_indicate_finished(addr);
         }
     } break;
+    case RAS_CONTROL_POINT_CHAR_SEND: {
+        if (ras_srv->on_demand_state == CS_RAS_ON_DEMAND_STATE_COMPLETE) {
+            ras_srv->on_demand_state = CS_RAS_ON_DEMAND_STATE_IDLE;
+            ras_rang_on_demand_send_ready(addr);
+        }
+    } break;
     default:
         break;
     }
@@ -1372,6 +1410,7 @@ static void ras_conn_cb(bt_address_t* addr)
 
     memcpy(ras_srv->addr, addr, sizeof(bt_address_t));
     BT_LOGD("RAS Conn to address:%s", bt_addr_str(addr));
+    ras_srv->on_demand_state = CS_RAS_ON_DEMAND_STATE_IDLE;
     return;
 }
 
@@ -1462,21 +1501,21 @@ int ras_subevent_recv_test(ras_rang_mode_t mode, ras_testcase_t test_case,
         ras_srv->ras_mtu = 253;
         ras_state_set_bit(&ras_srv->char_notify_state, RAS_ON_DEMAND_DATA_NOTIFY);
         ras_state_set_bit(&ras_srv->char_notify_state, RAS_DATA_READY_NOTIFY);
-        ras_state_set_bit(&ras_srv->on_demand_state, CS_RAS_ON_DEMAND_STATE_IDLE);
+        ras_srv->on_demand_state = CS_RAS_ON_DEMAND_STATE_IDLE;
         ras_state_set_bit(&ras_srv->char_notify_state, RAS_CONTROL_POINT_NOTIFY);
         break;
     case RAS_TESTCASE_ON_DEMAND_INDICATE_VALID_RANG_DATA_004:
         ras_srv->ras_mtu = 253;
         ras_state_set_bit(&ras_srv->char_notify_state, RAS_ON_DEMAND_DATA_INDICATE);
         ras_state_set_bit(&ras_srv->char_notify_state, RAS_DATA_READY_NOTIFY);
-        ras_state_set_bit(&ras_srv->on_demand_state, CS_RAS_ON_DEMAND_STATE_IDLE);
+        ras_srv->on_demand_state = CS_RAS_ON_DEMAND_STATE_IDLE;
         ras_state_set_bit(&ras_srv->char_notify_state, RAS_CONTROL_POINT_NOTIFY);
         break;
     case RAS_TESTCASE_ON_DEMAND_WRITE_RANG_DATA_TIMEOUT_010:
         ras_srv->ras_mtu = 253;
         ras_state_set_bit(&ras_srv->char_notify_state, RAS_ON_DEMAND_DATA_INDICATE);
         ras_state_set_bit(&ras_srv->char_notify_state, RAS_DATA_READY_NOTIFY);
-        ras_state_set_bit(&ras_srv->on_demand_state, CS_RAS_ON_DEMAND_STATE_IDLE);
+        ras_srv->on_demand_state = CS_RAS_ON_DEMAND_STATE_IDLE;
         break;
     default:
         BT_LOGE("Invalid test case number(%d).", test_case);
