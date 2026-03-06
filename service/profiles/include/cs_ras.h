@@ -598,50 +598,10 @@ enum {
     CS_RAS_MODE_3_FILTER_MAX,
 };
 
-/**
- * @brief On-demand RAS Service State Machine.
- *
- * These enumeration values represent the different states of the On-demand
- * Ranging Service procedure. The state machine controls the sequence of
- * data ready notifications, data retrieval, sending, acknowledgment, and
- * completion.
- */
 enum {
-    /** Idle state. No operation in progress. */
-    CS_RAS_ON_DEMAND_STATE_IDLE,
-
-    /** Data ready indication has been sent to client. */
-    CS_RAS_ON_DEMAND_STATE_DATA_READY_INDICATE,
-
-    /** Waiting for Get Ranging Data response from client. */
-    CS_RAS_ON_DEMAND_STATE_GET_RANGING_DATA_RSP,
-
-    /** Ranging Data is being sent to client. */
-    CS_RAS_ON_DEMAND_STATE_RANGING_DATA_SENDING,
-
-    /** All Ranging Data segments have been sent. */
-    CS_RAS_ON_DEMAND_STATE_RANGING_DATA_COMPLETE_SEND,
-
-    /** Waiting for acknowledgment from client for Ranging Data. */
-    CS_RAS_ON_DEMAND_STATE_RANGING_DATA_ACK_RECV,
-
-    /** Waiting for Ranging Data response. */
-    CS_RAS_ON_DEMAND_STATE_RANGING_DATA_RSP,
-
-    /** Retrieving lost Ranging Data segments received from client. */
-    CS_RAS_ON_DEMAND_STATE_RETRIEVE_LOST_RANGING_DATA_RECV,
-
-    /** Lost Ranging Data segments response being sent. */
-    CS_RAS_ON_DEMAND_STATE_RETRIEVE_LOST_RANGING_DATA_RSP,
-
-    /** Completion of retrieving lost Ranging Data segments. */
-    CS_RAS_ON_DEMAND_STATE_RETRIEVE_LOST_RANGING_DATA_COMPLETE,
-
-    /** Waiting for acknowledgment of lost Ranging Data segments. */
-    CS_RAS_ON_DEMAND_STATE_RETRIEVE_LOST_RANGING_DATA_ACK,
-
-    /** Number of On-demand states. */
-    CS_RAS_ON_DEMAND_STATE_NUMS,
+    CS_RAS_ON_DEMAND_STATE_IDLE = 1,
+    CS_RAS_ON_DEMAND_STATE_BUSY,
+    CS_RAS_ON_DEMAND_STATE_COMPLETE,
 };
 
 /**
