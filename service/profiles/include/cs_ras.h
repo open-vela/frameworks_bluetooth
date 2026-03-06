@@ -714,6 +714,7 @@ typedef struct {
     ras_rang_on_demand_t subevent[CS_RAS_STORE_PROCEDURE_NUM_MAX]; /**< Array of On-demand procedure slots. */
     ras_control_point_t control_point;        /**< Control Point status for current operation. */
     cs_node_t* on_demand_curr_node;           /**< Pointer to current node in On-demand segment list. */
+    uint16_t procedure_count;                  /**< Records the current CS procedure counter for On-demand Ranging Data. */
 } ras_srv_env_t;
 
 /**
