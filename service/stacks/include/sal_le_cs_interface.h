@@ -113,7 +113,7 @@ bt_status_t bt_sal_cs_create_config(bt_controller_id_t id, bt_address_t* addr,
     bt_le_srv_cs_create_config_params_t* params,
     bt_le_srv_cs_create_config_context_t context);
 bt_status_t bt_sal_cs_security_enable(bt_controller_id_t id, bt_address_t* addr);
-bt_status_t bt_sal_cs_procedure_enable(bt_address_t* addr, const bt_le_srv_cs_procedure_enable_param_t* params);
+bt_status_t bt_sal_cs_procedure_enable(bt_controller_id_t id, bt_address_t* addr, const bt_le_srv_cs_procedure_enable_param_t* params);
 bt_status_t bt_sal_cs_remove_config(bt_controller_id_t id, bt_address_t* addr, uint8_t config_id);
 bt_status_t bt_sal_cs_set_procedure_parameters(bt_controller_id_t id, bt_address_t* addr,
     const bt_le_srv_cs_set_procedure_parameters_param_t* params);
