@@ -682,6 +682,6 @@ void register_cs_service(void);
 
 void bt_sal_cs_event_callback(cs_msg_t* msg);
 
-void bt_cs_register_subevent_cb(subevent_result_cb_t* cb);
+void bt_cs_register_subevent_cb(subevent_result_cb_t cb);
 
 #endif /* __CS_SERVICE_H__ */
