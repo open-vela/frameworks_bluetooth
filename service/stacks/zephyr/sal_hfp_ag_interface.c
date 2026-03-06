@@ -847,6 +847,7 @@ static void zblue_on_ag_accept(struct bt_hfp_ag_call* call)
         return;
     }
 
+    sal_call->state = BT_HFP_AG_CALL_STATUS_ACTIVE;
     hfp_ag_on_answer_call(&sal_conn->addr);
 }
 
@@ -874,6 +875,7 @@ static void zblue_on_ag_held(struct bt_hfp_ag_call* call)
         return;
     }
 
+    sal_call->state = BT_HFP_AG_CALL_STATUS_HELD;
     hfp_ag_on_hangup_call(&sal_conn->addr);
 }
 
@@ -901,6 +903,7 @@ static void zblue_on_ag_retrieve(struct bt_hfp_ag_call* call)
         return;
     }
 
+    sal_call->state = BT_HFP_AG_CALL_STATUS_ACTIVE;
     hfp_ag_on_call_control(&sal_conn->addr, HFP_HF_CALL_CONTROL_CHLD_2);
 }
 
@@ -1163,6 +1166,79 @@ static void zblue_on_ag_transmit_dtmf_code(struct bt_hfp_ag* ag, char code)
     hfp_ag_on_received_dtmf(&sal_conn->addr, code);
 }
 
+static void zblue_on_ag_chld(struct bt_hfp_ag* ag, uint32_t value)
+{
+    bt_hfp_ag_connection_t* sal_conn;
+
+    if (!ag) {
+        return;
+    }
+
+    sal_conn = find_connection_by_ag(ag);
+    if (!sal_conn) {
+        BT_LOGE("%s, connection not found for ag=%p", __func__, ag);
+        return;
+    }
+
+    BT_LOGD("%s, CHLD value=%" PRIu32, __func__, value);
+
+    if (value <= 4 && sal_conn->calls) {
+        bt_list_node_t* node;
+        bt_list_node_t* next;
+
+        for (node = bt_list_head(sal_conn->calls); node != NULL; node = next) {
+            bt_hfp_ag_call_info_t* sal_call = bt_list_node(node);
+            next = bt_list_next(sal_conn->calls, node);
+
+            if (!sal_call) {
+                continue;
+            }
+
+            switch (value) {
+            case HFP_HF_CALL_CONTROL_CHLD_0:
+                /* Release waiting/held; INCOMING/WAITING calls are terminated */
+                if (sal_call->state == BT_HFP_AG_CALL_STATUS_INCOMING || sal_call->state == BT_HFP_AG_CALL_STATUS_WAITING) {
+                    bt_list_remove(sal_conn->calls, sal_call);
+                }
+                break;
+            case HFP_HF_CALL_CONTROL_CHLD_1:
+                /* Release active, accept held/waiting */
+                if (sal_call->state == BT_HFP_AG_CALL_STATUS_ACTIVE) {
+                    bt_list_remove(sal_conn->calls, sal_call);
+                } else if (sal_call->state == BT_HFP_AG_CALL_STATUS_HELD || sal_call->state == BT_HFP_AG_CALL_STATUS_INCOMING || sal_call->state == BT_HFP_AG_CALL_STATUS_WAITING) {
+                    sal_call->state = BT_HFP_AG_CALL_STATUS_ACTIVE;
+                }
+                break;
+            case HFP_HF_CALL_CONTROL_CHLD_2:
+                /* Hold active, accept held/waiting */
+                if (sal_call->state == BT_HFP_AG_CALL_STATUS_ACTIVE) {
+                    sal_call->state = BT_HFP_AG_CALL_STATUS_HELD;
+                } else if (sal_call->state == BT_HFP_AG_CALL_STATUS_HELD || sal_call->state == BT_HFP_AG_CALL_STATUS_INCOMING || sal_call->state == BT_HFP_AG_CALL_STATUS_WAITING) {
+                    sal_call->state = BT_HFP_AG_CALL_STATUS_ACTIVE;
+                }
+                break;
+            case HFP_HF_CALL_CONTROL_CHLD_3:
+                /* Add held call to conversation */
+                if (sal_call->state == BT_HFP_AG_CALL_STATUS_HELD) {
+                    sal_call->state = BT_HFP_AG_CALL_STATUS_ACTIVE;
+                }
+                break;
+            default:
+                break;
+            }
+        }
+    }
+
+    /* CHLD 0-4: map to hfp_call_control_t */
+    if (value <= 4) {
+        hfp_ag_on_call_control(&sal_conn->addr, (hfp_call_control_t)value);
+        return;
+    }
+
+    /* ECC extended values (1x, 2x) are not supported */
+    BT_LOGW("%s, unsupported CHLD value=%" PRIu32 ", ignored", __func__, value);
+}
+
 static struct bt_hfp_ag_cb g_hfp_ag_cb = {
     .connected = zblue_on_ag_connected,
     .disconnected = zblue_on_ag_disconnected,
@@ -1193,6 +1269,7 @@ static struct bt_hfp_ag_cb g_hfp_ag_cb = {
     .transmit_dtmf_code = zblue_on_ag_transmit_dtmf_code,
     .subscriber_number = NULL,
     .hf_indicator_value = NULL,
+    .chld = zblue_on_ag_chld,
     .vendor_at_cmd = zblue_on_ag_vendor_at_cmd,
 };
 
