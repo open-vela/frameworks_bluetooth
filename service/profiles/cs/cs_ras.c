@@ -266,6 +266,10 @@ static bt_status_t ras_on_demand_retrieve_send_lost_data(bt_address_t* addr, uin
     uint8_t first_seg, uint8_t last_seg)
 {
     ras_rang_on_demand_t* on_demand_data = cs_ras_rang_on_demand_find_subevent(addr, count);
+    if (!on_demand_data) {
+        BT_LOGE("On-demand retrieve lost data failed: subevent not found for count(%u).", count);
+        return BT_STATUS_PARM_INVALID;
+    }
 
     if (!ras_state_get_bit(&ras_srv->on_demand_state, CS_RAS_ON_DEMAND_STATE_RANGING_DATA_RSP)) {
         BT_LOGW("Invalid on_demand state.");
@@ -1317,7 +1321,7 @@ static void cs_ras_gatts_feature_read_cb(bt_address_t* addr, uint32_t req_handle
         return;
     }
 
-    ras_send_feature_read_rsp(addr, ras_srv->ras_feature);
+    ras_send_feature_read_rsp(addr, ras_srv->ras_feature, req_handle);
     return;
 }
 
