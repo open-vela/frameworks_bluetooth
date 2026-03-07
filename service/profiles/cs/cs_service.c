@@ -29,6 +29,7 @@
 #include "cs_ras_test.h"
 #include "cs_service.h"
 #include "cs_state_machine.h"
+#include "sal_le_cs_interface.h"
 #include "service_loop.h"
 #include "service_manager.h"
 #include "utils/log.h"
@@ -139,6 +140,10 @@ static void cs_service_handle_event(void* data)
         if (msg->cs_data.data) {
             free(((bt_srv_conn_le_cs_subevent_result_t*)(msg->cs_data.data))->step_data_buf);
         }
+
+        break;
+    case LOCAL_SUPPORTED_CAPABILITIES_EVT:
+        //TODO:
 
         break;
     default: {

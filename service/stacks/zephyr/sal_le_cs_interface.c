@@ -16,12 +16,100 @@
 
 #include "sal_le_cs_interface.h"
 #include "sal_interface.h"
+#include "sal_zblue.h"
+#include "service_loop.h"
 #include "utils/log.h"
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/cs.h>
 
 #if defined(CONFIG_BLUETOOTH_LE_CS) && defined(CONFIG_BT_CHANNEL_SOUNDING)
+
+#define STACK_CALL(func) zblue_##func
+
+typedef bt_status_t (*sal_cs_func_t)(void* args);
+
+typedef union {
+    bt_le_srv_cs_set_default_settings_param_t set_default_settings;
+    struct {
+        bt_le_srv_cs_create_config_params_t param;
+        bt_le_srv_cs_create_config_context_t context;
+
+    } create_config;
+    bt_le_srv_cs_procedure_enable_param_t enable;
+    uint8_t config_id;
+    bt_le_srv_cs_set_procedure_parameters_param_t set_procedure_parameters;
+    uint8_t channel_classification[10];
+    bt_srv_conn_le_cs_capabilities_t capabilities;
+} sal_cs_args_t;
+
+typedef struct {
+    bt_controller_id_t id;
+    bt_address_t addr;
+    ble_addr_type_t addr_type;
+    sal_cs_func_t func;
+    sal_cs_args_t args;
+} sal_cs_req_t;
+
+static sal_cs_req_t* sal_cs_req(bt_controller_id_t id, bt_address_t* addr, sal_cs_func_t func)
+{
+    sal_cs_req_t* req = calloc(sizeof(sal_cs_req_t), 1);
+
+    if (req) {
+        req->id = id;
+        req->func = func;
+        if (addr)
+            memcpy(&req->addr, addr, sizeof(bt_address_t));
+    }
+
+    return req;
+}
+
+static void sal_invoke_async(service_work_t* work, void* userdata)
+{
+    sal_cs_req_t* req = userdata;
+
+    SAL_ASSERT(req);
+    if (req->func(req) != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, fail", __func__);
+    }
+
+    free(userdata);
+}
+
+static bt_status_t sal_send_req(sal_cs_req_t* req)
+{
+    if (!req) {
+        BT_LOGE("%s, req null", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    if (!service_loop_work((void*)req, sal_invoke_async, NULL)) {
+        BT_LOGE("%s, service_loop_work failed", __func__);
+        free(req);
+        return BT_STATUS_FAIL;
+    }
+
+    return BT_STATUS_SUCCESS;
+}
+
+static bt_status_t STACK_CALL(read_remote_supported_capabilities)(void* args)
+{
+    sal_cs_req_t* req = args;
+    bt_conn_info_t* info = bt_conn_find(&req->addr, BT_TRANSPORT_BLE);
+    if (!info->conn) {
+        BT_LOGE("cs read remote capabilities, doesn't find connection for addr");
+        return BT_STATUS_FAIL;
+    }
+
+    int err = bt_le_cs_read_remote_supported_capabilities(info->conn);
+    if (err) {
+        BT_LOGE("err: %d", err);
+        return BT_STATUS_FAIL;
+    }
+
+    return BT_STATUS_SUCCESS;
+}
 
 bt_status_t bt_sal_cs_read_remote_supported_capabilities(bt_controller_id_t id, bt_address_t* addr)
 {
@@ -30,26 +118,36 @@ bt_status_t bt_sal_cs_read_remote_supported_capabilities(bt_controller_id_t id, 
         return BT_STATUS_PARM_INVALID;
     }
 
-    bt_addr_le_t le_addr = { 0 };
-    memcpy(le_addr.a.val, addr->addr, sizeof(addr->addr));
+    sal_cs_req_t* req = sal_cs_req(id, addr, STACK_CALL(read_remote_supported_capabilities));
+    if (!req) {
+        BT_LOGE("%s, req null", __func__);
+        return BT_STATUS_NOMEM;
+    }
 
-    struct bt_conn* conn = bt_conn_lookup_addr_le(id, &le_addr);
+    return sal_send_req(req);
+}
 
-    if (!conn) {
-        BT_LOGE("cs read remote capabilities, doesn't find connection for addr:%s",
-            bt_addr_str(addr));
+static bt_status_t STACK_CALL(set_default_settings)(void* args)
+{
+    sal_cs_req_t* req = args;
+    bt_conn_info_t* info = bt_conn_find(&req->addr, BT_TRANSPORT_BLE);
+    if (!info->conn) {
+        BT_LOGE("sal cs set default settings, doesn't find connection");
         return BT_STATUS_FAIL;
     }
 
-    int err = bt_le_cs_read_remote_supported_capabilities(conn);
+    const struct bt_le_cs_set_default_settings_param default_settings = {
+		.enable_initiator_role = req->args.set_default_settings.enable_initiator_role,
+		.enable_reflector_role = req->args.set_default_settings.enable_reflector_role,
+		.cs_sync_antenna_selection = req->args.set_default_settings.cs_sync_antenna_selection,
+		.max_tx_power = BT_HCI_OP_LE_CS_MAX_MAX_TX_POWER,
+	};
 
+    int err = bt_le_cs_set_default_settings(info->conn, &default_settings);
     if (err) {
         BT_LOGE("err: %d", err);
-        bt_conn_unref(conn);
         return BT_STATUS_FAIL;
     }
-
-    bt_conn_unref(conn);
 
     return BT_STATUS_SUCCESS;
 }
@@ -61,33 +159,31 @@ bt_status_t bt_sal_cs_set_default_settings(bt_controller_id_t id, bt_address_t* 
         return BT_STATUS_PARM_INVALID;
     }
 
-    const struct bt_le_cs_set_default_settings_param default_settings = {
-        .enable_initiator_role = params->enable_initiator_role,
-        .enable_reflector_role = params->enable_reflector_role,
-        .cs_sync_antenna_selection = params->cs_sync_antenna_selection,
-        .max_tx_power = BT_HCI_OP_LE_CS_MAX_MAX_TX_POWER,
-    };
+    sal_cs_req_t* req = sal_cs_req(id, addr, STACK_CALL(set_default_settings));
+    if (!req) {
+        BT_LOGE("%s, req null", __func__);
+        return BT_STATUS_NOMEM;
+    }
 
-    bt_addr_le_t le_addr = { 0 };
-    memcpy(le_addr.a.val, addr->addr, sizeof(addr->addr));
+    memcpy(&req->args.set_default_settings, params, sizeof(*params));
 
-    struct bt_conn* conn = bt_conn_lookup_addr_le(id, &le_addr);
+    return sal_send_req(req);
+}
 
-    if (!conn) {
-        BT_LOGE("sal cs set default settings, doesn't find connection for addr:%s",
-            bt_addr_str(addr));
+static bt_status_t STACK_CALL(read_remote_fae_table)(void* args)
+{
+    sal_cs_req_t* req = args;
+    bt_conn_info_t* info = bt_conn_find(&req->addr, BT_TRANSPORT_BLE);
+    if (!info->conn) {
+        BT_LOGE("sal cs read remote fae table, doesn't find connection");
         return BT_STATUS_FAIL;
     }
 
-    int err = bt_le_cs_set_default_settings(conn, &default_settings);
-
+    int err = bt_le_cs_read_remote_fae_table(info->conn);
     if (err) {
         BT_LOGE("err: %d", err);
-        bt_conn_unref(conn);
         return BT_STATUS_FAIL;
     }
-
-    bt_conn_unref(conn);
 
     return BT_STATUS_SUCCESS;
 }
@@ -99,27 +195,13 @@ bt_status_t bt_sal_cs_read_remote_fae_table(bt_controller_id_t id, bt_address_t*
         return BT_STATUS_PARM_INVALID;
     }
 
-    bt_addr_le_t le_addr = { 0 };
-    memcpy(le_addr.a.val, addr->addr, sizeof(addr->addr));
-
-    struct bt_conn* conn = bt_conn_lookup_addr_le(id, &le_addr);
-
-    if (!conn) {
-        BT_LOGE("sal cs read remote fae table, doesn't find connection for addr:%s",
-            bt_addr_str(addr));
-        return BT_STATUS_FAIL;
+    sal_cs_req_t* req = sal_cs_req(id, addr, STACK_CALL(read_remote_fae_table));
+    if (!req) {
+        BT_LOGE("%s, req null", __func__);
+        return BT_STATUS_NOMEM;
     }
 
-    int err = bt_le_cs_read_remote_fae_table(conn);
-
-    if (err) {
-        BT_LOGE("err: %d", err);
-        bt_conn_unref(conn);
-        return BT_STATUS_FAIL;
-    }
-
-    bt_conn_unref(conn);
-    return BT_STATUS_SUCCESS;
+    return sal_send_req(req);
 }
 
 static struct bt_le_cs_create_config_params* convert_cs_config_params_to_zblue(bt_le_srv_cs_create_config_params_t* params)
@@ -267,6 +349,45 @@ static struct bt_le_cs_create_config_params* convert_cs_config_params_to_zblue(b
     return config;
 }
 
+static bt_status_t STACK_CALL(create_config)(void* args)
+{
+    sal_cs_req_t* req = args;
+    bt_conn_info_t* info = bt_conn_find(&req->addr, BT_TRANSPORT_BLE);
+    if (!info->conn) {
+        BT_LOGE("cs create config, doesn't find connection");
+        return BT_STATUS_FAIL;
+    }
+
+    struct bt_le_cs_create_config_params* config = convert_cs_config_params_to_zblue(&req->args.create_config.param);
+    if (config == NULL) {
+        BT_LOGE("cs create config, failed to convert params.");
+        return BT_STATUS_FAIL;
+    }
+
+    int err = 0;
+
+    switch (req->args.create_config.context) {
+    case BT_LE_SRV_CS_CREATE_CONFIG_CONTEXT_LOCAL_ONLY:
+        err = bt_le_cs_create_config(info->conn, config, BT_LE_CS_CREATE_CONFIG_CONTEXT_LOCAL_ONLY);
+        break;
+    case BT_LE_SRV_CS_CREATE_CONFIG_CONTEXT_LOCAL_AND_REMOTE:
+        err = bt_le_cs_create_config(info->conn, config, BT_LE_CS_CREATE_CONFIG_CONTEXT_LOCAL_AND_REMOTE);
+        break;
+    default:
+        BT_LOGE("cs create config, invalid context.");
+        return BT_STATUS_FAIL;
+    }
+
+    if (err) {
+        BT_LOGE("err: %d", err);
+        free(config);
+        return BT_STATUS_FAIL;
+    }
+
+    free(config);
+    return BT_STATUS_SUCCESS;
+}
+
 bt_status_t bt_sal_cs_create_config(bt_controller_id_t id, bt_address_t* addr,
     bt_le_srv_cs_create_config_params_t* params,
     bt_le_srv_cs_create_config_context_t context)
@@ -276,49 +397,33 @@ bt_status_t bt_sal_cs_create_config(bt_controller_id_t id, bt_address_t* addr,
         return BT_STATUS_PARM_INVALID;
     }
 
-    bt_addr_le_t le_addr = { 0 };
-    memcpy(le_addr.a.val, addr->addr, sizeof(addr->addr));
+    sal_cs_req_t* req = sal_cs_req(id, addr, STACK_CALL(create_config));
+    if (!req) {
+        BT_LOGE("%s, req null", __func__);
+        return BT_STATUS_NOMEM;
+    }
 
-    struct bt_conn* conn = bt_conn_lookup_addr_le(id, &le_addr);
+    memcpy(&req->args.create_config.param, params, sizeof(*params));  
+    req->args.create_config.context = context;
 
-    if (!conn) {
-        BT_LOGE("cs create config, doesn't find connection for addr:%s",
-            bt_addr_str(addr));
+    return sal_send_req(req);
+}
+
+static bt_status_t STACK_CALL(security_enable)(void* args)
+{
+    sal_cs_req_t* req = args;
+    bt_conn_info_t* info = bt_conn_find(&req->addr, BT_TRANSPORT_BLE);
+    if (!info->conn) {
+        BT_LOGE("cs security enable, doesn't find connection");
         return BT_STATUS_FAIL;
     }
 
-    struct bt_le_cs_create_config_params* config = convert_cs_config_params_to_zblue(params);
 
-    if (config == NULL) {
-        BT_LOGE("cs create config, failed to convert params.");
-        bt_conn_unref(conn);
-        return BT_STATUS_FAIL;
-    }
-
-    int err = 0;
-
-    switch (context) {
-    case BT_LE_SRV_CS_CREATE_CONFIG_CONTEXT_LOCAL_ONLY:
-        err = bt_le_cs_create_config(conn, config, BT_LE_CS_CREATE_CONFIG_CONTEXT_LOCAL_ONLY);
-        break;
-    case BT_LE_SRV_CS_CREATE_CONFIG_CONTEXT_LOCAL_AND_REMOTE:
-        err = bt_le_cs_create_config(conn, config, BT_LE_CS_CREATE_CONFIG_CONTEXT_LOCAL_AND_REMOTE);
-        break;
-    default:
-        BT_LOGE("cs create config, invalid context.");
-        bt_conn_unref(conn);
-        return BT_STATUS_FAIL;
-    }
-
+    int err = bt_le_cs_security_enable(info->conn);
     if (err) {
         BT_LOGE("err: %d", err);
-        free(config);
-        bt_conn_unref(conn);
         return BT_STATUS_FAIL;
     }
-
-    free(config);
-    bt_conn_unref(conn);
 
     return BT_STATUS_SUCCESS;
 }
@@ -326,30 +431,37 @@ bt_status_t bt_sal_cs_create_config(bt_controller_id_t id, bt_address_t* addr,
 bt_status_t bt_sal_cs_security_enable(bt_controller_id_t id, bt_address_t* addr)
 {
     if (!addr) {
-        BT_LOGE("cs create config, invalid addr.");
+        BT_LOGE("cs security enable, invalid addr.");
         return BT_STATUS_PARM_INVALID;
     }
 
-    bt_addr_le_t le_addr = { 0 };
-    memcpy(le_addr.a.val, addr->addr, sizeof(addr->addr));
+    sal_cs_req_t* req = sal_cs_req(id, addr, STACK_CALL(security_enable));
+    if (!req) {
+        BT_LOGE("%s, req null", __func__);
+        return BT_STATUS_NOMEM;
+    }
 
-    struct bt_conn* conn = bt_conn_lookup_addr_le(id, &le_addr);
+    return sal_send_req(req);
+}
 
-    if (!conn) {
-        BT_LOGE("cs security enable, doesn't find connection for addr:%s",
-            bt_addr_str(addr));
+static bt_status_t STACK_CALL(procedure_enable)(void* args)
+{
+    sal_cs_req_t* req = args;
+    bt_conn_info_t* info = bt_conn_find(&req->addr, BT_TRANSPORT_BLE);
+    if (!info->conn) {
+        BT_LOGE("cs procedure enable, doesn't find the connection");
         return BT_STATUS_FAIL;
     }
 
-    int err = bt_le_cs_security_enable(conn);
+    struct bt_le_cs_procedure_enable_param enable = { 0 };
 
+    enable.config_id = req->args.enable.config_id;
+    enable.enable = req->args.enable.enable;
+    int err = bt_le_cs_procedure_enable(info->conn, &enable);
     if (err) {
         BT_LOGE("err: %d", err);
-        bt_conn_unref(conn);
         return BT_STATUS_FAIL;
     }
-
-    bt_conn_unref(conn);
 
     return BT_STATUS_SUCCESS;
 }
@@ -358,7 +470,7 @@ bt_status_t bt_sal_cs_procedure_enable(bt_controller_id_t id, bt_address_t* addr
     const bt_le_srv_cs_procedure_enable_param_t* params)
 {
     if (!addr) {
-        BT_LOGE("cs create config, invalid addr.");
+        BT_LOGE("cs procedure enable, invalid addr.");
         return BT_STATUS_PARM_INVALID;
     }
 
@@ -367,28 +479,31 @@ bt_status_t bt_sal_cs_procedure_enable(bt_controller_id_t id, bt_address_t* addr
         return BT_STATUS_PARM_INVALID;
     }
 
-    bt_addr_le_t le_addr = { 0 };
-    memcpy(le_addr.a.val, addr->addr, sizeof(addr->addr));
-    struct bt_le_cs_procedure_enable_param enable = { 0 };
-    struct bt_conn* conn = bt_conn_lookup_addr_le(id, &le_addr);
+    sal_cs_req_t* req = sal_cs_req(id, addr, STACK_CALL(procedure_enable));
+    if (!req) {
+        BT_LOGE("%s, req null", __func__);
+        return BT_STATUS_NOMEM;
+    }
 
-    if (!conn) {
-        BT_LOGE("cs procedure enable, doesn't find the connection for addr:%s",
-            bt_addr_str(addr));
+    memcpy(&req->args.enable, params, sizeof(*params));
+
+    return sal_send_req(req);
+}
+
+static bt_status_t STACK_CALL(remove_config)(void* args)
+{
+    sal_cs_req_t* req = args;
+    bt_conn_info_t* info = bt_conn_find(&req->addr, BT_TRANSPORT_BLE);
+    if (!info->conn) {
+        BT_LOGE("cs remove config, doesn't find the connection");
         return BT_STATUS_FAIL;
     }
 
-    enable.config_id = params->config_id;
-    enable.enable = params->enable;
-    int err = bt_le_cs_procedure_enable(conn, &enable);
-
+    int err = bt_le_cs_remove_config(info->conn, req->args.config_id);
     if (err) {
         BT_LOGE("err: %d", err);
-        bt_conn_unref(conn);
         return BT_STATUS_FAIL;
     }
-
-    bt_conn_unref(conn);
 
     return BT_STATUS_SUCCESS;
 }
@@ -400,28 +515,15 @@ bt_status_t bt_sal_cs_remove_config(bt_controller_id_t id, bt_address_t* addr, u
         return BT_STATUS_PARM_INVALID;
     }
 
-    bt_addr_le_t le_addr = { 0 };
-    memcpy(le_addr.a.val, addr->addr, sizeof(addr->addr));
-
-    struct bt_conn* conn = bt_conn_lookup_addr_le(id, &le_addr);
-
-    if (!conn) {
-        BT_LOGE("cs remove config, doesn't find the connection for addr:%s",
-            bt_addr_str(addr));
-        return BT_STATUS_FAIL;
+    sal_cs_req_t* req = sal_cs_req(id, addr, STACK_CALL(remove_config));
+    if (!req) {
+        BT_LOGE("%s, req null", __func__);
+        return BT_STATUS_NOMEM;
     }
 
-    int err = bt_le_cs_remove_config(conn, config_id);
+    req->args.config_id = config_id;
 
-    if (err) {
-        BT_LOGE("err: %d", err);
-        bt_conn_unref(conn);
-        return BT_STATUS_FAIL;
-    }
-
-    bt_conn_unref(conn);
-
-    return BT_STATUS_SUCCESS;
+    return sal_send_req(req);
 }
 
 static struct bt_le_cs_set_procedure_parameters_param* convert_cs_set_procedure_parameters_params_to_zblue(const bt_le_srv_cs_set_procedure_parameters_param_t* params)
@@ -554,6 +656,33 @@ static struct bt_le_cs_set_procedure_parameters_param* convert_cs_set_procedure_
     return procedure;
 }
 
+static bt_status_t STACK_CALL(set_procedure_parameters)(void* args)
+{
+    sal_cs_req_t* req = args;
+    struct bt_le_cs_set_procedure_parameters_param* parameters;
+    bt_conn_info_t* info = bt_conn_find(&req->addr, BT_TRANSPORT_BLE);
+    if (!info->conn) {
+        BT_LOGE("cs set procedure parameters, doesn't find connection");
+        return BT_STATUS_FAIL;
+    }
+
+    parameters = convert_cs_set_procedure_parameters_params_to_zblue(&req->args.set_procedure_parameters);
+    if (!parameters) {
+        BT_LOGE("cs set procedure parameters, convert params failed.");
+        return BT_STATUS_FAIL;
+    }
+
+    int err = bt_le_cs_set_procedure_parameters(info->conn, parameters);
+    if (err) {
+        BT_LOGE("err: %d", err);
+        free(parameters);
+        return BT_STATUS_FAIL;
+    }
+
+    free(parameters);
+    return BT_STATUS_SUCCESS;
+}
+
 bt_status_t bt_sal_cs_set_procedure_parameters(bt_controller_id_t id, bt_address_t* addr,
     const bt_le_srv_cs_set_procedure_parameters_param_t* params)
 {
@@ -562,69 +691,56 @@ bt_status_t bt_sal_cs_set_procedure_parameters(bt_controller_id_t id, bt_address
         return BT_STATUS_PARM_INVALID;
     }
 
-    bt_addr_le_t le_addr = { 0 };
-    memcpy(le_addr.a.val, addr->addr, sizeof(addr->addr));
-
-    struct bt_conn* conn = bt_conn_lookup_addr_le(id, &le_addr);
-
-    if (!conn) {
-        BT_LOGE("cs set procedure parameters, doesn't find connection for addr:%s",
-            bt_addr_str(addr));
-        return BT_STATUS_FAIL;
-    }
-
-    struct bt_le_cs_set_procedure_parameters_param* parameters = convert_cs_set_procedure_parameters_params_to_zblue(params);
-
-    if (!parameters) {
-        BT_LOGE("cs set procedure parameters, convert params failed.");
-        bt_conn_unref(conn);
+    if (!params) {
+        BT_LOGE("cs set procedure, invalid params.");
         return BT_STATUS_PARM_INVALID;
     }
 
-    int err = bt_le_cs_set_procedure_parameters(conn, parameters);
+    sal_cs_req_t* req = sal_cs_req(id, addr, STACK_CALL(set_procedure_parameters));
+    if (!req) {
+        BT_LOGE("%s, req null", __func__);
+        return BT_STATUS_NOMEM;
+    }
 
-    if (err) {
-        BT_LOGE("err: %d", err);
-        free(parameters);
-        bt_conn_unref(conn);
+    memcpy(&req->args.set_procedure_parameters, params, sizeof(*params));
+
+    return sal_send_req(req);
+}
+
+static bt_status_t STACK_CALL(set_channel_classification)(void* args)
+{
+    sal_cs_req_t* req = args;
+    bt_conn_info_t* info = bt_conn_find(&req->addr, BT_TRANSPORT_BLE);
+    if (!info->conn) {
+        BT_LOGE("cs set channel classificaition, doesn't find connection.");
         return BT_STATUS_FAIL;
     }
 
-    free(parameters);
-    bt_conn_unref(conn);
+    int err = bt_le_cs_set_channel_classification(req->args.channel_classification);
+    if (err) {
+        BT_LOGE("err: %d", err);
+        return BT_STATUS_FAIL;
+    }
 
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_cs_set_channel_classification(uint8_t channel_classification[10], bt_address_t* addr)
+bt_status_t bt_sal_cs_set_channel_classification(bt_controller_id_t id, uint8_t channel_classification[10], bt_address_t* addr)
 {
     if (!addr) {
         BT_LOGE("cs remove config, invalid addr.");
         return BT_STATUS_PARM_INVALID;
     }
 
-    bt_addr_le_t le_addr = { 0 };
-    memcpy(le_addr.a.val, addr->addr, sizeof(addr->addr));
-
-    struct bt_conn* conn = bt_conn_lookup_addr_le(0, &le_addr);
-
-    if (!conn) {
-        BT_LOGE("cs set channel classificaition, doesn't find connection for addr:%s.",
-            bt_addr_str(addr));
-        return BT_STATUS_FAIL;
+    sal_cs_req_t* req = sal_cs_req(id, addr, STACK_CALL(set_channel_classification));
+    if (!req) {
+        BT_LOGE("%s, req null", __func__);
+        return BT_STATUS_NOMEM;
     }
 
-    int err = bt_le_cs_set_channel_classification(channel_classification);
+    memcpy(req->args.channel_classification, channel_classification, 10 * sizeof(uint8_t));
 
-    if (err) {
-        BT_LOGE("err: %d", err);
-        bt_conn_unref(conn);
-        return BT_STATUS_FAIL;
-    }
-
-    bt_conn_unref(conn);
-
-    return BT_STATUS_SUCCESS;
+    return sal_send_req(req);
 }
 
 static struct bt_conn_le_cs_capabilities* convert_cs_capabilities_to_zblue(bt_srv_conn_le_cs_capabilities_t* params)
@@ -805,82 +921,110 @@ static void convert_cs_capabilities_to_service(bt_srv_conn_le_cs_capabilities_t*
     capabilities->tx_snr_capability = params->tx_snr_capability;
 }
 
-bt_status_t bt_sal_cs_read_local_supported_capabilities(bt_srv_conn_le_cs_capabilities_t* params, bt_address_t* addr)
+static bt_status_t STACK_CALL(read_local_supported_capabilities)(void* args)
+{
+    sal_cs_req_t* req = args;
+    bt_conn_info_t* info = bt_conn_find(&req->addr, BT_TRANSPORT_BLE);
+    if (!info->conn) {
+        BT_LOGE("cs read local supported capabilities, doesn't find connection.");
+        return BT_STATUS_FAIL;
+    }
+
+    struct bt_conn_le_cs_capabilities* capabilities = convert_cs_capabilities_to_zblue(&req->args.capabilities);
+    if (!capabilities) {
+        BT_LOGE("cs read local supported capabilities, convert cs capabilities to zblue failed.");
+        return BT_STATUS_FAIL;
+    }
+
+    int err = bt_le_cs_read_local_supported_capabilities(capabilities);
+    if (err) {
+        BT_LOGE("err: %d", err);
+        free(capabilities);
+        return BT_STATUS_FAIL;
+    }
+
+    bt_srv_conn_le_cs_capabilities_t* local_capabilities;
+    cs_msg_t* msg = cs_msg_new(LOCAL_SUPPORTED_CAPABILITIES_EVT, &req->addr);
+    if (!msg) {
+        free(capabilities);
+        return BT_STATUS_FAIL;
+    }
+
+    local_capabilities = (bt_srv_conn_le_cs_capabilities_t*)zalloc(sizeof(bt_srv_conn_le_cs_capabilities_t));
+    if (!local_capabilities) {
+        free(capabilities);
+        return BT_STATUS_FAIL;
+    }
+
+    convert_cs_capabilities_to_service(local_capabilities, capabilities);
+    msg->cs_data.data = (void *)local_capabilities;
+    bt_sal_cs_event_callback(msg);
+
+    free(capabilities);
+    return BT_STATUS_SUCCESS;
+}
+
+bt_status_t bt_sal_cs_read_local_supported_capabilities(bt_controller_id_t id,
+    bt_srv_conn_le_cs_capabilities_t* params, bt_address_t* addr)
 {
     if (!params || !addr) {
         BT_LOGE("cs read local supported capabilities, invalid params or addrs.");
         return BT_STATUS_PARM_INVALID;
     }
 
-    bt_addr_le_t le_addr = { 0 };
-    memcpy(le_addr.a.val, addr->addr, sizeof(addr->addr));
+    sal_cs_req_t* req = sal_cs_req(id, addr, STACK_CALL(read_local_supported_capabilities));
+    if (!req) {
+        BT_LOGE("%s, req null", __func__);
+        return BT_STATUS_NOMEM;
+    }
 
-    struct bt_conn* conn = bt_conn_lookup_addr_le(0, &le_addr);
+    memcpy(&req->args.capabilities, params, sizeof(*params));
 
-    if (!conn) {
-        BT_LOGE("cs read local supported capabilities, doesn't find connection for addr:%s.",
-            bt_addr_str(addr));
+    return sal_send_req(req);
+}
+
+static bt_status_t STACK_CALL(write_cached_remote_supported_capabilities)(void* args)
+{
+    sal_cs_req_t* req = args;
+    bt_conn_info_t* info = bt_conn_find(&req->addr, BT_TRANSPORT_BLE);
+    if (!info->conn) {
+        BT_LOGE("cs write cached remote supported capabilites, doesn't find connection.");
         return BT_STATUS_FAIL;
     }
 
-    struct bt_conn_le_cs_capabilities* capabilities = convert_cs_capabilities_to_zblue(params);
-
+    struct bt_conn_le_cs_capabilities* capabilities = convert_cs_capabilities_to_zblue(&req->args.capabilities);
     if (!capabilities) {
-        BT_LOGE("cs read local supported capabilities, convert cs capabilities to zblue failed.");
-        bt_conn_unref(conn);
         return BT_STATUS_FAIL;
     }
 
-    int err = bt_le_cs_read_local_supported_capabilities(capabilities);
-
+    int err = bt_le_cs_write_cached_remote_supported_capabilities(info->conn, capabilities);
     if (err) {
         BT_LOGE("err: %d", err);
         free(capabilities);
-        bt_conn_unref(conn);
         return BT_STATUS_FAIL;
     }
 
-    convert_cs_capabilities_to_service(params, capabilities);
-
     free(capabilities);
-    bt_conn_unref(conn);
-
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_cs_write_cached_remote_supported_capabilities(
-    bt_srv_conn_le_cs_capabilities_t* params, bt_address_t* addr)
+bt_status_t bt_sal_cs_write_cached_remote_supported_capabilities(bt_controller_id_t id,
+    const bt_srv_conn_le_cs_capabilities_t* params, bt_address_t* addr)
 {
     if (!params || !addr) {
         BT_LOGE("cs write cached remote supported capabilites, invalid params or addrs.");
         return BT_STATUS_PARM_INVALID;
     }
 
-    bt_addr_le_t le_addr = { 0 };
-    memcpy(le_addr.a.val, addr->addr, sizeof(addr->addr));
-
-    struct bt_conn* conn = bt_conn_lookup_addr_le(0, &le_addr);
-
-    if (!conn) {
-        BT_LOGE("cs write cached remote supported capabilites, doesn't find connection for addr:%s.",
-            bt_addr_str(addr));
-        return BT_STATUS_FAIL;
+    sal_cs_req_t* req = sal_cs_req(id, addr, STACK_CALL(write_cached_remote_supported_capabilities));
+    if (!req) {
+        BT_LOGE("%s, req null", __func__);
+        return BT_STATUS_NOMEM;
     }
 
-    struct bt_conn_le_cs_capabilities* capabilities = convert_cs_capabilities_to_zblue(params);
-    int err = bt_le_cs_write_cached_remote_supported_capabilities(conn, capabilities);
+    memcpy(&req->args.capabilities, params, sizeof(*params));
 
-    if (err) {
-        BT_LOGE("err: %d", err);
-        free(capabilities);
-        bt_conn_unref(conn);
-        return BT_STATUS_FAIL;
-    }
-
-    free(capabilities);
-    bt_conn_unref(conn);
-
-    return BT_STATUS_SUCCESS;
+    return sal_send_req(req);
 }
 
 #endif /* CONFIG_BLUETOOTH_LE_CS && CONFIG_BT_CHANNEL_SOUNDING */
