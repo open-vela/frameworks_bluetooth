@@ -1213,10 +1213,6 @@ static bt_srv_conn_le_cs_subevent_result_t* zblue_convert_subevent_result_struct
     subevent->header.num_antenna_paths = params->header.num_antenna_paths;
     subevent->header.num_steps_reported = params->header.num_steps_reported;
     subevent->header.abort_step = params->header.abort_step;
-    if (!params->step_data_buf) {
-        return subevent;
-    }
-
     subevent->len = params->step_data_buf->len;
     subevent->step_data_buf = malloc(params->step_data_buf->len);
     if (!subevent->step_data_buf) {
@@ -1238,6 +1234,11 @@ void zblue_on_cs_subevent(struct bt_conn* conn, struct bt_conn_le_cs_subevent_re
 
     if (!addr) {
         BT_LOGE("Can't find address for conn:%p", conn);
+        return;
+    }
+
+    if (!result->step_data_buf || !result->step_data_buf->len) {
+        BT_LOGE("No data needs to be processed");
         return;
     }
 
