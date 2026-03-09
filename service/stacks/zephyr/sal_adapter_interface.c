@@ -215,21 +215,22 @@ union uuid {
 
 typedef struct {
     bt_uuid_t profile_uuid;
-    struct bt_sdp_discover_params* param;
+    struct bt_sdp_discover_params param;
+    bool uuid_done;
 } profile_sdp_info_t;
 
 static bool sdp_params_cmp(void* data, void* context)
 {
     profile_sdp_info_t* sdp_info = (profile_sdp_info_t*)data;
 
-    return sdp_info->param == context;
+    return &(sdp_info->param) == context;
 }
 
-void sdp_profile_uuids_destroy(void* data)
+static bool sdp_uuid_done_cmp(void* data, void* context)
 {
     profile_sdp_info_t* sdp_info = (profile_sdp_info_t*)data;
-    free(sdp_info->param);
-    free(data);
+
+    return sdp_info->uuid_done == false;
 }
 
 static sal_adapter_req_t* sal_adapter_req(bt_controller_id_t id, bt_address_t* addr, sal_func_t func)
@@ -321,6 +322,9 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
     }
 
     slot = bt_conn_add(&state.addr, BT_TRANSPORT_BREDR);
+    if (!slot)
+        return;
+
     slot->conn = conn;
 
     bt_sal_get_remote_name(BT_TRANSPORT_BREDR, &state.addr);
@@ -1825,21 +1829,20 @@ bt_status_t bt_sal_get_connected_devices(bt_controller_id_t id, remote_device_pr
 static uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_result* result,
     const struct bt_sdp_discover_params* params)
 {
+    bt_conn_info_t* conn_info;
+    profile_sdp_info_t* sdp_info;
     bt_address_t* addr = bt_conn_get_addr(conn);
-    bt_conn_info_t* conn_info = bt_conn_find(addr, BT_TRANSPORT_BREDR);
-    profile_sdp_info_t* sdp_info = bt_list_find(conn_info->profile_uuid_list, sdp_params_cmp, (void*)params);
-
-    if (sdp_info)
+    if (!addr)
         return BT_SDP_DISCOVER_UUID_STOP;
 
-    sdp_info = calloc(1, sizeof(*sdp_info));
-    if (!sdp_info) {
-        free(params);
-        params = NULL;
+    conn_info = bt_conn_find(addr, BT_TRANSPORT_BREDR);
+    if (!conn_info)
         return BT_SDP_DISCOVER_UUID_STOP;
-    }
 
-    sdp_info->param = (struct bt_sdp_discover_params*)params;
+    sdp_info = bt_list_find(conn_info->profile_uuid_list, sdp_params_cmp, (void*)params);
+    if (!sdp_info)
+        return BT_SDP_DISCOVER_UUID_STOP;
+
     sdp_info->profile_uuid.type = 0;
 
     if (result && result->resp_buf) {
@@ -1865,9 +1868,9 @@ static uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_resu
         }
     }
 
-    bt_list_add_tail(conn_info->profile_uuid_list, sdp_info);
+    sdp_info->uuid_done = true;
 
-    if (bt_list_length(conn_info->profile_uuid_list) < ARRAY_SIZE(sdp_discover_uuids))
+    if (bt_list_find(conn_info->profile_uuid_list, sdp_uuid_done_cmp, NULL))
         return BT_SDP_DISCOVER_UUID_CONTINUE;
 
     bt_uuid_t uuids[ARRAY_SIZE(sdp_discover_uuids)];
@@ -1904,21 +1907,28 @@ bt_status_t bt_sal_start_service_discovery(bt_controller_id_t id, bt_address_t* 
     if (conn_info->profile_uuid_list)
         return BT_STATUS_BUSY;
 
-    conn_info->profile_uuid_list = bt_list_new(sdp_profile_uuids_destroy);
+    conn_info->profile_uuid_list = bt_list_new(free);
+    if (!conn_info->profile_uuid_list)
+        return BT_STATUS_NOMEM;
 
     for (int i = 0; i < ARRAY_SIZE(sdp_discover_uuids); i++) {
-        struct bt_sdp_discover_params* param = calloc(1, sizeof(struct bt_sdp_discover_params));
-        param->func = zblue_on_sdp_done;
-        param->pool = &sdp_pool;
-        param->uuid = sdp_discover_uuids[i];
-        param->type = BT_SDP_DISCOVER_SERVICE_SEARCH_ATTR;
+        profile_sdp_info_t* sdp_info = calloc(1, sizeof(*sdp_info));
+        if (!sdp_info)
+            break;
 
-        int err = bt_sdp_discover(conn_info->conn, param);
+        sdp_info->param.func = zblue_on_sdp_done;
+        sdp_info->param.pool = &sdp_pool;
+        sdp_info->param.uuid = sdp_discover_uuids[i];
+        sdp_info->param.type = BT_SDP_DISCOVER_SERVICE_SEARCH_ATTR;
+
+        int err = bt_sdp_discover(conn_info->conn, &sdp_info->param);
         if (err < 0) {
-            BT_LOGE("%s, Failed to start a SDP discovery", __func__);
-            free(param);
+            BT_LOGE("%s, Failed to start a SDP discovery, err=%d, uuid index = %d", __func__, err, i);
+            free(sdp_info);
             return BT_STATUS_FAIL;
         }
+
+        bt_list_add_tail(conn_info->profile_uuid_list, sdp_info);
     }
 
     return BT_STATUS_SUCCESS;
