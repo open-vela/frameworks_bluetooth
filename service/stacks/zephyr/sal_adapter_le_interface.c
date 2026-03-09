@@ -993,7 +993,7 @@ static void zblue_on_auth_pairing_confirm(struct bt_conn* conn)
         return;
     }
 
-    adapter_on_ssp_request(&addr, BT_TRANSPORT_BLE, 0, PAIR_TYPE_CONSENT, 0, NULL);
+    SAL_CHECK(bt_conn_auth_pairing_confirm(conn), 0);
 }
 
 #ifdef CONFIG_BT_SMP_APP_PAIRING_ACCEPT
