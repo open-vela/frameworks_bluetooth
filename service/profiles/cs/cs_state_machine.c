@@ -223,6 +223,13 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         break;
     case CAPABILITIES_RECEIVED_EVT:
         cs_sm->is_capabilities_exchanged = true;
+
+        if ((!g_default_settings.enable_reflector_role) && (!g_default_settings.enable_initiator_role)) {
+            /** the channel sounding procedures are initiated by the remote device */
+            g_default_settings.enable_reflector_role = true;
+        }
+
+        g_default_settings.cs_sync_antenna_selection = BT_LE_SRV_CS_ANTENNA_SELECTION_OPT_TWO;
         bt_sal_cs_set_default_settings(PRIMARY_ADAPTER, &(data->bd_addr), &g_default_settings);
         hsm_transition_to(sm, &wait_for_config_complete_state);
         break;
