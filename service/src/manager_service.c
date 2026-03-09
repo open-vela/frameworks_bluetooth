@@ -314,5 +314,4 @@ void manager_cleanup(void)
     bt_cm_cleanup();
 #endif
 #endif
-    uv_mutex_destroy(&g_mutex);
 }
