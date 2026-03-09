@@ -518,7 +518,6 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
     bt_conn_remove(&state.addr, BT_TRANSPORT_BLE);
     slot = NULL;
 
-    adapter_on_connection_state_changed(&state);
 #ifdef CONFIG_BLUETOOTH_GATT_SERVER
     if (role & GATT_ROLE_SERVER) {
         bt_sal_gatt_server_connection_state_changed_callback(PRIMARY_ADAPTER, &state.addr, PROFILE_STATE_DISCONNECTED);
@@ -530,6 +529,8 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
         bt_sal_gatt_client_connection_state_changed_callback(PRIMARY_ADAPTER, &state.addr, PROFILE_STATE_DISCONNECTED);
     }
 #endif
+
+    adapter_on_connection_state_changed(&state);
 }
 
 #ifdef CONFIG_BT_SMP
