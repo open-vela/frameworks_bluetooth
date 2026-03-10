@@ -252,6 +252,10 @@ if(CONFIG_BLUETOOTH)
            ${BLUETOOTH_DIR}/service/src/scan_filter.c)
     endif()
 
+    if(CONFIG_BLUETOOTH_PA_SYNC)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/pa_sync_service.c)
+    endif()
+
     if(CONFIG_BLUETOOTH_L2CAP)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/l2cap_service.c)
     endif()
@@ -316,6 +320,10 @@ if(CONFIG_BLUETOOTH)
 
       if(CONFIG_BLUETOOTH_BLE_SCAN)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_le_scan_interface.c)
+      endif()
+
+      if(CONFIG_BLUETOOTH_PA_SYNC)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_pa_sync_interface.c)
       endif()
 
       if(CONFIG_BLUETOOTH_GATT_CLIENT)

@@ -104,10 +104,16 @@ config BLUETOOTH_BLE_SCAN_FILTER
 	depends on BLUETOOTH_BLE_SCAN
 
 config BLUETOOTH_HCI_FILTER
-       bool "Enable Bluetooth HCI filter"
-       default y
-       help
-               Enable Bluetooth HCI filter
+	bool "Enable Bluetooth HCI filter"
+	default y
+	help
+		Enable Bluetooth HCI filter
+
+config BLUETOOTH_PA_SYNC
+	bool "LE Periodic Advertising sync support"
+	default n
+	depends on BLUETOOTH_BLE_SUPPORT
+	depends on BLUETOOTH_BLE_SCAN
 
 config BLUETOOTH_L2CAP
 	bool "L2CAP dynamic channel support"
