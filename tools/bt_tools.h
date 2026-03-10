@@ -192,6 +192,9 @@ int vmicp_command_exec(void* handle, int argc, char* argv[]);
 int auracast_sink_command_init(void* handle);
 void auracast_sink_command_uninit(void* handle);
 int auracast_sink_command_exec(void* handle, int argc, char* argv[]);
+int auracast_sink_command_init_async(void* handle);
+void auracast_sink_command_uninit_async(void* handle);
+int auracast_sink_command_exec_async(void* handle, int argc, char* argv[]);
 
 int storage_command_init(void* handle);
 void storage_command_uninit(void* handle);

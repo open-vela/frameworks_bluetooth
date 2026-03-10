@@ -472,6 +472,9 @@ endif
 ifeq ($(CONFIG_BLUETOOTH_GATT), y)
 	CSRCS += tools/async/gatt_client.c
 endif #CONFIG_BLUETOOTH_GATT
+ifeq ($(CONFIG_BLUETOOTH_AURACAST_SINK), y)
+	CSRCS += tools/async/auracast_sink.c
+endif #CONFIG_BLUETOOTH_AURACAST_SINK
 endif
 ifeq ($(CONFIG_BLUETOOTH_BLE_ADV), y)
 	CSRCS += tools/adv.c

@@ -581,6 +581,10 @@ if(CONFIG_BLUETOOTH)
       if(CONFIG_BLUETOOTH_GATT)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/async/gatt_client.c)
       endif()
+
+      if(CONFIG_BLUETOOTH_AURACAST_SINK)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/async/auracast_sink.c)
+      endif()
     endif()
 
     if(CONFIG_BLUETOOTH_BLE_ADV)
