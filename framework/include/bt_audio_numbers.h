@@ -15,6 +15,7 @@
  ***************************************************************************/
 #ifndef __BT_AUDIO_NUMBERS_H__
 #define __BT_AUDIO_NUMBERS_H__
+#include <stdint.h>
 
 /** Coding Format and Codec ID */
 #define BT_CODEC_ID_ULAW_LOG 0x00 /** µ-law log */
