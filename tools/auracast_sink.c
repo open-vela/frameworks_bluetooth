@@ -39,6 +39,13 @@ typedef struct {
 } bttool_auracast_pa_sync_t;
 
 typedef struct {
+    bt_le_address_t addr;
+    uint8_t sid;
+    uint8_t cnt;
+    bttool_auracast_pa_sync_t* sync;
+} bttool_auracast_pa_sync_iter_t;
+
+typedef struct {
     bt_scanner_t* scanner;
     bttool_auracast_pa_record_t* nearby_pa;
     bt_list_t* sync_list; /**< bttool_auracast_pa_sync_t* */
@@ -423,6 +430,75 @@ static const bt_pa_sync_create_param_t default_sync_params = {
     .filter = false,
     .no_report = false,
 };
+
+static void cnt_sync(void* data, void* context)
+{
+    bttool_auracast_pa_sync_t* sync = (bttool_auracast_pa_sync_t*)data;
+    bttool_auracast_pa_sync_iter_t* iter = (bttool_auracast_pa_sync_iter_t*)context;
+
+    if (!bt_addr_is_empty((bt_address_t*)iter->addr.addr)
+        && memcmp(&sync->addr.addr, &iter->addr.addr, BT_ADDR_LENGTH)) {
+        /** addr provided but not match */
+        return;
+    }
+
+    if (iter->addr.addr_type != BT_LE_ADDR_TYPE_UNKNOWN
+        && iter->addr.addr_type != sync->addr.addr_type) {
+        /** addr_type provided but not match */
+        return;
+    }
+
+    if ((iter->sid != BLE_SCAN_SID_NOT_PROVIDED) && iter->sid != sync->sid) {
+        /** sid provided but not match */
+        return;
+    }
+
+    if (iter->sync == NULL)
+        iter->sync = sync; /**< record the first sync matched */
+
+    iter->cnt++;
+}
+
+/** @brief Find one sync with full or insufficient information */
+static bttool_auracast_pa_sync_t* find_sync(const bt_le_address_t* addr, uint8_t sid)
+{
+    bttool_auracast_pa_sync_iter_t iter = { 0 };
+
+    if (bt_list_is_empty(g_auracast_sink->sync_list))
+        return NULL;
+
+    iter.sid = sid;
+    iter.addr.addr_type = BT_LE_ADDR_TYPE_UNKNOWN;
+    if (addr) {
+        memcpy(&iter.addr, addr, sizeof(bt_le_address_t));
+        iter.addr.addr_type = addr->addr_type;
+    }
+
+    bt_list_foreach(g_auracast_sink->sync_list, cnt_sync, &iter);
+
+    if (!iter.sync)
+        return NULL; /**< nothing matched */
+
+    if (iter.cnt == 1)
+        return iter.sync; /**< the only one matched */
+
+    if (addr == NULL || bt_addr_is_empty((bt_address_t*)iter.addr.addr)) {
+        PRINT("input address by -a <addr>");
+        return NULL;
+    }
+
+    if (sid == BLE_SCAN_SID_NOT_PROVIDED) {
+        PRINT("input sid by -s <sid>");
+        return NULL;
+    }
+
+    if (addr->addr_type == BT_LE_ADDR_TYPE_UNKNOWN) {
+        PRINT("input address type by -t <type>");
+        return NULL;
+    }
+
+    return iter.sync;
+}
 
 static int scan_start_cmd(void* handle, int argc, char* argv[])
 {
