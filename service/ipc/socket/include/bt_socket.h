@@ -106,8 +106,8 @@ int bt_socket_client_sendrecv(bt_instance_t* ins,
     bt_message_packet_t* packet,
     uint32_t code);
 
-int bt_socket_client_send_with_reply(bt_instance_t* ins, bt_message_packet_t* packet,
-    bt_message_type_t code, bt_socket_reply_cb_t reply, void* cb, void* userdata);
+int bt_socket_client_send_with_reply(bt_instance_t* ins, bt_message_packet_t* packet, uint32_t code,
+    bt_socket_reply_cb_t reply, void* cb, void* userdata);
 /* Server */
 
 int bt_socket_server_init(const char* name, int port);

@@ -551,7 +551,7 @@ void bt_socket_client_deinit(bt_instance_t* ins)
  Async client
 */
 typedef struct {
-    bt_message_type_t code;
+    uint32_t code;
     // bt_message_packet_t* packet;
     bt_socket_reply_cb_t reply_cb;
     void* cb;
@@ -673,8 +673,8 @@ static void bt_socket_context_free(void* data)
     free(data);
 }
 
-int bt_socket_client_send_with_reply(bt_instance_t* ins, bt_message_packet_t* packet,
-    bt_message_type_t code, bt_socket_reply_cb_t reply, void* cb, void* userdata)
+int bt_socket_client_send_with_reply(bt_instance_t* ins, bt_message_packet_t* packet, uint32_t code,
+    bt_socket_reply_cb_t reply, void* cb, void* userdata)
 {
     uv_buf_t buf;
     bt_message_context_t* ctx;

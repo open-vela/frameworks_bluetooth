@@ -21,16 +21,11 @@
 #include "bt_async.h"
 #include "bt_socket.h"
 
-typedef struct {
-    void* userdata;
-    void* cookie;
-} bt_register_callback_data_t;
-
 static void adapter_status_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
 {
     bt_status_cb_t ret_cb = (bt_status_cb_t)cb;
 
-    HANDLE_BT_ASTNC_CALLBACK(ret_cb, ins, packet, adpt_r, userdata);
+    HANDLE_BT_ASYNC_CALLBACK(ret_cb, ins, packet, adpt_r, userdata);
 }
 
 static void adapter_bool_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)

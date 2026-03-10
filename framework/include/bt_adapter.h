@@ -1203,7 +1203,6 @@ bt_status_t BTSYMBOLS(bt_adapter_set_auto_sniff)(bt_instance_t* ins, bt_auto_sni
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_ASYNC
 #include "bt_async.h"
 
-typedef void (*bt_register_callback_cb_t)(bt_instance_t* ins, bt_status_t status, void* cookie, void* userdata);
 typedef void (*bt_adapter_get_state_cb_t)(bt_instance_t* ins, bt_status_t status, bt_adapter_state_t state, void* userdata);
 typedef void (*bt_adapter_get_device_type_cb_t)(bt_instance_t* ins, bt_status_t status, bt_device_type_t type, void* userdata);
 typedef void (*bt_adapter_get_address_cb_t)(bt_instance_t* ins, bt_status_t status, bt_address_t* addr, void* userdata);

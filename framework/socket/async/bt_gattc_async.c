@@ -47,7 +47,7 @@ static void gattc_status_reply(bt_instance_t* ins, bt_message_packet_t* packet, 
 {
     bt_status_cb_t ret_cb = (bt_status_cb_t)cb;
 
-    HANDLE_BT_ASTNC_CALLBACK(ret_cb, ins, packet, gattc_r, userdata);
+    HANDLE_BT_ASYNC_CALLBACK(ret_cb, ins, packet, gattc_r, userdata);
 }
 
 static void gattc_get_attribute_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
@@ -75,7 +75,7 @@ static void gattc_create_connect_reply(bt_instance_t* ins, bt_message_packet_t* 
     if (!packet || packet->gattc_r.status != BT_STATUS_SUCCESS)
         goto error;
 
-    gattc_remote->cookie = INT2PTR(void*) packet->gattc_r.handle;
+    gattc_remote->cookie = packet->gattc_r.handle;
     gattc_remote->user_phandle = data->user_phandle;
     bt_list_add_tail(priv->gattc_remote_list, gattc_remote);
     *(data->user_phandle) = gattc_remote;
@@ -139,7 +139,7 @@ static void gattc_write_reply(bt_instance_t* ins, bt_message_packet_t* packet, v
 {
     bt_gattc_write_cb_t ret_cb = (bt_gattc_write_cb_t)cb;
 
-    HANDLE_BT_ASTNC_CALLBACK(ret_cb, ins, packet, gattc_r, userdata);
+    HANDLE_BT_ASYNC_CALLBACK(ret_cb, ins, packet, gattc_r, userdata);
 }
 
 bt_status_t bt_gattc_create_connect_async(bt_instance_t* ins, gattc_handle_t* phandle, gattc_callbacks_t* callbacks,

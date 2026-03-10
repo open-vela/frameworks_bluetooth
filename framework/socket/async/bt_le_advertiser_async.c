@@ -34,7 +34,7 @@ static void le_advertiser_status_reply(bt_instance_t* ins, bt_message_packet_t* 
 {
     bt_status_cb_t ret_cb = (bt_status_cb_t)cb;
 
-    HANDLE_BT_ASTNC_CALLBACK(ret_cb, ins, packet, adv_r, context);
+    HANDLE_BT_ASYNC_CALLBACK(ret_cb, ins, packet, adv_r, context);
 }
 
 static void le_advertiser_bool_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
