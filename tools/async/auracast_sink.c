@@ -343,6 +343,30 @@ static bool sync_cmp(void* data, void* context)
     return sync_record == sync_in;
 }
 
+static void on_sync_established(const bt_le_address_t* addr, uint8_t sid, void* context)
+{
+    bttool_auracast_pa_sync_t* sync = (bttool_auracast_pa_sync_t*)context;
+
+    if (!g_auracast_sink || !bt_list_find(g_auracast_sink->sync_list, sync_cmp, sync))
+        return;
+
+    PRINT_ADDR("on_sync_established, addr:[%s][%s], sid:0x%x", (const bt_address_t*)addr->addr,
+        parse_addr_type(addr->addr_type), sid);
+}
+
+static void on_sync_terminated(const bt_le_address_t* addr, uint8_t sid, void* context)
+{
+    bttool_auracast_pa_sync_t* sync = (bttool_auracast_pa_sync_t*)context;
+
+    if (!g_auracast_sink || !bt_list_find(g_auracast_sink->sync_list, sync_cmp, sync))
+        return;
+
+    PRINT_ADDR("on_sync_terminated, addr:[%s][%s], sid:0x%x", (const bt_address_t*)addr->addr,
+        parse_addr_type(addr->addr_type), sid);
+
+    bt_list_remove(g_auracast_sink->sync_list, sync);
+}
+
 static void dump_auracast_lc3_info(const char* prefix, const bt_auracast_audio_lc3_config_t* lc3)
 {
     size_t size = BTTOOL_AURACAST_SINK_LOG_SIZE;
@@ -427,6 +451,82 @@ static void dump_auracast_audio_info(const bt_auracast_audio_info_t* info)
 
     free(log);
 }
+
+static void on_sync_report(const bt_le_address_t* addr, uint8_t sid,
+    const bt_pa_sync_report_t* report, void* context)
+{
+    bt_status_t status;
+    bt_auracast_audio_info_t* info = NULL;
+    bttool_auracast_pa_sync_t* sync = (bttool_auracast_pa_sync_t*)context;
+    char* log = NULL;
+    size_t size = BTTOOL_AURACAST_SINK_LOG_SIZE;
+
+    if (!g_auracast_sink || !bt_list_find(g_auracast_sink->sync_list, sync_cmp, sync))
+        return;
+
+    log = zalloc(size); /**< for print log */
+    if (!log)
+        return;
+
+    BTTOOL_STRCAT(log, size, "%s from [%02x:%02x:%02x:%02x:%02x:%02x][%s(%d)], sid:0x%x, "
+                             "cnt = %d, len = %d",
+        __func__, addr->addr[5], addr->addr[4], addr->addr[3], addr->addr[2], addr->addr[1],
+        addr->addr[0], parse_addr_type(addr->addr_type), addr->addr_type, sid, report->cnt,
+        report->adv_data_len);
+
+    if (report->tx_power != BT_POWER_UNAVAILABLE)
+        BTTOOL_STRCAT(log, size, ", txpower:%d", report->tx_power);
+
+    if (report->rssi != BT_POWER_UNAVAILABLE) {
+        BTTOOL_STRCAT(log, size, ", rssi:%d", report->rssi);
+        sync->rssi = report->rssi;
+    }
+
+    PRINT("%s", log);
+
+    info = malloc(sizeof(bt_auracast_audio_info_t));
+    if (info == NULL)
+        goto exit;
+
+    status = bt_auracast_sink_parse_adv_data(info, report);
+    if (status != BT_STATUS_SUCCESS)
+        goto exit;
+
+    if (sync->base_parsed)
+        goto exit; /**< avoid spam */
+
+    sync->base_parsed = true;
+    dump_auracast_audio_info(info);
+
+exit:
+    free(info);
+    free(log);
+}
+
+static void on_auracast_ready(const bt_le_address_t* addr, uint8_t sid, bool encrypted,
+    void* context)
+{
+    bttool_auracast_pa_sync_t* sync = (bttool_auracast_pa_sync_t*)context;
+
+    if (!g_auracast_sink || !bt_list_find(g_auracast_sink->sync_list, sync_cmp, sync))
+        return;
+
+    if (sync->auracast_ready)
+        return; /**< avoid spam */
+
+    sync->auracast_ready = true;
+
+    PRINT_ADDR("on_auracast_ready, addr:[%s][%s], sid:0x%x%s", (const bt_address_t*)addr->addr,
+        parse_addr_type(addr->addr_type), sid, encrypted ? ", encrypted" : "");
+}
+
+static const bt_pa_sync_callbacks_t pa_sync_cbs = {
+    .on_sync_established = on_sync_established,
+    .on_sync_terminated = on_sync_terminated,
+    .on_sync_report = on_sync_report,
+    .on_auracast_ready = on_auracast_ready,
+};
+
 static const bt_pa_sync_create_param_t default_sync_params = {
     .skip = BTTOOL_PA_SYNC_DEFAULT_SKIP,
     .timeout = BTTOOL_PA_SYNC_DEFAULT_TIMEOUT_MS / 10,
