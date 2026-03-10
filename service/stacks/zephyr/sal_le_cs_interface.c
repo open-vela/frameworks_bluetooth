@@ -137,11 +137,11 @@ static bt_status_t STACK_CALL(set_default_settings)(void* args)
     }
 
     const struct bt_le_cs_set_default_settings_param default_settings = {
-		.enable_initiator_role = req->args.set_default_settings.enable_initiator_role,
-		.enable_reflector_role = req->args.set_default_settings.enable_reflector_role,
-		.cs_sync_antenna_selection = req->args.set_default_settings.cs_sync_antenna_selection,
-		.max_tx_power = BT_HCI_OP_LE_CS_MAX_MAX_TX_POWER,
-	};
+        .enable_initiator_role = req->args.set_default_settings.enable_initiator_role,
+        .enable_reflector_role = req->args.set_default_settings.enable_reflector_role,
+        .cs_sync_antenna_selection = req->args.set_default_settings.cs_sync_antenna_selection,
+        .max_tx_power = BT_HCI_OP_LE_CS_MAX_MAX_TX_POWER,
+    };
 
     int err = bt_le_cs_set_default_settings(info->conn, &default_settings);
     if (err) {
@@ -403,7 +403,7 @@ bt_status_t bt_sal_cs_create_config(bt_controller_id_t id, bt_address_t* addr,
         return BT_STATUS_NOMEM;
     }
 
-    memcpy(&req->args.create_config.param, params, sizeof(*params));  
+    memcpy(&req->args.create_config.param, params, sizeof(*params));
     req->args.create_config.context = context;
 
     return sal_send_req(req);
@@ -417,7 +417,6 @@ static bt_status_t STACK_CALL(security_enable)(void* args)
         BT_LOGE("cs security enable, doesn't find connection");
         return BT_STATUS_FAIL;
     }
-
 
     int err = bt_le_cs_security_enable(info->conn);
     if (err) {
@@ -957,7 +956,7 @@ static bt_status_t STACK_CALL(read_local_supported_capabilities)(void* args)
     }
 
     convert_cs_capabilities_to_service(local_capabilities, capabilities);
-    msg->cs_data.data = (void *)local_capabilities;
+    msg->cs_data.data = (void*)local_capabilities;
     bt_sal_cs_event_callback(msg);
 
     free(capabilities);

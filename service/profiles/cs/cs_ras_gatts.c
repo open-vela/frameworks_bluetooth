@@ -18,13 +18,13 @@
 #include "bt_gatts.h"
 #include "bt_profile.h"
 #include "bt_status.h"
-#include "cs_ras_util.h"
+#include "bt_utils.h"
 #include "cs_msg.h"
+#include "cs_ras_util.h"
 #include "cs_service.h"
 #include "gatts_service.h"
 #include "service_manager.h"
 #include "utils/log.h"
-#include "bt_utils.h"
 
 typedef struct {
     gatts_handle_t ras_gatts_handle;
@@ -83,7 +83,7 @@ static const gatt_attr_db_t ras_attr_db[] = {
 };
 
 static const gatt_srv_db_t ras_service_db = {
-    .attr_db = (gatt_attr_db_t *)ras_attr_db,
+    .attr_db = (gatt_attr_db_t*)ras_attr_db,
     .attr_num = ARRAY_SIZE(ras_attr_db),
 };
 
@@ -397,7 +397,6 @@ bt_status_t ras_gatts_data_send_notify(ras_attr_notify_t attr, bt_address_t* add
         return BT_STATUS_FAIL;
     }
 
-    bt_status_t status = (is_notify ? (gatts_info->ras_gatts_interface->notify(gatts_info->ras_gatts_handle, addr, attr_handle, value, len)) :\
-                         gatts_info->ras_gatts_interface->indicate(gatts_info->ras_gatts_handle, addr, attr_handle, value, len));
+    bt_status_t status = (is_notify ? (gatts_info->ras_gatts_interface->notify(gatts_info->ras_gatts_handle, addr, attr_handle, value, len)) : gatts_info->ras_gatts_interface->indicate(gatts_info->ras_gatts_handle, addr, attr_handle, value, len));
     return status;
 }
