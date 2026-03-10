@@ -17,8 +17,11 @@
 #include <stdint.h>
 
 #include "advertiser_data.h"
-#include "bt_pa_sync.h"
 #include "bt_debug.h"
+#ifdef CONFIG_BLUETOOTH_PA_SYNC
+#include "bt_pa_sync.h"
+#endif
+#include "bt_utils.h"
 
 typedef struct {
     uint8_t ad_type;
@@ -240,9 +243,55 @@ bool advertiser_data_parse(const uint8_t* data, uint8_t len, ad_parse_cb_t cb, v
     return true;
 }
 
-static void adv_data_parsed(adv_data_t* data, void* context)
+#ifdef CONFIG_BLUETOOTH_PA_SYNC
+static void adv_data_parse_uuid_16(bt_pa_sync_info_t* info, uint16_t uuid_16,
+    const adv_data_t* data)
 {
+    const uint8_t* p = data->data + sizeof(uint16_t);
 
+    switch (uuid_16) {
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+    case BT_UUID_BROADCAST_AUDIO_ANNOUNCEMENT:
+        if (data->len < 1 + sizeof(uuid_16) + 3)
+            break; /* less than AD Type (1 octet) + UUID16 (2 octets) + Broadcast ID (3 octets)*/
+
+        STREAM_TO_UINT24(info->broadcast_id, p);
+        break;
+#endif
+    default:
+        break;
+    }
+}
+
+static void adv_data_parsed(const adv_data_t* data, void* context)
+{
+    bt_pa_sync_info_t* info = (bt_pa_sync_info_t*)context;
+    const uint8_t* p = data->data;
+    uint16_t uuid_16;
+
+    switch (data->type) {
+    case BT_AD_NAME_SHORT:
+    case BT_AD_NAME_COMPLETE:
+        strlcpy(info->name, (char*)data->data, MIN(sizeof(info->name), data->len));
+        break;
+
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+    case BT_AD_BROADCAST_NAME:
+        strlcpy(info->broadcast_name, (char*)data->data,
+            MIN(sizeof(info->broadcast_name), data->len));
+        break;
+#endif
+
+    case BT_AD_SERVICE_DATA16:
+        if (data->len < 1 + sizeof(uuid_16))
+            break; /**< less than AD Type (1 octet) + UUID16 (2 octets) */
+
+        STREAM_TO_UINT16(uuid_16, p);
+        adv_data_parse_uuid_16(info, uuid_16, data);
+        break;
+    default:
+        break;
+    }
 }
 
 bt_status_t bt_pa_sync_parse_adv_data(bt_pa_sync_info_t* info, const ble_scan_result_t* result)
@@ -254,3 +303,4 @@ bt_status_t bt_pa_sync_parse_adv_data(bt_pa_sync_info_t* info, const ble_scan_re
 
     return result->interval ? BT_STATUS_SUCCESS : BT_STATUS_NOT_FOUND;
 }
+#endif /* CONFIG_BLUETOOTH_PA_SYNC */

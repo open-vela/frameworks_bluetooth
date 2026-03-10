@@ -53,7 +53,15 @@ static void on_scan_result(bt_scanner_t* scanner, ble_scan_result_t* result)
 
     status = bt_pa_sync_parse_adv_data(info, result);
     if (status != BT_STATUS_SUCCESS)
-        return;
+        goto exit;
+
+    PRINT("%s, device name = %s, broadcast name = %s, id = %" PRIu32 ", sid = %d, "
+          "txpower = %d dBm, rssi = %d dBm",
+        __func__, info->name, info->broadcast_name, info->broadcast_id, result->sid,
+        result->tx_power, result->rssi);
+
+exit:
+    free(info);
 }
 
 static void on_scan_status(bt_scanner_t* scanner, uint8_t status)

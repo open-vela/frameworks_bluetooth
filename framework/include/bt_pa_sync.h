@@ -30,15 +30,12 @@ extern "C" {
  * @brief Information about the periodic advertising sync.
  */
 typedef struct bt_pa_sync_info {
-    /** Advertising Set ID (SID) subfield of the `AdvDataInfo` (ADI) */
-    uint8_t sid;
-
-    /** TxPower in dBm (-127 to +20). 0x7F if unavailable */
-    int8_t tx_power;
-
     /** Present if available: Broadcast_ID from Broadcast Audio Announcement.
      *  Otherwise, `BT_INVALID_BROADCAST_ID` */
     uint32_t broadcast_id;
+
+    /** UTF-8 string of the remote device name */
+    char name[BT_REM_NAME_MAX_LEN + 1];
 
     /** UTF-8 string of the `Broadcast_Name` field in `AdvData` (if present) */
     char broadcast_name[BT_BROADCAST_NAME_MAX_LEN + 1];
