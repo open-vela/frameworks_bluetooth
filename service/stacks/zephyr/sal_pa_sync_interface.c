@@ -17,6 +17,7 @@
 
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/direction.h>
+#include <zephyr/bluetooth/iso.h>
 
 #include "sal_pa_sync_interface.h"
 
@@ -25,6 +26,8 @@
 #include "pa_sync_service.h"
 #include "sal_interface.h"
 #include "service_loop.h"
+
+#include "auracast_sink_service.h"
 
 #include "utils/log.h"
 
@@ -256,6 +259,65 @@ static void on_recv(struct bt_le_per_adv_sync* sync,
         BT_LE_PA_SYNC_EVENT_DATA_COMPLETE, buf->len, buf->data);
 }
 
+static ble_phy_type_t sal_phy_zephyr_to_sal(uint8_t z_phy)
+{
+    switch (z_phy) {
+    case BT_GAP_LE_PHY_1M:
+        return BT_LE_1M_PHY;
+    case BT_GAP_LE_PHY_2M:
+        return BT_LE_2M_PHY;
+    case BT_GAP_LE_PHY_CODED:
+        return BT_LE_CODED_PHY;
+    }
+
+    BT_LOGE("%s, phy not recognized: %d", __func__, z_phy);
+    return BT_LE_1M_PHY;
+}
+
+static uint8_t sal_framing_zephyr_to_sal(uint8_t z_framing)
+{
+    switch (z_framing) {
+    case BT_ISO_FRAMING_UNFRAMED: /** Framed or unframed */
+        return BT_ISO_FRAMING_MODE_UNFRAMED;
+    case BT_ISO_FRAMING_FRAMED: /** Always framed */
+        return BT_ISO_FRAMING_MODE_FRAMED_SEGMENTABLE;
+    }
+
+    BT_LOGE("%s, framing not recognized: %d", __func__, z_framing);
+    return BT_ISO_FRAMING_MODE_UNFRAMED;
+}
+
+static void sal_biginfo_zephyr_to_sal(bt_pa_sync_biginfo_t* out, const struct bt_iso_biginfo* in)
+{
+    out->num_bis = in->num_bis;
+    out->nse = in->sub_evt_count;
+    out->iso_interval = in->iso_interval;
+    out->bn = in->burst_number;
+    out->pto = in->offset;
+    out->irc = in->rep_count;
+    out->max_pdu = in->max_pdu;
+    out->sdu_interval = in->sdu_interval;
+    out->max_sdu = in->max_sdu;
+    out->phy = sal_phy_zephyr_to_sal(in->phy);
+    out->framing = sal_framing_zephyr_to_sal(in->framing);
+    out->encryption = in->encryption;
+}
+
+static void on_biginfo(struct bt_le_per_adv_sync* sync, const struct bt_iso_biginfo* z_biginfo)
+{
+    sal_pa_sync_device_t* device;
+    bt_pa_sync_biginfo_t biginfo;
+
+    device = find_device_by_sync(sync);
+    if (!device) {
+        BT_LOGE("%s, device not found", __func__);
+        return;
+    }
+
+    sal_biginfo_zephyr_to_sal(&biginfo, z_biginfo);
+    pa_sync_on_biginfo(device->id, &device->addr, device->sid, &biginfo);
+}
+
 static void sal_create_sync_param_sal_to_zephyr(struct bt_le_per_adv_sync_param* z_param,
     const bt_sal_pa_sync_param_t* params)
 {
@@ -286,7 +348,7 @@ static struct bt_le_per_adv_sync_cb sal_pa_sync_cbs = {
     .term = on_term,
     .recv = on_recv,
     .state_changed = NULL,
-    .biginfo = NULL,
+    .biginfo = on_biginfo,
     .cte_report_cb = NULL,
 };
 
