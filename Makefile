@@ -152,6 +152,10 @@ CSRCS += framework/socket/bt_le_scan.c
 CSRCS += service/ipc/socket/src/bt_socket_scan.c
 endif #CONFIG_BLUETOOTH_BLE_SCAN
 
+ifeq ($(CONFIG_BLUETOOTH_PA_SYNC), y)
+CSRCS += framework/socket/bt_pa_sync.c
+endif #CONFIG_BLUETOOTH_PA_SYNC
+
 ifeq ($(CONFIG_BLUETOOTH_PAN), y)
 CSRCS += framework/socket/bt_pan.c
 CSRCS += service/ipc/socket/src/bt_socket_pan.c

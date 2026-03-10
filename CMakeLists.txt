@@ -180,6 +180,10 @@ if(CONFIG_BLUETOOTH)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_scan.c)
     endif()
 
+    if(CONFIG_BLUETOOTH_PA_SYNC)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/socket/bt_pa_sync.c)
+    endif()
+
     if(CONFIG_BLUETOOTH_PAN)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/socket/bt_pan.c)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_pan.c)
