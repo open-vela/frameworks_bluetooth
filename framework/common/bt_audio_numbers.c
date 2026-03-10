@@ -118,18 +118,79 @@ static const u16_to_str_t context_map[] = {
 
 static const char* u8_to_str(const u8_to_str_t* map, int map_size, uint8_t in)
 {
+    for (int i = 0; i < map_size; i++) {
+        if (in == map[i].u8)
+            return map[i].str;
+    }
+
     return "Unknown";
 }
 
 static const char* u16_bits_to_str(char* out, size_t out_size, const u16_to_str_t* map,
     int map_size, uint16_t in, const char* separator)
 {
+    if (!in || !out || out_size == 0)
+        return "";
+
+    out[0] = '\0';
+
+    for (int i = 0; in && i < map_size; i++) {
+        if (!map[i].u16)
+            continue;
+
+        if ((in & map[i].u16) != map[i].u16)
+            continue;
+
+        in &= ~map[i].u16;
+        if (separator && out[0] != '\0') {
+            if (out_size < strlen(separator) + 1)
+                break;
+
+            strncat(out, separator, out_size - 1);
+            out_size -= strlen(separator) + 1;
+        }
+
+        if (out_size < strlen(map[i].str))
+            break;
+
+        strncat(out, map[i].str, out_size - 1);
+        out_size -= strlen(map[i].str);
+    }
+
     return out;
 }
 
 static const char* u32_bits_to_str(char* out, size_t out_size, const u32_to_str_t* map,
     int map_size, uint32_t in, const char* separator)
 {
+    if (!in || !out || out_size == 0)
+        return "";
+
+    out[0] = '\0';
+
+    for (int i = 0; in && i < map_size; i++) {
+        if (!map[i].u32)
+            continue;
+
+        if ((in & map[i].u32) != map[i].u32)
+            continue;
+
+        in &= ~map[i].u32;
+        if (separator && out[0] != '\0') {
+            if (out_size < strlen(separator) + 1)
+                break;
+
+            strncat(out, separator, out_size - 1);
+            out_size -= strlen(separator) + 1;
+        }
+
+        if (out_size < strlen(map[i].str))
+            break;
+
+        strncat(out, map[i].str, out_size - 1);
+        out_size -= strlen(map[i].str);
+    }
+
     return out;
 }
 
