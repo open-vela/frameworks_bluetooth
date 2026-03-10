@@ -3067,4 +3067,141 @@ void system_bluetooth_ble_AuracastSink_interface_aurasnk_stopScan(FeatureInterfa
     FEATURE_LOG_DEBUG("%s, scan stopping.", __func__);
 #endif
 }
+
+static feature_bluetooth_aurasnk_info_t* get_aurasnk_info(bt_instance_t* ins,
+    const bt_le_address_t* addr, uint8_t sid)
+{
+    feature_bluetooth_features_info_t* features_info;
+    feature_bluetooth_aurasnk_info_t* aurasnk_info = NULL;
+
+    features_info = ins->context;
+    if (!features_info || !features_info->feature_ble_aurasnk)
+        return NULL;
+
+    aurasnk_info = bt_list_find(features_info->feature_ble_aurasnk, aurasnk_instance_cmp, ins);
+    if (!aurasnk_info)
+        return NULL;
+
+    if (aurasnk_info->stream_info == NULL)
+        return NULL; /**< Sync not established */
+
+    if (memcmp(&aurasnk_info->stream_info->remote.addr, addr, sizeof(bt_le_address_t)) != 0)
+        return NULL; /**< Address mismatch */
+
+    if (aurasnk_info->stream_info->remote.sid != sid)
+        return NULL; /**< Advertising Set ID mismatch */
+
+    return aurasnk_info;
+}
+
+static char* aurasnk_build_subid(const bt_le_address_t* addr, uint8_t sid, uint8_t subgroup)
+{
+    char* subid = zalloc(FEATURE_BLE_FT_STRING_MAX);
+    if (!subid)
+        return NULL;
+
+    snprintf(subid, FEATURE_BLE_FT_STRING_MAX, "subgroup_%02x%02x%02x%02x%02x%02x(t%d)_sid%d_grp%d",
+        addr->addr[5], addr->addr[4], addr->addr[3], addr->addr[2], addr->addr[1], addr->addr[0],
+        addr->addr_type, sid, subgroup);
+
+    return subid;
+}
+
+static bt_status_t aurasnk_parse_subid(bt_le_address_t* addr, uint8_t* sid, uint8_t* subgroup,
+    const char* subid)
+{
+    int parsed;
+
+    if (!subid)
+        return BT_STATUS_PARM_INVALID;
+
+    parsed = sscanf(subid, "subgroup_%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx(t%hhd)_sid%hhd_grp%hhd",
+        &addr->addr[5], &addr->addr[4], &addr->addr[3], &addr->addr[2], &addr->addr[1],
+        &addr->addr[0], &addr->addr_type, sid, subgroup);
+
+    return (parsed == 9) ? BT_STATUS_SUCCESS : BT_STATUS_PARM_INVALID;
+}
+
+static char* get_context_str(uint16_t context)
+{
+    switch (context) {
+    case BT_METADATA_AUDIO_CONTEXT_CONVERSATIONAL:
+        return "Conv";
+    case BT_METADATA_AUDIO_CONTEXT_MEDIA:
+        return "Media";
+    case BT_METADATA_AUDIO_CONTEXT_GAME:
+        return "Game";
+    case BT_METADATA_AUDIO_CONTEXT_INSTRUCTIONAL:
+        return "Inst";
+    case BT_METADATA_AUDIO_CONTEXT_VOICE_ASSISTANTS:
+        return "Assist";
+    case BT_METADATA_AUDIO_CONTEXT_LIVE:
+        return "Live";
+    case BT_METADATA_AUDIO_CONTEXT_SOUND_EFFECTS:
+        return "Effect";
+    case BT_METADATA_AUDIO_CONTEXT_NOTIFICATIONS:
+        return "Notify";
+    case BT_METADATA_AUDIO_CONTEXT_RINGTONE:
+        return "Ring";
+    case BT_METADATA_AUDIO_CONTEXT_ALERTS:
+        return "Alert";
+    case BT_METADATA_AUDIO_CONTEXT_EMERGENCY_ALARM:
+        return "Emerg";
+    case BT_METADATA_AUDIO_CONTEXT_UNSPECIFIED:
+        return "Unspec";
+    default:
+        return "";
+    }
+}
+
+static char* get_codec_str(uint8_t codec_id)
+{
+    /** Other codecs are not supported now */
+    return (codec_id == BT_CODEC_ID_LC3) ? "LC3" : "Unsupported";
+}
+
+static char* get_sampling_frequency_str(uint8_t sampling_frequency)
+{
+    switch (sampling_frequency) {
+    case BT_CODEC_CONFIG_FREQUENCY_48000:
+        return "48k";
+    case BT_CODEC_CONFIG_FREQUENCY_16000:
+        return "16k";
+    default:
+        return "Unsupported";
+    }
+}
+
+static char* aurasnk_sync_build_display_name(const bt_auracast_audio_subgroup_t* subgroup,
+    uint8_t index)
+{
+    char* display_name = NULL;
+
+    display_name = zalloc(FEATURE_BLE_FT_STRING_MAX);
+    if (!display_name)
+        return NULL;
+
+    FEATURE_BLE_STRCAT(display_name, FEATURE_BLE_FT_STRING_MAX, "[%d][%s]", index, 
+        get_codec_str(subgroup->codec_id.coding_format));
+
+    if (subgroup->codec_id.coding_format == BT_CODEC_ID_LC3) {
+        FEATURE_BLE_STRCAT(display_name, FEATURE_BLE_FT_STRING_MAX, "[ch:%d][%s]",
+            bt_utils_count_ones(subgroup->config.lc3.location),
+            get_sampling_frequency_str(subgroup->config.lc3.sampling_frequency));
+    }
+
+    FEATURE_BLE_STRCAT(display_name, FEATURE_BLE_FT_STRING_MAX, "\n[");
+    for (int i = 0; i < 16; i++) {
+        if (subgroup->metadata.context & (1UL << i))
+            FEATURE_BLE_STRCAT(display_name, FEATURE_BLE_FT_STRING_MAX, "%s",
+                get_context_str(1UL << i));
+    }
+
+    FEATURE_BLE_STRCAT(display_name, FEATURE_BLE_FT_STRING_MAX, "]");
+    if (subgroup->metadata.language[0] != '\0')
+        FEATURE_BLE_STRCAT(display_name, FEATURE_BLE_FT_STRING_MAX, "[%s]",
+            subgroup->metadata.language);
+
+    return display_name;
+}
 }
