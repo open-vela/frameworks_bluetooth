@@ -92,7 +92,7 @@ typedef struct bt_pa_sync_create_param {
  * @param sid The advertising set id (0x00-0x0F) to identify the periodic advertising
  * @param context User context
  */
-typedef void (*on_sync_established_callback)(const bt_le_address_t* addr, uint8_t sid,
+typedef void (*on_pa_sync_established_callback)(const bt_le_address_t* addr, uint8_t sid,
     void* context);
 
 /**
@@ -102,7 +102,7 @@ typedef void (*on_sync_established_callback)(const bt_le_address_t* addr, uint8_
  * @param sid The advertising set id (0x00-0x0F) to identify the periodic advertising
  * @param context User context
  */
-typedef void (*on_sync_terminated_callback)(const bt_le_address_t* addr, uint8_t sid,
+typedef void (*on_pa_sync_terminated_callback)(const bt_le_address_t* addr, uint8_t sid,
     void* context);
 
 /**
@@ -113,7 +113,7 @@ typedef void (*on_sync_terminated_callback)(const bt_le_address_t* addr, uint8_t
  * @param report The received periodic advertising report, see @ref bt_pa_sync_report_t
  * @param context User context
  */
-typedef void (*on_sync_report_callback)(const bt_le_address_t* addr, uint8_t sid,
+typedef void (*on_pa_sync_report_callback)(const bt_le_address_t* addr, uint8_t sid,
     const bt_pa_sync_report_t* report, void* context);
 
 /**
@@ -126,9 +126,9 @@ typedef void (*on_sync_report_callback)(const bt_le_address_t* addr, uint8_t sid
 typedef void (*on_auracast_ready_callback)(const bt_le_address_t* addr, uint8_t sid, void* context);
 
 typedef struct {
-    on_sync_established_callback on_sync_established;
-    on_sync_terminated_callback on_sync_terminated;
-    on_sync_report_callback on_sync_report;
+    on_pa_sync_established_callback on_sync_established;
+    on_pa_sync_terminated_callback on_sync_terminated;
+    on_pa_sync_report_callback on_sync_report;
     on_auracast_ready_callback on_auracast_ready;
 } bt_pa_sync_callbacks_t;
 

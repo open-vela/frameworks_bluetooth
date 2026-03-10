@@ -143,6 +143,9 @@ static void bt_socket_client_callback_process(bt_instance_t* ins, bt_message_pac
         { BT_L2CAP_CALLBACK_START, BT_L2CAP_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_l2cap_callback },
         { BT_IPC_CODE_CALLBACK_L2CAP_BEGIN, BT_IPC_CODE_CALLBACK_L2CAP_END, (bt_socket_callback_t)bt_socket_client_l2cap_callback },
 #endif
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+        { BT_IPC_CODE_CALLBACK_AURACAST_SINK_BEGIN, BT_IPC_CODE_CALLBACK_AURACAST_SINK_END, (bt_socket_callback_t)bt_socket_client_auracast_sink_callback },
+#endif
     };
 
     for (size_t i = 0; i < sizeof(callback_map) / sizeof(callback_map[0]); ++i) {
