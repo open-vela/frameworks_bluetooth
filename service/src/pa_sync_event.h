@@ -82,6 +82,7 @@ typedef struct {
     pa_sync_event_type_t event;
     bt_controller_id_t id;
     bt_le_address_t addr;
+    uint8_t sid;
     uint8_t data[0]; /**< Event specific data, e.g., @ref pa_sync_event_report_data_t */
 } pa_sync_event_t;
 
