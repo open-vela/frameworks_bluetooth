@@ -15,9 +15,12 @@
  ***************************************************************************/
 #ifndef __BT_AUDIO_NUMBERS_H__
 #define __BT_AUDIO_NUMBERS_H__
+
+#include <stddef.h>
 #include <stdint.h>
 
 /** Coding Format and Codec ID */
+const char* bt_audio_codec_id_to_str(uint8_t codec_id);
 #define BT_CODEC_ID_ULAW_LOG 0x00 /** µ-law log */
 #define BT_CODEC_ID_ALAW_LOG 0x01 /** A-law log */
 #define BT_CODEC_ID_CVSD 0x02 /** Continuous Variable Slope Delta Modulation */
@@ -31,6 +34,7 @@
 /** Codec Specific Configuration LTV values */
 
 /** Sampling frequency */
+const char* bt_audio_sampling_frequency_to_str(uint8_t freq);
 #define BT_CODEC_CONFIG_FREQUENCY_LEN 2
 #define BT_CODEC_CONFIG_FREQUENCY_TYPE 1
 #define BT_CODEC_CONFIG_FREQUENCY_8000 0x01 /** 8000 Hz */
@@ -48,12 +52,14 @@
 #define BT_CODEC_CONFIG_FREQUENCY_384000 0x0D /** 384000 Hz */
 
 /** Frame duration */
+const char* bt_audio_duration_to_str(uint8_t duration);
 #define BT_CODEC_CONFIG_DURATION_LEN 2
 #define BT_CODEC_CONFIG_DURATION_TYPE 2
 #define BT_CODEC_CONFIG_DURATION_7_5_MS 0x00 /** Use 7.5 ms codec frames */
 #define BT_CODEC_CONFIG_DURATION_10_MS 0x01 /** Use 10 ms codec frames */
 
 /** Bitfield of audio location values */
+const char* bt_audio_location_to_str(char* out, size_t size, uint32_t allocation);
 #define BT_CODEC_CONFIG_ALLOCATION_LEN 5
 #define BT_CODEC_CONFIG_ALLOCATION_TYPE 3
 #define BT_CODEC_CONFIG_ALLOCATION_MONO 0x00000000 /** Mono Audio (no specified Audio Location) */
@@ -101,6 +107,7 @@
 /** Metadatas */
 
 /** Streaming Audio Context */
+const char* bt_audio_context_to_str(char* out, size_t size, uint16_t context);
 #define BT_METADATA_STREAMING_AUDIO_CONTEXT_LEN 3
 #define BT_METADATA_STREAMING_AUDIO_CONTEXT_TYPE 2
 /** Identifies audio where the use case context does not match any other defined value, or where the

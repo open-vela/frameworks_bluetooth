@@ -14,7 +14,12 @@
  * limitations under the License.
  ***************************************************************************/
 
+#include <string.h>
+
 #include "bt_audio_numbers.h"
+#include "bt_utils.h"
+
+#ifdef CONFIG_BLUETOOTH_LOG
 
 typedef struct {
     uint8_t u8;
@@ -110,3 +115,85 @@ static const u16_to_str_t context_map[] = {
     { BT_METADATA_AUDIO_CONTEXT_ALERTS, "Alert" },
     { BT_METADATA_AUDIO_CONTEXT_EMERGENCY_ALARM, "Emergency" },
 };
+
+static const char* u8_to_str(const u8_to_str_t* map, int map_size, uint8_t in)
+{
+    return "Unknown";
+}
+
+static const char* u16_bits_to_str(char* out, size_t out_size, const u16_to_str_t* map,
+    int map_size, uint16_t in, const char* separator)
+{
+    return out;
+}
+
+static const char* u32_bits_to_str(char* out, size_t out_size, const u32_to_str_t* map,
+    int map_size, uint32_t in, const char* separator)
+{
+    return out;
+}
+
+const char* bt_audio_codec_id_to_str(uint8_t codec_id)
+{
+    return u8_to_str(codec_map, ARRAY_SIZE(codec_map), codec_id);
+}
+
+const char* bt_audio_sampling_frequency_to_str(uint8_t freq)
+{
+    return u8_to_str(freq_map, ARRAY_SIZE(freq_map), freq);
+}
+
+const char* bt_audio_duration_to_str(uint8_t duration)
+{
+    return u8_to_str(duration_map, ARRAY_SIZE(duration_map), duration);
+}
+
+const char* bt_audio_location_to_str(char* out, size_t size, uint32_t allocation)
+{
+    if (allocation == BT_CODEC_CONFIG_ALLOCATION_MONO)
+        return "Unspecified"; /**< no specified Audio Location */
+
+    return u32_bits_to_str(out, size, allocation_map, ARRAY_SIZE(allocation_map), allocation, "|");
+}
+
+const char* bt_audio_context_to_str(char* out, size_t size, uint16_t context)
+{
+    return u16_bits_to_str(out, size, context_map, ARRAY_SIZE(context_map), context, "|");
+}
+
+#else /* CONFIG_BLUETOOTH_LOG */
+const char* bt_audio_codec_id_to_str(uint8_t codec_id)
+{
+    (void)codec_id;
+    return "";
+}
+
+const char* bt_audio_sampling_frequency_to_str(uint8_t freq)
+{
+    (void)freq;
+    return "";
+}
+
+const char* bt_audio_duration_to_str(uint8_t duration)
+{
+    (void)duration;
+    return "";
+}
+
+const char* bt_audio_location_to_str(char* out, size_t size, uint32_t allocation)
+{
+    (void)out;
+    (void)size;
+    (void)allocation;
+    return "";
+}
+
+const char* bt_audio_context_to_str(char* out, size_t size, uint16_t context)
+{
+    (void)out;
+    (void)size;
+    (void)context;
+    return "";
+}
+
+#endif /* CONFIG_BLUETOOTH_LOG */
