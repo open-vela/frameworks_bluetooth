@@ -67,7 +67,14 @@ typedef struct {
     bt_list_t* sink_list;
 } sal_auracast_sink_info_t;
 
+extern void* bt_sal_zephyr_pa_sync_get(bt_controller_id_t id, uint8_t sid,
+    const bt_le_address_t* addr);
+
 static sal_auracast_sink_info_t* g_sal_auracast_sink_info = NULL;
+static void iso_recv(struct bt_iso_chan* chan, const struct bt_iso_recv_info* info,
+    struct net_buf* buf);
+static void iso_connected(struct bt_iso_chan* chan);
+static void iso_disconnected(struct bt_iso_chan* chan, uint8_t reason);
 
 static sal_auracast_sink_device_t* device_new(bt_controller_id_t id,
     const bt_le_address_t* addr, uint8_t sid, struct bt_iso_big_sync_param* z_param)
@@ -237,6 +244,115 @@ static bt_status_t sal_send_req(sal_auracast_sink_req_t* req)
     }
 
     return BT_STATUS_SUCCESS;
+}
+
+static void iso_recv(struct bt_iso_chan* chan, const struct bt_iso_recv_info* info,
+    struct net_buf* buf)
+{
+    sal_auracast_sink_device_t* device = find_device_by_channel(chan);
+    if (!device)
+        return;
+
+    for (uint8_t k = 0; k < BT_AURACAST_SINK_NUM_BIS_SUPPORTED; k++) {
+        if (device->channels[k] == chan) {
+            auracast_sink_on_data_received(device->id, &device->addr, device->sid,
+                device->bitfield[k], info->ts, info->seq_num, buf->len, buf->data);
+        }
+    }
+}
+
+static void iso_connected(struct bt_iso_chan* chan)
+{
+    sal_auracast_sink_device_t* device;
+
+    BT_LOGD("%s", __func__);
+
+    device = find_device_by_channel(chan);
+    if (!device)
+        return;
+
+    auracast_sink_on_established(device->id, &device->addr, device->sid);
+}
+
+static void iso_disconnected(struct bt_iso_chan* chan, uint8_t reason)
+{
+    sal_auracast_sink_device_t* device;
+
+    BT_LOGD("%s", __func__);
+
+    device = find_device_by_channel(chan);
+    if (!device)
+        return;
+
+    auracast_sink_on_terminated(device->id, &device->addr, device->sid);
+}
+
+static void create_sync(const void* data)
+{
+    const sal_auracast_sink_req_t* req = (const sal_auracast_sink_req_t*)data;
+    struct bt_iso_big_sync_param* z_param = (struct bt_iso_big_sync_param*)req->context;
+    sal_auracast_sink_device_t* device;
+    void* sync;
+    int err;
+
+    BT_LOGD("%s", __func__);
+
+    device = device_new(req->id, &req->addr, req->sid, z_param);
+    if (!device) {
+        auracast_sink_on_terminated(req->id, &req->addr, req->sid);
+        free(z_param);
+        return;
+    }
+
+    z_param->bis_channels = device->channels;
+    sync = bt_sal_zephyr_pa_sync_get(req->id, req->sid, &req->addr);
+    if (!sync) {
+        BT_LOGE("periodic advertising does not exist");
+        goto error;
+    }
+
+    err = bt_iso_big_sync(sync, z_param, &device->sink);
+    if (err) {
+        BT_LOGE("failed to create sync, err = %d", err);
+        goto error;
+    }
+
+    if (!device->sink) {
+        BT_LOGE("big not generated");
+        goto error;
+    }
+
+    bt_list_add_tail(g_sal_auracast_sink_info->sink_list, device);
+
+    free(z_param);
+    return;
+
+error:
+    device_delete(device);
+    free(z_param);
+    return;
+}
+
+static void terminate_sync(const void* data)
+{
+    const sal_auracast_sink_req_t* req = (const sal_auracast_sink_req_t*)data;
+    sal_auracast_sink_device_t* device;
+    int err;
+
+    BT_LOGD("%s", __func__);
+
+    device = find_device_by_req(req);
+    if (!device) {
+        auracast_sink_on_terminated(req->id, &req->addr, req->sid);
+        return;
+    }
+
+    err = bt_iso_big_terminate(device->sink);
+    if (err) {
+        BT_LOGE("failed to terminate sync, err = %d", err);
+        bt_list_remove(g_sal_auracast_sink_info->sink_list, device);
+        return;
+    }
 }
 
 bt_status_t bt_sal_auracast_sink_init(void)

@@ -413,7 +413,7 @@ static void terminate_sync(const void* data)
     err = bt_le_per_adv_sync_delete(device->sync);
     if (err) {
         BT_LOGE("failed to terminate sync, err = %d", err);
-        device_delete(device);
+        bt_list_remove(g_sal_pa_sync_info->sync_list, device);
         return;
     }
 }
@@ -494,4 +494,21 @@ bt_status_t bt_sal_pa_terminate_sync(bt_controller_id_t id, uint8_t sid,
         free(req);
 
     return status;
+}
+
+/** For Zephyr SAL internal use only */
+void* bt_sal_zephyr_pa_sync_get(bt_controller_id_t id, uint8_t sid, const bt_le_address_t* addr)
+{
+    sal_pa_sync_device_t* device;
+    sal_pa_sync_req_t req = { 0 };
+
+    memcpy(&req.addr, addr, sizeof(bt_le_address_t));
+    req.id = id;
+    req.sid = sid;
+
+    device = find_device_by_req(&req);
+    if (device)
+        return device->sync;
+
+    return NULL;
 }
