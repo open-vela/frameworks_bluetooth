@@ -318,12 +318,110 @@ bt_status_t bt_pa_sync_parse_adv_data(bt_pa_sync_info_t* info, const ble_scan_re
 static bool bt_auracast_sink_adv_data_parse_lc3_config(bt_auracast_audio_lc3_config_t* lc3,
     uint8_t length, const uint8_t* p)
 {
+    /** Series of Length-Type-Value structures */
+    uint8_t l, t;
+
+    while (length) {
+        STREAM_TO_UINT8(l, p);
+        if (l == 0) {
+            length--;
+            continue; /**< invalid but not fatal */
+        }
+
+        if (length < (1 + l))
+            return false; /**< length not enough */
+
+        STREAM_TO_UINT8(t, p); /**< Type */
+        switch (t) {
+        case BT_CODEC_CONFIG_FREQUENCY_TYPE:
+            if (l != BT_CODEC_CONFIG_FREQUENCY_LEN)
+                return false;
+
+            STREAM_TO_UINT8(lc3->sampling_frequency, p);
+            if (lc3->sampling_frequency > BT_CODEC_CONFIG_FREQUENCY_384000)
+                return false;
+
+            break;
+        case BT_CODEC_CONFIG_DURATION_TYPE:
+            if (l != BT_CODEC_CONFIG_DURATION_LEN)
+                return false;
+
+            STREAM_TO_UINT8(lc3->duration, p);
+            if (lc3->duration > BT_CODEC_CONFIG_DURATION_10_MS)
+                return false;
+
+            break;
+        case BT_CODEC_CONFIG_ALLOCATION_TYPE:
+            if (l != BT_CODEC_CONFIG_ALLOCATION_LEN)
+                return false;
+
+            STREAM_TO_UINT32(lc3->location, p);
+            break;
+        case BT_CODEC_CONFIG_OCTETS_PER_FRAME_TYPE:
+            if (l != BT_CODEC_CONFIG_OCTETS_PER_FRAME_LEN)
+                return false;
+
+            STREAM_TO_UINT16(lc3->octets_per_frame, p);
+            break;
+        case BT_CODEC_CONFIG_BLOCKS_PER_SDU_TYPE:
+            if (l != BT_CODEC_CONFIG_BLOCKS_PER_SDU_LEN)
+                return false;
+
+            STREAM_TO_UINT8(lc3->blocks_per_sdu, p);
+            break;
+        default:
+            p += l - 1;
+            break;
+        }
+
+        length -= 1 + l;
+    }
+
     return true;
 }
 
 static bool bt_auracast_sink_adv_data_parse_metadata(bt_auracast_audio_metadata_t* metadata,
     uint8_t length, const uint8_t* p)
 {
+    /** Series of Length-Type-Value structures */
+    uint8_t l, t;
+
+    while (length) {
+        STREAM_TO_UINT8(l, p);
+        if (l == 0) {
+            length--;
+            continue; /**< invalid but not fatal */
+        }
+
+        if (length < (1 + l))
+            return false; /**< length not enough */
+
+        STREAM_TO_UINT8(t, p); /**< Type */
+        switch (t) {
+        case BT_METADATA_STREAMING_AUDIO_CONTEXT_TYPE:
+            if (l != BT_METADATA_STREAMING_AUDIO_CONTEXT_LEN)
+                return false;
+
+            STREAM_TO_UINT16(metadata->context, p);
+            if (!metadata->context)
+                return false;
+
+            break;
+        case BT_METADATA_LANGUAGE_TYPE:
+            if (l != BT_METADATA_LANGUAGE_LEN)
+                return false;
+
+            STREAM_TO_ARRAY(metadata->language, p, BT_METADATA_ISO_639_3_SIZE);
+            metadata->language[BT_METADATA_ISO_639_3_SIZE] = '\0'; /**< for easy decoding */
+            break;
+        default:
+            p += l - 1;
+            break;
+        }
+
+        length -= 1 + l;
+    }
+
     return true;
 }
 
