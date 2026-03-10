@@ -62,15 +62,15 @@
 
 typedef struct bt_sal_pa_sync_param {
     /** Options, e.g., BT_SAL_PA_SYNC_OPTION_USE_LIST */
-    uint8_t ops;
+    uint8_t options;
 
     /** `Advertising_SID`, refers to the Advertising SID subfield in the `ADI` field used to
      *  identify the Periodic Advertising. Range from 0x00 to 0x0F. Only valid when
-     *  `BT_SAL_PA_SYNC_OPTION_USE_LIST` is not set in `ops`, otherwise ignored */
+     *  `BT_SAL_PA_SYNC_OPTION_USE_LIST` is not set in `options`, otherwise ignored */
     uint8_t sid;
 
     /** `Advertiser_Address` and `Advertiser_Address_Type` of the remote device. Only valid when
-     *  `BT_SAL_PA_SYNC_OPTION_USE_LIST` is not set in `ops`, otherwise ignored */
+     *  `BT_SAL_PA_SYNC_OPTION_USE_LIST` is not set in `options`, otherwise ignored */
     bt_le_address_t addr;
 
     /** The maximum number of periodic advertising events that can be skipped after a successful

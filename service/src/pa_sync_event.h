@@ -18,6 +18,7 @@
 #define __PA_SYNC_EVENT_H__
 
 #include "bluetooth.h"
+#include "bt_pa_sync.h"
 
 /** AoA Constant Tone Extension */
 #define BT_LE_PA_SYNC_EVENT_CTE_TYPE_AOA (0x00)
@@ -42,6 +43,14 @@ typedef enum {
     SYNC_TERMINATED,
     SYNC_REPORT,
 } pa_sync_event_type_t;
+
+typedef struct {
+    bt_le_address_t addr;
+    uint8_t sid;
+    bt_pa_sync_create_param_t params;
+    const bt_pa_sync_callbacks_t* cbs;
+    const void* context;
+} pa_sync_event_create_sync_t;
 
 typedef struct {
     /** TxPower in dBm (-127 to +20). 0x7F if unavailable */
