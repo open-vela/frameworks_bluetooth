@@ -66,21 +66,22 @@ typedef struct bt_pa_sync_create_param {
     bool no_report;
 } bt_pa_sync_create_param_t;
 
-
 /**
  * @brief Periodic advertising sync established
  */
-typedef void (*on_sync_established_callback)(const bt_le_address_t* addr, uint8_t sid);
+typedef void (*on_sync_established_callback)(const bt_le_address_t* addr, uint8_t sid,
+    void* context);
 
 /**
  * @brief Periodic advertising terminated
  */
-typedef void (*on_sync_terminated_callback)(const bt_le_address_t* addr, uint8_t sid);
+typedef void (*on_sync_terminated_callback)(const bt_le_address_t* addr, uint8_t sid,
+    void* context);
 
 /**
  * @brief Periodic advertising report
  */
-typedef void (*on_sync_report_callback)(const bt_le_address_t* addr, uint8_t sid);
+typedef void (*on_sync_report_callback)(const bt_le_address_t* addr, uint8_t sid, void* context);
 
 typedef struct {
     on_sync_established_callback on_sync_established;
@@ -96,25 +97,27 @@ typedef struct {
  *
  * @return `BT_STATUS_SUCCESS` if periodic advertising is found.
  * @return `BT_STATUS_NOT_FOUND` if no periodic advertising is found.
- * @return Other negative `bt_status_t` error codes on failure.
+ * @return Other error codes on failure.
  */
 bt_status_t bt_pa_sync_parse_adv_data(bt_pa_sync_info_t* info, const ble_scan_result_t* result);
 
 /**
- * @brief Synchronize to a periodic advertising via extended advertising report.
+ * @brief Synchronize to periodic advertising via extended advertising report.
  *
  * @param[in] ins The Bluetooth instance, see @ref bt_instance_t
- * @param[in] addr The Bluetooth address, and address type of the remote device
+ * @param[in] addr The Bluetooth address and address type of the remote device
  * @param[in] sid The advertising set id subfield to identify the periodic advertising, range from
  *                0x00 to 0x0F
- * @param[in] param Optional parameters for periodic sync, set to `NULL` to use default parameters
+ * @param[in] params Optional parameters for periodic sync, set to `NULL` to use default parameters
  * @param[in] cbs Callbacks for periodic advertising sync, see @ref bt_pa_sync_callbacks_t
+ * @param[in] context User context
  *
  * @return `BT_STATUS_SUCCESS` on success.
- * @return Error codes on failure.
+ * @return Other error codes on failure.
  */
 bt_status_t BTSYMBOLS(bt_pa_sync_create)(bt_instance_t* ins, const bt_le_address_t* addr,
-    uint8_t sid, const bt_pa_sync_create_param_t* param, const bt_pa_sync_callbacks_t* cbs);
+    uint8_t sid, const bt_pa_sync_create_param_t* params, const bt_pa_sync_callbacks_t* cbs,
+    const void* context);
 
 #ifdef __cplusplus
 }
