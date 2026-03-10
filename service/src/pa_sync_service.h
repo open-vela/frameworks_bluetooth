@@ -24,6 +24,48 @@ typedef struct bt_pa_sync_data {
     uint8_t data[0];
 } bt_pa_sync_data_t;
 
+typedef struct bt_pa_sync_biginfo {
+    /** Number of BISes in the BIG, Range: 0x01 to 0x1F */
+    uint8_t num_bis;
+
+    /** Total number of subevents in each interval of each BIS, Range: 0x01 to 0x1F */
+    uint8_t nse;
+
+    /** Time between consecutive BIG anchor points, units of 1.25 ms,
+     *  Range: 0x0004 to 0x0C80 (5 ms to 4 s) */
+    uint16_t iso_interval;
+
+    /** Burst Number (BN) - number of new payloads for each BIS in a BIS event,
+     *  Range: 0x01 to 0x07 */
+    uint8_t bn;
+
+    /** Pre Transmission Offset (PTO) - the offset in number of ISO Intervals for pre-transmissions
+     *  of data packets, Range: 0x01 to 0x0F */
+    uint8_t pto;
+
+    /** Immediate Repetition Count (IRC) - offset in units of ISO Intervals for pre-transmissions,
+     *  Range: 0x01 to 0x0F */
+    uint8_t irc;
+
+    /** Maximum payload size in octets, Range: 0x0001 to 0x00FB */
+    uint16_t max_pdu;
+
+    /** Periodic SDU interval in microseconds, Range: 0x0000FF to 0x0FFFFF */
+    uint32_t sdu_interval;
+
+    /** Maximum SDU size in octets, Range: 0x0001 to 0x0FFF */
+    uint16_t max_sdu;
+
+    /** PHY used for BIG transmission, see @ref ble_phy_type_t */
+    uint8_t phy;
+
+    /** Framing mode, e.g., `BT_ISO_FRAMING_MODE_UNFRAMED` */
+    uint8_t framing;
+
+    /** Whether this BIG carries encrypted data */
+    bool encryption;
+} bt_pa_sync_biginfo_t;
+
 bt_status_t pa_sync_init(void);
 bt_status_t pa_sync_cleanup(void);
 bt_status_t pa_sync_create(const bt_le_address_t* addr, uint8_t sid,
@@ -66,7 +108,18 @@ void pa_sync_on_terminated(bt_controller_id_t id, const bt_le_address_t* addr, u
  * @param[in] adv_data Data received from a Periodic Advertising packet
  */
 void pa_sync_on_received(bt_controller_id_t id, const bt_le_address_t* addr, uint8_t sid,
-    int tx_power, int rssi, uint8_t cte, uint16_t cnt, uint8_t subevent, uint8_t status, 
+    int tx_power, int rssi, uint8_t cte, uint16_t cnt, uint8_t subevent, uint8_t status,
     uint8_t adv_data_len, const uint8_t* adv_data);
+
+/**
+ * @brief Callback from SAL when a BIGInfo is received.
+ *
+ * @param[in] id The Controller ID
+ * @param[in] addr Advertiser's address (public, random, public identity, or random static identity)
+ * @param[in] sid Advertising SID; `BLE_SCAN_SID_NOT_PROVIDED` if unavailable
+ * @param[in] biginfo The BIGInfo event, see @ref bt_pa_sync_biginfo_t
+ */
+void pa_sync_on_biginfo(bt_controller_id_t id, const bt_le_address_t* addr, uint8_t sid,
+    const bt_pa_sync_biginfo_t* biginfo);
 
 #endif /* __PA_SYNC_SERVICE_H__ */
