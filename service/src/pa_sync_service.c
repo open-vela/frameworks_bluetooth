@@ -19,6 +19,7 @@
 
 #include "bluetooth.h"
 #include "bt_list.h"
+#include "bt_utils.h"
 #include "pa_sync_event.h"
 #include "sal_pa_sync_interface.h"
 #include "service_loop.h"
@@ -37,6 +38,16 @@ typedef struct pa_sync_info {
 } pa_sync_info_t;
 
 static pa_sync_info_t* g_pa_sync_info = NULL;
+static void pa_sync_process_message(void* data);
+
+static bt_status_t pa_sync_send_message(pa_sync_event_t* msg)
+{
+    assert(msg);
+
+    do_in_service_loop(pa_sync_process_message, msg);
+
+    return BT_STATUS_SUCCESS;
+}
 
 static void sync_terminated_callback(const bt_pa_sync_callbacks_t* cbs, const bt_le_address_t* addr,
     uint8_t sid, const void* context)
@@ -96,6 +107,27 @@ static void sync_removed(void* data)
     sync_terminated_callback(device->cbs, &device->addr, device->sid, device->context);
 
     free(device);
+}
+
+static const char* pa_sync_event_to_string(pa_sync_event_type_t event)
+{
+    switch (event) {
+        CASE_RETURN_STR(SYNC_ESTABLISHED)
+        CASE_RETURN_STR(SYNC_TERMINATED)
+        CASE_RETURN_STR(SYNC_REPORT)
+        DEFAULT_BREAK();
+    }
+
+    return "Unknown";
+}
+
+static void pa_sync_process_message(void* data)
+{
+    pa_sync_event_t* msg = (pa_sync_event_t*)data;
+
+    BT_LOGD("%s, event = %s(%d)", __func__, pa_sync_event_to_string(msg->event), msg->event);
+
+    free(msg);
 }
 
 bt_status_t pa_sync_init(void)
@@ -176,4 +208,42 @@ bt_status_t pa_sync_terminate(void)
     BT_LOGD("%s", __func__);
 
     return BT_STATUS_UNSUPPORTED;
+}
+
+void pa_sync_on_established(bt_controller_id_t id, const bt_le_address_t* addr, uint8_t sid)
+{
+    pa_sync_event_t* msg = zalloc(sizeof(pa_sync_event_t));
+    if (!msg) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return;
+    }
+
+    msg->event = SYNC_ESTABLISHED;
+    msg->id = id;
+    msg->sid = sid;
+    memcpy(&msg->addr, addr, sizeof(bt_le_address_t));
+
+    if (pa_sync_send_message(msg) != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, message send failed", __func__);
+        free(msg);
+    }
+}
+
+void pa_sync_on_terminated(bt_controller_id_t id, const bt_le_address_t* addr, uint8_t sid)
+{
+    pa_sync_event_t* msg = zalloc(sizeof(pa_sync_event_t));
+    if (!msg) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return;
+    }
+
+    msg->event = SYNC_TERMINATED;
+    msg->id = id;
+    msg->sid = sid;
+    memcpy(&msg->addr, addr, sizeof(bt_le_address_t));
+
+    if (pa_sync_send_message(msg) != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, message send failed", __func__);
+        free(msg);
+    }
 }

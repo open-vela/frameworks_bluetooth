@@ -26,4 +26,22 @@ bt_status_t pa_sync_create(const bt_le_address_t* addr, uint8_t sid,
     const void* context);
 bt_status_t pa_sync_terminate(void);
 
+/**
+ * @brief Callback from SAL when a sync is established.
+ *
+ * @param[in] id The Controller ID
+ * @param[in] addr Advertiser's address (public, random, public identity, or random static identity)
+ * @param[in] sid Advertising SID; `BLE_SCAN_SID_NOT_PROVIDED` if unavailable
+ */
+void pa_sync_on_established(bt_controller_id_t id, const bt_le_address_t* addr, uint8_t sid);
+
+/**
+ * @brief Callback from SAL when a sync is terminated.
+ *
+ * @param[in] id The Controller ID
+ * @param[in] addr Advertiser's address (public, random, public identity, or random static identity)
+ * @param[in] sid Advertising SID; `BLE_SCAN_SID_NOT_PROVIDED` if unavailable
+ */
+void pa_sync_on_terminated(bt_controller_id_t id, const bt_le_address_t* addr, uint8_t sid);
+
 #endif /* __PA_SYNC_SERVICE_H__ */
