@@ -91,7 +91,11 @@ bt_status_t bt_auracast_sink_register_callbacks_async(bt_instance_t* ins,
         }
     }
 
+#ifdef CONFIG_BLUETOOTH_FEATURE_ASYNC
+    cookie = bt_remote_callbacks_register(priv->auracast_sink_callbacks, ins, (void*)cbs);
+#else
     cookie = bt_remote_callbacks_register(priv->auracast_sink_callbacks, NULL, (void*)cbs);
+#endif
     if (cookie == NULL) {
         status = BT_STATUS_NO_RESOURCES;
         goto error;

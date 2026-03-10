@@ -42,7 +42,11 @@ void* BTSYMBOLS(bt_auracast_sink_register_callbacks)(bt_instance_t* ins,
 
     ins->auracast_sink_callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
 
+#ifdef CONFIG_BLUETOOTH_FEATURE
+    cookie = bt_remote_callbacks_register(ins->auracast_sink_callbacks, ins, (void*)cbs);
+#else
     cookie = bt_remote_callbacks_register(ins->auracast_sink_callbacks, NULL, (void*)cbs);
+#endif
     if (cookie == NULL) {
         bt_callbacks_list_free(ins->auracast_sink_callbacks);
         ins->auracast_sink_callbacks = NULL;

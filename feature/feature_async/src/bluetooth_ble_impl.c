@@ -20,17 +20,33 @@
 #include "bluetooth.h"
 #include "bluetooth_ble.h"
 #include "bt_adapter.h"
+#include "bt_auracast_sink.h"
 #include "bt_gatt_feature.h"
 #include "bt_le_advertiser.h"
 #include "bt_le_scan.h"
 #include "bt_message_advertiser.h"
 #include "bt_message_scan.h"
+#include "bt_pa_sync.h"
+#include "bt_utils.h"
 #include "feature_bluetooth.h"
 #include "feature_context.h"
 #include "feature_exports.h"
 #include "feature_log.h"
 
 #define file_tag "bluetooth_ble"
+#define FEATURE_BLE_FT_STRING_MAX (256)
+#define FEATURE_BLE_PA_SYNC_SKIP (1)
+#define FEATURE_BLE_PA_SYNC_TIMEOUT_MS (1000)
+#define FEATURE_BLE_PTR_PENDING ((void*)-1)
+#define FEATURE_BLE_FT_CALLBACK_ID_INVALID ((int)-1)
+#define FEATURE_BLE_STRCAT(dst, size, src, ...)                 \
+    do {                                                        \
+        size_t _len = strlen(dst);                              \
+        size_t _size = (size);                                  \
+        if (_len + 1 >= _size)                                  \
+            break;                                              \
+        snprintf(dst + _len, _size - _len, src, ##__VA_ARGS__); \
+    } while (0)
 
 void system_bluetooth_ble_onRegister(const char* feature_name)
 {
@@ -106,6 +122,35 @@ static bool gattc_cmp(void* node, void* handle)
 static bool gattc_userdata_type_cmp(void* node, void* type)
 {
     return ((gattc_data_t*)node)->userdata_type == (gattc_userdata_type_t)type;
+}
+#endif
+
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+static bool aurasnk_cmp(void* node, void* data)
+{
+    return node == data;
+}
+
+static bool aurasnk_instance_cmp(void* node, void* data)
+{
+    feature_bluetooth_aurasnk_info_t* aurasnk_info = node;
+
+    return aurasnk_info->ins == data;
+}
+
+static bool aurasnk_scanner_cmp(void* node, void* data)
+{
+    feature_bluetooth_aurasnk_info_t* aurasnk_info = node;
+
+    return aurasnk_info->scanner == data;
+}
+
+static bool aurasnk_work_cmp(void* node, void* data)
+{
+    feature_bluetooth_aurasnk_pending_work_t* work = node;
+    aurasnk_work_type_t* p_type = data;
+
+    return work->type == *p_type;
 }
 #endif
 
@@ -2559,4 +2604,19 @@ FtBool system_bluetooth_ble_GattClient_interface_gattc_close(FeatureInterfaceHan
 #else
     return false;
 #endif
+}
+
+static void aurasnk_pending_work_finished(void* data)
+{
+    feature_bluetooth_aurasnk_pending_work_t* work = data;
+
+    if (work->status == BT_STATUS_SUCCESS) {
+        FeaturePromiseResolve(work->handle, work->pid);
+    } else {
+        FeaturePromiseReject(work->handle, work->pid, bt_status_to_feature_error(work->status),
+            "aurasnk work failed");
+    }
+
+    free(work);
+}
 }

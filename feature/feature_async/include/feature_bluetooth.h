@@ -18,6 +18,7 @@
 #ifndef _FEATURE_BLUETOOTH_H_
 #define _FEATURE_BLUETOOTH_H_
 #include "bluetooth.h"
+#include "bt_auracast_sink.h"
 #include "bt_device.h"
 #include "bt_list.h"
 #include "bt_message_gattc.h"
@@ -120,10 +121,49 @@ typedef struct {
     bt_list_t* userdata_list;
 } feature_bluetooth_gattc_info_t;
 
+typedef enum {
+    AURASNK_WORK_TYPE_START_SCAN,
+    AURASNK_WORK_TYPE_CREATE_SYNC,
+    AURASNK_WORK_TYPE_START_RECEIVE,
+} aurasnk_work_type_t;
+
+typedef struct {
+    aurasnk_work_type_t type;
+    FeatureInterfaceHandle handle;
+    FtPromiseId pid;
+    bt_status_t status;
+} feature_bluetooth_aurasnk_pending_work_t;
+
+typedef struct {
+    bt_le_address_t addr;
+    uint8_t sid;
+} feature_bluetooth_aurasnk_remote_t;
+
+typedef struct {
+    feature_bluetooth_aurasnk_remote_t remote;
+    bt_auracast_audio_info_t audio_info;
+    bool reported;
+    bool encrypted;
+} feature_bluetooth_aurasnk_stream_info_t;
+
+typedef struct {
+    bt_instance_t* ins;
+    FeatureInterfaceHandle handle;
+    FtCallbackId source_found_callback;
+    FtCallbackId stream_found_callback;
+    FtCallbackId stream_started_callback;
+    FtCallbackId stream_stopped_callback;
+    feature_bluetooth_aurasnk_stream_info_t* stream_info;
+    bt_list_t* pending_work; /** feature_bluetooth_aurasnk_pending_work_t */
+    void* scanner; /** bt_scanner_t* */
+    void* auracast_cbs_cookie; /** see @ref bt_auracast_sink_callbacks_t */
+} feature_bluetooth_aurasnk_info_t;
+
 typedef struct {
     bt_list_t* feature_ble_adv;
     bt_list_t* feature_ble_scan;
     bt_list_t* feature_ble_gattc;
+    bt_list_t* feature_ble_aurasnk;
 } feature_bluetooth_features_info_t;
 
 char* StringToFtString(const char* str);
