@@ -179,6 +179,24 @@ static void sync_removed(void* data)
     free(device);
 }
 
+static void process_sync_terminated(const pa_sync_device_t* device, const void* data)
+{
+    UNUSED(data);
+
+    bt_list_remove(g_pa_sync_info->sync_list, (void*)device);
+}
+
+static void sync_terminated(const pa_sync_event_t* msg)
+{
+    pa_sync_for_each_t iter = { 0 };
+
+    iter.func = process_sync_terminated;
+    iter.addr = &msg->addr;
+    iter.sid = msg->sid;
+
+    callback_for_each_device(&iter);
+}
+
 static const char* pa_sync_event_to_string(pa_sync_event_type_t event)
 {
     switch (event) {
@@ -205,6 +223,9 @@ static void pa_sync_process_message(void* data)
         break;
     case SYNC_ESTABLISHED:
         sync_established(msg);
+        break;
+    case SYNC_TERMINATED:
+        sync_terminated(msg);
         break;
     default:
         break;

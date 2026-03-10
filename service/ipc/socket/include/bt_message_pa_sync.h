@@ -62,18 +62,27 @@ typedef union {
     } _bt_pa_sync_terminate;
 } bt_message_pa_sync_t;
 
-typedef union {
-    struct {
-        uint8_t nothing; /**< TBD */
-    } _on_sync_established;
+typedef struct {
+    uint64_t cbs; /* bt_pa_sync_callbacks_t* */
+    uint64_t context; /* void* */
+    union {
+        struct {
+            bt_le_address_t addr;
+            uint8_t sid;
+            /** TODO: add other parameters, e.g., subevents */
+        } _on_sync_established;
 
-    struct {
-        uint8_t nothing; /**< TBD */
-    } _on_sync_terminated;
+        struct {
+            bt_le_address_t addr;
+            uint8_t sid;
+        } _on_sync_terminated;
 
-    struct {
-        uint8_t nothing; /**< TBD */
-    } _on_sync_report;
+        struct {
+            bt_le_address_t addr;
+            uint8_t sid;
+            /** TODO: add report data */
+        } _on_sync_report;
+    };
 } bt_message_pa_sync_callbacks_t;
 
 #ifdef __cplusplus

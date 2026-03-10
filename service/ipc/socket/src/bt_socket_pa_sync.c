@@ -25,6 +25,7 @@
 #include "bt_internal.h"
 
 #include "bt_message.h"
+#include "bt_socket.h"
 #include "pa_sync_service.h"
 
 /****************************************************************************
@@ -43,16 +44,45 @@ typedef struct pa_sync_remote {
  ****************************************************************************/
 static void on_sync_established_cb(const bt_le_address_t* addr, uint8_t sid, void* context)
 {
+    pa_sync_remote_t* remote = (pa_sync_remote_t*)context;
+    bt_message_packet_t packet = { 0 };
+
+    packet.pa_sync_cb.cbs = remote->cbs;
+    packet.pa_sync_cb.context = remote->context;
+    packet.pa_sync_cb._on_sync_established.sid = sid;
+    memcpy(&packet.pa_sync_cb._on_sync_established.addr, addr, sizeof(bt_le_address_t));
+
+    bt_socket_server_send(remote->ins, &packet, BT_PA_SYNC_ON_SYNC_ESTABLISHED);
 }
 
 static void on_sync_terminated_cb(const bt_le_address_t* addr, uint8_t sid, void* context)
 {
     pa_sync_remote_t* remote = (pa_sync_remote_t*)context;
+    bt_message_packet_t packet = { 0 };
+
+    packet.pa_sync_cb.cbs = remote->cbs;
+    packet.pa_sync_cb.context = remote->context;
+    packet.pa_sync_cb._on_sync_terminated.sid = sid;
+    memcpy(&packet.pa_sync_cb._on_sync_terminated.addr, addr, sizeof(bt_le_address_t));
+
+    bt_socket_server_send(remote->ins, &packet, BT_PA_SYNC_ON_SYNC_TERMINATED);
+
     free(remote);
 }
 
 static void on_sync_report_cb(const bt_le_address_t* addr, uint8_t sid, void* context)
 {
+    pa_sync_remote_t* remote = (pa_sync_remote_t*)context;
+    bt_message_packet_t packet = { 0 };
+
+    packet.pa_sync_cb.cbs = remote->cbs;
+    packet.pa_sync_cb.context = remote->context;
+    packet.pa_sync_cb._on_sync_report.sid = sid;
+    memcpy(&packet.pa_sync_cb._on_sync_report.addr, addr, sizeof(bt_le_address_t));
+
+    /** TODO: add report data */
+
+    bt_socket_server_send(remote->ins, &packet, BT_PA_SYNC_ON_SYNC_REPORT);
 }
 
 static const bt_pa_sync_callbacks_t g_pa_sync_socket_cb = {
@@ -99,3 +129,38 @@ void bt_socket_server_pa_sync_process(service_poll_t* poll, int fd, bt_instance_
     }
 }
 #endif
+
+int bt_socket_client_pa_sync_callback(service_poll_t* poll, int fd, bt_instance_t* ins,
+    bt_message_packet_t* packet, bool is_async)
+{
+    bt_pa_sync_callbacks_t* cbs = INT2PTR(bt_pa_sync_callbacks_t*) packet->pa_sync_cb.cbs;
+    void* context = INT2PTR(void*) packet->pa_sync_cb.context;
+
+    if (!cbs)
+        return BT_STATUS_PARM_INVALID;
+
+    switch (BT_IPC_GET_SUBCODE(packet->code)) {
+    case PA_SYNC_SUBCODE_SYNC_ESTABLISHED_CALLBACK:
+        if (cbs->on_sync_established) {
+            cbs->on_sync_established(&packet->pa_sync_cb._on_sync_established.addr,
+                packet->pa_sync_cb._on_sync_established.sid, context);
+        }
+        break;
+    case PA_SYNC_SUBCODE_SYNC_TERMINATED_CALLBACK:
+        if (cbs->on_sync_terminated) {
+            cbs->on_sync_terminated(&packet->pa_sync_cb._on_sync_established.addr,
+                packet->pa_sync_cb._on_sync_established.sid, context);
+        }
+        break;
+    case PA_SYNC_SUBCODE_SYNC_REPORT_CALLBACK:
+        if (cbs->on_sync_report) {
+            cbs->on_sync_report(&packet->pa_sync_cb._on_sync_established.addr,
+                packet->pa_sync_cb._on_sync_established.sid, context);
+        }
+        break;
+    default:
+        break;
+    }
+
+    return BT_STATUS_SUCCESS;
+}
