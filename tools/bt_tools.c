@@ -1785,7 +1785,12 @@ static void bt_tool_uninit_cb(void* data)
 static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
 {
     PRINT("Context:%p, Adapter state changed: %d", cookie, state);
-    if (state == BT_ADAPTER_STATE_ON) {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+    if (state == BT_ADAPTER_STATE_ON)
+#else
+    if (state == BT_ADAPTER_STATE_BLE_ON)
+#endif
+    {
         char name[64 + 1];
 
         bt_tool_init(g_bttool_ins);
@@ -1801,7 +1806,13 @@ static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
         bt_adapter_le_enable_key_derivation(g_bttool_ins, true, true);
         bt_adapter_set_page_scan_parameters(g_bttool_ins, BT_BR_SCAN_TYPE_INTERLACED, 0x400, 0x24);
         PRINT("Adapter Name: %s, Cap: %d, Class: 0x%08" PRIX32 ", Mode:%d", name, cap, class, mode);
-    } else if (state == BT_ADAPTER_STATE_TURNING_OFF) {
+    } else
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+        if (state == BT_ADAPTER_STATE_TURNING_OFF)
+#else
+        if (state == BT_ADAPTER_STATE_BLE_TURNING_OFF)
+#endif
+    {
         /* code */
         if (g_bttool_loop && g_bttool_loop->data && !uv_loop_is_close(g_bttool_loop)) {
             do_in_thread_loop(g_bttool_loop, bt_tool_uninit_cb, NULL);
@@ -1995,7 +2006,12 @@ static int bttool_ins_init(bttool_t* bttool)
     }
 
     adapter_callback = bt_adapter_register_callback(g_bttool_ins, &g_adapter_cbs);
+
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     if (bt_adapter_get_state(g_bttool_ins) == BT_ADAPTER_STATE_ON)
+#else
+    if (bt_adapter_get_state(g_bttool_ins) == BT_ADAPTER_STATE_BLE_ON)
+#endif
         bt_tool_init(g_bttool_ins);
 
     return 0;
