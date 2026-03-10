@@ -2619,4 +2619,98 @@ static void aurasnk_pending_work_finished(void* data)
 
     free(work);
 }
+
+FeatureInterfaceHandle system_bluetooth_ble_wrap_createAuracastSink(FeatureInstanceHandle feature,
+    AppendData adata)
+{
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+    bt_instance_t* bluetooth_instance = feature_bluetooth_get_bt_ins(feature);
+    feature_bluetooth_features_info_t* features_info = bluetooth_instance->context;
+    feature_bluetooth_aurasnk_info_t* aurasnk_info = zalloc(
+        sizeof(feature_bluetooth_aurasnk_info_t));
+    if (!aurasnk_info)
+        return NULL;
+
+    FeatureInterfaceHandle handle = system_bluetooth_ble_createAuracastSink_instance(feature);
+    FEATURE_LOG_INFO("%s::%s(), FeatureInstanceHandle: %p, FeatureInterfaceHandle: %p\n", file_tag,
+        __FUNCTION__, feature, handle);
+
+    aurasnk_info->ins = bluetooth_instance;
+    aurasnk_info->handle = handle;
+    aurasnk_info->source_found_callback = FEATURE_BLE_FT_CALLBACK_ID_INVALID;
+    aurasnk_info->stream_found_callback = FEATURE_BLE_FT_CALLBACK_ID_INVALID;
+    aurasnk_info->stream_started_callback = FEATURE_BLE_FT_CALLBACK_ID_INVALID;
+    aurasnk_info->stream_stopped_callback = FEATURE_BLE_FT_CALLBACK_ID_INVALID;
+    aurasnk_info->pending_work = bt_list_new(aurasnk_pending_work_finished);
+    if (!aurasnk_info->pending_work) {
+        free(aurasnk_info);
+        return NULL;
+    }
+
+    bt_list_add_tail(features_info->feature_ble_aurasnk, aurasnk_info);
+    FeatureSetObjectData(handle, aurasnk_info);
+
+    return handle;
+#else
+    return NULL;
+#endif
+}
+
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+static void feature_auracast_sink_destroy(FeatureInterfaceHandle handle)
+{
+    bt_instance_t* ins;
+    feature_bluetooth_features_info_t* features_info;
+    feature_bluetooth_aurasnk_info_t* aurasnk_info = FeatureGetObjectData(handle);
+    if (aurasnk_info == NULL)
+        return;
+
+    ins = aurasnk_info->ins;
+    features_info = ins->context;
+    if (aurasnk_info->source_found_callback != FEATURE_BLE_FT_CALLBACK_ID_INVALID)
+        FeatureRemoveCallback(handle, aurasnk_info->source_found_callback);
+
+    if (aurasnk_info->stream_found_callback != FEATURE_BLE_FT_CALLBACK_ID_INVALID)
+        FeatureRemoveCallback(handle, aurasnk_info->stream_found_callback);
+
+    if (aurasnk_info->stream_started_callback != FEATURE_BLE_FT_CALLBACK_ID_INVALID)
+        FeatureRemoveCallback(handle, aurasnk_info->stream_started_callback);
+
+    if (aurasnk_info->stream_stopped_callback != FEATURE_BLE_FT_CALLBACK_ID_INVALID)
+        FeatureRemoveCallback(handle, aurasnk_info->stream_stopped_callback);
+
+    bt_list_free(aurasnk_info->pending_work);
+    if (aurasnk_info->scanner && aurasnk_info->scanner != FEATURE_BLE_PTR_PENDING) {
+        FEATURE_LOG_INFO("%s::%s(), stop scan", file_tag, __FUNCTION__);
+        bt_le_stop_scan_async(ins, aurasnk_info->scanner, NULL, NULL);
+        aurasnk_info->scanner = NULL;
+    }
+
+    if (aurasnk_info->stream_info) {
+        FEATURE_LOG_INFO("%s::%s(), terminate sync", file_tag, __FUNCTION__);
+        bt_auracast_sink_terminate_sync_async(ins, &aurasnk_info->stream_info->remote.addr,
+            aurasnk_info->stream_info->remote.sid, NULL, NULL);
+        bt_pa_sync_terminate_async(ins, &aurasnk_info->stream_info->remote.addr,
+            aurasnk_info->stream_info->remote.sid, NULL, NULL);
+        free(aurasnk_info->stream_info);
+    }
+
+    if (aurasnk_info->auracast_cbs_cookie
+        && aurasnk_info->auracast_cbs_cookie != FEATURE_BLE_PTR_PENDING) {
+        FEATURE_LOG_INFO("%s::%s(), stop receive", file_tag, __FUNCTION__);
+        bt_auracast_sink_unregister_callbacks_async(ins, aurasnk_info->auracast_cbs_cookie, NULL,
+            NULL);
+        aurasnk_info->auracast_cbs_cookie = NULL;
+    }
+
+    bt_list_remove(features_info->feature_ble_aurasnk, aurasnk_info);
+}
+#endif /** CONFIG_BLUETOOTH_AURACAST_SINK */
+
+void system_bluetooth_ble_AuracastSink_interface_aurasnk_finalize(FeatureInterfaceHandle handle)
+{
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+    feature_auracast_sink_destroy(handle);
+#endif
+}
 }
