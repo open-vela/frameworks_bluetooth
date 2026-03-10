@@ -67,6 +67,9 @@ static inline auracast_sink_device_t* device_new(bt_controller_id_t id, const bt
 {
     auracast_sink_device_t* device;
 
+    if (!g_auracast_sink_service.sink_list)
+        return NULL;
+
     device = zalloc(sizeof(auracast_sink_device_t));
     if (!device)
         return NULL;
@@ -117,6 +120,9 @@ static bool msg_cmp(void* data, void* context)
 
 static inline auracast_sink_device_t* find_device_by_msg(const auracast_sink_msg_t* msg)
 {
+    if (!g_auracast_sink_service.sink_list)
+        return NULL;
+
     return bt_list_find(g_auracast_sink_service.sink_list, msg_cmp, (void*)msg);
 }
 
@@ -150,10 +156,19 @@ static void service_startup(const auracast_sink_msg_t* msg)
     if (!service->sink_list)
         goto error;
 
+    service->callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
+    if (!service->callbacks)
+        goto error;
+
+    if (bt_sal_auracast_sink_init() != BT_STATUS_SUCCESS)
+        goto error;
+
     cb(PROFILE_AURACAST_SINK, true);
     return;
 
 error:
+    bt_callbacks_list_free(service->callbacks);
+    service->callbacks = NULL;
     bt_list_free(service->sink_list);
     service->sink_list = NULL;
 
@@ -165,6 +180,11 @@ static void service_shutdown(const auracast_sink_msg_t* msg)
     auracast_sink_service_t* service = &g_auracast_sink_service;
     profile_on_shutdown_t cb = (profile_on_shutdown_t)msg->context;
 
+    bt_sal_auracast_sink_cleanup();
+
+    bt_callbacks_list_free(service->callbacks);
+    service->callbacks = NULL;
+
     bt_list_free(service->sink_list);
     service->sink_list = NULL;
 
@@ -175,6 +195,39 @@ static void service_shutdown(const auracast_sink_msg_t* msg)
 static void auracast_sink_process_message(void* data)
 {
     auracast_sink_msg_t* msg = (auracast_sink_msg_t*)data;
+    auracast_sink_device_t* device = NULL;
+
+    if (!msg)
+        return;
+
+    switch (msg->event) {
+    case AURACAST_SINK_STARTUP:
+        service_startup(msg);
+        msg->context = NULL;
+        break;
+    case AURACAST_SINK_SHUTDOWN:
+        service_shutdown(msg);
+        msg->context = NULL;
+        break;
+    case AURACAST_SINK_CREATE_SYNC:
+        /** Allowed to create new device */
+        if ((device = find_or_create_device(msg->id, &msg->addr, msg->sid)) == NULL) {
+            BT_LOGE("Failed to create device");
+            break;
+        }
+
+        auracast_sink_state_machine_handle_event(device->stm, msg);
+        break;
+    default:
+        /** Not allowed to create new device */
+        if ((device = find_device_by_msg(msg)) == NULL) {
+            BT_LOGE("Device not found");
+            break;
+        }
+
+        auracast_sink_state_machine_handle_event(device->stm, msg);
+        break;
+    }
 
     auracast_sink_msg_destory(msg);
 }
@@ -226,27 +279,54 @@ static int auracast_sink_get_state(void)
 static void* auracast_sink_register_callbacks(void* remote,
     const bt_auracast_sink_callbacks_t* callbacks)
 {
+    if (!g_auracast_sink_service.callbacks)
     return NULL;
+
+    return bt_remote_callbacks_register(g_auracast_sink_service.callbacks, remote,
+        (void*)callbacks);
 }
 
 static bool auracast_sink_unregister_callbacks(void** remote, void* cookie)
 {
-    return true;
+    if (!g_auracast_sink_service.callbacks)
+        return false;
+
+    return bt_remote_callbacks_unregister(g_auracast_sink_service.callbacks, remote, cookie);
 }
 
 static bt_status_t auracast_sink_create_sync(const bt_le_address_t* addr, uint8_t sid,
     uint32_t bitfield, const uint8_t* broadcast_code)
 {
+    auracast_sink_event_create_sync_t* payload;
+    auracast_sink_msg_t* msg = auracast_sink_msg_new_ext(AURACAST_SINK_CREATE_SYNC, PRIMARY_ADAPTER,
+        addr, sid, sizeof(auracast_sink_event_create_sync_t));
+    if (!msg)
+        return BT_STATUS_NOMEM;
+
+    payload = (auracast_sink_event_create_sync_t*)msg->data.data;
+    payload->bitfield = bitfield;
+    payload->encrypted = broadcast_code != NULL;
+    if (broadcast_code)
+        memcpy(payload->broadcast_code, broadcast_code, BT_AURACAST_BROADCAST_CODE_LEN);
+
+    auracast_sink_send_message(msg);
+
     return BT_STATUS_SUCCESS;
 }
 
 static bt_status_t auracast_sink_terminate_sync(const bt_le_address_t* addr, uint8_t sid)
 {
+    auracast_sink_send_message(auracast_sink_msg_new(AURACAST_SINK_TERMINATE_SYNC, PRIMARY_ADAPTER,
+        addr, sid));
+
     return BT_STATUS_SUCCESS;
 }
 
 static bt_status_t auracast_sink_dump(void)
 {
+    auracast_sink_send_message(auracast_sink_msg_new(AURACAST_SINK_DUMP, PRIMARY_ADAPTER, NULL,
+        BLE_SCAN_SID_NOT_PROVIDED));
+
     return BT_STATUS_SUCCESS;
 }
 
@@ -272,6 +352,26 @@ void auracast_sink_send_message(void* msg)
         return;
 
     do_in_service_loop(auracast_sink_process_message, msg);
+}
+
+void auracast_sink_service_notify_sync_established(const void* context)
+{
+    const auracast_sink_device_t* device = (const auracast_sink_device_t*)context;
+
+    BT_LOGD("%s", __func__);
+
+    AURACAST_SINK_CALLBACK_FOREACH(g_auracast_sink_service.callbacks, on_sync_established,
+        &device->addr, device->sid);
+}
+
+void auracast_sink_service_notify_sync_terminated(const void* context)
+{
+    const auracast_sink_device_t* device = (const auracast_sink_device_t*)context;
+
+    BT_LOGD("%s", __func__);
+
+    AURACAST_SINK_CALLBACK_FOREACH(g_auracast_sink_service.callbacks, on_sync_terminated,
+        &device->addr, device->sid);
 }
 
 static const profile_service_t auracast_sink_service = {
