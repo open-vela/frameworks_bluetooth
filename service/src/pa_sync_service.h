@@ -17,11 +17,13 @@
 #ifndef __PA_SYNC_SERVICE_H__
 #define __PA_SYNC_SERVICE_H__
 
-#include "bt_status.h"
+#include "bt_pa_sync.h"
 
 bt_status_t pa_sync_init(void);
 bt_status_t pa_sync_cleanup(void);
-bt_status_t pa_sync_create(void);
+bt_status_t pa_sync_create(const bt_le_address_t* addr, uint8_t sid,
+    const bt_pa_sync_create_param_t* params, const bt_pa_sync_callbacks_t* cbs,
+    const void* context);
 bt_status_t pa_sync_terminate(void);
 
 #endif /* __PA_SYNC_SERVICE_H__ */

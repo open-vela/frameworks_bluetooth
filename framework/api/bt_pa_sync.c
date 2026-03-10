@@ -16,9 +16,11 @@
 
 #include "bt_pa_sync.h"
 #include "bt_internal.h"
+#include "pa_sync_service.h"
 
 bt_status_t BTSYMBOLS(bt_pa_sync_create)(bt_instance_t* ins, const bt_le_address_t* addr,
-    uint8_t sid, const bt_pa_sync_create_param_t* params, const bt_pa_sync_callbacks_t* cbs)
+    uint8_t sid, const bt_pa_sync_create_param_t* params, const bt_pa_sync_callbacks_t* cbs,
+    const void* context)
 {
-    return BT_STATUS_NOT_SUPPORTED;
+    return pa_sync_create(addr, sid, params, cbs, context);
 }

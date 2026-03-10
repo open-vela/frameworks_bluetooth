@@ -52,7 +52,9 @@ bt_status_t pa_sync_cleanup(void)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t pa_sync_create(void)
+bt_status_t pa_sync_create(const bt_le_address_t* addr, uint8_t sid,
+    const bt_pa_sync_create_param_t* params, const bt_pa_sync_callbacks_t* cbs,
+    const void* context)
 {
     BT_LOGD("%s", __func__);
 

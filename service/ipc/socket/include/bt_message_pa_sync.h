@@ -53,6 +53,7 @@ typedef union {
         uint8_t have_params; /* true if params is provided */
         bt_pa_sync_create_param_t params;
         uint64_t cbs; /* bt_pa_sync_callbacks_t* */
+        uint64_t context; /* void* */
     } _bt_pa_sync_create;
 
     struct {

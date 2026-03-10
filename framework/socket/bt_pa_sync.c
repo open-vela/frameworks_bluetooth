@@ -18,7 +18,7 @@
 #include "bt_socket.h"
 
 bt_status_t bt_pa_sync_create(bt_instance_t* ins, const bt_le_address_t* addr, uint8_t sid,
-    const bt_pa_sync_create_param_t* params, const bt_pa_sync_callbacks_t* cbs)
+    const bt_pa_sync_create_param_t* params, const bt_pa_sync_callbacks_t* cbs, const void* context)
 {
     bt_message_packet_t packet = { 0 };
     bt_status_t status;
@@ -35,6 +35,9 @@ bt_status_t bt_pa_sync_create(bt_instance_t* ins, const bt_le_address_t* addr, u
         memcpy(&packet.pa_sync_pl._bt_pa_sync_create.params, params,
             sizeof(bt_pa_sync_create_param_t));
     }
+
+    if (context)
+        packet.pa_sync_pl._bt_pa_sync_create.context = PTR2INT(uint64_t) context;
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_PA_SYNC_CREATE_SYNC);
     if (status != BT_STATUS_SUCCESS)
