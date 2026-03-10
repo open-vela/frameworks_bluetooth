@@ -23,6 +23,13 @@ extern "C" {
 #include "bt_audio_numbers.h"
 #include "bt_pa_sync.h"
 
+#ifndef BTSYMBOLS
+#define BTSYMBOLS(s) s
+#endif
+
+#define AURACAST_BITFIELD(x) (1UL << x)
+#define AURACAST_BITFIELD_ALL (0xFFFFFFFE) /**< bit[0] is reserved */
+
 #define BT_AURACAST_BROADCAST_CODE_LEN (16)
 #define BT_AURACAST_SINK_NUM_SUBGROUPS_SUPPORTED (2)
 #define BT_AURACAST_SINK_NUM_BIS_SUPPORTED (2)
@@ -136,6 +143,31 @@ typedef struct bt_auracast_audio_info {
 } bt_auracast_audio_info_t;
 
 /**
+ * @brief Auracast sync established.
+ *
+ * @param cookie Callback cookie
+ * @param addr The Bluetooth address and address type of the remote device
+ * @param sid The advertising set id (0x00-0x0F) to identify the periodic advertising
+ */
+typedef void (*on_auracast_sync_established_callback)(void* cookie, const bt_le_address_t* addr,
+    uint8_t sid);
+
+/**
+ * @brief Auracast sync terminated.
+ *
+ * @param cookie Callback cookie
+ * @param addr The Bluetooth address and address type of the remote device
+ * @param sid The advertising set id (0x00-0x0F) to identify the periodic advertising
+ */
+typedef void (*on_auracast_sync_terminated_callback)(void* cookie, const bt_le_address_t* addr,
+    uint8_t sid);
+
+typedef struct {
+    on_auracast_sync_established_callback on_sync_established;
+    on_auracast_sync_terminated_callback on_sync_terminated;
+} bt_auracast_sink_callbacks_t;
+
+/**
  * @brief Parse an periodic advertising report and check if basic audio announcement is present.
  *
  * @param[out] info Buffer to store the parsed auracast audio info
@@ -147,6 +179,67 @@ typedef struct bt_auracast_audio_info {
  */
 bt_status_t bt_auracast_sink_parse_adv_data(bt_auracast_audio_info_t* info,
     const bt_pa_sync_report_t* report);
+
+/**
+ * @brief Register callback functions to Auracast sink service.
+ *
+ * An application may register interested callbacks on initialization, this includes connection
+ * state changed callbacks.
+ *
+ * @param ins - the Bluetooth client instance
+ * @param cbs - Auracast sink callback functions, see @ref bt_auracast_sink_callbacks_t
+ *
+ * @return void* - callbacks cookie, if the callback is registered successfuly.
+ * @return NULL - the callback is already registered or registration fails.
+ */
+void* BTSYMBOLS(bt_auracast_sink_register_callbacks)(bt_instance_t* ins,
+    const bt_auracast_sink_callbacks_t* cbs);
+
+/**
+ * @brief Unregister callback functions from Auracast sink service.
+ *
+ * An application shall unregister the callbacks when logging out to release resources.
+ *
+ * @param ins - the Bluetooth client instance
+ * @param cookie - callbacks cookie
+ *
+ * @return true - callback unregistration successful.
+ * @return false - callback cookie not found or callback unregistration failed.
+ */
+bool BTSYMBOLS(bt_auracast_sink_unregister_callbacks)(bt_instance_t* ins, void* cookie);
+
+/**
+ * @brief Synchronize to an Auracast source described in the periodic advertising train.
+ *
+ * @param[in] ins The Bluetooth instance, see @ref bt_instance_t
+ * @param[in] addr The Bluetooth address and address type of the remote device
+ * @param[in] sid The advertising set id subfield to identify the periodic advertising, range from
+ *                0x00 to 0x0F
+ * @param[in] bitfield Bitwise value of which BIS is to synchronize, e.g., BIS[x] is synchronized if
+ *                     bit x is set. The value of x ranges from 0x1 to 0x1F
+ *                     Value x can be acquired from `index` in @ref bt_auracast_audio_bis_info_t
+ *                     See @ref bt_auracast_sink_parse_adv_data
+ *                     See @ref AURACAST_BITFIELD(x)
+ * @param[in] broadcast_code 16-octet code used for deriving the session key for decrypting payloads
+ *                           of BISes in the BIG. NULL if not encrypted
+ *
+ * @return `BT_STATUS_SUCCESS` on success, or other error codes on failure.
+ */
+bt_status_t BTSYMBOLS(bt_auracast_sink_create_sync)(bt_instance_t* ins, const bt_le_address_t* addr,
+    uint8_t sid, uint32_t bitfield, const uint8_t* broadcast_code);
+
+/**
+ * @brief Terminate from an Auracast source.
+ *
+ * @param[in] ins The Bluetooth instance, see @ref bt_instance_t
+ * @param[in] addr The Bluetooth address and address type of the remote device
+ * @param[in] sid The advertising set id subfield to identify the periodic advertising, range from
+ *                0x00 to 0x0F
+ *
+ * @return `BT_STATUS_SUCCESS` on success, or other error codes on failure.
+ */
+bt_status_t BTSYMBOLS(bt_auracast_sink_terminate_sync)(bt_instance_t* ins,
+    const bt_le_address_t* addr, uint8_t sid);
 
 #ifdef __cplusplus
 }
