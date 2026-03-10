@@ -1081,13 +1081,13 @@ static uint8_t* ras_subevent_data_conversion(bt_address_t* addr, bt_srv_conn_le_
     uint8_t* stream_buf = ras_srv->latest_local_steps;
     int bit_offset = 0;
 
-     /**
+    /**
      * Rangging Counter.
      * Rangging Counter is lower 12-bits of CS Procedure_Counter Provided by the Core Controller.
      */
     ras_write_bits(stream_buf, &bit_offset, result->header.procedure_counter, 12);
 
-     /**
+    /**
      * Configuration ID.
      * Range: 0 to 3
      * CS configuration identifier.
@@ -1345,7 +1345,7 @@ static void cs_ras_gatts_feature_read_cb(bt_address_t* addr, uint32_t req_handle
 
 static void ras_rang_on_demand_send_ready(bt_address_t* addr)
 {
-    uint16_t count = CS_RAS_STORE_PROCEDURE_NUM_MAX; 
+    uint16_t count = CS_RAS_STORE_PROCEDURE_NUM_MAX;
     if (!ras_srv) {
         BT_LOGE("Invalid ras_srv environment, init it first.");
         return;
@@ -1359,9 +1359,9 @@ static void ras_rang_on_demand_send_ready(bt_address_t* addr)
     }
 
     if (count < CS_RAS_STORE_PROCEDURE_NUM_MAX && cs_ras_data_ready_send(addr, count) == BT_STATUS_SUCCESS) {
-            // Set the on-demand state to ready.
-            ras_srv->on_demand_state = CS_RAS_ON_DEMAND_STATE_BUSY;
-            return;
+        // Set the on-demand state to ready.
+        ras_srv->on_demand_state = CS_RAS_ON_DEMAND_STATE_BUSY;
+        return;
     }
 }
 
