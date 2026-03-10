@@ -95,10 +95,24 @@ static void on_sync_report_cb(const bt_le_address_t* addr, uint8_t sid,
     bt_socket_server_send(remote->ins, &packet, BT_PA_SYNC_ON_SYNC_REPORT);
 }
 
+static void on_auracast_ready_cb(const bt_le_address_t* addr, uint8_t sid, void* context)
+{
+    pa_sync_remote_t* remote = (pa_sync_remote_t*)context;
+    bt_message_packet_t packet = { 0 };
+
+    packet.pa_sync_cb.cbs = remote->cbs;
+    packet.pa_sync_cb.context = remote->context;
+    packet.pa_sync_cb._on_auracast_ready.sid = sid;
+    memcpy(&packet.pa_sync_cb._on_auracast_ready.addr, addr, sizeof(bt_le_address_t));
+
+    bt_socket_server_send(remote->ins, &packet, BT_PA_SYNC_ON_AURACAST_READY);
+}
+
 static const bt_pa_sync_callbacks_t g_pa_sync_socket_cb = {
     .on_sync_established = on_sync_established_cb,
     .on_sync_terminated = on_sync_terminated_cb,
     .on_sync_report = on_sync_report_cb,
+    .on_auracast_ready = on_auracast_ready_cb,
 };
 
 /****************************************************************************
@@ -177,6 +191,12 @@ int bt_socket_client_pa_sync_callback(service_poll_t* poll, int fd, bt_instance_
 
             cbs->on_sync_report(&packet->pa_sync_cb._on_sync_report.addr,
                 packet->pa_sync_cb._on_sync_report.sid, &report, context);
+        }
+        break;
+    case PA_SYNC_SUBCODE_AURACAST_READY_CALLBACK:
+        if (cbs->on_auracast_ready) {
+            cbs->on_auracast_ready(&packet->pa_sync_cb._on_auracast_ready.addr,
+                packet->pa_sync_cb._on_auracast_ready.sid, context);
         }
         break;
     default:

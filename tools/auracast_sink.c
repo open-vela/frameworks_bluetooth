@@ -36,6 +36,8 @@ typedef struct {
     bt_le_address_t addr;
     uint8_t sid;
     int rssi;
+    bool base_parsed;
+    bool auracast_ready;
 } bttool_auracast_pa_sync_t;
 
 typedef struct {
@@ -400,17 +402,19 @@ static void on_sync_report(const bt_le_address_t* addr, uint8_t sid,
     char* log = NULL;
     size_t size = BTTOOL_AURACAST_SINK_LOG_SIZE;
 
-    if (!g_auracast_sink ||!bt_list_find(g_auracast_sink->sync_list, sync_cmp, sync))
+    if (!g_auracast_sink || !bt_list_find(g_auracast_sink->sync_list, sync_cmp, sync))
         return;
-
-    PRINT_ADDR("on_sync_report, addr:[%s][%s], sid:0x%x", (const bt_address_t*)addr->addr,
-        parse_addr_type(addr->addr_type), sid);
 
     log = zalloc(size); /**< for print log */
     if (!log)
         return;
 
-    BTTOOL_STRCAT(log, size, "\tcnt = %d, len = %d", report->cnt, report->adv_data_len);
+    BTTOOL_STRCAT(log, size, "%s from [%02x:%02x:%02x:%02x:%02x:%02x][%s(%d)], sid:0x%x, "
+                             "cnt = %d, len = %d",
+        __func__, addr->addr[5], addr->addr[4], addr->addr[3], addr->addr[2], addr->addr[1],
+        addr->addr[0], parse_addr_type(addr->addr_type), addr->addr_type, sid, report->cnt,
+        report->adv_data_len);
+
     if (report->tx_power != BT_POWER_UNAVAILABLE)
         BTTOOL_STRCAT(log, size, ", txpower:%d", report->tx_power);
 
@@ -429,6 +433,10 @@ static void on_sync_report(const bt_le_address_t* addr, uint8_t sid,
     if (status != BT_STATUS_SUCCESS)
         goto exit;
 
+    if (sync->base_parsed)
+        goto exit; /**< avoid spam */
+
+    sync->base_parsed = true;
     dump_auracast_audio_info(info);
 
 exit:
@@ -436,10 +444,27 @@ exit:
     free(log);
 }
 
+static void on_auracast_ready(const bt_le_address_t* addr, uint8_t sid, void* context)
+{
+    bttool_auracast_pa_sync_t* sync = (bttool_auracast_pa_sync_t*)context;
+
+    if (!g_auracast_sink || !bt_list_find(g_auracast_sink->sync_list, sync_cmp, sync))
+        return;
+
+    if (sync->auracast_ready)
+        return; /**< avoid spam */
+
+    sync->auracast_ready = true;
+
+    PRINT_ADDR("on_auracast_ready, addr:[%s][%s], sid:0x%x", (const bt_address_t*)addr->addr,
+        parse_addr_type(addr->addr_type), sid);
+}
+
 static const bt_pa_sync_callbacks_t pa_sync_cbs = {
     .on_sync_established = on_sync_established,
     .on_sync_terminated = on_sync_terminated,
     .on_sync_report = on_sync_report,
+    .on_auracast_ready = on_auracast_ready,
 };
 
 static const bt_pa_sync_create_param_t default_sync_params = {
