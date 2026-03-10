@@ -95,7 +95,8 @@ static void on_sync_report_cb(const bt_le_address_t* addr, uint8_t sid,
     bt_socket_server_send(remote->ins, &packet, BT_PA_SYNC_ON_SYNC_REPORT);
 }
 
-static void on_auracast_ready_cb(const bt_le_address_t* addr, uint8_t sid, void* context)
+static void on_auracast_ready_cb(const bt_le_address_t* addr, uint8_t sid, bool encrypted,
+    void* context)
 {
     pa_sync_remote_t* remote = (pa_sync_remote_t*)context;
     bt_message_packet_t packet = { 0 };
@@ -103,6 +104,7 @@ static void on_auracast_ready_cb(const bt_le_address_t* addr, uint8_t sid, void*
     packet.pa_sync_cb.cbs = remote->cbs;
     packet.pa_sync_cb.context = remote->context;
     packet.pa_sync_cb._on_auracast_ready.sid = sid;
+    packet.pa_sync_cb._on_auracast_ready.encrypted = encrypted;
     memcpy(&packet.pa_sync_cb._on_auracast_ready.addr, addr, sizeof(bt_le_address_t));
 
     bt_socket_server_send(remote->ins, &packet, BT_PA_SYNC_ON_AURACAST_READY);
@@ -196,7 +198,8 @@ int bt_socket_client_pa_sync_callback(service_poll_t* poll, int fd, bt_instance_
     case PA_SYNC_SUBCODE_AURACAST_READY_CALLBACK:
         if (cbs->on_auracast_ready) {
             cbs->on_auracast_ready(&packet->pa_sync_cb._on_auracast_ready.addr,
-                packet->pa_sync_cb._on_auracast_ready.sid, context);
+                packet->pa_sync_cb._on_auracast_ready.sid,
+                packet->pa_sync_cb._on_auracast_ready.encrypted, context);
         }
         break;
     default:

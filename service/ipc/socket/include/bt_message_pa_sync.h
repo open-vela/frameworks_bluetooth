@@ -77,8 +77,13 @@ typedef struct {
         struct {
             bt_le_address_t addr;
             uint8_t sid;
-        } _on_sync_terminated,
-            _on_auracast_ready;
+        } _on_sync_terminated;
+
+        struct {
+            bt_le_address_t addr;
+            uint8_t sid;
+            bool encrypted;
+        } _on_auracast_ready;
 
         struct {
             bt_le_address_t addr;

@@ -166,12 +166,12 @@ static void sync_report_callback(const bt_pa_sync_callbacks_t* cbs, const bt_le_
 }
 
 static void auracast_ready_callback(const bt_pa_sync_callbacks_t* cbs, const bt_le_address_t* addr,
-    uint8_t sid, const void* context)
+    uint8_t sid, bool encrypted, const void* context)
 {
     if (!cbs || !cbs->on_auracast_ready)
         return;
 
-    cbs->on_auracast_ready(addr, sid, (void*)context);
+    cbs->on_auracast_ready(addr, sid, encrypted, (void*)context);
 }
 
 static void create_sync(const pa_sync_event_t* msg)
@@ -413,7 +413,8 @@ static void process_biginfo_received(const pa_sync_device_t* device, const void*
 
     if (device->audio_info && device->biginfo) {
         /** Both info collected, auracast sink is now ready to receive  */
-        auracast_ready_callback(device->cbs, &device->addr, device->sid, device->context);
+        auracast_ready_callback(device->cbs, &device->addr, device->sid, biginfo->encryption,
+            device->context);
     }
 }
 

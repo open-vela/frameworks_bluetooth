@@ -96,6 +96,7 @@ static const struct option sync_select_options[] = {
 
 static const struct option auracast_recv_options[] = {
     { "bis", required_argument, 0, 'b' },
+    { "encryption", required_argument, 0, 'e' },
     { 0, 0, 0, 0 },
 };
 
@@ -151,7 +152,9 @@ static bt_command_t g_auracast_sink_tables[] = {
                                        "\t\t\t bitwise value on which bis is selected, "
                                        "bit[x] refers to bis with index x + 1, for example:\n"
                                        "\t\t\t\t 0x00000001 - the 1st stream\n"
-                                       "\t\t\t\t 0x00000003 - the 1st & 2nd streams\"" },
+                                       "\t\t\t\t 0x00000003 - the 1st & 2nd streams\n"
+                                       "\t -e or --encryption\n"
+                                       "\t\t\t the broadcast code\"" },
     { "stoprecv", auracast_terminate_cmd, 1, "\"terminate sync to auracast source, params:\n"
                                              "\t -a or --addr\n"
                                              "\t\t\t the address of the advertiser, e.g., "
@@ -492,7 +495,8 @@ exit:
     free(log);
 }
 
-static void on_auracast_ready(const bt_le_address_t* addr, uint8_t sid, void* context)
+static void on_auracast_ready(const bt_le_address_t* addr, uint8_t sid, bool encrypted,
+    void* context)
 {
     bttool_auracast_pa_sync_t* sync = (bttool_auracast_pa_sync_t*)context;
 
@@ -504,8 +508,8 @@ static void on_auracast_ready(const bt_le_address_t* addr, uint8_t sid, void* co
 
     sync->auracast_ready = true;
 
-    PRINT_ADDR("on_auracast_ready, addr:[%s][%s], sid:0x%x", (const bt_address_t*)addr->addr,
-        parse_addr_type(addr->addr_type), sid);
+    PRINT_ADDR("on_auracast_ready, addr:[%s][%s], sid:0x%x%s", (const bt_address_t*)addr->addr,
+        parse_addr_type(addr->addr_type), sid, encrypted ? ", encrypted" : "");
 }
 
 static const bt_pa_sync_callbacks_t pa_sync_cbs = {
@@ -840,6 +844,7 @@ static int auracast_receive_cmd(void* handle, int argc, char* argv[])
     bt_status_t status;
     bttool_auracast_pa_sync_t* sync;
     uint32_t bitfield = AURACAST_BITFIELD_ALL;
+    uint8_t broadcast_code[BT_AURACAST_BROADCAST_CODE_LEN] = { 0 };
 
     PRINT("%s", __func__);
 
@@ -847,17 +852,20 @@ static int auracast_receive_cmd(void* handle, int argc, char* argv[])
     if (ret != CMD_OK)
         return ret;
 
-    while ((opt = getopt_long(argc, argv, "b:", auracast_recv_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "b:e:", auracast_recv_options, NULL)) != -1) {
         switch (opt) {
         case 'b':
             bitfield = strtoul(optarg, NULL, 16);
             bitfield <<= 1; /** match the input of bluetooth api */
             break;
+        case 'e':
+            strlcpy((char*)broadcast_code, optarg, BT_AURACAST_BROADCAST_CODE_LEN);
+            break;
         }
     }
 
     status = bt_auracast_sink_create_sync(handle, &sync->remote.addr, sync->remote.sid, bitfield,
-        NULL);
+        broadcast_code);
     if (status != BT_STATUS_SUCCESS) {
         PRINT("failed to create sink, status = %d", status);
         return CMD_ERROR;
