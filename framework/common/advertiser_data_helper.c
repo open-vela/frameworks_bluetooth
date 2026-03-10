@@ -330,6 +330,87 @@ static bool bt_auracast_sink_adv_data_parse_metadata(bt_auracast_audio_metadata_
 static bool bt_auracast_sink_adv_data_parse_uuid_16(bt_auracast_audio_info_t* info,
     uint16_t uuid_16, const adv_data_t* data)
 {
+    uint8_t length;
+    const uint8_t* p = data->data + sizeof(uint16_t);
+
+    if (uuid_16 != BT_UUID_BASIC_AUDIO_ANNOUNCEMENT)
+        return true; /**< Doesn't care other services */
+
+    /** Presentation Delay - 3 Octets */
+    STREAM_TO_UINT24(info->presentation_delay, p);
+
+    /** Num Subgroups - 1 octet */
+    STREAM_TO_UINT8(info->num_subgroups, p);
+    if (info->num_subgroups > BT_AURACAST_SINK_NUM_SUBGROUPS_SUPPORTED)
+        return false;
+
+    for (uint8_t i = 0; i < info->num_subgroups; i++) {
+        bt_auracast_audio_subgroup_t* subgroup = &info->subgroup[i];
+
+        /** Num BIS - 1 octet */
+        STREAM_TO_UINT8(subgroup->num_bis, p);
+        if (subgroup->num_bis > BT_AURACAST_SINK_NUM_BIS_SUPPORTED)
+            return false;
+
+        /** Codec ID - 5 octets: Coding Format(1) | Company ID(2) | Vendor-specific codec ID(2) */
+        STREAM_TO_UINT8(subgroup->codec_id.coding_format, p);
+        STREAM_TO_UINT16(subgroup->codec_id.company_id, p);
+        STREAM_TO_UINT16(subgroup->codec_id.vendor_id, p);
+        if ((subgroup->codec_id.coding_format != BT_CODEC_ID_VENDOR)
+            && (subgroup->codec_id.company_id || subgroup->codec_id.vendor_id))
+            return false;
+
+        /** Codec Specific Configuration Length - 1 octet */
+        STREAM_TO_UINT8(length, p);
+        if (length > BT_CODEC_CONFIG_LEN_MAX)
+            return false;
+
+        /** Codec Specific Configuration - Varies */
+        if (subgroup->codec_id.coding_format != BT_CODEC_ID_LC3) {
+            subgroup->config.non_lc3.len = length;
+            STREAM_TO_ARRAY(subgroup->config.non_lc3.config, p, length);
+        } else {
+            if (!bt_auracast_sink_adv_data_parse_lc3_config(&subgroup->config.lc3, length, p))
+                return false;
+
+            p += length;
+        }
+
+        /** Metadata Length - 1 octet */
+        STREAM_TO_UINT8(length, p);
+
+        /** Metadata - Varies */
+        if (!bt_auracast_sink_adv_data_parse_metadata(&subgroup->metadata, length, p))
+            return false;
+
+        p += length;
+        for (uint8_t k = 0; k < subgroup->num_bis; k++) {
+            bt_auracast_audio_bis_info_t* bis = &subgroup->bis[k];
+
+            /** BIS index - 1 octet */
+            STREAM_TO_UINT8(bis->index, p);
+
+            /** Codec Specific Configuration Length - 1 octet */
+            STREAM_TO_UINT8(length, p);
+            if (length > BT_CODEC_CONFIG_LEN_MAX)
+                return false;
+
+            /** Use subgroup codec if stream codec is not provided */
+            memcpy(&bis->config, &subgroup->config, sizeof(bt_auracast_codec_specific_config_t));
+
+            /** Codec Specific Configuration - Varies */
+            if (subgroup->codec_id.coding_format != BT_CODEC_ID_LC3) {
+                bis->config.non_lc3.len = length;
+                STREAM_TO_ARRAY(bis->config.non_lc3.config, p, length);
+            } else {
+                if (!bt_auracast_sink_adv_data_parse_lc3_config(&bis->config.lc3, length, p))
+                    return false;
+
+                p += length;
+            }
+        }
+    }
+
     return true;
 }
 
