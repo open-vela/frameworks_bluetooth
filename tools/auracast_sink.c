@@ -54,6 +54,7 @@ typedef struct {
 static int scan_start_cmd(void* handle, int argc, char* argv[]);
 static int scan_stop_cmd(void* handle, int argc, char* argv[]);
 static int sync_create_cmd(void* handle, int argc, char* argv[]);
+static int sync_terminate_cmd(void* handle, int argc, char* argv[]);
 
 static bttool_auracast_sink_t* g_auracast_sink = NULL;
 
@@ -65,6 +66,13 @@ static const struct option sync_options[] = {
     { "skip", required_argument, 0, 'k' },
     { "filter", no_argument, 0, 'f' },
     { "no-report", no_argument, 0, 'n' },
+    { 0, 0, 0, 0 },
+};
+
+static const struct option sync_select_options[] = {
+    { "addr", required_argument, 0, 'a' },
+    { "type", required_argument, 0, 't' },
+    { "sid", required_argument, 0, 's' },
     { 0, 0, 0, 0 },
 };
 
@@ -95,6 +103,16 @@ static bt_command_t g_auracast_sink_tables[] = {
                                   "\t\t\t duplicate filtering enabled\n"
                                   "\t -n or --no-report\n"
                                   "\t\t\t reporting disabled\"" },
+    { "termsync", sync_terminate_cmd, 1, "\"terminate a sync to a periodic advertising, params:\n"
+                                         "\t -a or --addr\n"
+                                         "\t\t\t the address of the advertiser, e.g., "
+                                         "00:01:02:03:04:05\n"
+                                         "\t\t\t mandatory if there are multiple sync exist\n"
+                                         "\t -t or --type\n"
+                                         "\t\t\t the address type, 0: public, 1: random "
+                                         "(public by default)\n"
+                                         "\t -s or --sid\n"
+                                         "\t\t\t the advertising sid (0x0-0xF)\"" },
 };
 
 static void usage(void)
@@ -664,6 +682,65 @@ exit:
         free(sync);
 
     return ret;
+}
+
+static int sync_terminate_cmd(void* handle, int argc, char* argv[])
+{
+    int opt;
+    bt_le_address_t addr = { 0 };
+    uint8_t sid;
+    uint32_t val;
+    bt_status_t status;
+    bttool_auracast_pa_sync_t* sync;
+
+    PRINT("%s", __func__);
+
+    addr.addr_type = BT_LE_ADDR_TYPE_UNKNOWN;
+    sid = BLE_SCAN_SID_NOT_PROVIDED;
+
+    while ((opt = getopt_long(argc, argv, "a:t:s:", sync_select_options, NULL)) != -1) {
+        switch (opt) {
+        case 'a':
+            if (bt_addr_str2ba(optarg, (bt_address_t*)addr.addr) != 0) {
+                PRINT("invalid address %s", optarg);
+                return CMD_INVALID_ADDR;
+            }
+
+            break;
+        case 't':
+            val = strtoul(optarg, NULL, 10);
+            if (val > 1) {
+                PRINT("invalid address type %s", optarg);
+                return CMD_INVALID_PARAM;
+            }
+
+            addr.addr_type = val;
+            break;
+        case 's':
+            val = strtoul(optarg, NULL, 16);
+            if (val > BLE_SCAN_SID_MAX) {
+                PRINT("invalid sid %s", optarg);
+                return CMD_INVALID_PARAM;
+            }
+
+            sid = val;
+            break;
+        }
+    }
+
+    sync = find_sync(&addr, sid);
+    if (!sync) {
+        PRINT("sync not found");
+        return CMD_INVALID_PARAM;
+    }
+
+    status = bt_pa_sync_terminate(handle, &sync->addr, sync->sid);
+    if (status != BT_STATUS_SUCCESS) {
+        PRINT("failed to terminate sync, status = %d", status);
+        return CMD_ERROR;
+    }
+
+    return CMD_OK;
 }
 
 int auracast_sink_command_init(void* handle)
