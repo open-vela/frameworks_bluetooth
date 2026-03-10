@@ -143,7 +143,7 @@ static void cs_service_handle_event(void* data)
 
         break;
     case LOCAL_SUPPORTED_CAPABILITIES_EVT:
-        //TODO:
+        // TODO:
 
         break;
     default: {
