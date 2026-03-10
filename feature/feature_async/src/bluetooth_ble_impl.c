@@ -2713,4 +2713,79 @@ void system_bluetooth_ble_AuracastSink_interface_aurasnk_finalize(FeatureInterfa
     feature_auracast_sink_destroy(handle);
 #endif
 }
+
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+static char* aurasnk_build_id(const bt_address_t* addr, uint8_t addr_type, uint8_t sid)
+{
+    char* id = zalloc(FEATURE_BLE_FT_STRING_MAX);
+    if (!id)
+        return NULL;
+
+    snprintf(id, FEATURE_BLE_FT_STRING_MAX, "aurasnk_%02x%02x%02x%02x%02x%02x(t%d)_sid%d",
+        addr->addr[5], addr->addr[4], addr->addr[3], addr->addr[2], addr->addr[1], addr->addr[0],
+        addr_type, sid);
+
+    return id;
+}
+
+static bt_status_t aurasnk_parse_id(bt_le_address_t* addr, uint8_t* sid, const char* id)
+{
+    int parsed;
+
+    if (!id)
+        return BT_STATUS_PARM_INVALID;
+
+    parsed = sscanf(id, "aurasnk_%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx(t%hhd)_sid%hhd",
+        &addr->addr[5], &addr->addr[4], &addr->addr[3], &addr->addr[2], &addr->addr[1],
+        &addr->addr[0], &addr->addr_type, sid);
+
+    return (parsed == 8) ? BT_STATUS_SUCCESS : BT_STATUS_PARM_INVALID;
+}
+
+static char* aurasnk_scan_build_display_name(const ble_scan_result_t* result)
+{
+    bt_status_t status;
+    char* display_name = NULL;
+    bt_pa_sync_info_t* info = NULL;
+
+    display_name = zalloc(FEATURE_BLE_FT_STRING_MAX);
+    if (!display_name)
+        goto error;
+
+    info = malloc(sizeof(bt_pa_sync_info_t));
+    if (info == NULL)
+        goto error;
+
+    status = bt_pa_sync_parse_adv_data(info, result);
+    if (status != BT_STATUS_SUCCESS)
+        goto error;
+
+    if (info->broadcast_name[0] != '\0') {
+        FEATURE_BLE_STRCAT(display_name, FEATURE_BLE_FT_STRING_MAX, "%s\n", info->broadcast_name);
+    } else if (info->name[0] != '\0') {
+        FEATURE_BLE_STRCAT(display_name, FEATURE_BLE_FT_STRING_MAX, "%s\n", info->name);
+    } else {
+        FEATURE_BLE_STRCAT(display_name, FEATURE_BLE_FT_STRING_MAX, "<unknown>\n");
+    }
+
+    if (result->sid != BLE_SCAN_SID_NOT_PROVIDED)
+        FEATURE_BLE_STRCAT(display_name, FEATURE_BLE_FT_STRING_MAX, "[%d]", result->sid);
+
+    if (result->rssi != BT_POWER_UNAVAILABLE)
+        FEATURE_BLE_STRCAT(display_name, FEATURE_BLE_FT_STRING_MAX, "[%ddBm]", result->rssi);
+
+    if (info->broadcast_id != BT_INVALID_BROADCAST_ID)
+        FEATURE_BLE_STRCAT(display_name, FEATURE_BLE_FT_STRING_MAX, "[0x%" PRIx32 "]",
+            info->broadcast_id);
+
+    free(info);
+
+    return display_name;
+
+error:
+    free(display_name);
+    free(info);
+
+    return NULL;
+}
 }
