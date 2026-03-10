@@ -20,6 +20,9 @@
 #include "bt_debug.h"
 #ifdef CONFIG_BLUETOOTH_PA_SYNC
 #include "bt_pa_sync.h"
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+#include "bt_auracast_sink.h"
+#endif
 #endif
 #include "bt_utils.h"
 
@@ -220,6 +223,7 @@ bool advertiser_data_dump(uint8_t* data, uint16_t len, ad_dump_cb_t dump)
 
 bool advertiser_data_parse(const uint8_t* data, uint8_t len, ad_parse_cb_t cb, void* context)
 {
+    bool ret = true;
     adv_data_t* ad;
     uint16_t offset = 0;
 
@@ -237,23 +241,24 @@ bool advertiser_data_parse(const uint8_t* data, uint8_t len, ad_parse_cb_t cb, v
         if (offset > len)
             return false; /**< Incomplete AD Data */
 
-        cb(ad, context);
+        if (cb(ad, context) == false)
+            ret = false;
     };
 
-    return true;
+    return ret;
 }
 
 #ifdef CONFIG_BLUETOOTH_PA_SYNC
-static void adv_data_parse_uuid_16(bt_pa_sync_info_t* info, uint16_t uuid_16,
+static bool bt_pa_sync_adv_data_parse_uuid_16(bt_pa_sync_info_t* info, uint16_t uuid_16,
     const adv_data_t* data)
 {
     const uint8_t* p = data->data + sizeof(uint16_t);
-
+    (void)p; /** Maybe unused */
     switch (uuid_16) {
 #ifdef CONFIG_BLUETOOTH_AURACAST_SINK
     case BT_UUID_BROADCAST_AUDIO_ANNOUNCEMENT:
         if (data->len < 1 + sizeof(uuid_16) + 3)
-            break; /* less than AD Type (1 octet) + UUID16 (2 octets) + Broadcast ID (3 octets)*/
+            return false; /* less than AD Type (1 octet) + UUID16 (2 octets) + Broadcast ID (3 octets)*/
 
         STREAM_TO_UINT24(info->broadcast_id, p);
         break;
@@ -261,9 +266,11 @@ static void adv_data_parse_uuid_16(bt_pa_sync_info_t* info, uint16_t uuid_16,
     default:
         break;
     }
+
+    return true;
 }
 
-static void adv_data_parsed(const adv_data_t* data, void* context)
+static bool bt_pa_sync_adv_data_parsed(const adv_data_t* data, void* context)
 {
     bt_pa_sync_info_t* info = (bt_pa_sync_info_t*)context;
     const uint8_t* p = data->data;
@@ -284,25 +291,79 @@ static void adv_data_parsed(const adv_data_t* data, void* context)
 
     case BT_AD_SERVICE_DATA16:
         if (data->len < 1 + sizeof(uuid_16))
-            break; /**< less than AD Type (1 octet) + UUID16 (2 octets) */
+            return false; /**< less than AD Type (1 octet) + UUID16 (2 octets) */
 
         STREAM_TO_UINT16(uuid_16, p);
-        adv_data_parse_uuid_16(info, uuid_16, data);
-        break;
+        return bt_pa_sync_adv_data_parse_uuid_16(info, uuid_16, data);
     default:
         break;
     }
+
+    return true;
 }
 
 bt_status_t bt_pa_sync_parse_adv_data(bt_pa_sync_info_t* info, const ble_scan_result_t* result)
 {
     memset(info, 0x00, sizeof(bt_pa_sync_info_t));
     info->broadcast_id = BT_INVALID_BROADCAST_ID;
-    if (!advertiser_data_parse(result->adv_data, result->length, adv_data_parsed, info))
+    if (!advertiser_data_parse(result->adv_data, result->length, bt_pa_sync_adv_data_parsed, info))
         return BT_STATUS_FAIL;
 
     return result->flags & SCAN_RESULT_FLAG_PERIODIC_ADVERTISING
         ? BT_STATUS_SUCCESS
         : BT_STATUS_NOT_FOUND;
 }
+
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+static bool bt_auracast_sink_adv_data_parse_lc3_config(bt_auracast_audio_lc3_config_t* lc3,
+    uint8_t length, const uint8_t* p)
+{
+    return true;
+}
+
+static bool bt_auracast_sink_adv_data_parse_metadata(bt_auracast_audio_metadata_t* metadata,
+    uint8_t length, const uint8_t* p)
+{
+    return true;
+}
+
+static bool bt_auracast_sink_adv_data_parse_uuid_16(bt_auracast_audio_info_t* info,
+    uint16_t uuid_16, const adv_data_t* data)
+{
+    return true;
+}
+
+static bool bt_auracast_sink_adv_data_parsed(const adv_data_t* data, void* context)
+{
+    bt_auracast_audio_info_t* info = (bt_auracast_audio_info_t*)context;
+    const uint8_t* p = data->data;
+    uint16_t uuid_16;
+
+    switch (data->type) {
+    case BT_AD_SERVICE_DATA16:
+        if (data->len < 1 + sizeof(uuid_16))
+            return false; /**< less than AD Type (1 octet) + UUID16 (2 octets) */
+
+        STREAM_TO_UINT16(uuid_16, p);
+        return bt_auracast_sink_adv_data_parse_uuid_16(info, uuid_16, data);
+    default:
+        break;
+    }
+
+    return true;
+}
+
+bt_status_t bt_auracast_sink_parse_adv_data(bt_auracast_audio_info_t* info,
+    const bt_pa_sync_report_t* report)
+{
+    memset(info, 0x00, sizeof(bt_auracast_audio_info_t));
+    info->presentation_delay = BT_AURACAST_SINK_PRESENTATION_DELAY_INVALID;
+
+    if (!advertiser_data_parse(report->data, report->adv_data_len, bt_auracast_sink_adv_data_parsed,
+            info))
+        return BT_STATUS_FAIL;
+
+    return info->num_subgroups ? BT_STATUS_SUCCESS : BT_STATUS_NOT_FOUND;
+}
+#endif /* CONFIG_BLUETOOTH_AURACAST_SINK */
 #endif /* CONFIG_BLUETOOTH_PA_SYNC */

@@ -112,8 +112,10 @@ typedef void (*ad_dump_cb_t)(const char* str);
  *
  * @param data - The parsed advertising data
  * @param context - User context
+ * @return true - Parse success.
+ * @return false - Parse failed.
  */
-typedef void (*ad_parse_cb_t)(const adv_data_t* data, void* context);
+typedef bool (*ad_parse_cb_t)(const adv_data_t* data, void* context);
 
 /**
  * @brief Dump advertising data.

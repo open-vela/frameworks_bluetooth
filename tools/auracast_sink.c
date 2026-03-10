@@ -14,6 +14,7 @@
  * limitations under the License.
  ***************************************************************************/
 
+#include "bt_auracast_sink.h"
 #include "bt_le_scan.h"
 #include "bt_pa_sync.h"
 #include "bt_tools.h"
@@ -254,6 +255,8 @@ static void on_sync_terminated(const bt_le_address_t* addr, uint8_t sid, void* c
 static void on_sync_report(const bt_le_address_t* addr, uint8_t sid,
     const bt_pa_sync_report_t* report, void* context)
 {
+    bt_status_t status;
+    bt_auracast_audio_info_t* info = NULL;
     char* log = NULL;
     size_t size = BTTOOL_AURACAST_SINK_LOG_SIZE;
 
@@ -264,23 +267,26 @@ static void on_sync_report(const bt_le_address_t* addr, uint8_t sid,
     if (!log)
         return;
 
-    BTTOOL_STRCAT(log, size, "\t cnt = %d", report->cnt);
+    BTTOOL_STRCAT(log, size, "\t cnt = %d, len = %d", report->cnt, report->adv_data_len);
     if (report->tx_power != BT_POWER_UNAVAILABLE)
         BTTOOL_STRCAT(log, size, ", txpower:%d", report->tx_power);
 
     if (report->rssi != BT_POWER_UNAVAILABLE)
         BTTOOL_STRCAT(log, size, ", rssi:%d", report->rssi);
 
-    if (report->adv_data_len) {
-        BTTOOL_STRCAT(log, size, "\n len = %d, data = ", report->adv_data_len);
-        for (int i = 0; i < report->adv_data_len; i++) {
-            BTTOOL_STRCAT(log, size, " %02x", report->data[i]);
-        }
-    } else {
-        BTTOOL_STRCAT(log, size, ", len = 0");
-    }
-
     PRINT("%s", log);
+    log[0] = '\0'; /**< reset log */
+
+    info = malloc(sizeof(bt_auracast_audio_info_t));
+    if (info == NULL)
+        goto exit;
+
+    status = bt_auracast_sink_parse_adv_data(info, report);
+    if (status != BT_STATUS_SUCCESS)
+        goto exit;
+
+exit:
+    free(info);
     free(log);
 }
 
