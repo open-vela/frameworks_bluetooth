@@ -167,3 +167,47 @@ interface GattClient {
     event onBLEConnectionStateChange(int state)
 }
 [ctor="true", target="gattc"] GattClient createGattClientDevice(string deviceId, string addressType = "UNKNOWN")
+
+struct AuracastScanResult {
+    string id
+    string displayName
+    int rssi
+}
+
+struct AuracastBaseResult {
+    string subId
+    string displayName
+    boolean encrypted
+}
+
+callback sourceFoundResult(AuracastScanResult[] result)
+callback streamFoundResult(AuracastBaseResult[] result)
+callback streamStartedCallback()
+callback streamStoppedCallback()
+
+struct StartAuracastScanParams {
+    callback sourceFoundResult callback
+}
+
+struct CreateAuracastSyncParams {
+    string id
+    callback streamFoundResult callback
+}
+
+struct StartAuracastReceiveParams {
+    string subId
+    string broadcastCode
+    callback streamStartedCallback started
+    callback streamStoppedCallback stopped
+}
+
+interface AuracastSink {
+    promise<void> startScan(StartAuracastScanParams params)
+    void stopScan()
+    promise<void> createSync(CreateAuracastSyncParams params)
+    void terminateSync()
+    promise<void> startReceive(StartAuracastReceiveParams params)
+    void stopReceive()
+    void close()
+}
+[ctor="true", target="aurasnk"] AuracastSink createAuracastSink()
