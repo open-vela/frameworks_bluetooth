@@ -238,11 +238,35 @@ static void process_sync_report(const pa_sync_device_t* device, const void* data
 
 static void sync_report(const pa_sync_event_t* msg)
 {
+    const pa_sync_event_report_data_t* report = (const pa_sync_event_report_data_t*)msg->data;
     pa_sync_for_each_t iter = { 0 };
+
+    if (report->tx_power > +20 && report->tx_power != BT_POWER_UNAVAILABLE) {
+        BT_LOGE("%s, invalid tx_power(%d)", __func__, report->tx_power);
+        return;
+    }
+
+    if (report->rssi > +20 && report->rssi != BT_POWER_UNAVAILABLE) {
+        BT_LOGE("%s, invalid rssi(%d)", __func__, report->rssi);
+        return;
+    }
+
+    if (report->adv_data_len > BT_PA_SYNC_DATA_LEN_MAX) {
+        BT_LOGE("%s, length(%d) exceeds limit(%d)", __func__, report->adv_data_len,
+            BT_PA_SYNC_DATA_LEN_MAX);
+        return;
+    }
+
+    if (report->status != BT_LE_PA_SYNC_EVENT_DATA_COMPLETE) {
+        /** TODO: reassemble segmented data */
+        BT_LOGW("%s, segmented data not supported", __func__);
+        return;
+    }
 
     iter.func = process_sync_report;
     iter.addr = &msg->addr;
     iter.sid = msg->sid;
+    iter.data = report;
 
     callback_for_each_device(&iter);
 }
@@ -423,10 +447,11 @@ void pa_sync_on_received(bt_controller_id_t id, const bt_le_address_t* addr, uin
     int tx_power, int rssi, uint8_t cte, uint16_t cnt, uint8_t subevent, uint8_t status,
     uint8_t adv_data_len, const uint8_t* adv_data)
 {
-    pa_sync_event_t* msg = zalloc(sizeof(pa_sync_event_t) + sizeof(pa_sync_event_report_data_t)
-        + adv_data_len);
     pa_sync_event_report_data_t* report;
+    pa_sync_event_t* msg;
     uint8_t* data;
+
+    msg = zalloc(sizeof(pa_sync_event_t) + sizeof(pa_sync_event_report_data_t) + adv_data_len);
     if (!msg) {
         BT_LOGE("%s, malloc failed", __func__);
         return;

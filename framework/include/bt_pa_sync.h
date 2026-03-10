@@ -29,6 +29,7 @@ extern "C" {
 #define BT_PA_SYNC_SKIP_MAX (0x01F3)
 #define BT_PA_SYNC_TIMEOUT_MAX (0x4000)
 #define BT_PA_SYNC_SUBEVENT_NONE (0xFF)
+#define BT_PA_SYNC_DATA_LEN_MAX (251)
 
 /**
  * @brief Information about the periodic advertising sync.
@@ -50,7 +51,7 @@ typedef struct bt_pa_sync_report {
     /** TxPower in dBm (-127 to +20). `BT_POWER_UNAVAILABLE` if unavailable */
     int8_t tx_power; 
 
-        /** RSSI in dBm (-127 to +20). `BT_POWER_UNAVAILABLE` if unavailable */
+    /** RSSI in dBm (-127 to +20). `BT_POWER_UNAVAILABLE` if unavailable */
     int8_t rssi;
 
     /** Periodic_Event_Counter, the value of `paEventCounter` for the reported periodic advertising
@@ -63,7 +64,7 @@ typedef struct bt_pa_sync_report {
     /** Length of `adv_data` */
     uint16_t adv_data_len;
 
-    /** Data received from a Periodic Advertising packet */
+    /** Data received from a Periodic Advertising packet, NULL if `adv_data_len` is zero */
     const uint8_t* data;
 } bt_pa_sync_report_t;
 
@@ -84,19 +85,27 @@ typedef struct bt_pa_sync_create_param {
 } bt_pa_sync_create_param_t;
 
 /**
- * @brief Periodic advertising sync established
+ * @brief Periodic advertising sync established.
+ *
+ *  * @param addr The Bluetooth address and address type of the remote device
+ * @param sid The advertising set id (0x00-0x0F) to identify the periodic advertising
+ * @param context User context
  */
 typedef void (*on_sync_established_callback)(const bt_le_address_t* addr, uint8_t sid,
     void* context);
 
 /**
- * @brief Periodic advertising terminated
+ * @brief Periodic advertising terminated.
+ *
+ * @param addr The Bluetooth address and address type of the remote device
+ * @param sid The advertising set id (0x00-0x0F) to identify the periodic advertising
+ * @param context User context
  */
 typedef void (*on_sync_terminated_callback)(const bt_le_address_t* addr, uint8_t sid,
     void* context);
 
 /**
- * @brief Periodic advertising report
+ * @brief Periodic advertising report.
  *
  * @param addr The Bluetooth address and address type of the remote device
  * @param sid The advertising set id (0x00-0x0F) to identify the periodic advertising

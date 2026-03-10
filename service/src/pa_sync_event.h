@@ -71,8 +71,8 @@ typedef struct {
     /** Data_Status, e.g., `BT_LE_PA_SYNC_EVENT_DATA_COMPLETE` */
     uint8_t status;
 
-    /** Data_Length */
-    uint8_t adv_data_len;
+    /** Data_Length, range from 0 to `BT_PA_SYNC_DATA_LEN_MAX` */
+    uint16_t adv_data_len;
 
     /** Data received from a Periodic Advertising packet */
     uint8_t adv_data[0];

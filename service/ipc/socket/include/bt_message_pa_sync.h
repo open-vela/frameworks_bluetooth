@@ -79,8 +79,14 @@ typedef struct {
 
         struct {
             bt_le_address_t addr;
+            int8_t tx_power;
+            int8_t rssi;
+            uint16_t cnt;
+            uint16_t adv_data_len;
             uint8_t sid;
-            /** TODO: add report data */
+            uint8_t subevent;
+            uint8_t pad[2];
+            uint8_t data[BT_PA_SYNC_DATA_LEN_MAX];
         } _on_sync_report;
     };
 } bt_message_pa_sync_callbacks_t;

@@ -70,17 +70,27 @@ static void on_sync_terminated_cb(const bt_le_address_t* addr, uint8_t sid, void
     free(remote);
 }
 
-static void on_sync_report_cb(const bt_le_address_t* addr, uint8_t sid, void* context)
+static void on_sync_report_cb(const bt_le_address_t* addr, uint8_t sid,
+    const bt_pa_sync_report_t* report, void* context)
 {
     pa_sync_remote_t* remote = (pa_sync_remote_t*)context;
     bt_message_packet_t packet = { 0 };
+
+    if (report->adv_data_len > BT_PA_SYNC_DATA_LEN_MAX)
+        return;
 
     packet.pa_sync_cb.cbs = remote->cbs;
     packet.pa_sync_cb.context = remote->context;
     packet.pa_sync_cb._on_sync_report.sid = sid;
     memcpy(&packet.pa_sync_cb._on_sync_report.addr, addr, sizeof(bt_le_address_t));
 
-    /** TODO: add report data */
+    packet.pa_sync_cb._on_sync_report.tx_power = report->tx_power;
+    packet.pa_sync_cb._on_sync_report.rssi = report->rssi;
+    packet.pa_sync_cb._on_sync_report.cnt = report->cnt;
+    packet.pa_sync_cb._on_sync_report.adv_data_len = report->adv_data_len;
+    packet.pa_sync_cb._on_sync_report.subevent = report->subevent;
+    if (report->adv_data_len && report->data)
+        memcpy(packet.pa_sync_cb._on_sync_report.data, report->data, report->adv_data_len);
 
     bt_socket_server_send(remote->ins, &packet, BT_PA_SYNC_ON_SYNC_REPORT);
 }
@@ -148,14 +158,23 @@ int bt_socket_client_pa_sync_callback(service_poll_t* poll, int fd, bt_instance_
         break;
     case PA_SYNC_SUBCODE_SYNC_TERMINATED_CALLBACK:
         if (cbs->on_sync_terminated) {
-            cbs->on_sync_terminated(&packet->pa_sync_cb._on_sync_established.addr,
-                packet->pa_sync_cb._on_sync_established.sid, context);
+            cbs->on_sync_terminated(&packet->pa_sync_cb._on_sync_terminated.addr,
+                packet->pa_sync_cb._on_sync_terminated.sid, context);
         }
         break;
     case PA_SYNC_SUBCODE_SYNC_REPORT_CALLBACK:
         if (cbs->on_sync_report) {
-            cbs->on_sync_report(&packet->pa_sync_cb._on_sync_established.addr,
-                packet->pa_sync_cb._on_sync_established.sid, context);
+            bt_pa_sync_report_t report = { 0 };
+            report.tx_power = packet->pa_sync_cb._on_sync_report.tx_power;
+            report.rssi = packet->pa_sync_cb._on_sync_report.rssi;
+            report.cnt = packet->pa_sync_cb._on_sync_report.cnt;
+            report.subevent = packet->pa_sync_cb._on_sync_report.subevent;
+            report.adv_data_len = packet->pa_sync_cb._on_sync_report.adv_data_len;
+            if (report.adv_data_len)
+                report.data = packet->pa_sync_cb._on_sync_report.data;
+
+            cbs->on_sync_report(&packet->pa_sync_cb._on_sync_report.addr,
+                packet->pa_sync_cb._on_sync_report.sid, &report, context);
         }
         break;
     default:
