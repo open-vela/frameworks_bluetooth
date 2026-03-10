@@ -152,6 +152,20 @@ bt_status_t BTSYMBOLS(bt_pa_sync_create)(bt_instance_t* ins, const bt_le_address
     uint8_t sid, const bt_pa_sync_create_param_t* params, const bt_pa_sync_callbacks_t* cbs,
     const void* context);
 
+/**
+ * @brief Stop reception of the periodic advertising train.
+ *
+ * @param[in] ins The Bluetooth instance, see @ref bt_instance_t
+ * @param[in] addr The Bluetooth address and address type of the remote device
+ * @param[in] sid The advertising set id subfield to identify the periodic advertising, range from
+ *                0x00 to 0x0F
+ *
+ * @return `BT_STATUS_SUCCESS` on success.
+ * @return Other error codes on failure.
+ */
+bt_status_t BTSYMBOLS(bt_pa_sync_terminate)(bt_instance_t* ins, const bt_le_address_t* addr,
+    uint8_t sid);
+
 #ifdef __cplusplus
 }
 #endif

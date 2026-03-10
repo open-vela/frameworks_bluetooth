@@ -45,3 +45,21 @@ bt_status_t bt_pa_sync_create(bt_instance_t* ins, const bt_le_address_t* addr, u
 
     return packet.pa_sync_r.status;
 }
+
+bt_status_t bt_pa_sync_terminate(bt_instance_t* ins, const bt_le_address_t* addr, uint8_t sid)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+    BT_SOCKET_PTR_VALID(addr, BT_STATUS_PARM_INVALID);
+
+    memcpy(&packet.pa_sync_pl._bt_pa_sync_terminate.addr, addr, sizeof(bt_le_address_t));
+    packet.pa_sync_pl._bt_pa_sync_terminate.sid = sid;
+
+    status = bt_socket_client_sendrecv(ins, &packet, BT_PA_SYNC_TERMINATE_SYNC);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.pa_sync_r.status;
+}

@@ -170,6 +170,11 @@ error:
     free(device);
 }
 
+static void terminate_sync(const pa_sync_event_t* msg)
+{
+    /** Do something */
+}
+
 static void process_sync_established(const pa_sync_device_t* device, const void* data)
 {
     UNUSED(data);
@@ -301,6 +306,9 @@ static void pa_sync_process_message(void* data)
     case CREATE_SYNC:
         create_sync(msg);
         break;
+    case TERMINATE_SYNC:
+        terminate_sync(msg);
+        break;
     case SYNC_ESTABLISHED:
         sync_established(msg);
         break;
@@ -415,11 +423,29 @@ bt_status_t pa_sync_create(const bt_le_address_t* addr, uint8_t sid,
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t pa_sync_terminate(void)
+bt_status_t pa_sync_terminate(const bt_le_address_t* addr, uint8_t sid)
 {
+    pa_sync_event_t* msg;
+
     BT_LOGD("%s", __func__);
 
-    return BT_STATUS_UNSUPPORTED;
+    msg = zalloc(sizeof(pa_sync_event_t));
+    if (!msg) {
+        BT_LOGE("malloc failed");
+        return BT_STATUS_NOMEM;
+    }
+
+    memcpy(&msg->addr, addr, sizeof(bt_le_address_t));
+    msg->event = TERMINATE_SYNC;
+    msg->id = PRIMARY_ADAPTER;
+    msg->sid = sid;
+
+    if (pa_sync_send_message(msg) != BT_STATUS_SUCCESS) {
+        BT_LOGE("message send failed");
+        free(msg);
+    }
+
+    return BT_STATUS_SUCCESS;
 }
 
 void pa_sync_on_established(bt_controller_id_t id, const bt_le_address_t* addr, uint8_t sid)

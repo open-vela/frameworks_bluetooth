@@ -24,3 +24,9 @@ bt_status_t BTSYMBOLS(bt_pa_sync_create)(bt_instance_t* ins, const bt_le_address
 {
     return pa_sync_create(addr, sid, params, cbs, context);
 }
+
+bt_status_t BTSYMBOLS(bt_pa_sync_terminate)(bt_instance_t* ins, const bt_le_address_t* addr,
+    uint8_t sid)
+{
+    return pa_sync_terminate(addr, sid);
+}

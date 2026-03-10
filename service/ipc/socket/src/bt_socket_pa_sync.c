@@ -133,6 +133,8 @@ void bt_socket_server_pa_sync_process(service_poll_t* poll, int fd, bt_instance_
 
         break;
     case PA_SYNC_SUBCODE_TERMINATE_SYNC:
+        packet->pa_sync_r.status = pa_sync_terminate(&packet->pa_sync_pl._bt_pa_sync_terminate.addr,
+            packet->pa_sync_pl._bt_pa_sync_terminate.sid);
         break;
     default:
         break;
