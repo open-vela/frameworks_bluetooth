@@ -987,6 +987,48 @@ static int auracast_receive_cmd(void* handle, int argc, char* argv[])
     return CMD_OK;
 }
 
+static void auracast_terminate_cb(bt_instance_t* ins, bt_status_t status, void* userdata)
+{
+    if (!g_auracast_sink) {
+        PRINT("not initialized");
+        return;
+    }
+
+    if (g_auracast_sink != userdata) {
+        PRINT("unexpected auracast sink");
+        return;
+    }
+
+    if (status != BT_STATUS_SUCCESS) {
+        PRINT("failed to terminate sink, status = %d", status);
+        return;
+    }
+
+    PRINT("auracast terminate success");
+}
+
+static int auracast_terminate_cmd(void* handle, int argc, char* argv[])
+{
+    int ret;
+    bt_status_t status;
+    bttool_auracast_sync_t* sink;
+
+    PRINT("%s", __func__);
+
+    ret = general_find_sync((void**)&sink, argc, argv, SEARCH_TYPE_SINK);
+    if (ret != CMD_OK)
+        return ret;
+
+    status = bt_auracast_sink_terminate_sync_async(handle, &sink->remote.addr, sink->remote.sid,
+        auracast_terminate_cb, g_auracast_sink);
+    if (status != BT_STATUS_SUCCESS) {
+        PRINT("failed to terminate sink, status = %d", status);
+        return CMD_ERROR;
+    }
+
+    return CMD_OK;
+}
+
 static void on_auracast_sync_established(void* cookie, const bt_le_address_t* addr, uint8_t sid)
 {
     bttool_auracast_sync_t* sink;
@@ -1008,6 +1050,22 @@ static void on_auracast_sync_established(void* cookie, const bt_le_address_t* ad
     sink->remote.sid = sid;
 
     bt_list_add_tail(g_auracast_sink->sink_list, sink);
+}
+
+static void on_auracast_sync_terminated(void* cookie, const bt_le_address_t* addr, uint8_t sid)
+{
+    bttool_auracast_sync_t* sink;
+
+    PRINT_ADDR("on_auracast_sync_terminated, addr:[%s][%s], sid:0x%x",
+        (const bt_address_t*)addr->addr, parse_addr_type(addr->addr_type), sid);
+
+    sink = (bttool_auracast_sync_t*)find_sync(addr, sid, SEARCH_TYPE_SINK);
+    if (!sink) {
+        PRINT("sink not exists");
+        return;
+    }
+
+    bt_list_remove(g_auracast_sink->sink_list, sink);
 }
 
 static const bt_auracast_sink_callbacks_t auracast_sink_cbs = {
