@@ -17,6 +17,7 @@
 #include <stdint.h>
 
 #include "advertiser_data.h"
+#include "bt_pa_sync.h"
 #include "bt_debug.h"
 
 typedef struct {
@@ -212,4 +213,46 @@ bool advertiser_data_dump(uint8_t* data, uint16_t len, ad_dump_cb_t dump)
     };
 
     return true;
+}
+
+bool advertiser_data_parse(const uint8_t* data, uint8_t len, ad_parse_cb_t cb, void* context)
+{
+    adv_data_t* ad;
+    uint16_t offset = 0;
+
+    if (!cb)
+        return false;
+
+    while (offset < len) {
+        ad = (adv_data_t*)&data[offset];
+        if (ad->len == 0) { /**< AD Type does not exist */
+            offset += sizeof(ad->len); /**< Skip this entry */
+            continue; /**< Goto the next item */
+        }
+
+        offset += sizeof(ad->len) + ad->len;
+        if (offset > len)
+            return false; /**< Incomplete AD Data */
+
+        cb(ad, context);
+    };
+
+    return true;
+}
+
+static void adv_data_parsed(adv_data_t* data, void* context)
+{
+
+}
+
+bt_status_t bt_pa_sync_parse_adv_data(bt_pa_sync_info_t* info, const ble_scan_result_t* result)
+{
+    bt_status_t status = BT_STATUS_NOT_FOUND;
+
+    memset(info, 0x00, sizeof(bt_pa_sync_info_t));
+    info->broadcast_id = BT_INVALID_BROADCAST_ID;
+    if (!advertiser_data_parse(result->adv_data, result->length, adv_data_parsed, info))
+        return BT_STATUS_FAIL;
+
+    return status;
 }
