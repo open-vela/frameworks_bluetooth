@@ -23,7 +23,6 @@
 #include "cs_ras_util.h"
 #include "utils/log.h"
 
-
 #ifndef MIN
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 #endif
@@ -99,8 +98,7 @@ static void ras_on_demand_indicate_finished(bt_address_t* addr)
 
 static bt_status_t ras_ondemand_send_ranging_data(bt_address_t* addr, uint16_t count)
 {
-    if (!ras_state_get_bit(&ras_srv->char_notify_state, RAS_ON_DEMAND_DATA_NOTIFY) &&
-        !ras_state_get_bit(&ras_srv->char_notify_state, RAS_ON_DEMAND_DATA_INDICATE)) {
+    if (!ras_state_get_bit(&ras_srv->char_notify_state, RAS_ON_DEMAND_DATA_NOTIFY) && !ras_state_get_bit(&ras_srv->char_notify_state, RAS_ON_DEMAND_DATA_INDICATE)) {
         BT_LOGE("RAS haven't enable the on-demand ranging data notify or indication state.");
         return BT_STATUS_FAIL;
     }
@@ -497,8 +495,7 @@ static void range_rtt_dt_ccc_cfg_changed(bt_address_t* addr, uint16_t value)
     }
 
     // The Real time mode and the on-demand mode can't be set together.
-    if ((value != 0) && (ras_state_get_bit(&ras_srv->char_notify_state, RAS_ON_DEMAND_DATA_NOTIFY) ||
-       ras_state_get_bit(&ras_srv->char_notify_state, RAS_ON_DEMAND_DATA_INDICATE))) {
+    if ((value != 0) && (ras_state_get_bit(&ras_srv->char_notify_state, RAS_ON_DEMAND_DATA_NOTIFY) || ras_state_get_bit(&ras_srv->char_notify_state, RAS_ON_DEMAND_DATA_INDICATE))) {
         BT_LOGE("The on-demand mode has been set, Please clear it before set to real-time mode.");
         return;
     }
@@ -525,8 +522,7 @@ static void range_on_dem_dt_ccc_cfg_changed(bt_address_t* addr, uint16_t value)
     }
 
     // The Real time mode and the on-demand mode can't be set together.
-    if ((value != 0) && (ras_state_get_bit(&ras_srv->char_notify_state, RAS_RTT_DATA_NOTIFY) ||
-        ras_state_get_bit(&ras_srv->char_notify_state, RAS_RTT_DATA_INDICATE))) {
+    if ((value != 0) && (ras_state_get_bit(&ras_srv->char_notify_state, RAS_RTT_DATA_NOTIFY) || ras_state_get_bit(&ras_srv->char_notify_state, RAS_RTT_DATA_INDICATE))) {
         BT_LOGE("The real-time mode has been set, please clear it before set to on-demand mode.");
         return;
     }
@@ -1080,13 +1076,13 @@ static uint8_t* ras_subevent_data_conversion(bt_address_t* addr, bt_srv_conn_le_
     uint8_t* stream_buf = ras_srv->latest_local_steps;
     int bit_offset = 0;
 
-     /**
+    /**
      * Rangging Counter.
      * Rangging Counter is lower 12-bits of CS Procedure_Counter Provided by the Core Controller.
      */
     ras_write_bits(stream_buf, &bit_offset, result->header.procedure_counter, 12);
 
-     /**
+    /**
      * Configuration ID.
      * Range: 0 to 3
      * CS configuration identifier.
@@ -1344,7 +1340,7 @@ static void cs_ras_gatts_feature_read_cb(bt_address_t* addr, uint32_t req_handle
 
 static void ras_rang_on_demand_send_ready(bt_address_t* addr)
 {
-    uint16_t count = CS_RAS_STORE_PROCEDURE_NUM_MAX; 
+    uint16_t count = CS_RAS_STORE_PROCEDURE_NUM_MAX;
     if (!ras_srv) {
         BT_LOGE("Invalid ras_srv environment, init it first.");
         return;
@@ -1358,9 +1354,9 @@ static void ras_rang_on_demand_send_ready(bt_address_t* addr)
     }
 
     if (count < CS_RAS_STORE_PROCEDURE_NUM_MAX && cs_ras_data_ready_send(addr, count) == BT_STATUS_SUCCESS) {
-            // Set the on-demand state to ready.
-            ras_srv->on_demand_state = CS_RAS_ON_DEMAND_STATE_BUSY;
-            return;
+        // Set the on-demand state to ready.
+        ras_srv->on_demand_state = CS_RAS_ON_DEMAND_STATE_BUSY;
+        return;
     }
 }
 
@@ -1550,4 +1546,3 @@ void bt_cs_ras_on_demand_indicate_finish_test(bt_address_t* addr, ras_attr_notif
     }
 }
 #endif /* CONFIG_BT_CS_RAS_TEST */
-
