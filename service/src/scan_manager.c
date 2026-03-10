@@ -575,7 +575,7 @@ void scan_on_state_changed(uint8_t state)
     BT_LOGD("%s, state:%d", __func__, state);
 }
 
-void scan_on_result_data_update(ble_scan_result_t* result_info, char* adv_data)
+void scan_on_result_data_update(ble_scan_result_t* result_info, const uint8_t* adv_data)
 {
     ble_scan_result_t* result = malloc(sizeof(ble_scan_result_t) + result_info->length);
 
