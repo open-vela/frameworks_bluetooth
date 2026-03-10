@@ -655,6 +655,10 @@ if(CONFIG_BLUETOOTH)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/lea_tbs.c)
     endif()
 
+    if(CONFIG_BLUETOOTH_AURACAST_SINK)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/auracast_sink.c)
+    endif()
+
     if(CONFIG_BLUETOOTH_STORAGE_UPDATE)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/storage_update/storage_tool.c)
     endif()
