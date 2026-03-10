@@ -84,6 +84,31 @@ static void callback_for_each_device(pa_sync_for_each_t* iter)
     bt_list_foreach(g_pa_sync_info->sync_list, func_for_device, iter);
 }
 
+static bool msg_cmp(void* data, void* context)
+{
+    const pa_sync_device_t* device = (const pa_sync_device_t*)data;
+    const pa_sync_event_t* msg = (const pa_sync_event_t*)context;
+
+    if (!device || !msg)
+        return false;
+
+    if (memcmp(&device->addr, &msg->addr, sizeof(bt_le_address_t)))
+        return false;
+
+    if (device->sid != msg->sid)
+        return false;
+
+    return true;
+}
+
+static pa_sync_device_t* find_device_by_msg(const pa_sync_event_t* msg)
+{
+    if (!g_pa_sync_info || !g_pa_sync_info->sync_list || !msg)
+        return NULL;
+
+    return bt_list_find(g_pa_sync_info->sync_list, msg_cmp, (void*)msg);
+}
+
 static bt_status_t pa_sync_send_message(pa_sync_event_t* msg)
 {
     assert(msg);
@@ -172,7 +197,24 @@ error:
 
 static void terminate_sync(const pa_sync_event_t* msg)
 {
-    /** Do something */
+    pa_sync_device_t* device;
+    bt_status_t status;
+
+    BT_ADDR_LOG("terminate sync from [%s], addr_type:%d, sid:%d", (bt_address_t*)msg->addr.addr,
+        msg->addr.addr_type, msg->sid);
+
+    device = find_device_by_msg(msg);
+    if (!device) {
+        BT_LOGW("device not found");
+        return;
+    }
+
+    status = bt_sal_pa_terminate_sync(msg->id, msg->sid, &msg->addr);
+    if (status != BT_STATUS_SUCCESS) {
+        BT_LOGW("failed to terminate sync, status = %d", status);
+        bt_list_remove(g_pa_sync_info->sync_list, device);
+        return;
+    }
 }
 
 static void process_sync_established(const pa_sync_device_t* device, const void* data)
