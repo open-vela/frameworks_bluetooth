@@ -3068,6 +3068,49 @@ void system_bluetooth_ble_AuracastSink_interface_aurasnk_stopScan(FeatureInterfa
 #endif
 }
 
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+static void aurasnk_on_sync_established(const bt_le_address_t* addr, uint8_t sid, void* context)
+{
+    bt_instance_t* ins = context;
+    feature_bluetooth_features_info_t* features_info;
+    feature_bluetooth_aurasnk_info_t* aurasnk_info = NULL;
+    feature_bluetooth_aurasnk_pending_work_t* work = NULL;
+    aurasnk_work_type_t type = AURASNK_WORK_TYPE_CREATE_SYNC;
+
+    features_info = ins->context;
+    if (!features_info || !features_info->feature_ble_aurasnk)
+        goto error;
+
+    aurasnk_info = bt_list_find(features_info->feature_ble_aurasnk, aurasnk_instance_cmp, ins);
+    if (!aurasnk_info)
+        goto error;
+
+    work = bt_list_find(aurasnk_info->pending_work, aurasnk_work_cmp, &type);
+    if (!work)
+        goto error;
+
+    aurasnk_info->stream_info = zalloc(sizeof(feature_bluetooth_aurasnk_stream_info_t));
+    if (!aurasnk_info->stream_info) {
+        work->status = BT_STATUS_NOMEM;
+        goto error;
+    }
+
+    FEATURE_LOG_DEBUG("%s, sync created", __func__);
+    work->status = BT_STATUS_SUCCESS;
+    bt_list_remove(aurasnk_info->pending_work, work);
+    memcpy(&aurasnk_info->stream_info->remote.addr, addr, sizeof(bt_le_address_t));
+    aurasnk_info->stream_info->remote.sid = sid;
+    if (aurasnk_info->scanner)
+        bt_le_stop_scan_async(aurasnk_info->ins, aurasnk_info->scanner, NULL, NULL);
+
+    return;
+
+error:
+    bt_pa_sync_terminate_async(ins, addr, sid, NULL, NULL);
+    if (aurasnk_info)
+        bt_list_remove(aurasnk_info->pending_work, work);
+}
+
 static feature_bluetooth_aurasnk_info_t* get_aurasnk_info(bt_instance_t* ins,
     const bt_le_address_t* addr, uint8_t sid)
 {
@@ -3092,6 +3135,56 @@ static feature_bluetooth_aurasnk_info_t* get_aurasnk_info(bt_instance_t* ins,
         return NULL; /**< Advertising Set ID mismatch */
 
     return aurasnk_info;
+}
+
+static void aurasnk_on_sync_terminated(const bt_le_address_t* addr, uint8_t sid, void* context)
+{
+    bt_instance_t* ins = context;
+    feature_bluetooth_aurasnk_info_t* aurasnk_info;
+
+    aurasnk_info = get_aurasnk_info(ins, addr, sid);
+    if (!aurasnk_info)
+        return;
+
+    FEATURE_LOG_DEBUG("%s, sync terminated", __func__);
+    if (aurasnk_info->stream_found_callback != FEATURE_BLE_FT_CALLBACK_ID_INVALID) {
+        FeatureRemoveCallback(aurasnk_info->handle, aurasnk_info->stream_found_callback);
+        aurasnk_info->stream_found_callback = FEATURE_BLE_FT_CALLBACK_ID_INVALID;
+    }
+
+    free(aurasnk_info->stream_info);
+    aurasnk_info->stream_info = NULL;
+}
+
+static void aurasnk_on_sync_report(const bt_le_address_t* addr, uint8_t sid,
+    const bt_pa_sync_report_t* report, void* context)
+{
+    bt_status_t status;
+    bt_instance_t* ins = context;
+    bt_auracast_audio_info_t* info = NULL;
+    feature_bluetooth_aurasnk_stream_info_t* stream_info = NULL;
+    feature_bluetooth_aurasnk_info_t* aurasnk_info;
+
+    aurasnk_info = get_aurasnk_info(ins, addr, sid);
+    if (!aurasnk_info)
+        return;
+
+    info = malloc(sizeof(bt_auracast_audio_info_t));
+    if (info == NULL)
+        return;
+
+    status = bt_auracast_sink_parse_adv_data(info, report);
+    if (status != BT_STATUS_SUCCESS)
+        goto exit;
+
+    stream_info = aurasnk_info->stream_info;
+    if (!stream_info)
+        goto exit;
+
+    memcpy(&stream_info->audio_info, info, sizeof(bt_auracast_audio_info_t));
+
+exit:
+    free(info);
 }
 
 static char* aurasnk_build_subid(const bt_le_address_t* addr, uint8_t sid, uint8_t subgroup)
@@ -3203,5 +3296,222 @@ static char* aurasnk_sync_build_display_name(const bt_auracast_audio_subgroup_t*
             subgroup->metadata.language);
 
     return display_name;
+}
+
+static void aurasnk_on_auracast_ready(const bt_le_address_t* addr, uint8_t sid, bool encrypted,
+    void* context)
+{
+    bt_instance_t* ins = context;
+    feature_bluetooth_aurasnk_info_t* aurasnk_info;
+    feature_bluetooth_aurasnk_stream_info_t* stream_info;
+    FtArray* result_array = NULL;
+
+    aurasnk_info = get_aurasnk_info(ins, addr, sid);
+    if (!aurasnk_info)
+        return;
+
+    if (aurasnk_info->stream_found_callback == FEATURE_BLE_FT_CALLBACK_ID_INVALID)
+        return;
+
+    stream_info = aurasnk_info->stream_info;
+    if (!stream_info)
+        return;
+
+    if (stream_info->reported)
+        return;
+
+    stream_info->encrypted = encrypted;
+    result_array = system_bluetooth_ble_malloc_AuracastBaseResult_struct_type_array();
+    result_array->_size = stream_info->audio_info.num_subgroups;
+    result_array->_element = calloc(result_array->_size,
+        sizeof(system_bluetooth_ble_AuracastScanResult*));
+
+    for (uint8_t i = 0; i < stream_info->audio_info.num_subgroups; i++) {
+        bt_auracast_audio_subgroup_t* subgroup = &stream_info->audio_info.subgroup[i];
+        system_bluetooth_ble_AuracastBaseResult* result_data;
+        char* display_name = NULL;
+        char* subid = NULL;
+
+        display_name = aurasnk_sync_build_display_name(subgroup, i);
+        if (!display_name)
+            continue;
+
+        subid = aurasnk_build_subid(addr, sid, i);
+        if (!subid) {
+            free(display_name);
+            continue;
+        }
+
+        result_data = system_bluetooth_bleMallocAuracastBaseResult();
+        ((system_bluetooth_ble_AuracastBaseResult**)result_array->_element)[i] = result_data;
+
+        result_data->subId = StringToFtString(subid);
+        result_data->displayName = StringToFtString(display_name);
+        result_data->encrypted = encrypted;
+
+        free(display_name);
+        free(subid);
+    }
+
+    FeatureInvokeCallback(aurasnk_info->handle, aurasnk_info->stream_found_callback, result_array);
+    FeatureFreeValue(result_array);
+    stream_info->reported = true;
+}
+
+static void aurasnk_create_sync_cb(bt_instance_t* ins, bt_status_t status, void* userdata)
+{
+    feature_bluetooth_aurasnk_info_t* aurasnk_info;
+    feature_bluetooth_aurasnk_pending_work_t* work = NULL;
+    aurasnk_work_type_t type = AURASNK_WORK_TYPE_CREATE_SYNC;
+
+    FIND_INFO_BY_OBJECT(ins, userdata, aurasnk, aurasnk_info);
+    if (!aurasnk_info) {
+        FEATURE_LOG_ERROR("%s, aurasnk_info not found", __func__);
+        goto error;
+    }
+
+    work = bt_list_find(aurasnk_info->pending_work, aurasnk_work_cmp, &type);
+    if (!work)
+        goto error;
+
+    if (status != BT_STATUS_SUCCESS) {
+        FEATURE_LOG_ERROR("%s, failed to create sync, status = %d", __func__, status);
+        work->status = status;
+        goto error;
+    }
+
+    FEATURE_LOG_DEBUG("%s, sync creating..", __func__);
+    return;
+
+error:
+    if (aurasnk_info) {
+        FeatureRemoveCallback(aurasnk_info->handle, aurasnk_info->stream_found_callback);
+        aurasnk_info->stream_found_callback = FEATURE_BLE_FT_CALLBACK_ID_INVALID;
+        bt_list_remove(aurasnk_info->pending_work, work);
+    }
+}
+
+static const bt_pa_sync_create_param_t aurasnk_sync_params = {
+    .skip = FEATURE_BLE_PA_SYNC_SKIP,
+    .timeout = FEATURE_BLE_PA_SYNC_TIMEOUT_MS / 10,
+    .filter = false,
+    .no_report = false,
+};
+
+static const bt_pa_sync_callbacks_t aurasnk_sync_cbs = {
+    .on_sync_established = aurasnk_on_sync_established,
+    .on_sync_terminated = aurasnk_on_sync_terminated,
+    .on_sync_report = aurasnk_on_sync_report,
+    .on_auracast_ready = aurasnk_on_auracast_ready,
+};
+#endif /** CONFIG_BLUETOOTH_AURACAST_SINK */
+
+void system_bluetooth_ble_AuracastSink_interface_aurasnk_createSync(FeatureInterfaceHandle handle,
+    AppendData adata, FtPromiseId __pid__, system_bluetooth_ble_CreateAuracastSyncParams* params)
+{
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+    bt_status_t status;
+    feature_bluetooth_aurasnk_pending_work_t* work = NULL;
+    feature_bluetooth_aurasnk_info_t* aurasnk_info = FeatureGetObjectData(handle);
+    bt_le_address_t addr;
+    uint8_t sid;
+
+    if (params->callback == FEATURE_BLE_FT_CALLBACK_ID_INVALID) {
+        status = BT_STATUS_PARM_INVALID;
+        goto error;
+    }
+
+    if (!aurasnk_info) {
+        FEATURE_LOG_ERROR("%s, not initialized", __func__);
+        status = BT_STATUS_NOT_READY;
+        goto error;
+    }
+
+    status = aurasnk_parse_id(&addr, &sid, params->id);
+    if (status != BT_STATUS_SUCCESS) {
+        FEATURE_LOG_ERROR("%s, invalid id %s", __func__, params->id);
+        goto error;
+    }
+
+    if (aurasnk_info->stream_found_callback != FEATURE_BLE_FT_CALLBACK_ID_INVALID) {
+        FEATURE_LOG_ERROR("%s, repeated attempt", __func__);
+        status = BT_STATUS_DONE;
+        goto error;
+    }
+
+    if (aurasnk_info->stream_info != NULL) {
+        FEATURE_LOG_ERROR("%s, not terminated", __func__);
+        status = BT_STATUS_BUSY;
+        goto error;
+    }
+
+    work = zalloc(sizeof(feature_bluetooth_aurasnk_pending_work_t));
+    if (!work) {
+        status = BT_STATUS_NOMEM;
+        goto error;
+    }
+
+    status = bt_pa_sync_create_async(aurasnk_info->ins, &addr, sid, &aurasnk_sync_params,
+        &aurasnk_sync_cbs, aurasnk_info->ins, aurasnk_create_sync_cb, aurasnk_info);
+    if (status != BT_STATUS_SUCCESS) {
+        FEATURE_LOG_ERROR("%s, failed to create sync, status = %d", __func__, status);
+        goto error;
+    }
+
+    aurasnk_info->stream_found_callback = params->callback;
+    work->type = AURASNK_WORK_TYPE_CREATE_SYNC;
+    work->handle = handle;
+    work->pid = __pid__;
+    work->status = BT_STATUS_FAIL; /**< Always marked as failed before done */
+    bt_list_add_tail(aurasnk_info->pending_work, work);
+    FEATURE_LOG_DEBUG("%s, sync creating.", __func__);
+
+    return;
+
+error:
+    FeaturePromiseReject(handle, __pid__, bt_status_to_feature_error(status),
+        "failed to create sync");
+
+    free(work);
+#else
+    FeaturePromiseReject(handle, __pid__, bt_status_to_feature_error(BT_STATUS_NOT_SUPPORTED),
+        "auracast sink is not supported");
+#endif
+}
+
+void system_bluetooth_ble_AuracastSink_interface_aurasnk_terminateSync(
+    FeatureInterfaceHandle handle, AppendData adata)
+{
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+    bt_status_t status;
+    feature_bluetooth_aurasnk_info_t* aurasnk_info = FeatureGetObjectData(handle);
+
+    if (!aurasnk_info) {
+        FEATURE_LOG_ERROR("%s, not initialized", __func__);
+        return;
+    }
+
+    if (aurasnk_info->stream_found_callback == FEATURE_BLE_FT_CALLBACK_ID_INVALID) {
+        FEATURE_LOG_ERROR("%s, nothing to terminate", __func__);
+        return;
+    }
+
+    if (aurasnk_info->stream_info == NULL) {
+        FEATURE_LOG_ERROR("%s, sync establishing", __func__);
+        return;
+    }
+
+    status = bt_pa_sync_terminate_async(aurasnk_info->ins, &aurasnk_info->stream_info->remote.addr,
+        aurasnk_info->stream_info->remote.sid, NULL, NULL);
+    if (status != BT_STATUS_SUCCESS) {
+        FEATURE_LOG_ERROR("%s, failed to terminate sync, status = %d", __func__, status);
+        return;
+    }
+
+    FEATURE_LOG_DEBUG("%s, sync terminating.", __func__);
+
+    free(aurasnk_info->stream_info);
+    aurasnk_info->stream_info = NULL;
+#endif
 }
 }
