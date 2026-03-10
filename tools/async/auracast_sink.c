@@ -25,6 +25,16 @@
 
 #define LOG_TAG "[bttool_async]"
 
+#define BTTOOL_AURACAST_SINK_LOG_SIZE (256)
+#define BTTOOL_PA_SYNC_PA_REPORT_LIFE (10)
+#define BTTOOL_PA_SYNC_DEFAULT_TIMEOUT_MS (1000)
+#define BTTOOL_PA_SYNC_DEFAULT_SKIP (1)
+
+#define SEARCH_TYPE_SYNC (0)
+#define SEARCH_TYPE_SINK (1)
+
+#define AURACAST_SINK_PTR_PENDING ((void*)-1)
+
 typedef struct {
     bt_address_t addr;
     ble_addr_type_t type;
@@ -133,16 +143,146 @@ static bt_command_t g_auracast_sink_tables[] = {
                                              "\t\t\t the advertising sid (0x0-0xF)\"" },
 };
 
+static void usage(void)
+{
+    printf("Usage:\n");
+    printf("\taddress: peer device address like 00:01:02:03:04:05\n");
+    printf("Commands:\n");
+    for (int i = 0; i < ARRAY_SIZE(g_auracast_sink_tables); i++) {
+        printf("\t%-8s\t%s\n", g_auracast_sink_tables[i].cmd, g_auracast_sink_tables[i].help);
+    }
+}
+
+static const char* parse_addr_type(ble_addr_type_t type)
+{
+    switch (type) {
+    case BT_LE_ADDR_TYPE_PUBLIC:
+        return "Public";
+    case BT_LE_ADDR_TYPE_RANDOM:
+        return "Random";
+    case BT_LE_ADDR_TYPE_PUBLIC_ID:
+        return "Public ID";
+    case BT_LE_ADDR_TYPE_RANDOM_ID:
+        return "Random ID";
+    case BT_LE_ADDR_TYPE_ANONYMOUS:
+        return "Anonymous";
+    default:
+        break;
+    }
+
+    return "Unknown";
+}
+
+static void update_neaby_pa(const ble_scan_result_t* result)
+{
+    bttool_auracast_pa_record_t* prev;
+
+    if (!g_auracast_sink->nearby_pa)
+        g_auracast_sink->nearby_pa = zalloc(sizeof(bttool_auracast_pa_record_t));
+
+    prev = g_auracast_sink->nearby_pa;
+
+    if (!prev)
+        return;
+
+    if (prev->life)
+        prev->life--;
+
+    if (!prev->life)
+        prev->rssi = INT8_MIN;
+
+    if ((bt_addr_compare(&prev->addr, &result->addr) == 0) && (prev->type == result->addr_type)
+        && (prev->sid == result->sid)) {
+        prev->life = BTTOOL_PA_SYNC_PA_REPORT_LIFE;
+        prev->rssi = result->rssi;
+        return;
+    }
+
+    if ((prev->life > 0) && (prev->rssi > result->rssi))
+        return;
+
+    bt_addr_set(&prev->addr, result->addr.addr);
+    prev->life = BTTOOL_PA_SYNC_PA_REPORT_LIFE;
+    prev->type = result->addr_type;
+    prev->sid = result->sid;
+}
+
 static void on_scan_result(bt_scanner_t* scanner, ble_scan_result_t* result)
 {
+    bt_status_t status;
+    bt_pa_sync_info_t* info = NULL;
+    char* log = NULL;
+    size_t size = BTTOOL_AURACAST_SINK_LOG_SIZE;
+
+    if (!g_auracast_sink || g_auracast_sink->scanner != scanner)
+        return;
+
+    info = malloc(sizeof(bt_pa_sync_info_t));
+    if (info == NULL)
+        return;
+
+    status = bt_pa_sync_parse_adv_data(info, result);
+    if (status != BT_STATUS_SUCCESS)
+        goto exit;
+
+    log = zalloc(size); /**< for print log */
+    if (!log)
+        goto exit;
+
+    BTTOOL_STRCAT(log, size, "%s from [%02x:%02x:%02x:%02x:%02x:%02x][%s(%d)]", __func__,
+        result->addr.addr[5], result->addr.addr[4], result->addr.addr[3], result->addr.addr[2],
+        result->addr.addr[1], result->addr.addr[0], parse_addr_type(result->addr_type),
+        result->addr_type);
+
+    if (info->name[0] != '\0')
+        BTTOOL_STRCAT(log, size, ", device:%s", info->name);
+
+    if (info->broadcast_name[0] != '\0')
+        BTTOOL_STRCAT(log, size, ", broadcast name:%s", info->broadcast_name);
+
+    if (info->broadcast_id != BT_INVALID_BROADCAST_ID)
+        BTTOOL_STRCAT(log, size, ", id:0x%06" PRIx32, info->broadcast_id);
+
+    if (result->sid != 0xFF)
+        BTTOOL_STRCAT(log, size, ", sid:0x%x", result->sid);
+
+    if (result->tx_power != BT_POWER_UNAVAILABLE)
+        BTTOOL_STRCAT(log, size, ", txpower:%d", result->tx_power);
+
+    if (result->rssi != BT_POWER_UNAVAILABLE)
+        BTTOOL_STRCAT(log, size, ", rssi:%d", result->rssi);
+
+    PRINT("%s", log);
+    update_neaby_pa(result);
+
+exit:
+    free(info);
+    free(log);
 }
 
 static void on_scan_status(bt_scanner_t* scanner, uint8_t status)
 {
+    PRINT("%s, status = %d", __func__, status);
+
+    if (!g_auracast_sink || g_auracast_sink->scanner != scanner) {
+        PRINT("%s, scanner(%p) mismatch", __func__, scanner);
+        return;
+    }
+
+    if (status != BT_STATUS_SUCCESS)
+        g_auracast_sink->scanner = NULL;
 }
 
 static void on_scan_stopped(bt_scanner_t* scanner)
 {
+    PRINT("%s", __func__);
+
+    if (!g_auracast_sink || g_auracast_sink->scanner != scanner) {
+        PRINT("%s, scanner(%p) mismatch", __func__, scanner);
+        return;
+    }
+
+    g_auracast_sink->scanner = NULL;
 }
 
 static const scanner_callbacks_t scanner_cbs = {
