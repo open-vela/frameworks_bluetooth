@@ -85,6 +85,12 @@ typedef struct bt_sal_pa_sync_param {
     uint8_t cte;
 } bt_sal_pa_sync_param_t;
 
+/** @brief Initialize the service adaptation layer for periodic advertising. */
+bt_status_t bt_sal_pa_sync_init(void);
+
+/** @brief Clean up the service adaptation layer for periodic advertising. */
+bt_status_t bt_sal_pa_sync_cleanup(void);
+
 /**
  * @brief LE Periodic Advertising Create Sync command.
  *
