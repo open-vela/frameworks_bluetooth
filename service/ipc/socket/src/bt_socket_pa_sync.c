@@ -25,17 +25,77 @@
 #include "bt_internal.h"
 
 #include "bt_message.h"
-#include "bt_pa_sync.h"
-#include "bt_socket.h"
+#include "pa_sync_service.h"
+
+/****************************************************************************
+ * Private Types
+ ****************************************************************************/
+typedef struct pa_sync_remote {
+    bt_instance_t* ins;
+    uint64_t cbs; /**< bt_pa_sync_callbacks_t* */
+    uint64_t context; /**< void* */
+} pa_sync_remote_t;
 
 #if defined(CONFIG_BLUETOOTH_SERVER) && defined(__NuttX__)
+
+/****************************************************************************
+ * Private Functions
+ ****************************************************************************/
+static void on_sync_established_cb(const bt_le_address_t* addr, uint8_t sid, void* context)
+{
+}
+
+static void on_sync_terminated_cb(const bt_le_address_t* addr, uint8_t sid, void* context)
+{
+    pa_sync_remote_t* remote = (pa_sync_remote_t*)context;
+    free(remote);
+}
+
+static void on_sync_report_cb(const bt_le_address_t* addr, uint8_t sid, void* context)
+{
+}
+
+static const bt_pa_sync_callbacks_t g_pa_sync_socket_cb = {
+    .on_sync_established = on_sync_established_cb,
+    .on_sync_terminated = on_sync_terminated_cb,
+    .on_sync_report = on_sync_report_cb,
+};
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
-void bt_socket_server_pa_sync_process(service_poll_t* poll, int fd,
-    bt_instance_t* ins, bt_message_packet_t* packet)
+void bt_socket_server_pa_sync_process(service_poll_t* poll, int fd, bt_instance_t* ins,
+    bt_message_packet_t* packet)
 {
+    pa_sync_remote_t* remote;
+
+    switch (BT_IPC_GET_SUBCODE(packet->code)) {
+    case PA_SYNC_SUBCODE_CREATE_SYNC:
+        remote = zalloc(sizeof(pa_sync_remote_t));
+        if (!remote) {
+            packet->pa_sync_r.status = BT_STATUS_NOMEM;
+            break;
+        }
+
+        remote->ins = ins;
+        remote->cbs = packet->pa_sync_pl._bt_pa_sync_create.cbs;
+        remote->context = packet->pa_sync_pl._bt_pa_sync_create.context;
+        packet->pa_sync_r.status = pa_sync_create(&packet->pa_sync_pl._bt_pa_sync_create.addr,
+            packet->pa_sync_pl._bt_pa_sync_create.sid,
+            packet->pa_sync_pl._bt_pa_sync_create.have_params
+                ? &packet->pa_sync_pl._bt_pa_sync_create.params
+                : NULL,
+            &g_pa_sync_socket_cb, remote);
+
+        if (packet->pa_sync_r.status != BT_STATUS_SUCCESS)
+            free(remote);
+
+        break;
+    case PA_SYNC_SUBCODE_TERMINATE_SYNC:
+        break;
+    default:
+        break;
+    }
 }
 #endif
