@@ -106,6 +106,16 @@ typedef struct advertiser_data_ advertiser_data_t;
 typedef void (*ad_dump_cb_t)(const char* str);
 
 /**
+ * @brief Advertising data parsing callback function.
+ *
+ * Function prototype for parsing advertising data.
+ *
+ * @param data - The parsed advertising data
+ * @param context - User context
+ */
+typedef void (*ad_parse_cb_t)(const adv_data_t* data, void* context);
+
+/**
  * @brief Dump advertising data.
  *
  * Parses the advertising data and outputs it using the provided dump callback.
@@ -130,6 +140,19 @@ static void on_scan_result_cb(bt_scanner_t* scanner, ble_scan_result_t* result)
  * @endcode
  */
 bool advertiser_data_dump(uint8_t* data, uint16_t len, ad_dump_cb_t dump);
+
+/**
+ * @brief Parse advertising data.
+ *
+ * @param data - Pointer to the advertising data buffer
+ * @param len - Length of the advertising data buffer
+ * @param cb - Callback function to output the parsed data
+ * @param context - User context to be carried in `cb`
+ *
+ * @return true - Parsing and output were successful
+ * @return false - Parsing failed
+ */
+bool advertiser_data_parse(const uint8_t* data, uint8_t len, ad_parse_cb_t cb, void* context);
 
 /**
  * @brief Create a new advertiser data object.
