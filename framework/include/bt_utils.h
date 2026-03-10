@@ -17,6 +17,8 @@
 #ifndef __BT_UTILS_H__
 #define __BT_UTILS_H__
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -184,6 +186,33 @@ extern "C" {
         (u32) = ((uint32_t)(*((p) + 3)) + ((uint32_t)(*((p) + 2)) << 8) + ((uint32_t)(*((p) + 1)) << 16) + ((uint32_t)(*(p)) << 24)); \
         (p) += 4;                                                                                                                     \
     }
+
+static inline uint8_t bt_utils_count_ones_swar(uint32_t n)
+{
+    n = n - ((n >> 1) & 0x55555555);
+    n = (n & 0x33333333) + ((n >> 2) & 0x33333333);
+    n = (n + (n >> 4)) & 0x0F0F0F0F;
+    n = n + (n >> 8);
+    n = n + (n >> 16);
+    return n & 0x3F;
+}
+
+static inline uint8_t bt_utils_count_ones(uint32_t n)
+{
+#ifdef __GNUC__
+#if defined(__has_builtin)
+#if __has_builtin(__builtin_popcount)
+    return __builtin_popcount(n);
+#else /** __builtin_popcount() not supported */
+    return bt_utils_count_ones_swar(n);
+#endif
+#else /** __has_builtin not() supported */
+    return bt_utils_count_ones_swar(n);
+#endif
+#else /** Not GCC */
+    return bt_utils_count_ones_swar(n);
+#endif
+}
 
 #ifdef __cplusplus
 }

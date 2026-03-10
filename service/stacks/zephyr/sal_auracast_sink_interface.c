@@ -105,7 +105,7 @@ static void sal_create_sink_param_sal_to_zephyr(struct bt_iso_big_sync_param* z_
     const bt_sal_auracast_sink_param_t* params)
 {
     z_param->bis_channels = NULL; /**< to be assigned in @ref create_sync() */
-    z_param->num_bis = 0; /** TODO: count the valid numbers of bitfiled */
+    z_param->num_bis = bt_utils_count_ones(params->bis);
     z_param->bis_bitfield = params->bis >> 1;
     z_param->mse = params->mse;
     z_param->sync_timeout = params->sync_timeout;
