@@ -61,10 +61,6 @@ void a2dp_audio_on_started(uint8_t peer_sep, bool started)
     if (peer_sep == SEP_SNK)
         a2dp_source_on_started(started);
 #endif
-#ifdef CONFIG_BLUETOOTH_A2DP_SINK
-    if (peer_sep == SEP_SRC)
-        a2dp_sink_on_started(started);
-#endif
 }
 
 void a2dp_audio_on_stopped(uint8_t peer_sep)

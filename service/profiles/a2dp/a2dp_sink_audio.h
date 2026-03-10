@@ -54,7 +54,6 @@ a2dp_sink_packet_t* a2dp_sink_new_packet(uint32_t timestamp,
     uint16_t seq, uint8_t* data, uint16_t length);
 void a2dp_sink_packet_receive(a2dp_sink_packet_t* packet);
 bool a2dp_sink_on_connection_changed(bool connected);
-void a2dp_sink_on_started(bool started);
 void a2dp_sink_on_stopped(void);
 void a2dp_sink_setup_codec(bt_address_t* bd_addr);
 void a2dp_sink_audio_init(void);
