@@ -209,6 +209,8 @@ static void create_sync(const void* data)
     sal_pa_sync_device_t* device = NULL;
     int err;
 
+    BT_LOGD("%s", __func__);
+
     device = device_new();
     if (!device) {
         pa_sync_on_terminated(req->id, &req->addr, z_param->sid);
@@ -225,8 +227,10 @@ static void create_sync(const void* data)
         goto error;
 
     err = bt_le_per_adv_sync_create(z_param, &device->sync);
-    if (err)
+    if (err) {
+        BT_LOGE("%s, failed to create sync, err = %d", __func__, err);
         goto error;
+    }
 
     bt_list_add_tail(g_sal_pa_sync_info->sync_list, device);
 

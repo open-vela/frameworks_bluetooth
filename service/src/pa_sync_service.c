@@ -118,14 +118,17 @@ static void sync_terminated_callback(const bt_pa_sync_callbacks_t* cbs, const bt
 static void create_sync(const pa_sync_event_t* msg)
 {
     pa_sync_event_create_sync_t* params = (pa_sync_event_create_sync_t*)msg->data;
-    pa_sync_device_t* device;
+    pa_sync_device_t* device = NULL;
     bt_sal_pa_sync_param_t sal_params = { 0 };
+    bt_status_t status;
 
     BT_LOGD("%s", __func__);
 
     device = zalloc(sizeof(pa_sync_device_t));
-    if (device == NULL)
+    if (device == NULL) {
+        BT_LOGE("%s, malloc failed", __func__);
         goto error;
+    }
 
     memcpy(&sal_params.addr, &msg->addr, sizeof(bt_le_address_t));
     sal_params.sid = msg->sid;
@@ -135,8 +138,11 @@ static void create_sync(const pa_sync_event_t* msg)
     sal_params.options |= params->params.no_report ? BT_SAL_PA_SYNC_OPTION_REPORTING_DISABLED : 0;
     sal_params.options |= params->params.filter ? BT_SAL_PA_SYNC_OPTION_FILTER_ENABLED : 0;
     sal_params.cte = 0; /**< nothing specified */
-    if (bt_sal_pa_create_sync(PRIMARY_ADAPTER, &sal_params) != BT_STATUS_SUCCESS)
+    status = bt_sal_pa_create_sync(PRIMARY_ADAPTER, &sal_params);
+    if (status != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, failed to create sync, status = %d", __func__, status);
         goto error;
+    }
 
     /** sync created, add this device into list */
     memcpy(&device->addr, &msg->addr, sizeof(bt_le_address_t));
@@ -148,6 +154,7 @@ static void create_sync(const pa_sync_event_t* msg)
 
 error:
     sync_terminated_callback(params->cbs, &msg->addr, msg->sid, params->context);
+    free(device);
 }
 
 static void process_sync_established(const pa_sync_device_t* device, const void* data)

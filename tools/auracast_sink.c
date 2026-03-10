@@ -238,6 +238,37 @@ static const ble_scan_settings_t default_scan_settings = {
     .policy.policy = 0, /**< Unfiltered */
 };
 
+static void on_sync_established(const bt_le_address_t* addr, uint8_t sid, void* context)
+{
+    PRINT_ADDR("on_sync_established, addr:[%s][%s], sid:0x%x", (const bt_address_t*)addr->addr,
+        parse_addr_type(addr->addr_type), sid);
+}
+
+static void on_sync_terminated(const bt_le_address_t* addr, uint8_t sid, void* context)
+{
+    PRINT_ADDR("on_sync_terminated, addr:[%s][%s], sid:0x%x", (const bt_address_t*)addr->addr,
+        parse_addr_type(addr->addr_type), sid);
+}
+
+static void on_sync_report(const bt_le_address_t* addr, uint8_t sid, void* context)
+{
+    PRINT_ADDR("on_sync_report, addr:[%s][%s], sid:0x%x", (const bt_address_t*)addr->addr,
+        parse_addr_type(addr->addr_type), sid);
+}
+
+static const bt_pa_sync_callbacks_t pa_sync_cbs = {
+    .on_sync_established = on_sync_established,
+    .on_sync_terminated = on_sync_terminated,
+    .on_sync_report = on_sync_report,
+};
+
+static const bt_pa_sync_create_param_t default_sync_params = {
+    .skip = BTTOOL_PA_SYNC_DEFAULT_SKIP,
+    .timeout = BTTOOL_PA_SYNC_DEFAULT_TIMEOUT_MS / 10,
+    .filter = false,
+    .no_report = false,
+};
+
 static int scan_start_cmd(void* handle, int argc, char* argv[])
 {
     ble_scan_settings_t settings;
@@ -288,12 +319,24 @@ static int scan_stop_cmd(void* handle, int argc, char* argv[])
 static int sync_create_cmd(void* handle, int argc, char* argv[])
 {
     int opt;
+    uint8_t sid = BLE_SCAN_SID_NOT_PROVIDED;
+    bt_le_address_t addr = { 0 };
+    bt_pa_sync_create_param_t params = { 0 };
 
     PRINT("%s", __func__);
 
+    memcpy(&params, &default_sync_params, sizeof(bt_pa_sync_create_param_t));
+
     if (argc == 1) {
         PRINT("%s, Sync to a nearby device", __func__);
-        return CMD_OK; /**< TBD */
+        if (!g_bis_sink->nearby_pa) {
+            PRINT("%s, device not found", __func__);
+            return CMD_PARAM_NOT_ENOUGH;
+        }
+
+        memcpy(addr.addr, g_bis_sink->nearby_pa->addr.addr, BT_ADDR_LENGTH);
+        addr.addr_type = g_bis_sink->nearby_pa->type;
+        sid = g_bis_sink->nearby_pa->sid;
     }
 
     while ((opt = getopt_long(argc, argv, "a:t:s:o:k:fn", sync_options, NULL)) != -1) {
@@ -314,6 +357,9 @@ static int sync_create_cmd(void* handle, int argc, char* argv[])
             break;
         }
     }
+
+    if (bt_pa_sync_create(handle, &addr, sid, &params, &pa_sync_cbs, handle) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
 
     return CMD_OK;
 }
