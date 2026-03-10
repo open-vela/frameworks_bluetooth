@@ -46,6 +46,6 @@ auracast_sink_msg_t* auracast_sink_msg_new_ext(auracast_sink_event_t event, bt_c
 
 void auracast_sink_msg_destory(auracast_sink_msg_t* msg)
 {
-    free(msg->context);
+    free(msg->payload);
     free(msg);
 }

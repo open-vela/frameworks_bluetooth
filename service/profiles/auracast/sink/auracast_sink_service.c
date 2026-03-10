@@ -203,11 +203,9 @@ static void auracast_sink_process_message(void* data)
     switch (msg->event) {
     case AURACAST_SINK_STARTUP:
         service_startup(msg);
-        msg->context = NULL;
         break;
     case AURACAST_SINK_SHUTDOWN:
         service_shutdown(msg);
-        msg->context = NULL;
         break;
     case AURACAST_SINK_CREATE_SYNC:
         /** Allowed to create new device */
@@ -394,3 +392,51 @@ void register_auracast_sink_service(void)
 {
     register_service(&auracast_sink_service);
 }
+
+void auracast_sink_on_established(bt_controller_id_t id, const bt_le_address_t* addr, uint8_t sid)
+{
+    auracast_sink_send_message(auracast_sink_msg_new(AURACAST_SINK_SYNC_ESTABLISHED, id, addr, sid));
+}
+
+void auracast_sink_on_terminated(bt_controller_id_t id, const bt_le_address_t* addr, uint8_t sid)
+{
+    auracast_sink_send_message(auracast_sink_msg_new(AURACAST_SINK_SYNC_TERMINATED, id, addr, sid));
+}
+
+#if HACK_BEFORE_TINYCOMPRESS_DONE
+static bool stm_cmp(void* data, void* context)
+{
+    const auracast_sink_device_t* device = (const auracast_sink_device_t*)data;
+    const auracast_sink_state_machine_t* stm = (const auracast_sink_state_machine_t*)context;
+
+    return device->stm == stm;
+}
+
+static inline auracast_sink_device_t* find_device_by_stm(const auracast_sink_state_machine_t* stm)
+{
+    return bt_list_find(g_auracast_sink_service.sink_list, stm_cmp, (void*)stm);
+}
+
+void auracast_sink_send_message_delayed(const void* stm, int event, uint16_t size,
+    const uint8_t* payload, void* context)
+{
+    auracast_sink_msg_t* msg;
+    auracast_sink_device_t* device;
+
+    device = find_device_by_stm(stm);
+    if (!device)
+        return;
+
+    msg = auracast_sink_msg_new_ext(event, device->id, &device->addr, device->sid, size);
+    if (!msg)
+        return;
+
+    if (size && payload) {
+        msg->data.size = size;
+        memcpy(msg->data.data, payload, size);
+    }
+
+    msg->context = context;
+    auracast_sink_send_message(msg);
+}
+#endif

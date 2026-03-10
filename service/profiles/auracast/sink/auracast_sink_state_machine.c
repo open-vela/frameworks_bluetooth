@@ -272,6 +272,12 @@ static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data
 static void enabling_enter(state_machine_t* sm)
 {
     AURACAST_SINK_DBG_ENTER(sm);
+
+#if HACK_BEFORE_TINYCOMPRESS_DONE
+    auracast_sink_state_machine_t* stm = (auracast_sink_state_machine_t*)sm;
+    BT_LOGI("%s, now we assume the codec is configured immediately", __func__);
+    auracast_sink_send_message_delayed(stm, AURACAST_SINK_CONFIG_DONE, 0, NULL, NULL);
+#endif
 }
 
 static void enabling_exit(state_machine_t* sm)
@@ -286,6 +292,10 @@ static bool enabling_process_event(state_machine_t* sm, uint32_t event, void* p_
     AURACAST_SINK_DBG_EVENT(sm, event);
 
     switch (event) {
+    case AURACAST_SINK_CONFIG_DONE:
+        /** TODO: sanity checks? */
+        stm->audio_ready = true;
+        break;
     case AURACAST_SINK_SYNC_ESTABLISHED:
         hsm_transition_to(sm, &streaming_state);
         break;
@@ -305,9 +315,11 @@ static bool enabling_process_event(state_machine_t* sm, uint32_t event, void* p_
 
 static void streaming_enter(state_machine_t* sm)
 {
+    auracast_sink_state_machine_t* stm = (auracast_sink_state_machine_t*)sm;
 
     AURACAST_SINK_DBG_ENTER(sm);
 
+    auracast_sink_service_notify_sync_established(stm->context);
 }
 
 static void streaming_exit(state_machine_t* sm)
@@ -317,11 +329,16 @@ static void streaming_exit(state_machine_t* sm)
 
 static bool streaming_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
+    bt_status_t status;
     auracast_sink_state_machine_t* stm = (auracast_sink_state_machine_t*)sm;
 
     AURACAST_SINK_DBG_EVENT(sm, event);
 
     switch (event) {
+    case AURACAST_SINK_CONFIG_DONE:
+        /** TODO: sanity checks? */
+        stm->audio_ready = true;
+        break;
     case AURACAST_SINK_TERMINATE_SYNC:
         hsm_transition_to(sm, &releasing_state);
         break;

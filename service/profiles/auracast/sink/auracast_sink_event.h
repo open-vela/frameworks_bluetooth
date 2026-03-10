@@ -60,7 +60,8 @@ typedef struct {
     bt_controller_id_t id;
     bt_le_address_t addr;
     uint8_t sid;
-    void* context;
+    void* payload; /**< auto freed */
+    void* context; /**< not auto freed */
     auracast_sink_msg_priv_data_t data;
 } auracast_sink_msg_t;
 
