@@ -71,6 +71,8 @@ static int scan_start_cmd(void* handle, int argc, char* argv[]);
 static int scan_stop_cmd(void* handle, int argc, char* argv[]);
 static int sync_create_cmd(void* handle, int argc, char* argv[]);
 static int sync_terminate_cmd(void* handle, int argc, char* argv[]);
+static int auracast_receive_cmd(void* handle, int argc, char* argv[]);
+static int auracast_terminate_cmd(void* handle, int argc, char* argv[]);
 
 static bttool_auracast_sink_t* g_auracast_sink = NULL;
 
@@ -89,6 +91,11 @@ static const struct option sync_select_options[] = {
     { "addr", required_argument, 0, 'a' },
     { "type", required_argument, 0, 't' },
     { "sid", required_argument, 0, 's' },
+    { 0, 0, 0, 0 },
+};
+
+static const struct option auracast_recv_options[] = {
+    { "bis", required_argument, 0, 'b' },
     { 0, 0, 0, 0 },
 };
 
@@ -129,6 +136,32 @@ static bt_command_t g_auracast_sink_tables[] = {
                                          "(public by default)\n"
                                          "\t -s or --sid\n"
                                          "\t\t\t the advertising sid (0x0-0xF)\"" },
+    { "recv", auracast_receive_cmd, 1, "\"sync to a specific auracast source via periodic "
+                                       "advertising, params:\n"
+                                       "\t -a or --addr\n"
+                                       "\t\t\t the address of the advertiser, e.g., "
+                                       "00:01:02:03:04:05\n"
+                                       "\t\t\t mandatory if there are multiple sync exist\n"
+                                       "\t -t or --type\n"
+                                       "\t\t\t the address type, 0: public, 1: random "
+                                       "(public by default)\n"
+                                       "\t -s or --sid\n"
+                                       "\t\t\t the advertising sid (0x0-0xF)\n"
+                                       "\t -b or --bis\n"
+                                       "\t\t\t bitwise value on which bis is selected, "
+                                       "bit[x] refers to bis with index x + 1, for example:\n"
+                                       "\t\t\t\t 0x00000001 - the 1st stream\n"
+                                       "\t\t\t\t 0x00000003 - the 1st & 2nd streams\"" },
+    { "stoprecv", auracast_terminate_cmd, 1, "\"terminate sync to auracast source, params:\n"
+                                             "\t -a or --addr\n"
+                                             "\t\t\t the address of the advertiser, e.g., "
+                                             "00:01:02:03:04:05\n"
+                                             "\t\t\t mandatory if there are multiple sync exist\n"
+                                             "\t -t or --type\n"
+                                             "\t\t\t the address type, 0: public, 1: random "
+                                             "(public by default)\n"
+                                             "\t -s or --sid\n"
+                                             "\t\t\t the advertising sid (0x0-0xF)\"" },
 };
 
 static void usage(void)
@@ -314,7 +347,7 @@ static void on_sync_terminated(const bt_le_address_t* addr, uint8_t sid, void* c
 {
     bttool_auracast_pa_sync_t* sync = (bttool_auracast_pa_sync_t*)context;
 
-    if (!g_auracast_sink ||!bt_list_find(g_auracast_sink->sync_list, sync_cmp, sync))
+    if (!g_auracast_sink || !bt_list_find(g_auracast_sink->sync_list, sync_cmp, sync))
         return;
 
     PRINT_ADDR("on_sync_terminated, addr:[%s][%s], sid:0x%x", (const bt_address_t*)addr->addr,
@@ -383,7 +416,8 @@ static void dump_auracast_audio_info(const bt_auracast_audio_info_t* info)
         BTTOOL_STRCAT(log, size, "\tMetadata");
         if (subgroup->metadata.context) {
             BTTOOL_STRCAT(log, size, ", context[");
-            bt_audio_context_to_str(log + strlen(log), size - strlen(log), subgroup->metadata.context);
+            bt_audio_context_to_str(log + strlen(log), size - strlen(log),
+                subgroup->metadata.context);
             BTTOOL_STRCAT(log, size, "(0x%04x)]", subgroup->metadata.context);
         }
 
@@ -800,6 +834,103 @@ static int sync_terminate_cmd(void* handle, int argc, char* argv[])
     return CMD_OK;
 }
 
+static int auracast_receive_cmd(void* handle, int argc, char* argv[])
+{
+    int opt, ret;
+    bt_status_t status;
+    bttool_auracast_pa_sync_t* sync;
+    uint32_t bitfield = AURACAST_BITFIELD_ALL;
+
+    PRINT("%s", __func__);
+
+    ret = general_find_sync((void**)&sync, argc, argv, SEARCH_TYPE_SYNC);
+    if (ret != CMD_OK)
+        return ret;
+
+    while ((opt = getopt_long(argc, argv, "b:", auracast_recv_options, NULL)) != -1) {
+        switch (opt) {
+        case 'b':
+            bitfield = strtoul(optarg, NULL, 16);
+            bitfield <<= 1; /** match the input of bluetooth api */
+            break;
+        }
+    }
+
+    status = bt_auracast_sink_create_sync(handle, &sync->remote.addr, sync->remote.sid, bitfield,
+        NULL);
+    if (status != BT_STATUS_SUCCESS) {
+        PRINT("failed to create sink, status = %d", status);
+        return CMD_ERROR;
+    }
+
+    return CMD_OK;
+}
+
+static int auracast_terminate_cmd(void* handle, int argc, char* argv[])
+{
+    int ret;
+    bt_status_t status;
+    bttool_auracast_sync_t* sink;
+
+    PRINT("%s", __func__);
+
+    ret = general_find_sync((void**)&sink, argc, argv, SEARCH_TYPE_SINK);
+    if (ret != CMD_OK)
+        return ret;
+
+    status = bt_auracast_sink_terminate_sync(handle, &sink->remote.addr, sink->remote.sid);
+    if (status != BT_STATUS_SUCCESS) {
+        PRINT("failed to create sink, status = %d", status);
+        return CMD_ERROR;
+    }
+
+    return CMD_OK;
+}
+
+static void on_auracast_sync_established(void* cookie, const bt_le_address_t* addr, uint8_t sid)
+{
+    bttool_auracast_sync_t* sink;
+
+    PRINT_ADDR("on_auracast_sync_established, addr:[%s][%s], sid:0x%x",
+        (const bt_address_t*)addr->addr, parse_addr_type(addr->addr_type), sid);
+
+    sink = (bttool_auracast_sync_t*)find_sync(addr, sid, SEARCH_TYPE_SINK);
+    if (sink) {
+        PRINT("already established");
+        return;
+    }
+
+    sink = zalloc(sizeof(bttool_auracast_sync_t));
+    if (!sink)
+        return;
+
+    memcpy(&sink->remote.addr, addr, sizeof(bt_le_address_t));
+    sink->remote.sid = sid;
+
+    bt_list_add_tail(g_auracast_sink->sink_list, sink);
+}
+
+static void on_auracast_sync_terminated(void* cookie, const bt_le_address_t* addr, uint8_t sid)
+{
+    bttool_auracast_sync_t* sink;
+
+    PRINT_ADDR("on_auracast_sync_terminated, addr:[%s][%s], sid:0x%x",
+        (const bt_address_t*)addr->addr, parse_addr_type(addr->addr_type), sid);
+
+    sink = (bttool_auracast_sync_t*)find_sync(addr, sid, SEARCH_TYPE_SINK);
+    if (!sink) {
+        PRINT("sink not exists");
+        return;
+    }
+
+    bt_list_remove(g_auracast_sink->sink_list, sink);
+}
+
+static const bt_auracast_sink_callbacks_t auracast_sink_cbs = {
+    .on_sync_established = on_auracast_sync_established,
+    .on_sync_terminated = on_auracast_sync_terminated,
+};
+
 int auracast_sink_command_init(void* handle)
 {
     g_auracast_sink = zalloc(sizeof(bttool_auracast_sink_t));
@@ -807,7 +938,27 @@ int auracast_sink_command_init(void* handle)
         return CMD_ERROR;
 
     g_auracast_sink->sync_list = bt_list_new(free);
+    if (!g_auracast_sink->sync_list)
+        goto error;
+
+    g_auracast_sink->sink_list = bt_list_new(free);
+    if (!g_auracast_sink->sink_list)
+        goto error;
+
+    g_auracast_sink->auracast_cbs_cookie = bt_auracast_sink_register_callbacks(handle,
+        &auracast_sink_cbs);
+    if (!g_auracast_sink->auracast_cbs_cookie)
+        goto error;
+
     return CMD_OK;
+
+error:
+    bt_auracast_sink_unregister_callbacks(handle, g_auracast_sink->auracast_cbs_cookie);
+    bt_list_free(g_auracast_sink->sink_list);
+    bt_list_free(g_auracast_sink->sync_list);
+    free(g_auracast_sink);
+
+    return CMD_ERROR;
 }
 
 void auracast_sink_command_uninit(void* handle)
@@ -815,6 +966,8 @@ void auracast_sink_command_uninit(void* handle)
     if (!g_auracast_sink)
         return;
 
+    bt_auracast_sink_unregister_callbacks(handle, g_auracast_sink->auracast_cbs_cookie);
+    bt_list_free(g_auracast_sink->sink_list);
     bt_list_free(g_auracast_sink->sync_list);
     free(g_auracast_sink->nearby_pa);
     free(g_auracast_sink);
