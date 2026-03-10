@@ -218,6 +218,21 @@ static bt_status_t create_sync(auracast_sink_state_machine_t* stm,
     return BT_STATUS_SUCCESS;
 }
 
+static bt_status_t terminate_sync(auracast_sink_state_machine_t* stm,
+    const auracast_sink_msg_t* msg)
+{
+    bt_status_t status;
+
+    status = bt_sal_auracast_sink_terminate_sync(msg->id, msg->sid, &msg->addr);
+    if (status != BT_STATUS_SUCCESS) {
+        BT_LOGE("failed to terminate sync, status = %d", status);
+        return BT_STATUS_FAIL;
+    }
+
+    stm->bis = 0;
+
+    return BT_STATUS_SUCCESS;
+}
 
 static void dump(const auracast_sink_state_machine_t* stm)
 {
@@ -226,6 +241,8 @@ static void dump(const auracast_sink_state_machine_t* stm)
 
 static void idle_enter(state_machine_t* sm)
 {
+    auracast_sink_state_machine_t* stm = (auracast_sink_state_machine_t*)sm;
+
     AURACAST_SINK_DBG_ENTER(sm);
 
     if (sm->previous_state == NULL)
@@ -233,6 +250,8 @@ static void idle_enter(state_machine_t* sm)
 
     stm->audio_ready = false;
     /** TODO: remove codec */
+
+    auracast_sink_service_notify_sync_terminated(stm->context);
 }
 
 static void idle_exit(state_machine_t* sm)
@@ -313,6 +332,20 @@ static bool enabling_process_event(state_machine_t* sm, uint32_t event, void* p_
     return true;
 }
 
+static void data_in(auracast_sink_state_machine_t* stm, auracast_sink_msg_t* msg)
+{
+    auracast_sink_event_packet_t* packet = (auracast_sink_event_packet_t*)msg->payload;
+
+    if (!stm->audio_ready)
+        return;
+
+    msg->payload = NULL; /**< So it won't be freed automatically */
+    BT_LOGD("%s, bis:0x%" PRIx32 ",ts=%" PRIu32 ",seq=%d,len=%d", __func__, packet->bitfield,
+        packet->timestamp, packet->sequence_number, packet->length);
+
+    free(packet); /**< TODO: pass this packet to media, and do not free here */
+}
+
 static void streaming_enter(state_machine_t* sm)
 {
     auracast_sink_state_machine_t* stm = (auracast_sink_state_machine_t*)sm;
@@ -332,7 +365,8 @@ static bool streaming_process_event(state_machine_t* sm, uint32_t event, void* p
     bt_status_t status;
     auracast_sink_state_machine_t* stm = (auracast_sink_state_machine_t*)sm;
 
-    AURACAST_SINK_DBG_EVENT(sm, event);
+    if (event != AURACAST_SINK_DATA_IN) /**< Avoid spam logs */
+        AURACAST_SINK_DBG_EVENT(sm, event);
 
     switch (event) {
     case AURACAST_SINK_CONFIG_DONE:
@@ -340,10 +374,20 @@ static bool streaming_process_event(state_machine_t* sm, uint32_t event, void* p
         stm->audio_ready = true;
         break;
     case AURACAST_SINK_TERMINATE_SYNC:
+        status = terminate_sync(stm, p_data);
+        if (status != BT_STATUS_SUCCESS) {
+            /** Force reset */
+            hsm_transition_to(sm, &idle_state);
+            return false;
+        }
+
         hsm_transition_to(sm, &releasing_state);
         break;
     case AURACAST_SINK_SYNC_TERMINATED:
         hsm_transition_to(sm, &idle_state);
+        break;
+    case AURACAST_SINK_DATA_IN:
+        data_in(stm, p_data);
         break;
     case AURACAST_SINK_DUMP:
         dump(stm);
@@ -404,7 +448,7 @@ auracast_sink_state_machine_t* auracast_sink_state_machine_new(void* context)
 
     stm = (auracast_sink_state_machine_t*)zalloc(sizeof(auracast_sink_state_machine_t));
     if (!stm)
-    return NULL;
+        return NULL;
 
     stm->context = context;
     hsm_ctor(&stm->sm, (state_t*)&idle_state);

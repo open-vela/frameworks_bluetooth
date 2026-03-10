@@ -278,7 +278,7 @@ static void* auracast_sink_register_callbacks(void* remote,
     const bt_auracast_sink_callbacks_t* callbacks)
 {
     if (!g_auracast_sink_service.callbacks)
-    return NULL;
+        return NULL;
 
     return bt_remote_callbacks_register(g_auracast_sink_service.callbacks, remote,
         (void*)callbacks);
@@ -401,6 +401,36 @@ void auracast_sink_on_established(bt_controller_id_t id, const bt_le_address_t* 
 void auracast_sink_on_terminated(bt_controller_id_t id, const bt_le_address_t* addr, uint8_t sid)
 {
     auracast_sink_send_message(auracast_sink_msg_new(AURACAST_SINK_SYNC_TERMINATED, id, addr, sid));
+}
+
+void auracast_sink_on_data_received(bt_controller_id_t id, const bt_le_address_t* addr, uint8_t sid,
+    uint32_t bis, uint32_t ts, uint16_t seq, uint16_t len, const uint8_t* data)
+{
+    auracast_sink_event_packet_t* packet;
+    auracast_sink_msg_t* msg = auracast_sink_msg_new(AURACAST_SINK_DATA_IN, id, addr, sid);
+    if (!msg)
+        return;
+
+    packet = malloc(sizeof(auracast_sink_event_packet_t) + len);
+    if (!packet) {
+        free(msg);
+        return;
+    }
+
+    packet->bitfield = bis;
+    packet->timestamp = ts;
+    packet->sequence_number = seq;
+    if (len && data) {
+        /** TODO: move data to msg->context */
+        packet->length = len;
+        memcpy(packet->data, data, len);
+    } else {
+        packet->length = 0;
+    }
+
+    msg->payload = packet;
+
+    auracast_sink_send_message(msg);
 }
 
 #if HACK_BEFORE_TINYCOMPRESS_DONE
