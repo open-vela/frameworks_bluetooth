@@ -17,24 +17,51 @@
 
 #include "pa_sync_service.h"
 
+#include "bluetooth.h"
+
 #include "utils/log.h"
+
+typedef struct pa_sync_info {
+    int nothing_but_wait_for_the_first_variable;
+} pa_sync_info_t;
+
+static pa_sync_info_t* g_pa_sync_info = NULL;
 
 bt_status_t pa_sync_init(void)
 {
     BT_LOGD("%s", __func__);
+
+    if (g_pa_sync_info)
+        return BT_STATUS_BUSY;
+
+    g_pa_sync_info = zalloc(sizeof(pa_sync_info_t));
+
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t pa_sync_cleanup(void)
 {
     BT_LOGD("%s", __func__);
+
+    if (!g_pa_sync_info)
+        return BT_STATUS_DONE;
+
+    free(g_pa_sync_info);
+    g_pa_sync_info = NULL;
+
+    return BT_STATUS_SUCCESS;
 }
 
-bt_status_t pa_sync_search_create(void)
+bt_status_t pa_sync_create(void)
 {
     BT_LOGD("%s", __func__);
+
+    return BT_STATUS_UNSUPPORTED;
 }
 
-bt_status_t pa_sync_search_terminate(void)
+bt_status_t pa_sync_terminate(void)
 {
     BT_LOGD("%s", __func__);
+
+    return BT_STATUS_UNSUPPORTED;
 }
