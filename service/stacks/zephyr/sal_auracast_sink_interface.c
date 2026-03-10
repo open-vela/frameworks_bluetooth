@@ -214,7 +214,9 @@ static sal_auracast_sink_req_t* sal_auracast_sink_req(bt_controller_id_t id,
         return NULL;
     }
 
-    memcpy(&req->addr, addr, sizeof(bt_le_address_t));
+    if (addr)
+        memcpy(&req->addr, addr, sizeof(bt_le_address_t));
+
     req->id = id;
     req->sid = sid;
     req->func = func;
@@ -373,15 +375,36 @@ error:
     return BT_STATUS_FAIL;
 }
 
-bt_status_t bt_sal_auracast_sink_cleanup(void)
+static void cleanup(const void* data)
 {
+    BT_LOGD("%s", __func__);
+
     if (!g_sal_auracast_sink_info)
-        return BT_STATUS_DONE;
+        return;
 
     /* TODO: add unregisteration for stack callbacks */
     bt_list_free(g_sal_auracast_sink_info->sink_list);
     free(g_sal_auracast_sink_info);
     g_sal_auracast_sink_info = NULL;
+}
+
+bt_status_t bt_sal_auracast_sink_cleanup(void)
+{
+    bt_status_t status;
+    sal_auracast_sink_req_t* req;
+
+    if (!g_sal_auracast_sink_info)
+        return BT_STATUS_DONE;
+
+    req = sal_auracast_sink_req(PRIMARY_ADAPTER, NULL, BLE_SCAN_SID_NOT_PROVIDED, cleanup, NULL);
+    if (!req)
+        return BT_STATUS_NOMEM;
+
+    status = sal_send_req(req);
+    if (status != BT_STATUS_SUCCESS) {
+        free(req);
+        return status;
+    }
 
     return BT_STATUS_SUCCESS;
 }

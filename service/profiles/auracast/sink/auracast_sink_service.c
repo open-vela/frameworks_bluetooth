@@ -45,9 +45,10 @@ typedef struct {
     auracast_sink_state_machine_t* stm;
 } auracast_sink_device_t;
 
- typedef struct {
+typedef struct {
     bt_list_t* sink_list; /**< auracast_sink_device_t */
     callbacks_list_t* callbacks;
+    void* terminating;
 } auracast_sink_service_t;
 
 /****************************************************************************
@@ -147,6 +148,41 @@ static auracast_sink_device_t* find_or_create_device(bt_controller_id_t id,
     return device_new(id, addr, sid);
 }
 
+static bt_status_t auracast_sink_create_sync(const bt_le_address_t* addr, uint8_t sid,
+    uint32_t bitfield, const uint8_t* broadcast_code)
+{
+    auracast_sink_event_create_sync_t* payload;
+    auracast_sink_msg_t* msg = auracast_sink_msg_new_ext(AURACAST_SINK_CREATE_SYNC, PRIMARY_ADAPTER,
+        addr, sid, sizeof(auracast_sink_event_create_sync_t));
+    if (!msg)
+        return BT_STATUS_NOMEM;
+
+    payload = (auracast_sink_event_create_sync_t*)msg->data.data;
+    payload->bitfield = bitfield;
+    payload->encrypted = broadcast_code != NULL;
+    if (broadcast_code)
+        memcpy(payload->broadcast_code, broadcast_code, BT_AURACAST_BROADCAST_CODE_LEN);
+
+    auracast_sink_send_message(msg);
+
+    return BT_STATUS_SUCCESS;
+}
+
+static bt_status_t auracast_sink_terminate_sync(const bt_le_address_t* addr, uint8_t sid)
+{
+    auracast_sink_send_message(auracast_sink_msg_new(AURACAST_SINK_TERMINATE_SYNC, PRIMARY_ADAPTER,
+        addr, sid));
+
+    return BT_STATUS_SUCCESS;
+}
+
+static void sink_cleanup(void* data, void* context)
+{
+    auracast_sink_device_t* device = (auracast_sink_device_t*)data;
+
+    auracast_sink_terminate_sync(&device->addr, device->sid);
+}
+
 static void service_startup(const auracast_sink_msg_t* msg)
 {
     auracast_sink_service_t* service = &g_auracast_sink_service;
@@ -180,6 +216,15 @@ static void service_shutdown(const auracast_sink_msg_t* msg)
     auracast_sink_service_t* service = &g_auracast_sink_service;
     profile_on_shutdown_t cb = (profile_on_shutdown_t)msg->context;
 
+    BT_LOGD("%s", __func__);
+
+    service->terminating = cb;
+    if (bt_list_length(service->sink_list) > 0) {
+        bt_list_foreach(service->sink_list, sink_cleanup, NULL);
+        BT_LOGD("%s, wait for sink disconnected", __func__);
+        return; /**< wait for sink disconnected */
+    }
+
     bt_sal_auracast_sink_cleanup();
 
     bt_callbacks_list_free(service->callbacks);
@@ -187,6 +232,7 @@ static void service_shutdown(const auracast_sink_msg_t* msg)
 
     bt_list_free(service->sink_list);
     service->sink_list = NULL;
+    service->terminating = NULL;
 
     cb(PROFILE_AURACAST_SINK, true);
     return;
@@ -292,34 +338,6 @@ static bool auracast_sink_unregister_callbacks(void** remote, void* cookie)
     return bt_remote_callbacks_unregister(g_auracast_sink_service.callbacks, remote, cookie);
 }
 
-static bt_status_t auracast_sink_create_sync(const bt_le_address_t* addr, uint8_t sid,
-    uint32_t bitfield, const uint8_t* broadcast_code)
-{
-    auracast_sink_event_create_sync_t* payload;
-    auracast_sink_msg_t* msg = auracast_sink_msg_new_ext(AURACAST_SINK_CREATE_SYNC, PRIMARY_ADAPTER,
-        addr, sid, sizeof(auracast_sink_event_create_sync_t));
-    if (!msg)
-        return BT_STATUS_NOMEM;
-
-    payload = (auracast_sink_event_create_sync_t*)msg->data.data;
-    payload->bitfield = bitfield;
-    payload->encrypted = broadcast_code != NULL;
-    if (broadcast_code)
-        memcpy(payload->broadcast_code, broadcast_code, BT_AURACAST_BROADCAST_CODE_LEN);
-
-    auracast_sink_send_message(msg);
-
-    return BT_STATUS_SUCCESS;
-}
-
-static bt_status_t auracast_sink_terminate_sync(const bt_le_address_t* addr, uint8_t sid)
-{
-    auracast_sink_send_message(auracast_sink_msg_new(AURACAST_SINK_TERMINATE_SYNC, PRIMARY_ADAPTER,
-        addr, sid));
-
-    return BT_STATUS_SUCCESS;
-}
-
 static bt_status_t auracast_sink_dump(void)
 {
     auracast_sink_send_message(auracast_sink_msg_new(AURACAST_SINK_DUMP, PRIMARY_ADAPTER, NULL,
@@ -364,12 +382,17 @@ void auracast_sink_service_notify_sync_established(const void* context)
 
 void auracast_sink_service_notify_sync_terminated(const void* context)
 {
-    const auracast_sink_device_t* device = (const auracast_sink_device_t*)context;
+    auracast_sink_device_t* device = (auracast_sink_device_t*)context;
 
     BT_LOGD("%s", __func__);
 
     AURACAST_SINK_CALLBACK_FOREACH(g_auracast_sink_service.callbacks, on_sync_terminated,
         &device->addr, device->sid);
+
+    bt_list_remove(g_auracast_sink_service.sink_list, device);
+
+    if (g_auracast_sink_service.terminating)
+        auracast_sink_shutdown(g_auracast_sink_service.terminating);
 }
 
 static const profile_service_t auracast_sink_service = {
