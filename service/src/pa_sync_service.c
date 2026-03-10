@@ -40,6 +40,7 @@ typedef struct pa_sync_device {
     uint8_t sid;
     const bt_pa_sync_callbacks_t* cbs;
     const void* context;
+    bt_pa_sync_data_t* report;
 } pa_sync_device_t;
 
 typedef void (*func_for_each_t)(const pa_sync_device_t* device, const void* data);
@@ -243,6 +244,7 @@ static void sync_removed(void* data)
 
     sync_terminated_callback(device->cbs, &device->addr, device->sid, device->context);
 
+    free(device->report);
     free(device);
 }
 
@@ -277,11 +279,32 @@ static void report_service_to_app(bt_pa_sync_report_t* out, const pa_sync_event_
         out->data = NULL;
 }
 
+static void update_report_cache(pa_sync_device_t* device,
+    const pa_sync_event_report_data_t* data)
+{
+    /** Since memcpy() is typically faster than memcmp(), we update the cache directly without
+     *  checking whether it needs updating. */
+    if (device->report && device->report->length != data->adv_data_len) {
+        free(device->report);
+        device->report = NULL;
+    }
+
+    if (device->report == NULL)
+        device->report = malloc(sizeof(bt_pa_sync_data_t) + data->adv_data_len);
+
+    if (device->report == NULL)
+        return;
+
+    device->report->length = data->adv_data_len;
+    memcpy(device->report->data, data->adv_data, data->adv_data_len);
+}
+
 static void process_sync_report(const pa_sync_device_t* device, const void* data)
 {
     const pa_sync_event_report_data_t* report_in = (const pa_sync_event_report_data_t*)data;
     bt_pa_sync_report_t report_out = { 0 };
 
+    update_report_cache((void*)device, report_in);
     report_service_to_app(&report_out, report_in);
 
     sync_report_callback(device->cbs, &device->addr, device->sid, &report_out, device->context);
@@ -567,4 +590,20 @@ void pa_sync_on_received(bt_controller_id_t id, const bt_le_address_t* addr, uin
         BT_LOGE("%s, message send failed", __func__);
         free(msg);
     }
+}
+
+const bt_pa_sync_data_t* pa_sync_get_report_cache(const bt_le_address_t* addr, uint8_t sid)
+{
+    const pa_sync_device_t* device;
+    pa_sync_event_t msg = { 0 };
+
+    memcpy(&msg.addr, addr, sizeof(bt_le_address_t));
+    msg.id = PRIMARY_ADAPTER;
+    msg.sid = sid;
+
+    device = find_device_by_msg(&msg);
+    if (!device)
+        return NULL;
+
+    return device->report;
 }

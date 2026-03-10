@@ -19,12 +19,18 @@
 
 #include "bt_pa_sync.h"
 
+typedef struct bt_pa_sync_data {
+    uint16_t length;
+    uint8_t data[0];
+} bt_pa_sync_data_t;
+
 bt_status_t pa_sync_init(void);
 bt_status_t pa_sync_cleanup(void);
 bt_status_t pa_sync_create(const bt_le_address_t* addr, uint8_t sid,
     const bt_pa_sync_create_param_t* params, const bt_pa_sync_callbacks_t* cbs,
     const void* context);
 bt_status_t pa_sync_terminate(const bt_le_address_t* addr, uint8_t sid);
+const bt_pa_sync_data_t* pa_sync_get_report_cache(const bt_le_address_t* addr, uint8_t sid);
 
 /**
  * @brief Callback from SAL when a sync is established.
