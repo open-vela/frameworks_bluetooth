@@ -168,6 +168,22 @@ static void on_synced(struct bt_le_per_adv_sync* sync, struct bt_le_per_adv_sync
     pa_sync_on_established(device->id, &device->addr, device->sid);
 }
 
+static void on_term(struct bt_le_per_adv_sync* sync,
+    const struct bt_le_per_adv_sync_term_info* info)
+{
+    sal_pa_sync_device_t* device;
+
+    BT_LOGD("%s", __func__);
+
+    device = find_device_by_sync(sync);
+    if (!device) {
+        BT_LOGE("%s, device not found", __func__);
+        return;
+    }
+
+    bt_list_remove(g_sal_pa_sync_info->sync_list, device);
+}
+
 static void sal_create_sync_param_sal_to_zephyr(struct bt_le_per_adv_sync_param* z_param,
     const bt_sal_pa_sync_param_t* params)
 {
@@ -195,7 +211,7 @@ static void sal_create_sync_param_sal_to_zephyr(struct bt_le_per_adv_sync_param*
 /** TODO: Add const */
 static struct bt_le_per_adv_sync_cb sal_pa_sync_cbs = {
     .synced = on_synced,
-    .term = NULL,
+    .term = on_term,
     .recv = NULL,
     .state_changed = NULL,
     .biginfo = NULL,
