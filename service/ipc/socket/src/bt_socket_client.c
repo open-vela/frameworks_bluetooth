@@ -116,6 +116,9 @@ static void bt_socket_client_callback_process(bt_instance_t* ins, bt_message_pac
         { BT_SCAN_CALLBACK_START, BT_SCAN_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_scan_callback },
         { BT_IPC_CODE_CALLBACK_BLE_SCAN_BEGIN, BT_IPC_CODE_CALLBACK_BLE_SCAN_END, (bt_socket_callback_t)bt_socket_client_scan_callback },
 #endif
+#ifdef CONFIG_BLUETOOTH_PA_SYNC
+        { BT_IPC_CODE_CALLBACK_PA_SYNC_BEGIN, BT_IPC_CODE_CALLBACK_PA_SYNC_END, (bt_socket_callback_t)bt_socket_client_pa_sync_callback },
+#endif
 #ifdef CONFIG_BLUETOOTH_GATT_CLIENT
         { BT_GATT_CLIENT_CALLBACK_START, BT_GATT_CLIENT_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_gattc_callback },
         { BT_IPC_CODE_CALLBACK_GATTC_BEGIN, BT_IPC_CODE_CALLBACK_GATTC_END, (bt_socket_callback_t)bt_socket_client_gattc_callback },
