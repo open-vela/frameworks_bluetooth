@@ -23,6 +23,7 @@ extern "C" {
 #include "bt_audio_numbers.h"
 #include "bt_pa_sync.h"
 
+#define BT_AURACAST_BROADCAST_CODE_LEN (16)
 #define BT_AURACAST_SINK_NUM_SUBGROUPS_SUPPORTED (2)
 #define BT_AURACAST_SINK_NUM_BIS_SUPPORTED (2)
 
