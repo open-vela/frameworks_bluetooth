@@ -26,6 +26,15 @@
 
 #include "utils/log.h"
 
+#define BT_PA_SYNC_DEFAULT_SKIP (1)
+#define BT_PA_SYNC_DEFAULT_TIMEOUT_MS (5000)
+#define BT_PA_SYNC_DEFAULT_DEFAULT_PARAM {           \
+    .skip = (BT_PA_SYNC_DEFAULT_SKIP),               \
+    .timeout = (BT_PA_SYNC_DEFAULT_TIMEOUT_MS) / 10, \
+    .filter = false,                                 \
+    .no_report = false,                              \
+}
+
 typedef struct pa_sync_device {
     bt_le_address_t addr;
     uint8_t sid;
@@ -60,11 +69,11 @@ static void sync_terminated_callback(const bt_pa_sync_callbacks_t* cbs, const bt
     cbs->on_sync_terminated(addr, sid, (void*)context);
 }
 
-static void create_sync(void* data)
+static void create_sync(const pa_sync_event_t* msg)
 {
-    pa_sync_event_create_sync_t* msg = (pa_sync_event_create_sync_t*)data;
-    bt_sal_pa_sync_param_t params = { 0 };
+    pa_sync_event_create_sync_t* params = (pa_sync_event_create_sync_t*)msg->data;
     pa_sync_device_t* device;
+    bt_sal_pa_sync_param_t sal_params = { 0 };
 
     BT_LOGD("%s", __func__);
 
@@ -72,30 +81,27 @@ static void create_sync(void* data)
     if (device == NULL)
         goto error;
 
-    memcpy(&params.addr, &msg->addr, sizeof(bt_le_address_t));
-    params.sid = msg->sid;
-    params.skip = msg->params.skip;
-    params.timeout = msg->params.timeout;
-    params.options &= ~BT_SAL_PA_SYNC_OPTION_USE_LIST; /**< periodic advertiser list unsupported */
-    params.options |= msg->params.no_report ? BT_SAL_PA_SYNC_OPTION_REPORTING_DISABLED : 0;
-    params.options |= msg->params.duplicate_filter ? BT_SAL_PA_SYNC_OPTION_FILTER_ENABLED : 0;
-    params.cte = 0; /**< nothing specified */
-    if (bt_sal_pa_create_sync(PRIMARY_ADAPTER, &params) != BT_STATUS_SUCCESS)
+    memcpy(&sal_params.addr, &msg->addr, sizeof(bt_le_address_t));
+    sal_params.sid = msg->sid;
+    sal_params.skip = params->params.skip;
+    sal_params.timeout = params->params.timeout;
+    sal_params.options &= ~BT_SAL_PA_SYNC_OPTION_USE_LIST; /**< not supported */
+    sal_params.options |= params->params.no_report ? BT_SAL_PA_SYNC_OPTION_REPORTING_DISABLED : 0;
+    sal_params.options |= params->params.filter ? BT_SAL_PA_SYNC_OPTION_FILTER_ENABLED : 0;
+    sal_params.cte = 0; /**< nothing specified */
+    if (bt_sal_pa_create_sync(PRIMARY_ADAPTER, &sal_params) != BT_STATUS_SUCCESS)
         goto error;
 
     /** sync created, add this device into list */
     memcpy(&device->addr, &msg->addr, sizeof(bt_le_address_t));
     device->sid = msg->sid;
-    device->cbs = msg->cbs;
-    device->context = msg->context;
+    device->cbs = params->cbs;
+    device->context = params->context;
     bt_list_add_tail(g_pa_sync_info->sync_list, device);
-
-    free(msg);
     return;
 
 error:
-    sync_terminated_callback(msg->cbs, &msg->addr, msg->sid, msg->context);
-    free(msg);
+    sync_terminated_callback(params->cbs, &msg->addr, msg->sid, params->context);
 }
 
 static void sync_removed(void* data)
@@ -112,6 +118,8 @@ static void sync_removed(void* data)
 static const char* pa_sync_event_to_string(pa_sync_event_type_t event)
 {
     switch (event) {
+        CASE_RETURN_STR(CREATE_SYNC)
+        CASE_RETURN_STR(TERMINATE_SYNC)
         CASE_RETURN_STR(SYNC_ESTABLISHED)
         CASE_RETURN_STR(SYNC_TERMINATED)
         CASE_RETURN_STR(SYNC_REPORT)
@@ -126,6 +134,14 @@ static void pa_sync_process_message(void* data)
     pa_sync_event_t* msg = (pa_sync_event_t*)data;
 
     BT_LOGD("%s, event = %s(%d)", __func__, pa_sync_event_to_string(msg->event), msg->event);
+
+    switch (msg->event) {
+    case CREATE_SYNC:
+        create_sync(msg);
+        break;
+    default:
+        break;
+    }
 
     free(msg);
 }
@@ -176,29 +192,44 @@ bt_status_t pa_sync_create(const bt_le_address_t* addr, uint8_t sid,
     const bt_pa_sync_create_param_t* params, const bt_pa_sync_callbacks_t* cbs,
     const void* context)
 {
-    pa_sync_event_create_sync_t msg = {
-        .params = BT_PA_SYNC_DEFAULT_DEFAULT_PARAM,
-    };
+    pa_sync_event_t* msg;
+    pa_sync_event_create_sync_t* param;
+    bt_pa_sync_create_param_t default_params = BT_PA_SYNC_DEFAULT_DEFAULT_PARAM;
 
     BT_LOGD("%s", __func__);
 
     if (!cbs || sid > BLE_SCAN_SID_MAX)
         return BT_STATUS_PARM_INVALID;
 
-    memcpy(&msg.addr, addr, sizeof(bt_le_address_t));
-    msg.sid = sid;
-    msg.cbs = cbs;
-    msg.context = context;
-    if (params) {
-        if (params->skip > BT_PA_SYNC_SKIP_MAX)
-            return BT_STATUS_PARM_INVALID;
-        if (params->timeout > BT_PA_SYNC_TIMEOUT_MAX)
-            return BT_STATUS_PARM_INVALID;
+    if (!params)
+        params = &default_params;
 
-        memcpy(&msg.params, params, sizeof(bt_pa_sync_create_param_t));
+    if (params->skip > BT_PA_SYNC_SKIP_MAX)
+        return BT_STATUS_PARM_INVALID;
+
+    if (params->timeout > BT_PA_SYNC_TIMEOUT_MAX)
+        return BT_STATUS_PARM_INVALID;
+
+    msg = zalloc(sizeof(pa_sync_event_t) + sizeof(pa_sync_event_create_sync_t));
+    if (!msg) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return BT_STATUS_NOMEM;
     }
 
-    do_in_service_loop(create_sync, &msg);
+    param = (pa_sync_event_create_sync_t*)msg->data;
+    memcpy(&msg->addr, addr, sizeof(bt_le_address_t));
+    msg->event = CREATE_SYNC;
+    msg->id = PRIMARY_ADAPTER;
+    msg->sid = sid;
+    msg->handle = BT_PA_SYNC_HANDLE_INVALID;
+    param->cbs = cbs;
+    param->context = context;
+    memcpy(&param->params, params, sizeof(bt_pa_sync_create_param_t));
+
+    if (pa_sync_send_message(msg) != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, message send failed", __func__);
+        free(msg);
+    }
 
     return BT_STATUS_SUCCESS;
 }

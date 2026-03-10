@@ -29,15 +29,6 @@ extern "C" {
 #define BT_PA_SYNC_SKIP_MAX (0x01F3)
 #define BT_PA_SYNC_TIMEOUT_MAX (0x4000)
 
-#define BT_PA_SYNC_DEFAULT_SKIP (1)
-#define BT_PA_SYNC_DEFAULT_TIMEOUT_MS (5000)
-#define BT_PA_SYNC_DEFAULT_DEFAULT_PARAM {           \
-    .skip = (BT_PA_SYNC_DEFAULT_SKIP),               \
-    .timeout = (BT_PA_SYNC_DEFAULT_TIMEOUT_MS) / 10, \
-    .duplicate_filter = false,                       \
-    .no_report = false,                              \
-}
-
 /**
  * @brief Information about the periodic advertising sync.
  */
@@ -63,7 +54,7 @@ typedef struct bt_pa_sync_create_param {
     uint16_t timeout;
 
     /** `true` to enable duplicate filtering, `false` by default */
-    bool duplicate_filter;
+    bool filter;
 
     /** `true` to disable periodic advertising reports, `false` by default  */
     bool no_report;
