@@ -75,6 +75,179 @@ static const state_t releasing_state = {
     .process_event = releasing_process_event,
 };
 
+#define AURACAST_SINK_STM_DEBUG 1
+#ifndef AURACAST_SINK_STM_DEBUG
+#define AURACAST_SINK_DBG_ENTER(__sm)
+#define AURACAST_SINK_DBG_EXIT(__sm)
+#define AURACAST_SINK_DBG_EVENT(__sm, __event)
+#else
+#define AURACAST_SINK_TRANS_DBG(_sm, _action)                             \
+    do {                                                                  \
+        BT_LOGD("%s State=%s", _action, hsm_get_current_state_name(_sm)); \
+    } while (0)
+
+#define AURACAST_SINK_DBG_ENTER(__sm) AURACAST_SINK_TRANS_DBG(__sm, "Enter")
+#define AURACAST_SINK_DBG_EXIT(__sm) AURACAST_SINK_TRANS_DBG(__sm, "Exit ")
+#define AURACAST_SINK_DBG_EVENT(__sm, __event)                                       \
+    do {                                                                             \
+        BT_LOGD("ProcessEvent, State=%s, Event=%s", hsm_get_current_state_name(_sm), \
+            auracast_sink_event_to_string(__event));                                   \
+    } while (0)
+
+static const char* auracast_sink_event_to_string(auracast_sink_event_t event)
+{
+    switch (event) {
+        CASE_RETURN_STR(AURACAST_SINK_CREATE_SYNC)
+        CASE_RETURN_STR(AURACAST_SINK_TERMINATE_SYNC)
+        CASE_RETURN_STR(AURACAST_SINK_SYNC_ESTABLISHED)
+        CASE_RETURN_STR(AURACAST_SINK_SYNC_TERMINATED)
+        CASE_RETURN_STR(AURACAST_SINK_CONFIG_DONE)
+        CASE_RETURN_STR(AURACAST_SINK_DATA_IN)
+        CASE_RETURN_STR(AURACAST_SINK_DUMP)
+        DEFAULT_BREAK()
+    }
+
+    return "Unknown";
+}
+#endif
+
+static void dump(const auracast_sink_state_machine_t* stm)
+{
+    BT_LOGD("%s", __func__);
+}
+
+static void idle_enter(state_machine_t* sm)
+{
+    AURACAST_SINK_DBG_ENTER(sm);
+}
+
+static void idle_exit(state_machine_t* sm)
+{
+    AURACAST_SINK_DBG_EXIT(sm);
+}
+
+static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data)
+{
+    auracast_sink_state_machine_t* stm = (auracast_sink_state_machine_t*)sm;
+
+    AURACAST_SINK_DBG_EVENT(sm, event);
+
+    switch (event) {
+    case AURACAST_SINK_CREATE_SYNC:
+        hsm_transition_to(sm, &enabling_state);
+        break;
+    case AURACAST_SINK_DUMP:
+        dump(stm);
+        break;
+    default:
+        /** Unexpected */
+        break;
+    }
+
+    return true;
+}
+
+static void enabling_enter(state_machine_t* sm)
+{
+    AURACAST_SINK_DBG_ENTER(sm);
+}
+
+static void enabling_exit(state_machine_t* sm)
+{
+    AURACAST_SINK_DBG_EXIT(sm);
+}
+
+static bool enabling_process_event(state_machine_t* sm, uint32_t event, void* p_data)
+{
+    auracast_sink_state_machine_t* stm = (auracast_sink_state_machine_t*)sm;
+
+    AURACAST_SINK_DBG_EVENT(sm, event);
+
+    switch (event) {
+    case AURACAST_SINK_SYNC_ESTABLISHED:
+        hsm_transition_to(sm, &streaming_state);
+        break;
+    case AURACAST_SINK_SYNC_TERMINATED:
+        hsm_transition_to(sm, &idle_state);
+        break;
+    case AURACAST_SINK_DUMP:
+        dump(stm);
+        break;
+    default:
+        /** Unexpected */
+        break;
+    }
+
+    return true;
+}
+
+static void streaming_enter(state_machine_t* sm)
+{
+
+    AURACAST_SINK_DBG_ENTER(sm);
+
+}
+
+static void streaming_exit(state_machine_t* sm)
+{
+    AURACAST_SINK_DBG_EXIT(sm);
+}
+
+static bool streaming_process_event(state_machine_t* sm, uint32_t event, void* p_data)
+{
+    auracast_sink_state_machine_t* stm = (auracast_sink_state_machine_t*)sm;
+
+    AURACAST_SINK_DBG_EVENT(sm, event);
+
+    switch (event) {
+    case AURACAST_SINK_TERMINATE_SYNC:
+        hsm_transition_to(sm, &releasing_state);
+        break;
+    case AURACAST_SINK_SYNC_TERMINATED:
+        hsm_transition_to(sm, &idle_state);
+        break;
+    case AURACAST_SINK_DUMP:
+        dump(stm);
+        break;
+    default:
+        /** Unexpected */
+        break;
+    }
+
+    return true;
+}
+
+static void releasing_enter(state_machine_t* sm)
+{
+    AURACAST_SINK_DBG_ENTER(sm);
+}
+
+static void releasing_exit(state_machine_t* sm)
+{
+    AURACAST_SINK_DBG_EXIT(sm);
+}
+
+static bool releasing_process_event(state_machine_t* sm, uint32_t event, void* p_data)
+{
+    auracast_sink_state_machine_t* stm = (auracast_sink_state_machine_t*)sm;
+
+    AURACAST_SINK_DBG_EVENT(sm, event);
+
+    switch (event) {
+    case AURACAST_SINK_SYNC_TERMINATED:
+        hsm_transition_to(sm, &idle_state);
+        break;
+    case AURACAST_SINK_DUMP:
+        dump(stm);
+        break;
+    default:
+        /** Unexpected */
+        break;
+    }
+
+    return true;
+}
+
 static auracast_sink_state_t auracast_sink_state_machine_get_state(
     const auracast_sink_state_machine_t* stm)
 {
