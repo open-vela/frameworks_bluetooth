@@ -191,6 +191,12 @@ void bt_socket_server_scan_process(service_poll_t* poll,
 
 int bt_socket_client_scan_callback(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async);
+
+/* Periodic advertising sync */
+
+void bt_socket_server_pa_sync_process(service_poll_t* poll,
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+
 /* Gatt client */
 
 void bt_socket_server_gattc_process(service_poll_t* poll,

@@ -15,9 +15,30 @@
  ***************************************************************************/
 
 #include "bt_pa_sync.h"
+#include "bt_socket.h"
 
 bt_status_t bt_pa_sync_create(bt_instance_t* ins, const bt_le_address_t* addr, uint8_t sid,
-    const bt_pa_sync_create_param_t* param, const bt_pa_sync_callbacks_t* cbs)
+    const bt_pa_sync_create_param_t* params, const bt_pa_sync_callbacks_t* cbs)
 {
-    return BT_STATUS_NOT_SUPPORTED;
+    bt_message_packet_t packet = { 0 };
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+    BT_SOCKET_PTR_VALID(addr, BT_STATUS_PARM_INVALID);
+    BT_SOCKET_PTR_VALID(cbs, BT_STATUS_PARM_INVALID);
+
+    memcpy(&packet.pa_sync_pl._bt_pa_sync_create.addr, addr, sizeof(bt_le_address_t));
+    packet.pa_sync_pl._bt_pa_sync_create.sid = sid;
+    packet.pa_sync_pl._bt_pa_sync_create.cbs = PTR2INT(uint64_t) cbs;
+    if (params) {
+        packet.pa_sync_pl._bt_pa_sync_create.have_params = true;
+        memcpy(&packet.pa_sync_pl._bt_pa_sync_create.params, params,
+            sizeof(bt_pa_sync_create_param_t));
+    }
+
+    status = bt_socket_client_sendrecv(ins, &packet, BT_PA_SYNC_CREATE_SYNC);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.pa_sync_r.status;
 }
