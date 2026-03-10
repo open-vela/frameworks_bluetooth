@@ -29,6 +29,8 @@ extern "C" {
 #endif
 
 #define BLE_SCAN_FILTER_UUID_MAX_NUM 2
+#define BLE_SCAN_SID_MAX 0xF
+#define BLE_SCAN_SID_NOT_PROVIDED 0xFF
 
 /**
  * @cond

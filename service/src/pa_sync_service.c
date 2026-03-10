@@ -18,6 +18,8 @@
 #include "pa_sync_service.h"
 
 #include "bluetooth.h"
+#include "pa_sync_event.h"
+#include "service_loop.h"
 
 #include "utils/log.h"
 
@@ -56,9 +58,31 @@ bt_status_t pa_sync_create(const bt_le_address_t* addr, uint8_t sid,
     const bt_pa_sync_create_param_t* params, const bt_pa_sync_callbacks_t* cbs,
     const void* context)
 {
+    pa_sync_event_create_sync_t msg = {
+        .params = BT_PA_SYNC_DEFAULT_DEFAULT_PARAM,
+    };
+
     BT_LOGD("%s", __func__);
 
-    return BT_STATUS_UNSUPPORTED;
+    if (!cbs || sid > BLE_SCAN_SID_MAX)
+        return BT_STATUS_PARM_INVALID;
+
+    memcpy(&msg.addr, addr, sizeof(bt_le_address_t));
+    msg.sid = sid;
+    msg.cbs = cbs;
+    msg.context = context;
+    if (params) {
+        if (params->skip > BT_PA_SYNC_SKIP_MAX)
+            return BT_STATUS_PARM_INVALID;
+        if (params->timeout > BT_PA_SYNC_TIMEOUT_MAX)
+            return BT_STATUS_PARM_INVALID;
+
+        memcpy(&msg.params, params, sizeof(bt_pa_sync_create_param_t));
+    }
+
+    do_in_service_loop(create_sync, &msg);
+
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t pa_sync_terminate(void)

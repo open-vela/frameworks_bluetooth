@@ -26,6 +26,9 @@ extern "C" {
 #define BTSYMBOLS(s) s
 #endif
 
+#define BT_PA_SYNC_SKIP_MAX (0x01F3)
+#define BT_PA_SYNC_TIMEOUT_MAX (0x4000)
+
 #define BT_PA_SYNC_DEFAULT_SKIP (1)
 #define BT_PA_SYNC_DEFAULT_TIMEOUT_MS (5000)
 #define BT_PA_SYNC_DEFAULT_DEFAULT_PARAM {           \
