@@ -244,6 +244,7 @@ static const char* stack_event_to_string(hfp_ag_event_t event)
         CASE_RETURN_STR(AG_STACK_EVENT_AT_COMMAND)
         CASE_RETURN_STR(AG_STACK_EVENT_SEND_DTMF)
         CASE_RETURN_STR(AG_STACK_EVENT_NREC_REQ)
+        CASE_RETURN_STR(AG_STACK_EVENT_CALL_SYNC)
     default:
         snprintf(ag_evt, 32, "UNKNOWN_AG_EVENT:%d", event);
         return (const char*)ag_evt;
