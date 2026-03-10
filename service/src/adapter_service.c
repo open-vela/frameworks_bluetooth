@@ -33,6 +33,9 @@
 #ifdef CONFIG_BLUETOOTH_L2CAP
 #include "l2cap_service.h"
 #endif
+#ifdef CONFIG_BLUETOOTH_PA_SYNC
+#include "pa_sync_service.h"
+#endif
 #include "advertising.h"
 #include "bluetooth.h"
 #include "bluetooth_define.h"
@@ -1573,6 +1576,10 @@ void adapter_on_le_enabled(bool enablebt)
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
     scan_manager_init();
 #endif
+    /* enable periodic advertising sync service */
+#ifdef CONFIG_BLUETOOTH_PA_SYNC
+    pa_sync_init();
+#endif
     /* enable L2CAP service */
 #ifdef CONFIG_BLUETOOTH_L2CAP
     if (!enablebt)
@@ -1590,6 +1597,9 @@ void adapter_on_le_disabled(void)
     BT_LOGD("%s", __func__);
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
     adv_manager_cleanup();
+#endif
+#ifdef CONFIG_BLUETOOTH_PA_SYNC
+    pa_sync_cleanup();
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
     adapter_lock();
