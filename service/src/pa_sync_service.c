@@ -42,12 +42,47 @@ typedef struct pa_sync_device {
     const void* context;
 } pa_sync_device_t;
 
+typedef void (*func_for_each_t)(const pa_sync_device_t* device, const void* data);
+
+typedef struct pa_sync_for_each {
+    func_for_each_t func;
+    const bt_le_address_t* addr;
+    uint8_t sid;
+    const void* data;
+} pa_sync_for_each_t;
+
 typedef struct pa_sync_info {
     bt_list_t* sync_list;
 } pa_sync_info_t;
 
 static pa_sync_info_t* g_pa_sync_info = NULL;
 static void pa_sync_process_message(void* data);
+
+static void func_for_device(void* data, void* context)
+{
+    const pa_sync_device_t* device = (const pa_sync_device_t*)data;
+    const pa_sync_for_each_t* iter = (const pa_sync_for_each_t*)context;
+
+    if (memcmp(device->addr.addr, iter->addr->addr, BT_ADDR_LENGTH))
+        return;
+
+    if (device->addr.addr_type != iter->addr->addr_type)
+        return;
+
+    if (device->sid != iter->sid)
+        return;
+
+    iter->func(device, iter->data);
+}
+
+/** Handles the scenario where multiple applications watch the same device */
+static void callback_for_each_device(pa_sync_for_each_t* iter)
+{
+    if (!g_pa_sync_info || !g_pa_sync_info->sync_list || !iter->func || !iter->addr)
+        return;
+
+    bt_list_foreach(g_pa_sync_info->sync_list, func_for_device, iter);
+}
 
 static bt_status_t pa_sync_send_message(pa_sync_event_t* msg)
 {
@@ -56,6 +91,17 @@ static bt_status_t pa_sync_send_message(pa_sync_event_t* msg)
     do_in_service_loop(pa_sync_process_message, msg);
 
     return BT_STATUS_SUCCESS;
+}
+
+static void sync_established_callback(const bt_pa_sync_callbacks_t* cbs,
+    const bt_le_address_t* addr, uint8_t sid, const void* context)
+{
+    BT_LOGD("%s", __func__);
+
+    if (!cbs || !cbs->on_sync_established)
+        return;
+
+    cbs->on_sync_established(addr, sid, (void*)context);
 }
 
 static void sync_terminated_callback(const bt_pa_sync_callbacks_t* cbs, const bt_le_address_t* addr,
@@ -104,6 +150,24 @@ error:
     sync_terminated_callback(params->cbs, &msg->addr, msg->sid, params->context);
 }
 
+static void process_sync_established(const pa_sync_device_t* device, const void* data)
+{
+    UNUSED(data);
+
+    sync_established_callback(device->cbs, &device->addr, device->sid, device->context);
+}
+
+static void sync_established(const pa_sync_event_t* msg)
+{
+    pa_sync_for_each_t iter = { 0 };
+
+    iter.func = process_sync_established;
+    iter.addr = &msg->addr;
+    iter.sid = msg->sid;
+
+    callback_for_each_device(&iter);
+}
+
 static void sync_removed(void* data)
 {
     pa_sync_device_t* device = (pa_sync_device_t*)data;
@@ -138,6 +202,9 @@ static void pa_sync_process_message(void* data)
     switch (msg->event) {
     case CREATE_SYNC:
         create_sync(msg);
+        break;
+    case SYNC_ESTABLISHED:
+        sync_established(msg);
         break;
     default:
         break;
@@ -221,7 +288,6 @@ bt_status_t pa_sync_create(const bt_le_address_t* addr, uint8_t sid,
     msg->event = CREATE_SYNC;
     msg->id = PRIMARY_ADAPTER;
     msg->sid = sid;
-    msg->handle = BT_PA_SYNC_HANDLE_INVALID;
     param->cbs = cbs;
     param->context = context;
     memcpy(&param->params, params, sizeof(bt_pa_sync_create_param_t));
