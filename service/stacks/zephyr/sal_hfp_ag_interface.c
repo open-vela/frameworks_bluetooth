@@ -328,33 +328,31 @@ static bt_hfp_ag_call_info_t* build_sal_call(
     return sal_call;
 }
 
-static bt_hfp_ag_call_info_t* update_sal_call(bt_hfp_ag_connection_t* conn,
+static bt_hfp_ag_call_info_t* update_sal_call(bt_hfp_ag_connection_t* sal_conn,
     hfp_call_direction_t dir, hfp_ag_call_state_t call, hfp_call_mode_t mode,
     hfp_call_mpty_type_t mpty, hfp_call_addrtype_t type, const char* number)
 {
-    bt_hfp_ag_call_info_t* sal_call = find_call_by_number(conn, number);
+    bt_hfp_ag_call_info_t* sal_call = find_call_by_number(sal_conn, number);
     if (!sal_call) {
         sal_call = build_sal_call(dir, call, type, number);
         if (!sal_call) {
             return NULL;
         }
 
-        if (!conn->calls) {
-            conn->calls = bt_list_new(free_call);
+        if (!sal_conn->calls) {
+            sal_conn->calls = bt_list_new(free_call);
         }
 
-        bt_list_add_head(conn->calls, sal_call);
+        bt_list_add_head(sal_conn->calls, sal_call);
         return sal_call;
     }
 
     sal_call->state = tele_call_state_to_sal_status(call);
     sal_call->dir = service_call_dir_to_sal_dir(dir);
     if (sal_call->state == BT_HFP_AG_CALL_STATUS_UNKNOWN || sal_call->dir == BT_HFP_AG_CALL_DIR_UNKNOWN) {
-        bt_hfp_ag_connection_t* owner = NULL;
-        find_call_by_context(sal_call->context, &owner);
-        if (owner && owner->calls) {
-            bt_list_remove(owner->calls, sal_call);
-        }
+        /* use sal_conn directly instead of find_call_by_context,
+         * because context may be NULL for call_sync entries */
+        bt_list_remove(sal_conn->calls, sal_call);
         return NULL;
     }
 
@@ -1516,6 +1514,11 @@ bt_status_t bt_sal_hfp_ag_phone_state_change(bt_address_t* addr, uint8_t num_act
 
     SAL_CHECK_RET(transition->op(&operation_context), 0);
     call_info->state = tele_call_state_to_sal_status(call_state);
+
+    /* remove call entry on terminal states */
+    if (call_info->state == BT_HFP_AG_CALL_STATUS_UNKNOWN) {
+        bt_list_remove(sal_conn->calls, call_info);
+    }
 
     return BT_STATUS_SUCCESS;
 }
