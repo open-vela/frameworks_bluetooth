@@ -18,6 +18,7 @@
 #include "bt_pa_sync.h"
 #include "bt_tools.h"
 
+#define BTTOOL_AURACAST_SINK_LOG_SIZE (256)
 typedef struct {
     bt_scanner_t* scanner;
 } bttool_auracast_sink_t;
@@ -42,7 +43,9 @@ static void usage(void)
 static void on_scan_result(bt_scanner_t* scanner, ble_scan_result_t* result)
 {
     bt_status_t status;
-    bt_pa_sync_info_t* info;
+    bt_pa_sync_info_t* info = NULL;
+    char* log = NULL;
+    size_t size = BTTOOL_AURACAST_SINK_LOG_SIZE;
 
     if (g_auracast_sink->scanner != scanner)
         return;
@@ -55,20 +58,44 @@ static void on_scan_result(bt_scanner_t* scanner, ble_scan_result_t* result)
     if (status != BT_STATUS_SUCCESS)
         goto exit;
 
-    PRINT("%s, device name = %s, broadcast name = %s, id = %" PRIu32 ", sid = %d, "
-          "txpower = %d dBm, rssi = %d dBm",
-        __func__, info->name, info->broadcast_name, info->broadcast_id, result->sid,
-        result->tx_power, result->rssi);
+    log = zalloc(size); /**< for print log */
+    if (!log)
+        goto exit;
 
+    BTTOOL_STRCAT(log, size, "%s", __func__);
+
+    if (info->name[0] != '\0')
+        BTTOOL_STRCAT(log, size, ", device:%s", info->name);
+
+    if (info->broadcast_name[0] != '\0')
+        BTTOOL_STRCAT(log, size, ", broadcast name:%s", info->broadcast_name);
+
+    if (info->broadcast_id != BT_INVALID_BROADCAST_ID)
+        BTTOOL_STRCAT(log, size, ", id:0x%06" PRIx32, info->broadcast_id);
+
+    if (result->sid != 0xFF)
+        BTTOOL_STRCAT(log, size, ", sid:0x%x", result->sid);
+
+    if (result->tx_power != 0x7F)
+        BTTOOL_STRCAT(log, size, ", txpower:%d", result->tx_power);
+
+    if (result->rssi != 0x7F)
+        BTTOOL_STRCAT(log, size, ", rssi:%d", result->rssi);
+
+    PRINT("%s", log);
 exit:
     free(info);
+    free(log);
 }
 
 static void on_scan_status(bt_scanner_t* scanner, uint8_t status)
 {
     PRINT("%s, status = %d", __func__, status);
-    if (g_auracast_sink->scanner != scanner)
+
+    if (g_auracast_sink->scanner != scanner) {
+        PRINT("%s, scanner(%p) mismatch", __func__, scanner);
         return;
+    }
 
     if (status != BT_STATUS_SUCCESS)
         g_auracast_sink->scanner = NULL;
@@ -77,8 +104,11 @@ static void on_scan_status(bt_scanner_t* scanner, uint8_t status)
 static void on_scan_stopped(bt_scanner_t* scanner)
 {
     PRINT("%s", __func__);
-    if (g_auracast_sink->scanner != scanner)
+
+    if (g_auracast_sink->scanner != scanner) {
+        PRINT("%s, scanner(%p) mismatch", __func__, scanner);
         return;
+    }
 
     g_auracast_sink->scanner = NULL;
 }
@@ -110,8 +140,12 @@ int scan_cmd(void* handle, int argc, char* argv[])
     memcpy(&settings, &default_scan_settings, sizeof(settings));
 
     g_auracast_sink->scanner = bt_le_start_scan_settings(handle, &settings, &scanner_cbs);
-    if (g_auracast_sink->scanner == NULL)
+    if (g_auracast_sink->scanner == NULL) {
+        PRINT("Failed to start a scan");
         return CMD_ERROR;
+    }
+
+    PRINT("Starting scan, scanner = %p", g_auracast_sink->scanner);
 
     return CMD_OK;
 }
