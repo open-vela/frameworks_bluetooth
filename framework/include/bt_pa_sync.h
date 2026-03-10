@@ -178,8 +178,46 @@ bt_status_t BTSYMBOLS(bt_pa_sync_create)(bt_instance_t* ins, const bt_le_address
 bt_status_t BTSYMBOLS(bt_pa_sync_terminate)(bt_instance_t* ins, const bt_le_address_t* addr,
     uint8_t sid);
 
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_ASYNC
+#include "bt_async.h"
+
+/**
+ * @brief Synchronize to periodic advertising via extended advertising report.
+ *
+ * @param[in] ins The Bluetooth instance, see @ref bt_instance_t
+ * @param[in] addr The Bluetooth address and address type of the remote device
+ * @param[in] sid The advertising set id subfield to identify the periodic advertising, range from
+ *                0x00 to 0x0F
+ * @param[in] params Optional parameters for periodic sync, set to `NULL` to use default parameters
+ * @param[in] cbs Callbacks for periodic advertising sync, see @ref bt_pa_sync_callbacks_t
+ * @param[in] context User context carried in `cbs`
+ * @param[in] cb - Callback function for asynchronous call
+ * @param[in] userdata - User context carried in `cb`
+ *
+ * @return IPC status.
+ */
+bt_status_t bt_pa_sync_create_async(bt_instance_t* ins, const bt_le_address_t* addr, uint8_t sid,
+    const bt_pa_sync_create_param_t* params, const bt_pa_sync_callbacks_t* cbs, const void* context,
+    bt_status_cb_t cb, void* userdata);
+
+/**
+ * @brief Stop reception of the periodic advertising train.
+ *
+ * @param[in] ins The Bluetooth instance, see @ref bt_instance_t
+ * @param[in] addr The Bluetooth address and address type of the remote device
+ * @param[in] sid The advertising set id subfield to identify the periodic advertising, range from
+ *                0x00 to 0x0F
+ * @param[in] cb - Callback function for asynchronous call
+ * @param[in] userdata - User context carried in `cb`
+ *
+ * @return IPC status.
+ */
+bt_status_t bt_pa_sync_terminate_async(bt_instance_t* ins, const bt_le_address_t* addr, uint8_t sid,
+    bt_status_cb_t cb, void* userdata);
+#endif /* CONFIG_BLUETOOTH_FRAMEWORK_ASYNC */
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif /* __BT_PA_SYNC_H__ */
