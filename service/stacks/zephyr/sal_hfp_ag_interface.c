@@ -429,9 +429,11 @@ bt_status_t do_ag_disconnect(bt_controller_id_t id, bt_address_t* addr, void* us
         BT_LOGE("%s, Failed to find connection", __func__);
         return BT_STATUS_FAIL;
     }
+
     if (!sal_conn->ag) {
-        BT_LOGE("%s, HFP AG not connected", __func__);
-        return BT_STATUS_FAIL;
+        BT_LOGI("%s, HFP AG not connected", __func__);
+        bt_list_remove(g_sal_ag_conn_list, sal_conn);
+        return BT_STATUS_SUCCESS;
     }
 
     SAL_CHECK_RET(Z_API(bt_hfp_ag_disconnect)(sal_conn->ag), 0);
