@@ -20,6 +20,11 @@
 #include "auracast_sink_service.h"
 
 #include "auracast_sink_event.h"
+#include "auracast_sink_state_machine.h"
+#include "bt_list.h"
+#include "bt_message_auracast_sink.h"
+#include "bt_utils.h"
+#include "sal_auracast_sink_interface.h"
 #include "service_loop.h"
 #include "service_manager.h"
 
@@ -57,20 +62,111 @@ static auracast_sink_service_t g_auracast_sink_service = { 0 };
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
+static inline auracast_sink_device_t* device_new(bt_controller_id_t id, const bt_le_address_t* addr,
+    uint8_t sid)
+{
+    auracast_sink_device_t* device;
+
+    device = zalloc(sizeof(auracast_sink_device_t));
+    if (!device)
+        return NULL;
+
+    memcpy(&device->addr, addr, sizeof(bt_le_address_t));
+    device->id = id;
+    device->sid = sid;
+    device->stm = auracast_sink_state_machine_new(device);
+    if (!device->stm) {
+        free(device);
+        return NULL;
+    }
+
+    bt_list_add_tail(g_auracast_sink_service.sink_list, device);
+
+    return device;
+}
+
+static void device_delete(void* data)
+{
+    auracast_sink_device_t* device = (auracast_sink_device_t*)data;
+    auracast_sink_msg_t* msg = auracast_sink_msg_new(AURACAST_SINK_SYNC_TERMINATED, device->id,
+        &device->addr, device->sid);
+
+    if (msg)
+        auracast_sink_state_machine_handle_event(device->stm, msg);
+
+    auracast_sink_state_machine_destroy(device->stm);
+    free(device);
+}
+
+static bool msg_cmp(void* data, void* context)
+{
+    const auracast_sink_device_t* device = (const auracast_sink_device_t*)data;
+    const auracast_sink_msg_t* msg = (const auracast_sink_msg_t*)context;
+
+    if (memcmp(&device->addr, &msg->addr, sizeof(bt_le_address_t)))
+        return false;
+
+    if (device->sid != msg->sid)
+        return false;
+
+    if (device->id != msg->id)
+        return false;
+
+    return true;
+}
+
+static inline auracast_sink_device_t* find_device_by_msg(const auracast_sink_msg_t* msg)
+{
+    return bt_list_find(g_auracast_sink_service.sink_list, msg_cmp, (void*)msg);
+}
+
+static inline auracast_sink_device_t* find_device(bt_controller_id_t id,
+    const bt_le_address_t* addr, uint8_t sid)
+{
+    auracast_sink_msg_t msg = { 0 };
+    memcpy(&msg.addr, addr, sizeof(bt_le_address_t));
+    msg.id = id;
+    msg.sid = sid;
+
+    return find_device_by_msg(&msg);
+}
+
+static auracast_sink_device_t* find_or_create_device(bt_controller_id_t id,
+    const bt_le_address_t* addr, uint8_t sid)
+{
+    auracast_sink_device_t* device;
+    if ((device = find_device(id, addr, sid)) != NULL)
+        return device;
+
+    return device_new(id, addr, sid);
+}
 
 static void service_startup(const auracast_sink_msg_t* msg)
 {
     auracast_sink_service_t* service = &g_auracast_sink_service;
     profile_on_startup_t cb = (profile_on_startup_t)msg->context;
 
+    service->sink_list = bt_list_new(device_delete);
+    if (!service->sink_list)
+        goto error;
+
     cb(PROFILE_AURACAST_SINK, true);
     return;
+
+error:
+    bt_list_free(service->sink_list);
+    service->sink_list = NULL;
+
+    cb(PROFILE_AURACAST_SINK, false);
 }
 
 static void service_shutdown(const auracast_sink_msg_t* msg)
 {
     auracast_sink_service_t* service = &g_auracast_sink_service;
     profile_on_shutdown_t cb = (profile_on_shutdown_t)msg->context;
+
+    bt_list_free(service->sink_list);
+    service->sink_list = NULL;
 
     cb(PROFILE_AURACAST_SINK, true);
     return;
