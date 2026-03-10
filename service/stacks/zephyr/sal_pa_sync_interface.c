@@ -15,9 +15,12 @@
  ***************************************************************************/
 #define LOG_TAG "sal_pa_sync"
 
+#include <zephyr/bluetooth/bluetooth.h>
+
 #include "sal_pa_sync_interface.h"
 
 #include "bt_list.h"
+#include "pa_sync_service.h"
 #include "sal_interface.h"
 #include "service_loop.h"
 
@@ -36,7 +39,7 @@ typedef struct {
     bt_le_address_t addr;
     bt_controller_id_t id;
     uint8_t sid;
-    struct bt_le_per_adv_sync* sync_object; /**< zephyr object */
+    struct bt_le_per_adv_sync* sync; /**< zephyr sync object */
 } sal_pa_sync_device_t;
 
 typedef struct {
@@ -45,13 +48,32 @@ typedef struct {
 
 static sal_pa_sync_info_t* g_sal_pa_sync_info = NULL;
 
+static bool sync_cmp(void* data, void* context)
+{
+    sal_pa_sync_device_t* device = (sal_pa_sync_device_t*)data;
+    struct bt_le_per_adv_sync* sync = (struct bt_le_per_adv_sync*)context;
+
+    if (!device)
+        return false;
+
+    return device->sync == sync;
+}
+
+static sal_pa_sync_device_t* find_device_by_sync(struct bt_le_per_adv_sync* sync)
+{
+    if (!g_sal_pa_sync_info || !g_sal_pa_sync_info->sync_list || !sync)
+        return NULL;
+
+    return (sal_pa_sync_device_t*)bt_list_find(g_sal_pa_sync_info->sync_list, sync_cmp, sync);
+}
+
 static void sync_removed(void* data)
 {
     sal_pa_sync_device_t* device = (sal_pa_sync_device_t*)data;
 
     BT_LOGD("%s", __func__);
 
-    /** TODO: send SYNC_TERMINATED */
+    pa_sync_on_terminated(device->id, &device->addr, device->sid);
 
     free(device);
 }
@@ -97,6 +119,23 @@ static bt_status_t sal_send_req(sal_pa_sync_req_t* req)
     return BT_STATUS_SUCCESS;
 }
 
+static void on_synced(struct bt_le_per_adv_sync* sync, struct bt_le_per_adv_sync_synced_info* info)
+{
+    sal_pa_sync_device_t* device;
+
+    BT_LOGD("%s", __func__);
+
+    device = find_device_by_sync(sync);
+    if (!device) {
+        BT_LOGE("%s, device not found", __func__);
+        return; /**< FIXME: consider periodic advertising via PAST */
+    }
+
+    /** TODO: get interested information from `info` */
+
+    pa_sync_on_established(device->id, &device->addr, device->sid);
+}
+
 static void sal_create_sync_param_sal_to_zephyr(struct bt_le_per_adv_sync_param* z_param,
     const bt_sal_pa_sync_param_t* params)
 {
@@ -121,18 +160,49 @@ static void sal_create_sync_param_sal_to_zephyr(struct bt_le_per_adv_sync_param*
         z_param->options |= BT_LE_PER_ADV_SYNC_OPT_SYNC_ONLY_CONST_TONE_EXT;
 }
 
+/** TODO: Add const */
+static struct bt_le_per_adv_sync_cb sal_pa_sync_cbs = {
+    .synced = on_synced,
+    .term = NULL,
+    .recv = NULL,
+    .state_changed = NULL,
+    .biginfo = NULL,
+    .cte_report_cb = NULL,
+};
+
 static void create_sync(const void* data)
 {
     const sal_pa_sync_req_t* req = (const sal_pa_sync_req_t*)data;
     struct bt_le_per_adv_sync_param* z_param = (struct bt_le_per_adv_sync_param*)req->context;
+    sal_pa_sync_device_t* device = NULL;
     int err;
 
-    err = bt_le_per_adv_sync_create(z_param, NULL); /**< TODO: Add `out_sync` here */
-    if (err) {
-        /** Generate a terminated callback */
-    }
+    device = zalloc(sizeof(sal_pa_sync_device_t));
+    if (!device)
+        goto error;
+
+    memcpy(&device->addr, &req->addr, sizeof(bt_le_address_t));
+    device->id = req->id;
+    device->sid = z_param->sid;
+
+    err = bt_le_per_adv_sync_cb_register(&sal_pa_sync_cbs);
+    if (err != 0 && err != -EEXIST)
+        goto error;
+
+    err = bt_le_per_adv_sync_create(z_param, &device->sync);
+    if (err)
+        goto error;
+
+    bt_list_add_tail(g_sal_pa_sync_info->sync_list, device);
 
     free(z_param);
+    return;
+
+error:
+    pa_sync_on_terminated(req->id, &req->addr, z_param->sid);
+    free(z_param);
+    free(device);
+    return;
 }
 
 bt_status_t bt_sal_pa_sync_init(void)
@@ -158,6 +228,7 @@ bt_status_t bt_sal_pa_sync_cleanup(void)
     if (!g_sal_pa_sync_info)
         return BT_STATUS_DONE;
 
+    /* TODO: add unregisteration for stack callbacks */
     bt_list_free(g_sal_pa_sync_info->sync_list);
     free(g_sal_pa_sync_info);
     g_sal_pa_sync_info = NULL;
