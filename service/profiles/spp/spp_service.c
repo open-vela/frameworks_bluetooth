@@ -869,10 +869,16 @@ static void spp_on_outgoing_complete(uint16_t port, uint8_t* buffer, uint16_t le
     if (!device)
         return;
 
-    if (!device->remaining_quota && device->handle != NULL) {
-        euv_pipe_read_start(device->handle, device->next_to_read, euv_read_complete, euv_alloc_buffer);
-    }
     device->remaining_quota++;
+
+    if (device->remaining_quota == 1 && device->handle != NULL) {
+        if (device->cache_buf.length > 0) {
+            /* flush cached data before restarting pipe read */
+            do_spp_write(device, NULL, 0);
+        } else {
+            euv_pipe_read_start(device->handle, device->mfs, euv_read_complete, euv_alloc_buffer);
+        }
+    }
 }
 
 static void spp_on_connect_request_received(bt_address_t* addr, uint16_t port)
