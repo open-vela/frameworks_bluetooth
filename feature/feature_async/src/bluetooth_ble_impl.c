@@ -2788,4 +2788,190 @@ error:
 
     return NULL;
 }
+
+static void aurasnk_on_scan_result(bt_scanner_t* scanner, ble_scan_result_t* result)
+{
+    bt_instance_t* ins;
+    feature_bluetooth_features_info_t* features_info;
+    feature_bluetooth_aurasnk_info_t* aurasnk_info;
+    system_bluetooth_ble_AuracastScanResult* result_data = NULL;
+    FtArray* result_array = NULL;
+    char* display_name = NULL;
+    char* id = NULL;
+
+    /** FIXME: scanner might be invalid if aurasnk_info is removed */
+    ins = ((bt_scan_remote_t*)scanner)->ins;
+    features_info = ins->context;
+    if (!features_info || !features_info->feature_ble_aurasnk)
+        return;
+
+    aurasnk_info = bt_list_find(features_info->feature_ble_aurasnk, aurasnk_scanner_cmp, scanner);
+    if (!aurasnk_info)
+        return;
+
+    if (aurasnk_info->source_found_callback == FEATURE_BLE_FT_CALLBACK_ID_INVALID)
+        return;
+
+    display_name = aurasnk_scan_build_display_name(result);
+    if (!display_name)
+        return;
+
+    id = aurasnk_build_id(&result->addr, result->addr_type, result->sid);
+    if (!id) {
+        free(display_name);
+        return;
+    }
+
+    result_array = system_bluetooth_ble_malloc_AuracastScanResult_struct_type_array();
+    result_array->_size = 1;
+    result_array->_element = calloc(result_array->_size,
+        sizeof(system_bluetooth_ble_AuracastScanResult*));
+
+    result_data = system_bluetooth_bleMallocAuracastScanResult();
+    ((system_bluetooth_ble_AuracastScanResult**)result_array->_element)[0] = result_data;
+    result_data->rssi = result->rssi;
+    result_data->id = StringToFtString(id);
+    result_data->displayName = StringToFtString(display_name);
+
+    FeatureInvokeCallback(aurasnk_info->handle, aurasnk_info->source_found_callback, result_array);
+
+    FeatureFreeValue(result_array);
+    free(display_name);
+    free(id);
+}
+
+static void aurasnk_on_scan_status(bt_scanner_t* scanner, uint8_t status)
+{
+    bt_instance_t* ins;
+    feature_bluetooth_features_info_t* features_info;
+    feature_bluetooth_aurasnk_info_t* aurasnk_info = NULL;
+    feature_bluetooth_aurasnk_pending_work_t* work = NULL;
+    aurasnk_work_type_t type = AURASNK_WORK_TYPE_START_SCAN;
+
+    /** FIXME: scanner might be invalid if aurasnk_info is removed */
+    ins = ((bt_scan_remote_t*)scanner)->ins;
+    features_info = ins->context;
+    if (!features_info || !features_info->feature_ble_aurasnk)
+        goto error;
+
+    aurasnk_info = bt_list_find(features_info->feature_ble_aurasnk, aurasnk_scanner_cmp, scanner);
+    if (!aurasnk_info)
+        goto error;
+
+    if (status != BT_STATUS_SUCCESS)
+        aurasnk_info->scanner = NULL;
+
+    work = bt_list_find(aurasnk_info->pending_work, aurasnk_work_cmp, &type);
+    if (!work)
+        goto error;
+
+    work->status = status;
+    bt_list_remove(aurasnk_info->pending_work, work);
+
+    if (status == BT_STATUS_SUCCESS) {
+        FEATURE_LOG_DEBUG("%s, scan started", __func__);
+    } else {
+        FEATURE_LOG_ERROR("%s, failed to start scan, status = %d", __func__, status);
+    }
+
+    return;
+
+error:
+    if (status == BT_STATUS_SUCCESS) {
+        /** scanner is valid but unexpected */
+        if (scanner)
+            bt_le_stop_scan_async(ins, scanner, NULL, NULL);
+    }
+
+    if (aurasnk_info)
+        bt_list_remove(aurasnk_info->pending_work, work);
+}
+
+static void aurasnk_on_scan_stopped(bt_scanner_t* scanner)
+{
+    bt_instance_t* ins;
+    feature_bluetooth_features_info_t* features_info;
+    feature_bluetooth_aurasnk_info_t* aurasnk_info;
+
+    /** FIXME: scanner might be invalid if aurasnk_info is removed */
+    ins = ((bt_scan_remote_t*)scanner)->ins;
+    features_info = ins->context;
+    if (!features_info || !features_info->feature_ble_aurasnk)
+        return;
+
+    aurasnk_info = bt_list_find(features_info->feature_ble_aurasnk, aurasnk_scanner_cmp, scanner);
+    if (!aurasnk_info)
+        return;
+
+    if (aurasnk_info->source_found_callback != FEATURE_BLE_FT_CALLBACK_ID_INVALID) {
+        FeatureRemoveCallback(aurasnk_info->handle, aurasnk_info->source_found_callback);
+        aurasnk_info->source_found_callback = FEATURE_BLE_FT_CALLBACK_ID_INVALID;
+    }
+
+    aurasnk_info->scanner = NULL;
+}
+
+static const ble_scan_settings_t aurasnk_scan_settings = {
+    .scan_mode = BT_SCAN_MODE_LOW_LATENCY,
+    .legacy = false,
+    .scan_type = BT_LE_SCAN_TYPE_PASSIVE,
+    .scan_phy = BT_LE_1M_PHY,
+    .policy.policy = 0, /**< Unfiltered */
+};
+
+static const scanner_callbacks_t aurasnk_scan_cbs = {
+    .size = sizeof(aurasnk_scan_cbs),
+    .on_scan_result = aurasnk_on_scan_result,
+    .on_scan_start_status = aurasnk_on_scan_status,
+    .on_scan_stopped = aurasnk_on_scan_stopped,
+};
+
+static void aurasnk_start_scan_cb(bt_instance_t* ins, bt_status_t status, void* scan,
+    void* userdata)
+{
+    feature_bluetooth_aurasnk_info_t* aurasnk_info;
+    feature_bluetooth_aurasnk_pending_work_t* work = NULL;
+    aurasnk_work_type_t type = AURASNK_WORK_TYPE_START_SCAN;
+
+    FIND_INFO_BY_OBJECT(ins, userdata, aurasnk, aurasnk_info);
+    if (!aurasnk_info) {
+        FEATURE_LOG_ERROR("%s, aurasnk_info not found", __func__);
+        goto error;
+    }
+
+    work = bt_list_find(aurasnk_info->pending_work, aurasnk_work_cmp, &type);
+    if (!work)
+        goto error;
+
+    if (aurasnk_info->scanner != FEATURE_BLE_PTR_PENDING) {
+        FEATURE_LOG_ERROR("%s, unexpected scanner", __func__);
+        goto error;
+    }
+
+    if (status != BT_STATUS_SUCCESS) {
+        FEATURE_LOG_ERROR("%s, failed to start scan, status = %d", __func__, status);
+        work->status = status;
+        goto error;
+    }
+
+    aurasnk_info->scanner = scan;
+    if (aurasnk_info->scanner == NULL) {
+        FEATURE_LOG_ERROR("%s, scan not started", __func__);
+        goto error;
+    }
+
+    FEATURE_LOG_DEBUG("%s, scan starting..", __func__);
+    return;
+
+error:
+    if (aurasnk_info) {
+        bt_list_remove(aurasnk_info->pending_work, work);
+        if (aurasnk_info->scanner == FEATURE_BLE_PTR_PENDING)
+            aurasnk_info->scanner = NULL;
+    }
+
+    if (status == BT_STATUS_SUCCESS && scan != NULL)
+        bt_le_stop_scan_async(ins, scan, NULL, NULL);
+}
+#endif /** CONFIG_BLUETOOTH_AURACAST_SINK */
 }
