@@ -301,6 +301,8 @@ bt_status_t bt_pa_sync_parse_adv_data(bt_pa_sync_info_t* info, const ble_scan_re
     if (!advertiser_data_parse(result->adv_data, result->length, adv_data_parsed, info))
         return BT_STATUS_FAIL;
 
-    return result->interval ? BT_STATUS_SUCCESS : BT_STATUS_NOT_FOUND;
+    return result->flags & SCAN_RESULT_FLAG_PERIODIC_ADVERTISING
+        ? BT_STATUS_SUCCESS
+        : BT_STATUS_NOT_FOUND;
 }
 #endif /* CONFIG_BLUETOOTH_PA_SYNC */
