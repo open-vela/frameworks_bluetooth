@@ -252,6 +252,90 @@ static void on_sync_terminated(const bt_le_address_t* addr, uint8_t sid, void* c
         parse_addr_type(addr->addr_type), sid);
 }
 
+static void dump_auracast_lc3_info(const char* prefix, const bt_auracast_audio_lc3_config_t* lc3)
+{
+    size_t size = BTTOOL_AURACAST_SINK_LOG_SIZE;
+    char* log = zalloc(size); /**< for print log */
+    if (!log)
+        return;
+
+    BTTOOL_STRCAT(log, size, "%sLC3: ", prefix);
+    BTTOOL_STRCAT(log, size, "Freq[%sHz(0x%02x)]",
+        bt_audio_sampling_frequency_to_str(lc3->sampling_frequency), lc3->sampling_frequency);
+    BTTOOL_STRCAT(log, size, ", Duration[%sms(0x%02x)]", bt_audio_duration_to_str(lc3->duration),
+        lc3->duration);
+    BTTOOL_STRCAT(log, size, ", Location[");
+    bt_audio_location_to_str(log + strlen(log), size - strlen(log), lc3->location);
+    BTTOOL_STRCAT(log, size, "(0x%08" PRIx32 ")]", lc3->location);
+    if (lc3->octets_per_frame)
+        BTTOOL_STRCAT(log, size, ", Octets/Frame:%d", lc3->octets_per_frame);
+
+    if (lc3->blocks_per_sdu)
+        BTTOOL_STRCAT(log, size, ", Blocks/SDU:%d", lc3->blocks_per_sdu);
+
+    PRINT("%s", log);
+
+    free(log);
+}
+
+static void dump_auracast_audio_info(const bt_auracast_audio_info_t* info)
+{
+    size_t size = BTTOOL_AURACAST_SINK_LOG_SIZE;
+    char* log = zalloc(size); /**< for print log */
+    if (!log)
+        return;
+
+    PRINT("%s, Presentation Delay %" PRIu32 " us, %d Subgroups", __func__, info->presentation_delay,
+        info->num_subgroups);
+    for (uint8_t i = 0; i < info->num_subgroups; i++) {
+        const bt_auracast_audio_subgroup_t* subgroup = &info->subgroup[i];
+        PRINT("Group[%d]:", i);
+        PRINT("\tNum_bis[%d]", subgroup->num_bis);
+
+        /** Codec ID */
+        log[0] = '\0';
+        BTTOOL_STRCAT(log, size, "\tCodec[%s(0x%02x)]",
+            bt_audio_codec_id_to_str(subgroup->codec_id.coding_format),
+            subgroup->codec_id.coding_format);
+        if (subgroup->codec_id.coding_format == BT_CODEC_ID_VENDOR)
+            BTTOOL_STRCAT(log, size, ", company[0x%04x], id[0x%04x]", subgroup->codec_id.company_id,
+                subgroup->codec_id.vendor_id);
+
+        PRINT("%s", log);
+
+        /** Codec Specific Configuration */
+        if (subgroup->codec_id.coding_format == BT_CODEC_ID_LC3)
+            dump_auracast_lc3_info("\t", &subgroup->config.lc3);
+
+        /** Metadata */
+        log[0] = '\0';
+        BTTOOL_STRCAT(log, size, "\tMetadata");
+        if (subgroup->metadata.context) {
+            BTTOOL_STRCAT(log, size, ", context[");
+            bt_audio_context_to_str(log + strlen(log), size - strlen(log), subgroup->metadata.context);
+            BTTOOL_STRCAT(log, size, "(0x%04x)]", subgroup->metadata.context);
+        }
+
+        if (strlen(subgroup->metadata.language))
+            BTTOOL_STRCAT(log, size, ", language[%s]", subgroup->metadata.language);
+
+        PRINT("%s", log);
+
+        /** BIS info */
+        for (uint8_t k = 0; k < subgroup->num_bis; k++) {
+            const bt_auracast_audio_bis_info_t* bis = &subgroup->bis[k];
+            PRINT("\tBIS[%d]:", k);
+            PRINT("\t\tIndex[%d]", bis->index);
+            if (subgroup->codec_id.coding_format == BT_CODEC_ID_LC3)
+                dump_auracast_lc3_info("\t\t", &bis->config.lc3);
+        }
+
+        PRINT("\n");
+    }
+
+    free(log);
+}
+
 static void on_sync_report(const bt_le_address_t* addr, uint8_t sid,
     const bt_pa_sync_report_t* report, void* context)
 {
@@ -267,7 +351,7 @@ static void on_sync_report(const bt_le_address_t* addr, uint8_t sid,
     if (!log)
         return;
 
-    BTTOOL_STRCAT(log, size, "\t cnt = %d, len = %d", report->cnt, report->adv_data_len);
+    BTTOOL_STRCAT(log, size, "\tcnt = %d, len = %d", report->cnt, report->adv_data_len);
     if (report->tx_power != BT_POWER_UNAVAILABLE)
         BTTOOL_STRCAT(log, size, ", txpower:%d", report->tx_power);
 
@@ -275,7 +359,6 @@ static void on_sync_report(const bt_le_address_t* addr, uint8_t sid,
         BTTOOL_STRCAT(log, size, ", rssi:%d", report->rssi);
 
     PRINT("%s", log);
-    log[0] = '\0'; /**< reset log */
 
     info = malloc(sizeof(bt_auracast_audio_info_t));
     if (info == NULL)
@@ -284,6 +367,8 @@ static void on_sync_report(const bt_le_address_t* addr, uint8_t sid,
     status = bt_auracast_sink_parse_adv_data(info, report);
     if (status != BT_STATUS_SUCCESS)
         goto exit;
+
+    dump_auracast_audio_info(info);
 
 exit:
     free(info);
