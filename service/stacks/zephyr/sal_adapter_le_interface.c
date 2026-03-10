@@ -54,6 +54,11 @@ typedef union {
         void* key;
         uint8_t id;
     } le_set_bond;
+    struct {
+        bool accept;
+        bt_pair_type_t type;
+        uint32_t passkey;
+    } smp;
     int security_level;
     bool bondable;
     uint8_t ctkd_mode;
@@ -1445,24 +1450,25 @@ bt_status_t bt_sal_le_remove_bond(bt_controller_id_t id, bt_address_t* addr)
 #endif
 }
 
-bt_status_t bt_sal_le_smp_reply(bt_controller_id_t id, bt_address_t* addr, bool accept, bt_pair_type_t type, uint32_t passkey)
-{
 #ifdef CONFIG_BT_SMP
+static void STACK_CALL(le_smp_reply)(void* args)
+{
+    sal_adapter_req_t* req = args;
     struct bt_conn* conn;
 
-    conn = get_le_conn_from_addr(addr);
+    conn = get_le_conn_from_addr(&req->addr);
     if (!conn) {
         BT_LOGE("%s, conn null", __func__);
-        return BT_STATUS_FAIL;
+        return;
     }
 
-    if (!accept) {
+    if (!req->adpt.smp.accept) {
         BT_LOGD("%s, reject", __func__);
         SAL_CHECK(bt_conn_auth_cancel(conn), 0);
-        return BT_STATUS_SUCCESS;
+        return;
     }
 
-    switch (type) {
+    switch (req->adpt.smp.type) {
     case PAIR_TYPE_PASSKEY_CONFIRMATION:
         SAL_CHECK(bt_conn_auth_passkey_confirm(conn), 0);
         break;
@@ -1470,15 +1476,31 @@ bt_status_t bt_sal_le_smp_reply(bt_controller_id_t id, bt_address_t* addr, bool 
         SAL_CHECK(bt_conn_auth_pairing_confirm(conn), 0);
         break;
     case PAIR_TYPE_PASSKEY_ENTRY:
-        SAL_CHECK(bt_conn_auth_passkey_entry(conn, passkey), 0);
+        SAL_CHECK(bt_conn_auth_passkey_entry(conn, req->adpt.smp.passkey), 0);
         break;
     default:
-        BT_LOGE("%s, unsupported type:%d", __func__, type);
-        return BT_STATUS_FAIL;
+        BT_LOGE("%s, unsupported type:%d", __func__, req->adpt.smp.type);
+        return;
     }
 
     BT_LOGD("%s, accept", __func__);
-    return BT_STATUS_SUCCESS;
+}
+#endif
+
+bt_status_t bt_sal_le_smp_reply(bt_controller_id_t id, bt_address_t* addr, bool accept, bt_pair_type_t type, uint32_t passkey)
+{
+#ifdef CONFIG_BT_SMP
+    sal_adapter_req_t* req;
+
+    req = sal_adapter_req(id, addr, STACK_CALL(le_smp_reply));
+    if (!req)
+        return BT_STATUS_NOMEM;
+
+    req->adpt.smp.accept = accept;
+    req->adpt.smp.type = type;
+    req->adpt.smp.passkey = passkey;
+
+    return sal_send_req(req);
 #else
     SAL_NOT_SUPPORT;
 #endif
