@@ -438,6 +438,7 @@ static int scan_stop_cmd(void* handle, int argc, char* argv[])
 static int sync_create_cmd(void* handle, int argc, char* argv[])
 {
     int opt;
+    uint32_t val;
     uint8_t sid = BLE_SCAN_SID_NOT_PROVIDED;
     bt_le_address_t addr = { 0 };
     bt_pa_sync_create_param_t params = { 0 };
@@ -446,39 +447,81 @@ static int sync_create_cmd(void* handle, int argc, char* argv[])
 
     memcpy(&params, &default_sync_params, sizeof(bt_pa_sync_create_param_t));
 
-    if (argc == 1) {
-        PRINT("%s, Sync to a nearby device", __func__);
-        if (!g_bis_sink->nearby_pa) {
-            PRINT("%s, device not found", __func__);
-            return CMD_PARAM_NOT_ENOUGH;
-        }
-
-        memcpy(addr.addr, g_bis_sink->nearby_pa->addr.addr, BT_ADDR_LENGTH);
-        addr.addr_type = g_bis_sink->nearby_pa->type;
-        sid = g_bis_sink->nearby_pa->sid;
-    }
-
     while ((opt = getopt_long(argc, argv, "a:t:s:o:k:fn", sync_options, NULL)) != -1) {
         switch (opt) {
         case 'a':
+            if (bt_addr_str2ba(optarg, (bt_address_t*)addr.addr) != 0) {
+                PRINT("invalid address %s", optarg);
+                return CMD_INVALID_PARAM;
+            }
+
             break;
         case 't':
+            val = strtoul(optarg, NULL, 10);
+            if (val > 1) {
+                PRINT("invalid address type %s", optarg);
+                return CMD_INVALID_PARAM;
+            }
+
+            addr.addr_type = val;
             break;
         case 's':
+            val = strtoul(optarg, NULL, 16);
+            if (val > BLE_SCAN_SID_MAX) {
+                PRINT("invalid sid %s", optarg);
+                return CMD_INVALID_PARAM;
+            }
+
+            sid = val;
             break;
         case 'o':
+            val = strtoul(optarg, NULL, 10);
+            if (val < BT_PA_SYNC_TIMEOUT_MIN || val > BT_PA_SYNC_TIMEOUT_MAX) {
+                PRINT("invalid timeout %s", optarg);
+                return CMD_INVALID_PARAM;
+            }
+
+            params.timeout = val;
             break;
         case 'k':
+            val = strtoul(optarg, NULL, 10);
+            if (val > BT_PA_SYNC_SKIP_MAX) {
+                PRINT("invalid skip %s", optarg);
+                return CMD_INVALID_PARAM;
+            }
+
+            params.skip = val;
             break;
         case 'f':
+            params.filter = true;
             break;
         case 'n':
+            params.no_report = true;
             break;
         }
     }
 
-    if (bt_pa_sync_create(handle, &addr, sid, &params, &pa_sync_cbs, handle) != BT_STATUS_SUCCESS)
+    if (bt_addr_is_empty((bt_address_t*)addr.addr)) {
+        PRINT("sync to a nearby device");
+        if (!g_auracast_sink->nearby_pa) {
+            PRINT("device not found");
+            return CMD_PARAM_NOT_ENOUGH;
+        }
+
+        memcpy(addr.addr, g_auracast_sink->nearby_pa->addr.addr, BT_ADDR_LENGTH);
+        addr.addr_type = g_auracast_sink->nearby_pa->type;
+        sid = g_auracast_sink->nearby_pa->sid;
+    }
+
+    if (sid == BLE_SCAN_SID_NOT_PROVIDED) {
+        PRINT("sid not provided, input by -s <sid>");
+        return CMD_PARAM_NOT_ENOUGH;
+    }
+
+    if (bt_pa_sync_create(handle, &addr, sid, &params, &pa_sync_cbs, handle) != BT_STATUS_SUCCESS) {
+        PRINT("failed to create sync");
         return CMD_ERROR;
+    }
 
     return CMD_OK;
 }

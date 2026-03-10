@@ -27,6 +27,7 @@ extern "C" {
 #endif
 
 #define BT_PA_SYNC_SKIP_MAX (0x01F3)
+#define BT_PA_SYNC_TIMEOUT_MIN (0x000A)
 #define BT_PA_SYNC_TIMEOUT_MAX (0x4000)
 #define BT_PA_SYNC_SUBEVENT_NONE (0xFF)
 #define BT_PA_SYNC_DATA_LEN_MAX (251)

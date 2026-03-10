@@ -131,7 +131,11 @@ static void create_sync(const pa_sync_event_t* msg)
     bt_sal_pa_sync_param_t sal_params = { 0 };
     bt_status_t status;
 
-    BT_LOGD("%s", __func__);
+    BT_ADDR_LOG("create sync to [%s], addr_type:%d, sid:%d, skip:%d, timeout:%dms, filter:%c, "
+                "report:%c",
+        (bt_address_t*)msg->addr.addr, msg->addr.addr_type, msg->sid, params->params.skip,
+        params->params.timeout * 10, params->params.filter ? 'y' : 'n',
+        params->params.no_report ? 'n' : 'y');
 
     device = zalloc(sizeof(pa_sync_device_t));
     if (device == NULL) {
@@ -365,21 +369,32 @@ bt_status_t pa_sync_create(const bt_le_address_t* addr, uint8_t sid,
 
     BT_LOGD("%s", __func__);
 
-    if (!cbs || sid > BLE_SCAN_SID_MAX)
+    if (!cbs) {
+        BT_LOGE("cbs is null");
         return BT_STATUS_PARM_INVALID;
+    }
+
+    if (sid > BLE_SCAN_SID_MAX) {
+        BT_LOGE("invalid sid 0x%x", sid);
+        return BT_STATUS_PARM_INVALID;
+    }
 
     if (!params)
         params = &default_params;
 
-    if (params->skip > BT_PA_SYNC_SKIP_MAX)
+    if (params->skip > BT_PA_SYNC_SKIP_MAX) {
+        BT_LOGE("invalid skip 0x%04x", params->skip);
         return BT_STATUS_PARM_INVALID;
+    }
 
-    if (params->timeout > BT_PA_SYNC_TIMEOUT_MAX)
+    if (params->timeout < BT_PA_SYNC_TIMEOUT_MIN || params->timeout > BT_PA_SYNC_TIMEOUT_MAX) {
+        BT_LOGE("invalid timeout 0x%04x", params->timeout);
         return BT_STATUS_PARM_INVALID;
+    }
 
     msg = zalloc(sizeof(pa_sync_event_t) + sizeof(pa_sync_event_create_sync_t));
     if (!msg) {
-        BT_LOGE("%s, malloc failed", __func__);
+        BT_LOGE("malloc failed");
         return BT_STATUS_NOMEM;
     }
 
@@ -393,7 +408,7 @@ bt_status_t pa_sync_create(const bt_le_address_t* addr, uint8_t sid,
     memcpy(&param->params, params, sizeof(bt_pa_sync_create_param_t));
 
     if (pa_sync_send_message(msg) != BT_STATUS_SUCCESS) {
-        BT_LOGE("%s, message send failed", __func__);
+        BT_LOGE("message send failed");
         free(msg);
     }
 
