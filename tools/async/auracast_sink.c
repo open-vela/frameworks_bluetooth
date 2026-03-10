@@ -666,6 +666,43 @@ static int scan_start_cmd(void* handle, int argc, char* argv[])
     return CMD_OK;
 }
 
+static void scan_stop_cb(bt_instance_t* ins, void* userdata)
+{
+    PRINT("scan stopped");
+}
+
+static int scan_stop_cmd(void* handle, int argc, char* argv[])
+{
+    bt_status_t status;
+
+    if (!g_auracast_sink) {
+        PRINT("not initialized");
+        return CMD_INVALID_OPT;
+    }
+
+    if (!g_auracast_sink->scanner) {
+        PRINT("not scanning");
+        return CMD_USAGE_FAULT;
+    }
+
+    if (g_auracast_sink->scanner == AURACAST_SINK_PTR_PENDING) {
+        PRINT("scan is starting");
+        return CMD_USAGE_FAULT;
+    }
+
+    PRINT("stop scan, scanner = %p", g_auracast_sink->scanner);
+
+    status = bt_le_stop_scan_async(handle, g_auracast_sink->scanner, scan_stop_cb, g_auracast_sink);
+    if (status != BT_STATUS_SUCCESS) {
+        PRINT("failed to stop a scan");
+        return CMD_ERROR;
+    }
+
+    g_auracast_sink->scanner = NULL;
+
+    return CMD_OK;
+}
+
 static void sync_create_cb(bt_instance_t* ins, bt_status_t status, void* userdata)
 {
     bttool_auracast_pa_sync_t* sync = userdata;
@@ -803,6 +840,96 @@ exit:
     return ret;
 }
 
+static int general_find_sync(void** out, int argc, char* const argv[], uint8_t type)
+{
+    int opt;
+    bt_le_address_t addr = { 0 };
+    uint8_t sid;
+    uint32_t val;
+    bttool_auracast_remote_t* sync;
+
+    addr.addr_type = BT_ADDR_TYPE_UNKNOWN;
+    sid = BLE_SCAN_SID_NOT_PROVIDED;
+
+    while ((opt = getopt_long(argc, argv, "a:t:s:", sync_select_options, NULL)) != -1) {
+        switch (opt) {
+        case 'a':
+            if (bt_addr_str2ba(optarg, (bt_address_t*)addr.addr) != 0) {
+                PRINT("invalid address %s", optarg);
+                return CMD_INVALID_ADDR;
+            }
+
+            break;
+        case 't':
+            val = strtoul(optarg, NULL, 10);
+            if (val > 1) {
+                PRINT("invalid address type %s", optarg);
+                return CMD_INVALID_PARAM;
+            }
+
+            addr.addr_type = val;
+            break;
+        case 's':
+            val = strtoul(optarg, NULL, 16);
+            if (val > BLE_SCAN_SID_MAX) {
+                PRINT("invalid sid %s", optarg);
+                return CMD_INVALID_PARAM;
+            }
+
+            sid = val;
+            break;
+        }
+    }
+
+    sync = find_sync(&addr, sid, type);
+    if (!sync) {
+        PRINT("sync not found");
+        return CMD_INVALID_PARAM;
+    }
+
+    *out = sync;
+
+    return CMD_OK;
+}
+
+static void sync_terminate_cb(bt_instance_t* ins, bt_status_t status, void* userdata)
+{
+    bttool_auracast_pa_sync_t* sync = userdata;
+
+    if (!g_auracast_sink) {
+        PRINT("not initialized");
+        return;
+    }
+
+    if (status != BT_STATUS_SUCCESS) {
+        PRINT("failed to terminate sync, status = %d", status);
+        return;
+    }
+
+    PRINT("sync terminate success: %p", sync);
+}
+
+static int sync_terminate_cmd(void* handle, int argc, char* argv[])
+{
+    int ret;
+    bt_status_t status;
+    bttool_auracast_pa_sync_t* sync;
+
+    PRINT("%s", __func__);
+
+    ret = general_find_sync((void**)&sync, argc, argv, SEARCH_TYPE_SYNC);
+    if (ret != CMD_OK)
+        return ret;
+
+    status = bt_pa_sync_terminate_async(handle, &sync->remote.addr, sync->remote.sid,
+        sync_terminate_cb, sync);
+    if (status != BT_STATUS_SUCCESS) {
+        PRINT("failed to terminate sync, status = %d", status);
+        return CMD_ERROR;
+    }
+
+    return CMD_OK;
+}
 
 int auracast_sink_command_init_async(void* handle)
 {
