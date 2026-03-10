@@ -1374,7 +1374,7 @@ static void ras_notify_cb(bt_address_t* addr, gatt_status_t status, ras_attr_not
     BT_LOGI("ras notify cb, attr:%d", attr);
     switch (attr) {
     case RAS_REAL_TIME_CHAR_SEND: {
-        if (ras_state_get_bit(&ras_srv->char_notify_state, RAS_RTT_DATA_INDICATE)) {
+        if (ras_state_get_bit(&ras_srv->char_notify_state, RAS_RTT_DATA_INDICATE) || ras_state_get_bit(&ras_srv->char_notify_state, RAS_RTT_DATA_NOTIFY)) {
             ras_dt_rd_indicate_cb(addr);
         }
     } break;
