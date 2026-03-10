@@ -3549,6 +3549,32 @@ error:
     bt_list_remove(aurasnk_info->pending_work, work);
 }
 
+static void auracast_on_receive_stopped(void* cookie, const bt_le_address_t* addr, uint8_t sid)
+{
+    bt_instance_t* ins = cookie;
+    feature_bluetooth_aurasnk_info_t* aurasnk_info = NULL;
+    feature_bluetooth_aurasnk_pending_work_t* work = NULL;
+    aurasnk_work_type_t type = AURASNK_WORK_TYPE_START_RECEIVE;
+
+    aurasnk_info = get_aurasnk_info(ins, addr, sid);
+    if (!aurasnk_info)
+        return;
+
+    FEATURE_LOG_DEBUG("%s, receive stopped", __func__);
+    work = bt_list_find(aurasnk_info->pending_work, aurasnk_work_cmp, &type);
+    if (work)
+        bt_list_remove(aurasnk_info->pending_work, work);
+
+    FeatureInvokeCallback(aurasnk_info->handle, aurasnk_info->stream_stopped_callback);
+
+    FeatureRemoveCallback(aurasnk_info->handle, aurasnk_info->stream_started_callback);
+    aurasnk_info->stream_started_callback = FEATURE_BLE_FT_CALLBACK_ID_INVALID;
+    FeatureRemoveCallback(aurasnk_info->handle, aurasnk_info->stream_stopped_callback);
+    aurasnk_info->stream_stopped_callback = FEATURE_BLE_FT_CALLBACK_ID_INVALID;
+    bt_auracast_sink_unregister_callbacks_async(ins, cookie, NULL, NULL);
+    aurasnk_info->auracast_cbs_cookie = NULL;
+}
+
 static void register_callbacks_cb(bt_instance_t* ins, bt_status_t status, void* cookie,
     void* userdata)
 {
@@ -3772,4 +3798,46 @@ error:
         "auracast sink is not supported");
 #endif
 }
+
+void system_bluetooth_ble_AuracastSink_interface_aurasnk_stopReceive(FeatureInterfaceHandle handle,
+    AppendData adata)
+{
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+    bt_status_t status;
+    feature_bluetooth_aurasnk_info_t* aurasnk_info = FeatureGetObjectData(handle);
+
+    if (!aurasnk_info) {
+        FEATURE_LOG_ERROR("%s, not initialized", __func__);
+        return;
+    }
+
+    if (aurasnk_info->stream_started_callback == FEATURE_BLE_FT_CALLBACK_ID_INVALID
+        || aurasnk_info->stream_stopped_callback == FEATURE_BLE_FT_CALLBACK_ID_INVALID) {
+        FEATURE_LOG_ERROR("%s, nothing to terminate", __func__);
+        return;
+    }
+
+    if (aurasnk_info->stream_info == NULL) {
+        FEATURE_LOG_ERROR("%s, sync not established", __func__);
+        return;
+    }
+
+    status = bt_auracast_sink_terminate_sync_async(aurasnk_info->ins,
+        &aurasnk_info->stream_info->remote.addr, aurasnk_info->stream_info->remote.sid, NULL, NULL);
+    if (status != BT_STATUS_SUCCESS) {
+        FEATURE_LOG_ERROR("%s, failed to stop, status = %d", __func__, status);
+        return;
+    }
+
+    FEATURE_LOG_DEBUG("%s, receive stopping.", __func__);
+#endif
+}
+
+void system_bluetooth_ble_AuracastSink_interface_aurasnk_close(FeatureInterfaceHandle handle,
+    AppendData adata)
+{
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+    feature_auracast_sink_destroy(handle);
+    FeatureSetObjectData(handle, NULL);
+#endif
 }
