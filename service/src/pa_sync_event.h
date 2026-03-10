@@ -39,14 +39,14 @@
 #define BT_LE_PA_SYNC_EVENT_DATA_FAILED (0xFF)
 
 typedef enum {
+    CREATE_SYNC,
+    TERMINATE_SYNC,
     SYNC_ESTABLISHED,
     SYNC_TERMINATED,
     SYNC_REPORT,
 } pa_sync_event_type_t;
 
 typedef struct {
-    bt_le_address_t addr;
-    uint8_t sid;
     bt_pa_sync_create_param_t params;
     const bt_pa_sync_callbacks_t* cbs;
     const void* context;
