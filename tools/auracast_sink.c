@@ -33,8 +33,15 @@ typedef struct {
 } bttool_auracast_pa_record_t;
 
 typedef struct {
+    bt_le_address_t addr;
+    uint8_t sid;
+    int rssi;
+} bttool_auracast_pa_sync_t;
+
+typedef struct {
     bt_scanner_t* scanner;
     bttool_auracast_pa_record_t* nearby_pa;
+    bt_list_t* sync_list; /**< bttool_auracast_pa_sync_t* */
 } bttool_auracast_sink_t;
 
 static int scan_start_cmd(void* handle, int argc, char* argv[]);
@@ -240,16 +247,39 @@ static const ble_scan_settings_t default_scan_settings = {
     .policy.policy = 0, /**< Unfiltered */
 };
 
+static bool sync_cmp(void* data, void* context)
+{
+    const bttool_auracast_pa_sync_t* sync_record = (const bttool_auracast_pa_sync_t*)data;
+    const bttool_auracast_pa_sync_t* sync_in = (const bttool_auracast_pa_sync_t*)context;
+
+    if (!sync_in)
+        return false;
+
+    return sync_record == sync_in;
+}
+
 static void on_sync_established(const bt_le_address_t* addr, uint8_t sid, void* context)
 {
+    bttool_auracast_pa_sync_t* sync = (bttool_auracast_pa_sync_t*)context;
+
+    if (!g_auracast_sink || !bt_list_find(g_auracast_sink->sync_list, sync_cmp, sync))
+        return;
+
     PRINT_ADDR("on_sync_established, addr:[%s][%s], sid:0x%x", (const bt_address_t*)addr->addr,
         parse_addr_type(addr->addr_type), sid);
 }
 
 static void on_sync_terminated(const bt_le_address_t* addr, uint8_t sid, void* context)
 {
+    bttool_auracast_pa_sync_t* sync = (bttool_auracast_pa_sync_t*)context;
+
+    if (!g_auracast_sink ||!bt_list_find(g_auracast_sink->sync_list, sync_cmp, sync))
+        return;
+
     PRINT_ADDR("on_sync_terminated, addr:[%s][%s], sid:0x%x", (const bt_address_t*)addr->addr,
         parse_addr_type(addr->addr_type), sid);
+
+    bt_list_remove(g_auracast_sink->sync_list, sync);
 }
 
 static void dump_auracast_lc3_info(const char* prefix, const bt_auracast_audio_lc3_config_t* lc3)
@@ -341,8 +371,12 @@ static void on_sync_report(const bt_le_address_t* addr, uint8_t sid,
 {
     bt_status_t status;
     bt_auracast_audio_info_t* info = NULL;
+    bttool_auracast_pa_sync_t* sync = (bttool_auracast_pa_sync_t*)context;
     char* log = NULL;
     size_t size = BTTOOL_AURACAST_SINK_LOG_SIZE;
+
+    if (!g_auracast_sink ||!bt_list_find(g_auracast_sink->sync_list, sync_cmp, sync))
+        return;
 
     PRINT_ADDR("on_sync_report, addr:[%s][%s], sid:0x%x", (const bt_address_t*)addr->addr,
         parse_addr_type(addr->addr_type), sid);
@@ -355,8 +389,10 @@ static void on_sync_report(const bt_le_address_t* addr, uint8_t sid,
     if (report->tx_power != BT_POWER_UNAVAILABLE)
         BTTOOL_STRCAT(log, size, ", txpower:%d", report->tx_power);
 
-    if (report->rssi != BT_POWER_UNAVAILABLE)
+    if (report->rssi != BT_POWER_UNAVAILABLE) {
         BTTOOL_STRCAT(log, size, ", rssi:%d", report->rssi);
+        sync->rssi = report->rssi;
+    }
 
     PRINT("%s", log);
 
@@ -438,21 +474,36 @@ static int scan_stop_cmd(void* handle, int argc, char* argv[])
 static int sync_create_cmd(void* handle, int argc, char* argv[])
 {
     int opt;
+    int ret = CMD_OK;
     uint32_t val;
-    uint8_t sid = BLE_SCAN_SID_NOT_PROVIDED;
-    bt_le_address_t addr = { 0 };
+    bt_status_t status;
     bt_pa_sync_create_param_t params = { 0 };
+    bttool_auracast_pa_sync_t* sync;
 
     PRINT("%s", __func__);
+
+    if (!g_auracast_sink) {
+        PRINT("Not initialized");
+        return CMD_INVALID_OPT;
+    }
+
+    sync = zalloc(sizeof(bttool_auracast_pa_sync_t));
+    if (!sync) {
+        PRINT("malloc failed");
+        return CMD_ERROR;
+    }
+
+    sync->sid = BLE_SCAN_SID_NOT_PROVIDED;
 
     memcpy(&params, &default_sync_params, sizeof(bt_pa_sync_create_param_t));
 
     while ((opt = getopt_long(argc, argv, "a:t:s:o:k:fn", sync_options, NULL)) != -1) {
         switch (opt) {
         case 'a':
-            if (bt_addr_str2ba(optarg, (bt_address_t*)addr.addr) != 0) {
+            if (bt_addr_str2ba(optarg, (bt_address_t*)sync->addr.addr) != 0) {
                 PRINT("invalid address %s", optarg);
-                return CMD_INVALID_PARAM;
+                ret = CMD_INVALID_ADDR;
+                goto exit;
             }
 
             break;
@@ -460,25 +511,28 @@ static int sync_create_cmd(void* handle, int argc, char* argv[])
             val = strtoul(optarg, NULL, 10);
             if (val > 1) {
                 PRINT("invalid address type %s", optarg);
-                return CMD_INVALID_PARAM;
+                ret = CMD_INVALID_PARAM;
+                goto exit;
             }
 
-            addr.addr_type = val;
+            sync->addr.addr_type = val;
             break;
         case 's':
             val = strtoul(optarg, NULL, 16);
             if (val > BLE_SCAN_SID_MAX) {
                 PRINT("invalid sid %s", optarg);
-                return CMD_INVALID_PARAM;
+                ret = CMD_INVALID_PARAM;
+                goto exit;
             }
 
-            sid = val;
+            sync->sid = val;
             break;
         case 'o':
             val = strtoul(optarg, NULL, 10);
             if (val < BT_PA_SYNC_TIMEOUT_MIN || val > BT_PA_SYNC_TIMEOUT_MAX) {
                 PRINT("invalid timeout %s", optarg);
-                return CMD_INVALID_PARAM;
+                ret = CMD_INVALID_PARAM;
+                goto exit;
             }
 
             params.timeout = val;
@@ -487,7 +541,8 @@ static int sync_create_cmd(void* handle, int argc, char* argv[])
             val = strtoul(optarg, NULL, 10);
             if (val > BT_PA_SYNC_SKIP_MAX) {
                 PRINT("invalid skip %s", optarg);
-                return CMD_INVALID_PARAM;
+                ret = CMD_INVALID_PARAM;
+                goto exit;
             }
 
             params.skip = val;
@@ -501,29 +556,38 @@ static int sync_create_cmd(void* handle, int argc, char* argv[])
         }
     }
 
-    if (bt_addr_is_empty((bt_address_t*)addr.addr)) {
+    if (bt_addr_is_empty((bt_address_t*)sync->addr.addr)) {
         PRINT("sync to a nearby device");
         if (!g_auracast_sink->nearby_pa) {
             PRINT("device not found");
-            return CMD_PARAM_NOT_ENOUGH;
+            ret = CMD_PARAM_NOT_ENOUGH;
+            goto exit;
         }
 
-        memcpy(addr.addr, g_auracast_sink->nearby_pa->addr.addr, BT_ADDR_LENGTH);
-        addr.addr_type = g_auracast_sink->nearby_pa->type;
-        sid = g_auracast_sink->nearby_pa->sid;
+        memcpy(sync->addr.addr, g_auracast_sink->nearby_pa->addr.addr, BT_ADDR_LENGTH);
+        sync->addr.addr_type = g_auracast_sink->nearby_pa->type;
+        sync->sid = g_auracast_sink->nearby_pa->sid;
     }
 
-    if (sid == BLE_SCAN_SID_NOT_PROVIDED) {
+    if (sync->sid == BLE_SCAN_SID_NOT_PROVIDED) {
         PRINT("sid not provided, input by -s <sid>");
-        return CMD_PARAM_NOT_ENOUGH;
+        ret = CMD_PARAM_NOT_ENOUGH;
+        goto exit;
     }
 
-    if (bt_pa_sync_create(handle, &addr, sid, &params, &pa_sync_cbs, handle) != BT_STATUS_SUCCESS) {
-        PRINT("failed to create sync");
-        return CMD_ERROR;
+    status = bt_pa_sync_create(handle, &sync->addr, sync->sid, &params, &pa_sync_cbs, sync);
+    if (status != BT_STATUS_SUCCESS) {
+        PRINT("failed to create sync, status = %d", status);
+        ret = CMD_ERROR;
     }
 
-    return CMD_OK;
+exit:
+    if (ret == CMD_OK)
+        bt_list_add_tail(g_auracast_sink->sync_list, sync);
+    else
+        free(sync);
+
+    return ret;
 }
 
 int auracast_sink_command_init(void* handle)
@@ -532,6 +596,7 @@ int auracast_sink_command_init(void* handle)
     if (!g_auracast_sink)
         return CMD_ERROR;
 
+    g_auracast_sink->sync_list = bt_list_new(free);
     return CMD_OK;
 }
 
@@ -540,6 +605,7 @@ void auracast_sink_command_uninit(void* handle)
     if (!g_auracast_sink)
         return;
 
+    bt_list_free(g_auracast_sink->sync_list);
     free(g_auracast_sink->nearby_pa);
     free(g_auracast_sink);
     g_auracast_sink = NULL;
