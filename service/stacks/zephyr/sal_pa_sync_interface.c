@@ -33,6 +33,7 @@ typedef void (*sal_func_t)(const void* args);
 typedef struct {
     bt_le_address_t addr;
     bt_controller_id_t id;
+    uint8_t sid;
     sal_func_t func;
     void* context;
 } sal_pa_sync_req_t;
@@ -95,6 +96,31 @@ static sal_pa_sync_device_t* find_device_by_sync(struct bt_le_per_adv_sync* sync
     return (sal_pa_sync_device_t*)bt_list_find(g_sal_pa_sync_info->sync_list, sync_cmp, sync);
 }
 
+static bool req_cmp(void* data, void* context)
+{
+    const sal_pa_sync_device_t* device = (const sal_pa_sync_device_t*)data;
+    const sal_pa_sync_req_t* req = (const sal_pa_sync_req_t*)context;
+
+    if (!device || !req)
+        return false;
+
+    if (memcmp(&device->addr, &req->addr, sizeof(bt_le_address_t)))
+        return false;
+
+    if (device->id != req->id || device->sid != req->sid)
+        return false;
+
+    return true;
+}
+
+static sal_pa_sync_device_t* find_device_by_req(const sal_pa_sync_req_t* req)
+{
+    if (!g_sal_pa_sync_info || !g_sal_pa_sync_info->sync_list || !req)
+        return NULL;
+
+    return (sal_pa_sync_device_t*)bt_list_find(g_sal_pa_sync_info->sync_list, req_cmp, (void*)req);
+}
+
 static void sync_removed(void* data)
 {
     sal_pa_sync_device_t* device = (sal_pa_sync_device_t*)data;
@@ -105,7 +131,7 @@ static void sync_removed(void* data)
 }
 
 static sal_pa_sync_req_t* sal_pa_sync_req(bt_controller_id_t id, const bt_le_address_t* addr,
-    sal_func_t func, void* context)
+    uint8_t sid, sal_func_t func, void* context)
 {
     sal_pa_sync_req_t* req = zalloc(sizeof(sal_pa_sync_req_t));
 
@@ -116,6 +142,7 @@ static sal_pa_sync_req_t* sal_pa_sync_req(bt_controller_id_t id, const bt_le_add
 
     memcpy(&req->addr, addr, sizeof(bt_le_address_t));
     req->id = id;
+    req->sid = sid;
     req->func = func;
     req->context = context;
 
@@ -274,14 +301,14 @@ static void create_sync(const void* data)
 
     device = device_new();
     if (!device) {
-        pa_sync_on_terminated(req->id, &req->addr, z_param->sid);
+        pa_sync_on_terminated(req->id, &req->addr, req->sid);
         free(z_param);
         return;
     }
 
     memcpy(&device->addr, &req->addr, sizeof(bt_le_address_t));
     device->id = req->id;
-    device->sid = z_param->sid;
+    device->sid = req->sid;
 
     err = bt_le_per_adv_sync_cb_register(&sal_pa_sync_cbs);
     if (err != 0 && err != -EEXIST)
@@ -289,7 +316,12 @@ static void create_sync(const void* data)
 
     err = bt_le_per_adv_sync_create(z_param, &device->sync);
     if (err) {
-        BT_LOGE("%s, failed to create sync, err = %d", __func__, err);
+        BT_LOGE("failed to create sync, err = %d", err);
+        goto error;
+    }
+
+    if (!device->sync) {
+        BT_LOGE("sync not generated");
         goto error;
     }
 
@@ -302,6 +334,26 @@ error:
     device_delete(device);
     free(z_param);
     return;
+}
+
+static void terminate_sync(const void* data)
+{
+    const sal_pa_sync_req_t* req = (const sal_pa_sync_req_t*)data;
+    sal_pa_sync_device_t* device;
+    int err;
+
+    device = find_device_by_req(req);
+    if (!device) {
+        pa_sync_on_terminated(req->id, &req->addr, req->sid);
+        return;
+    }
+
+    err = bt_le_per_adv_sync_delete(device->sync);
+    if (err) {
+        BT_LOGE("failed to terminate sync, err = %d", err);
+        device_delete(device);
+        return;
+    }
 }
 
 bt_status_t bt_sal_pa_sync_init(void)
@@ -347,7 +399,7 @@ bt_status_t bt_sal_pa_create_sync(bt_controller_id_t id, const bt_sal_pa_sync_pa
         return BT_STATUS_NOMEM;
 
     sal_create_sync_param_sal_to_zephyr(z_param, params);
-    req = sal_pa_sync_req(id, &params->addr, create_sync, z_param);
+    req = sal_pa_sync_req(id, &params->addr, params->sid, create_sync, z_param);
     if (!req)
         goto error;
 
@@ -361,4 +413,23 @@ error:
     free(req);
 
     return BT_STATUS_FAIL;
+}
+
+bt_status_t bt_sal_pa_terminate_sync(bt_controller_id_t id, uint8_t sid,
+    const bt_le_address_t* addr)
+{
+    bt_status_t status;
+    sal_pa_sync_req_t* req;
+
+    BT_LOGD("%s", __func__);
+
+    req = sal_pa_sync_req(id, addr, sid, terminate_sync, NULL);
+    if (!req)
+        return BT_STATUS_NOMEM;
+
+    status = sal_send_req(req);
+    if (status != BT_STATUS_SUCCESS)
+        free(req);
+
+    return status;
 }
