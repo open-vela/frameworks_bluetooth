@@ -29,6 +29,17 @@
 
 #if ZEPHYR_AURACAST_SINK_SUPPORTED
 
+#define EXTRACT_LOWEST_BIT(pos, x) \
+    do {                           \
+        uint32_t _prev = (x);      \
+        if (!_prev) {              \
+            (pos) = 0;             \
+        } else {                   \
+            (x) &= (x) - 1;        \
+            (pos) = _prev - (x);   \
+        }                          \
+    } while (0)
+
 typedef void (*sal_func_t)(const void* args);
 
 typedef struct {
@@ -43,11 +54,87 @@ typedef struct {
     bt_le_address_t addr;
     bt_controller_id_t id;
     uint8_t sid;
+
+    struct bt_iso_big* sink; /** zephyr big info */
+    struct bt_iso_chan_ops ops;
+    struct bt_iso_chan_io_qos rx_qos; /** FIXME: Why do we need this QoS? */
+    struct bt_iso_chan_qos qos;
+    struct bt_iso_chan* channels[BT_AURACAST_SINK_NUM_BIS_SUPPORTED]; /** point to iso_channel */
+    uint32_t bitfield[BT_AURACAST_SINK_NUM_BIS_SUPPORTED]; /** bitfield map for quick check */
 } sal_auracast_sink_device_t;
 
 typedef struct {
     bt_list_t* sink_list;
 } sal_auracast_sink_info_t;
+
+static sal_auracast_sink_device_t* device_new(bt_controller_id_t id,
+    const bt_le_address_t* addr, uint8_t sid, struct bt_iso_big_sync_param* z_param)
+{
+    sal_auracast_sink_device_t* device;
+    uint32_t bitfield = z_param->bis_bitfield;
+
+    if (z_param->num_bis > BT_AURACAST_SINK_NUM_BIS_SUPPORTED) {
+        BT_LOGE("%s, invalid num_bis(%d)", __func__, z_param->num_bis);
+        return NULL;
+    }
+
+    if (z_param->num_bis != bt_utils_count_ones(bitfield)) {
+        BT_LOGE("%s, invalid param", __func__);
+        return NULL;
+    }
+
+    device = zalloc(sizeof(sal_auracast_sink_device_t));
+    if (!device) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return NULL;
+    }
+
+    memcpy(&device->addr, addr, sizeof(bt_le_address_t));
+    device->id = id;
+    device->sid = sid;
+    bitfield <<= 1; /** Zephyr bitfield to SAL bitfield */
+
+    for (uint8_t k = 0; k < z_param->num_bis; k++) {
+        struct bt_iso_chan* channel = zalloc(sizeof(struct bt_iso_chan));
+        if (!channel)
+            goto error;
+
+        device->ops.recv = iso_recv;
+        device->ops.connected = iso_connected;
+        device->ops.disconnected = iso_disconnected;
+        device->qos.rx = &device->rx_qos;
+        channel->ops = &device->ops;
+        channel->qos = &device->qos;
+
+        device->channels[k] = channel;
+
+        EXTRACT_LOWEST_BIT(device->bitfield[k], bitfield);
+    }
+
+    return device;
+
+error:
+    for (uint8_t k = 0; k < BT_AURACAST_SINK_NUM_BIS_SUPPORTED; k++)
+        free(device->channels[k]);
+
+    free(device);
+    return NULL;
+}
+
+static void device_delete(sal_auracast_sink_device_t* device)
+{
+    BT_LOGD("%s", __func__);
+
+    if (!device)
+        return;
+
+    auracast_sink_on_terminated(device->id, &device->addr, device->sid);
+    for (uint8_t k = 0; k < BT_AURACAST_SINK_NUM_BIS_SUPPORTED; k++)
+        free(device->channels[k]);
+
+    free(device);
+}
+
 
 static sal_auracast_sink_req_t* sal_auracast_sink_req(bt_controller_id_t id,
     const bt_le_address_t* addr, uint8_t sid, sal_func_t func, void* context)
