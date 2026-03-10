@@ -634,6 +634,11 @@ config BLUETOOTH_LEAUDIO_SERVER_CSIS_RANK
 
 endif # BLUETOOTH_LEAUDIO_SERVER
 
+config BLUETOOTH_AURACAST_SINK
+	bool "Auracast Sink role"
+	default n
+	depends on BLUETOOTH_PA_SYNC
+
 endmenu #Bluetooth LE Audio
 
 menu "Bluetooth Audio Transport"

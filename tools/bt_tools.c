@@ -242,6 +242,9 @@ static bt_command_t g_cmd_tables[] = {
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
     { "vmicp", vmicp_command_exec, 0, "vcp/micp client cmd, input \'vmicp\' show usage" },
 #endif
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+    { "aurasnk", auracast_sink_command_exec, 0, "auracast sink cmd, input \'aurasnk\' show usage" },
+#endif
 #ifdef CONFIG_BLUETOOTH_STORAGE_UPDATE
     { "storage", storage_command_exec, 0, "storage update cmd, input \'storage\' show usage" },
 #endif
@@ -375,6 +378,9 @@ static void bt_tool_init(void* handle)
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
     lea_vmicp_command_init(handle);
 #endif
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+    auracast_sink_command_init(handle);
+#endif
 #ifdef CONFIG_BLUETOOTH_STORAGE_UPDATE
     storage_command_init(handle);
 #endif
@@ -445,6 +451,9 @@ static void bt_tool_uninit(void* handle)
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
     lea_vmicp_command_uninit(handle);
+#endif
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+    auracast_sink_command_uninit(handle);
 #endif
 #ifdef CONFIG_BLUETOOTH_STORAGE_UPDATE
     storage_command_uninit(handle);
