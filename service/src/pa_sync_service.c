@@ -289,7 +289,9 @@ static void pa_sync_process_message(void* data)
 {
     pa_sync_event_t* msg = (pa_sync_event_t*)data;
 
-    BT_LOGD("%s, event = %s(%d)", __func__, pa_sync_event_to_string(msg->event), msg->event);
+    if (msg->event != SYNC_REPORT) { /**< avoid spam logs */
+        BT_LOGD("%s, event = %s(%d)", __func__, pa_sync_event_to_string(msg->event), msg->event);
+    }
 
     switch (msg->event) {
     case CREATE_SYNC:

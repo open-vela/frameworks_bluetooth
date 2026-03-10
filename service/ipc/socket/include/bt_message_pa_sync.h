@@ -79,13 +79,13 @@ typedef struct {
 
         struct {
             bt_le_address_t addr;
+            uint8_t sid;
             int8_t tx_power;
             int8_t rssi;
             uint16_t cnt;
             uint16_t adv_data_len;
-            uint8_t sid;
             uint8_t subevent;
-            uint8_t pad[2];
+            uint8_t pad[1];
             uint8_t data[BT_PA_SYNC_DATA_LEN_MAX];
         } _on_sync_report;
     };

@@ -22,6 +22,7 @@
 #define BTTOOL_PA_SYNC_PA_REPORT_LIFE (10)
 #define BTTOOL_PA_SYNC_DEFAULT_TIMEOUT_MS (1000)
 #define BTTOOL_PA_SYNC_DEFAULT_SKIP (1)
+
 typedef struct {
     bt_address_t addr;
     ble_addr_type_t type;
@@ -250,10 +251,37 @@ static void on_sync_terminated(const bt_le_address_t* addr, uint8_t sid, void* c
         parse_addr_type(addr->addr_type), sid);
 }
 
-static void on_sync_report(const bt_le_address_t* addr, uint8_t sid, void* context)
+static void on_sync_report(const bt_le_address_t* addr, uint8_t sid,
+    const bt_pa_sync_report_t* report, void* context)
 {
+    char* log = NULL;
+    size_t size = BTTOOL_AURACAST_SINK_LOG_SIZE;
+
     PRINT_ADDR("on_sync_report, addr:[%s][%s], sid:0x%x", (const bt_address_t*)addr->addr,
         parse_addr_type(addr->addr_type), sid);
+
+    log = zalloc(size); /**< for print log */
+    if (!log)
+        return;
+
+    BTTOOL_STRCAT(log, size, "\t cnt = %d", report->cnt);
+    if (report->tx_power != BT_POWER_UNAVAILABLE)
+        BTTOOL_STRCAT(log, size, ", txpower:%d", report->tx_power);
+
+    if (report->rssi != BT_POWER_UNAVAILABLE)
+        BTTOOL_STRCAT(log, size, ", rssi:%d", report->rssi);
+
+    if (report->adv_data_len) {
+        BTTOOL_STRCAT(log, size, "\n len = %d, data = ", report->adv_data_len);
+        for (int i = 0; i < report->adv_data_len; i++) {
+            BTTOOL_STRCAT(log, size, " %02x", report->data[i]);
+        }
+    } else {
+        BTTOOL_STRCAT(log, size, ", len = 0");
+    }
+
+    PRINT("%s", log);
+    free(log);
 }
 
 static const bt_pa_sync_callbacks_t pa_sync_cbs = {
