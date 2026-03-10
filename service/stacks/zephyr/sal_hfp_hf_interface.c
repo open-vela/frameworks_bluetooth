@@ -392,9 +392,11 @@ bt_status_t do_hf_disconnect(bt_controller_id_t id, bt_address_t* addr, void* us
         BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
         return BT_STATUS_FAIL;
     }
+
     if (!sal_conn->hf) {
-        BT_LOGE("%s, HFP HF not connected", __func__);
-        return BT_STATUS_FAIL;
+        BT_LOGI("%s, HFP HF not connected", __func__);
+        bt_list_remove(g_sal_hf_conn_list, sal_conn);
+        return BT_STATUS_SUCCESS;
     }
 
     SAL_CHECK_RET(Z_API(bt_hfp_hf_disconnect)(sal_conn->hf), 0);
@@ -1123,11 +1125,6 @@ bt_status_t bt_sal_hfp_hf_disconnect(bt_address_t* addr)
         char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
         bt_addr_ba2str(addr, addr_str);
         BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
-        return BT_STATUS_FAIL;
-    }
-
-    if (!sal_conn->hf) {
-        BT_LOGE("%s, HFP HF not connected", __func__);
         return BT_STATUS_FAIL;
     }
 
