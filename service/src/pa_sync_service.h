@@ -41,7 +41,17 @@ void pa_sync_on_established(bt_controller_id_t id, const bt_le_address_t* addr, 
  * @param[in] id The Controller ID
  * @param[in] addr Advertiser's address (public, random, public identity, or random static identity)
  * @param[in] sid Advertising SID; `BLE_SCAN_SID_NOT_PROVIDED` if unavailable
+ * @param[in] tx_power TxPower in dBm (-127 to +20). 0x7F if unavailable
+ * @param[in] rssi RSSI in dBm (-127 to +20). 0x7F if unavailable
+ * @param[in] cte CTE_Type, e.g., `BT_LE_PA_SYNC_EVENT_CTE_TYPE_NONE`
+ * @param[in] cnt Periodic_Event_Counter
+ * @param[in] subevent The subevent number, range from 0x00 to 0x7F. 0xFF if no subevents
+ * @param[in] status Data_Status, e.g., `BT_LE_PA_SYNC_EVENT_DATA_COMPLETE`
+ * @param[in] adv_data_len Length of `adv_data`
+ * @param[in] adv_data Data received from a Periodic Advertising packet
  */
-void pa_sync_on_terminated(bt_controller_id_t id, const bt_le_address_t* addr, uint8_t sid);
+void pa_sync_on_received(bt_controller_id_t id, const bt_le_address_t* addr, uint8_t sid,
+    int tx_power, int rssi, uint8_t cte, uint16_t cnt, uint8_t subevent, uint8_t status, 
+    uint8_t adv_data_len, const uint8_t* adv_data);
 
 #endif /* __PA_SYNC_SERVICE_H__ */

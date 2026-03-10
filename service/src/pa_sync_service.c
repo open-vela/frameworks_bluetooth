@@ -372,3 +372,43 @@ void pa_sync_on_terminated(bt_controller_id_t id, const bt_le_address_t* addr, u
         free(msg);
     }
 }
+
+void pa_sync_on_received(bt_controller_id_t id, const bt_le_address_t* addr, uint8_t sid,
+    int tx_power, int rssi, uint8_t cte, uint16_t cnt, uint8_t subevent, uint8_t status,
+    uint8_t adv_data_len, const uint8_t* adv_data)
+{
+    pa_sync_event_t* msg = zalloc(sizeof(pa_sync_event_t) + sizeof(pa_sync_event_report_data_t)
+        + adv_data_len);
+    pa_sync_event_report_data_t* report;
+    uint8_t* data;
+    if (!msg) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return;
+    }
+
+    report = (pa_sync_event_report_data_t*)msg->data;
+    data = report->adv_data;
+
+    /** Part 1, general message data */
+    msg->event = SYNC_REPORT;
+    msg->id = id;
+    msg->sid = sid;
+    memcpy(&msg->addr, addr, sizeof(bt_le_address_t));
+
+    /** Part 2, periodic advertising report info */
+    report->tx_power = tx_power;
+    report->rssi = rssi;
+    report->cte = cte;
+    report->cnt = cnt;
+    report->subevent = subevent;
+    report->status = status;
+    report->adv_data_len = adv_data_len;
+
+    /** Part 3, adv data */
+    memcpy(data, adv_data, adv_data_len);
+
+    if (pa_sync_send_message(msg) != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, message send failed", __func__);
+        free(msg);
+    }
+}

@@ -16,10 +16,12 @@
 #define LOG_TAG "sal_pa_sync"
 
 #include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/direction.h>
 
 #include "sal_pa_sync_interface.h"
 
 #include "bt_list.h"
+#include "pa_sync_event.h"
 #include "pa_sync_service.h"
 #include "sal_interface.h"
 #include "service_loop.h"
@@ -184,6 +186,49 @@ static void on_term(struct bt_le_per_adv_sync* sync,
     bt_list_remove(g_sal_pa_sync_info->sync_list, device);
 }
 
+static uint8_t sal_cte_type_zephyr_to_sal(uint8_t z_cte)
+{
+    switch (z_cte) {
+    case BT_DF_CTE_TYPE_NONE:
+        return BT_LE_PA_SYNC_EVENT_CTE_TYPE_NONE;
+    case BT_DF_CTE_TYPE_AOA:
+        return BT_LE_PA_SYNC_EVENT_CTE_TYPE_AOA;
+    case BT_DF_CTE_TYPE_AOD_1US:
+        return BT_LE_PA_SYNC_EVENT_CTE_TYPE_AOD_1US;
+    case BT_DF_CTE_TYPE_AOD_2US:
+        return BT_LE_PA_SYNC_EVENT_CTE_TYPE_AOD_2US;
+    default:
+        break;
+    }
+
+    return BT_LE_PA_SYNC_EVENT_CTE_TYPE_NONE; /**< unrecognized */
+}
+
+static void on_recv(struct bt_le_per_adv_sync* sync,
+    const struct bt_le_per_adv_sync_recv_info* info, struct net_buf_simple* buf)
+{
+    sal_pa_sync_device_t* device;
+    uint16_t periodic_event_counter = 0;
+    uint8_t subevent = 0xFF;
+
+    device = find_device_by_sync(sync);
+    if (!device || !device->info) {
+        BT_LOGE("%s, device not found or info not allocated", __func__);
+        return;
+    }
+
+    /** Update info of periodic advertising */
+    memcpy(device->info, info, sizeof(struct bt_le_per_adv_sync_synced_info));
+
+#ifdef CONFIG_BT_PER_ADV_SYNC_RSP
+    periodic_event_counter = info->periodic_event_counter;
+    subevent = info->subevent;
+#endif
+    pa_sync_on_received(device->id, &device->addr, device->sid, info->tx_power, info->rssi,
+        sal_cte_type_zephyr_to_sal(info->cte_type), periodic_event_counter, subevent,
+        BT_LE_PA_SYNC_EVENT_DATA_COMPLETE, buf->len, buf->data);
+}
+
 static void sal_create_sync_param_sal_to_zephyr(struct bt_le_per_adv_sync_param* z_param,
     const bt_sal_pa_sync_param_t* params)
 {
@@ -212,7 +257,7 @@ static void sal_create_sync_param_sal_to_zephyr(struct bt_le_per_adv_sync_param*
 static struct bt_le_per_adv_sync_cb sal_pa_sync_cbs = {
     .synced = on_synced,
     .term = on_term,
-    .recv = NULL,
+    .recv = on_recv,
     .state_changed = NULL,
     .biginfo = NULL,
     .cte_report_cb = NULL,
