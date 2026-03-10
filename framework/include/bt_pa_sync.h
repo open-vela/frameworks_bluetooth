@@ -26,6 +26,15 @@ extern "C" {
 #define BTSYMBOLS(s) s
 #endif
 
+#define BT_PA_SYNC_DEFAULT_SKIP (1)
+#define BT_PA_SYNC_DEFAULT_TIMEOUT_MS (5000)
+#define BT_PA_SYNC_DEFAULT_DEFAULT_PARAM {           \
+    .skip = (BT_PA_SYNC_DEFAULT_SKIP),               \
+    .timeout = (BT_PA_SYNC_DEFAULT_TIMEOUT_MS) / 10, \
+    .duplicate_filter = false,                       \
+    .no_report = false,                              \
+}
+
 /**
  * @brief Information about the periodic advertising sync.
  */
@@ -41,17 +50,71 @@ typedef struct bt_pa_sync_info {
     char broadcast_name[BT_BROADCAST_NAME_MAX_LEN + 1];
 } bt_pa_sync_info_t;
 
+typedef struct bt_pa_sync_create_param {
+    /** The maximum number of periodic advertising events that can be skipped after a successful
+     *  reception. Range from 0x0000 to 0x01F3 */
+    uint16_t skip;
+
+    /** Synchronization timeout for the periodic advertising train, measured in 10 ms units.
+     *  Range from 0x000A to 0x4000 */
+    uint16_t timeout;
+
+    /** `true` to enable duplicate filtering, `false` by default */
+    bool duplicate_filter;
+
+    /** `true` to disable periodic advertising reports, `false` by default  */
+    bool no_report;
+} bt_pa_sync_create_param_t;
+
+
+/**
+ * @brief Periodic advertising sync established
+ */
+typedef void (*on_sync_established_callback)(const bt_le_address_t* addr, uint8_t sid);
+
+/**
+ * @brief Periodic advertising terminated
+ */
+typedef void (*on_sync_terminated_callback)(const bt_le_address_t* addr, uint8_t sid);
+
+/**
+ * @brief Periodic advertising report
+ */
+typedef void (*on_sync_report_callback)(const bt_le_address_t* addr, uint8_t sid);
+
+typedef struct {
+    on_sync_established_callback on_sync_established;
+    on_sync_terminated_callback on_sync_terminated;
+    on_sync_report_callback on_sync_report;
+} bt_pa_sync_callbacks_t;
+
 /**
  * @brief Parse an advertising report and check if periodic advertising is present.
  *
  * @param[out] info Buffer to store the parsed periodic advertising info
  * @param[in] result Advertising report from the scan result callback
  *
- * @return `BT_STATUS_SUCCESS` if periodic advertising is found
- * @return `BT_STATUS_NOT_FOUND` if no periodic advertising is found
+ * @return `BT_STATUS_SUCCESS` if periodic advertising is found.
+ * @return `BT_STATUS_NOT_FOUND` if no periodic advertising is found.
  * @return Other negative `bt_status_t` error codes on failure.
  */
 bt_status_t bt_pa_sync_parse_adv_data(bt_pa_sync_info_t* info, const ble_scan_result_t* result);
+
+/**
+ * @brief Synchronize to a periodic advertising via extended advertising report.
+ *
+ * @param[in] ins The Bluetooth instance, see @ref bt_instance_t
+ * @param[in] addr The Bluetooth address, and address type of the remote device
+ * @param[in] sid The advertising set id subfield to identify the periodic advertising, range from
+ *                0x00 to 0x0F
+ * @param[in] param Optional parameters for periodic sync, set to `NULL` to use default parameters
+ * @param[in] cbs Callbacks for periodic advertising sync, see @ref bt_pa_sync_callbacks_t
+ *
+ * @return `BT_STATUS_SUCCESS` on success.
+ * @return Error codes on failure.
+ */
+bt_status_t BTSYMBOLS(bt_pa_sync_create)(bt_instance_t* ins, const bt_le_address_t* addr,
+    uint8_t sid, const bt_pa_sync_create_param_t* param, const bt_pa_sync_callbacks_t* cbs);
 
 #ifdef __cplusplus
 }
