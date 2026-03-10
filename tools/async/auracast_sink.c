@@ -933,11 +933,50 @@ static int sync_terminate_cmd(void* handle, int argc, char* argv[])
 
 int auracast_sink_command_init_async(void* handle)
 {
+    bt_status_t status;
+
+    g_auracast_sink = zalloc(sizeof(bttool_auracast_sink_t));
+    if (!g_auracast_sink)
+        return CMD_ERROR;
+
+    g_auracast_sink->sync_list = bt_list_new(free);
+    if (!g_auracast_sink->sync_list)
+        goto error;
+
+    g_auracast_sink->sink_list = bt_list_new(free);
+    if (!g_auracast_sink->sink_list)
+        goto error;
+
+    status = bt_auracast_sink_register_callbacks_async(handle, &auracast_sink_cbs,
+        register_callbacks_cb, g_auracast_sink);
+    if (status != BT_STATUS_SUCCESS)
+        goto error;
+
+    g_auracast_sink->auracast_cbs_cookie = AURACAST_SINK_PTR_PENDING;
     return CMD_OK;
+
+error:
+    bt_auracast_sink_unregister_callbacks_async(handle, g_auracast_sink->auracast_cbs_cookie, NULL,
+        NULL);
+    bt_list_free(g_auracast_sink->sink_list);
+    bt_list_free(g_auracast_sink->sync_list);
+    free(g_auracast_sink);
+
+    return CMD_ERROR;
 }
 
 void auracast_sink_command_uninit_async(void* handle)
 {
+    if (!g_auracast_sink)
+        return;
+
+    bt_auracast_sink_unregister_callbacks_async(handle, g_auracast_sink->auracast_cbs_cookie, NULL,
+        NULL);
+    bt_list_free(g_auracast_sink->sink_list);
+    bt_list_free(g_auracast_sink->sync_list);
+    free(g_auracast_sink->nearby_pa);
+    free(g_auracast_sink);
+    g_auracast_sink = NULL;
 }
 
 int auracast_sink_command_exec_async(void* handle, int argc, char* argv[])
