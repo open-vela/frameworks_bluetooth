@@ -100,6 +100,10 @@ if(CONFIG_BLUETOOTH)
     list(APPEND CSRCS ${APPEND_FILES})
   endif()
 
+  if(CONFIG_BLUETOOTH_AURACAST_SINK)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/api/bt_auracast_sink.c)
+  endif()
+
   if(CONFIG_BLUETOOTH_FRAMEWORK_SOCKET_IPC)
     list(
       APPEND
@@ -188,6 +192,11 @@ if(CONFIG_BLUETOOTH)
     if(CONFIG_BLUETOOTH_PAN)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/socket/bt_pan.c)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_pan.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_AURACAST_SINK)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/socket/bt_auracast_sink.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_auracast_sink.c)
     endif()
 
     if(CONFIG_BLUETOOTH_LOG)
@@ -337,6 +346,10 @@ if(CONFIG_BLUETOOTH)
 
       if(CONFIG_BLUETOOTH_GATT_SERVER)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_gatt_server_interface.c)
+      endif()
+
+      if(CONFIG_BLUETOOTH_AURACAST_SINK)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_auracast_sink_interface.c)
       endif()
     endif()
 
@@ -501,6 +514,12 @@ if(CONFIG_BLUETOOTH)
       list(APPEND CSRCS ${APPEND_FILES})
     endif()
 
+    if(CONFIG_BLUETOOTH_AURACAST_SINK)
+      file(GLOB APPEND_FILES
+           ${BLUETOOTH_DIR}/service/profiles/auracast/sink/*.c)
+      list(APPEND CSRCS ${APPEND_FILES})
+    endif()
+    
     if(CONFIG_BLUETOOTH_LOG)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/utils/log_server.c)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/utils/btsnoop_log.c)

@@ -64,6 +64,9 @@ endif #CONFIG_BLUETOOTH_BLE_ADV
 ifeq ($(CONFIG_BLUETOOTH_BLE_SCAN), y)
 CSRCS += framework/api/bt_le_scan.c
 endif #CONFIG_BLUETOOTH_BLE_SCAN
+ifeq ($(CONFIG_BLUETOOTH_PA_SYNC), y)
+CSRCS += framework/api/bt_pa_sync.c
+endif #CONFIG_BLUETOOTH_PA_SYNC
 ifeq ($(CONFIG_BLUETOOTH_LOG), y)
 CSRCS += framework/api/bt_trace.c
 endif
@@ -73,6 +76,9 @@ endif #CONFIG_BLUETOOTH_PAN
 ifeq ($(CONFIG_BLUETOOTH_BLE_AUDIO), y)
 CSRCS := framework/api/bt_lea*.c
 endif #CONFIG_BLUETOOTH_BLE_AUDIO
+ifeq ($(CONFIG_BLUETOOTH_AURACAST_SINK), y)
+CSRCS += framework/api/bt_auracast_sink.c
+endif #CONFIG_BLUETOOTH_AURACAST_SINK
 
 ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK_SOCKET_IPC), y)
 CSRCS += service/ipc/bluetooth_ipc.c
@@ -161,6 +167,11 @@ ifeq ($(CONFIG_BLUETOOTH_PAN), y)
 CSRCS += framework/socket/bt_pan.c
 CSRCS += service/ipc/socket/src/bt_socket_pan.c
 endif #CONFIG_BLUETOOTH_PAN
+
+ifeq ($(CONFIG_BLUETOOTH_AURACAST_SINK), y)
+CSRCS += framework/socket/bt_auracast_sink.c
+CSRCS += service/ipc/socket/src/bt_socket_auracast_sink.c
+endif #CONFIG_BLUETOOTH_AURACAST_SINK
 
 ifeq ($(CONFIG_BLUETOOTH_LOG), y)
 CSRCS += framework/socket/bt_trace.c
@@ -283,6 +294,9 @@ endif #CONFIG_BLUETOOTH_GATT_CLIENT
 ifeq ($(CONFIG_BLUETOOTH_GATT_SERVER), y)
 	CSRCS += service/stacks/zephyr/sal_gatt_server_interface.c
 endif #CONFIG_BLUETOOTH_GATT_SERVER
+ifeq ($(CONFIG_BLUETOOTH_AURACAST_SINK), y)
+	CSRCS += service/stacks/zephyr/sal_auracast_sink_interface.c
+endif #CONFIG_BLUETOOTH_AURACAST_SINK
 ifeq ($(CONFIG_BLUETOOTH_LE_CS), y)
 	CSRCS += service/stacks/zephyr/sal_le_cs_interface.c
 endif #CONFIG_BLUETOOTH_LE_CS
@@ -396,6 +410,10 @@ endif #CONFIG_BLUETOOTH_LEAUDIO_TBS
 ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_VMICP), y)
 	CSRCS += service/profiles/leaudio/vmicp/*.c
 endif #CONFIG_BLUETOOTH_LEAUDIO_VMICP
+
+ifeq ($(CONFIG_BLUETOOTH_AURACAST_SINK), y)
+	CSRCS += service/profiles/auracast/sink/*.c
+endif #CONFIG_BLUETOOTH_AURACAST_SINK
 
 ifeq ($(CONFIG_BLUETOOTH_LOG), y)
 CSRCS += service/utils/log_server.c
