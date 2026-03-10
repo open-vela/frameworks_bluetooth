@@ -67,6 +67,8 @@ typedef struct {
     bt_list_t* sink_list;
 } sal_auracast_sink_info_t;
 
+static sal_auracast_sink_info_t* g_sal_auracast_sink_info = NULL;
+
 static sal_auracast_sink_device_t* device_new(bt_controller_id_t id,
     const bt_le_address_t* addr, uint8_t sid, struct bt_iso_big_sync_param* z_param)
 {
@@ -135,6 +137,65 @@ static void device_delete(sal_auracast_sink_device_t* device)
     free(device);
 }
 
+static bool req_cmp(void* data, void* context)
+{
+    const sal_auracast_sink_device_t* device = (const sal_auracast_sink_device_t*)data;
+    const sal_auracast_sink_req_t* req = (const sal_auracast_sink_req_t*)context;
+
+    if (!device || !req)
+        return false;
+
+    if (memcmp(&device->addr, &req->addr, sizeof(bt_le_address_t)))
+        return false;
+
+    if (device->id != req->id || device->sid != req->sid)
+        return false;
+
+    return true;
+}
+
+static sal_auracast_sink_device_t* find_device_by_req(const sal_auracast_sink_req_t* req)
+{
+    if (!g_sal_auracast_sink_info || !g_sal_auracast_sink_info->sink_list || !req)
+        return NULL;
+
+    return (sal_auracast_sink_device_t*)bt_list_find(g_sal_auracast_sink_info->sink_list, req_cmp,
+        (void*)req);
+}
+
+static bool channel_cmp(void* data, void* context)
+{
+    const sal_auracast_sink_device_t* device = (const sal_auracast_sink_device_t*)data;
+    const struct bt_iso_chan* channel = (const struct bt_iso_chan*)context;
+
+    if (!device || !channel)
+        return false;
+
+    for (uint8_t k = 0; k < BT_AURACAST_SINK_NUM_BIS_SUPPORTED; k++) {
+        if (device->channels[k] == channel)
+            return true;
+    }
+
+    return false;
+}
+
+static sal_auracast_sink_device_t* find_device_by_channel(const struct bt_iso_chan* channel)
+{
+    if (!g_sal_auracast_sink_info || !g_sal_auracast_sink_info->sink_list || !channel)
+        return NULL;
+
+    return (sal_auracast_sink_device_t*)bt_list_find(g_sal_auracast_sink_info->sink_list,
+        channel_cmp, (void*)channel);
+}
+
+static void sink_removed(void* data)
+{
+    sal_auracast_sink_device_t* device = (sal_auracast_sink_device_t*)data;
+
+    BT_LOGD("%s", __func__);
+
+    device_delete(device);
+}
 
 static sal_auracast_sink_req_t* sal_auracast_sink_req(bt_controller_id_t id,
     const bt_le_address_t* addr, uint8_t sid, sal_func_t func, void* context)
@@ -180,11 +241,32 @@ static bt_status_t sal_send_req(sal_auracast_sink_req_t* req)
 
 bt_status_t bt_sal_auracast_sink_init(void)
 {
+    g_sal_auracast_sink_info = zalloc(sizeof(sal_auracast_sink_info_t));
+    if (!g_sal_auracast_sink_info)
+        return BT_STATUS_NOMEM;
+
+    g_sal_auracast_sink_info->sink_list = bt_list_new(sink_removed);
+    if (g_sal_auracast_sink_info->sink_list == NULL)
+        goto error;
+
     return BT_STATUS_SUCCESS;
+
+error:
+    bt_list_free(g_sal_auracast_sink_info->sink_list);
+    free(g_sal_auracast_sink_info);
+    return BT_STATUS_FAIL;
 }
 
 bt_status_t bt_sal_auracast_sink_cleanup(void)
 {
+    if (!g_sal_auracast_sink_info)
+        return BT_STATUS_DONE;
+
+    /* TODO: add unregisteration for stack callbacks */
+    bt_list_free(g_sal_auracast_sink_info->sink_list);
+    free(g_sal_auracast_sink_info);
+    g_sal_auracast_sink_info = NULL;
+
     return BT_STATUS_SUCCESS;
 }
 
