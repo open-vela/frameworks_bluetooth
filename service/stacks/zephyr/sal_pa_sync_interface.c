@@ -15,8 +15,10 @@
  ***************************************************************************/
 #define LOG_TAG "sal_pa_sync"
 
-#include "sal_interface.h"
 #include "sal_pa_sync_interface.h"
+
+#include "bt_list.h"
+#include "sal_interface.h"
 #include "service_loop.h"
 
 #include "utils/log.h"
@@ -29,6 +31,30 @@ typedef struct {
     sal_func_t func;
     void* context;
 } sal_pa_sync_req_t;
+
+typedef struct {
+    bt_le_address_t addr;
+    bt_controller_id_t id;
+    uint8_t sid;
+    struct bt_le_per_adv_sync* sync_object; /**< zephyr object */
+} sal_pa_sync_device_t;
+
+typedef struct {
+    bt_list_t* sync_list;
+} sal_pa_sync_info_t;
+
+static sal_pa_sync_info_t* g_sal_pa_sync_info = NULL;
+
+static void sync_removed(void* data)
+{
+    sal_pa_sync_device_t* device = (sal_pa_sync_device_t*)data;
+
+    BT_LOGD("%s", __func__);
+
+    /** TODO: send SYNC_TERMINATED */
+
+    free(device);
+}
 
 static sal_pa_sync_req_t* sal_pa_sync_req(bt_controller_id_t id, const bt_le_address_t* addr,
     sal_func_t func, void* context)
@@ -74,14 +100,69 @@ static bt_status_t sal_send_req(sal_pa_sync_req_t* req)
 static void sal_create_sync_param_sal_to_zephyr(struct bt_le_per_adv_sync_param* z_param,
     const bt_sal_pa_sync_param_t* params)
 {
+    memcpy(z_param->addr.a.val, params->addr.addr, BT_ADDR_SIZE);
+    z_param->addr.type = params->addr.addr_type;
+    z_param->sid = params->sid;
+    z_param->skip = params->skip;
+    z_param->timeout = params->timeout;
+    if (params->options & BT_SAL_PA_SYNC_OPTION_USE_LIST)
+        z_param->options |= BT_LE_PER_ADV_SYNC_OPT_USE_PER_ADV_LIST;
+    if (params->options & BT_SAL_PA_SYNC_OPTION_REPORTING_DISABLED)
+        z_param->options |= BT_LE_PER_ADV_SYNC_OPT_REPORTING_INITIALLY_DISABLED;
+    if (params->options & BT_SAL_PA_SYNC_OPTION_FILTER_ENABLED)
+        z_param->options |= BT_LE_PER_ADV_SYNC_OPT_FILTER_DUPLICATE;
+    if (params->cte & BT_SAL_PA_SYNC_CTE_TYPE_NO_AOA)
+        z_param->options |= BT_LE_PER_ADV_SYNC_OPT_DONT_SYNC_AOA;
+    if (params->cte & BT_SAL_PA_SYNC_CTE_TYPE_NO_AOD_1US)
+        z_param->options |= BT_LE_PER_ADV_SYNC_OPT_DONT_SYNC_AOD_1US;
+    if (params->cte & BT_SAL_PA_SYNC_CTE_TYPE_NO_AOD_2US)
+        z_param->options |= BT_LE_PER_ADV_SYNC_OPT_DONT_SYNC_AOD_2US;
+    if (params->cte & BT_SAL_PA_SYNC_CTE_TYPE_CTE_ONLY)
+        z_param->options |= BT_LE_PER_ADV_SYNC_OPT_SYNC_ONLY_CONST_TONE_EXT;
 }
 
 static void create_sync(const void* data)
 {
     const sal_pa_sync_req_t* req = (const sal_pa_sync_req_t*)data;
     struct bt_le_per_adv_sync_param* z_param = (struct bt_le_per_adv_sync_param*)req->context;
+    int err;
+
+    err = bt_le_per_adv_sync_create(z_param, NULL); /**< TODO: Add `out_sync` here */
+    if (err) {
+        /** Generate a terminated callback */
+    }
 
     free(z_param);
+}
+
+bt_status_t bt_sal_pa_sync_init(void)
+{
+    g_sal_pa_sync_info = zalloc(sizeof(sal_pa_sync_info_t));
+    if (!g_sal_pa_sync_info)
+        return BT_STATUS_NOMEM;
+
+    g_sal_pa_sync_info->sync_list = bt_list_new(sync_removed);
+    if (g_sal_pa_sync_info->sync_list == NULL)
+        goto error;
+
+    return BT_STATUS_SUCCESS;
+
+error:
+    bt_list_free(g_sal_pa_sync_info->sync_list);
+    free(g_sal_pa_sync_info);
+    return BT_STATUS_FAIL;
+}
+
+bt_status_t bt_sal_pa_sync_cleanup(void)
+{
+    if (!g_sal_pa_sync_info)
+        return BT_STATUS_DONE;
+
+    bt_list_free(g_sal_pa_sync_info->sync_list);
+    free(g_sal_pa_sync_info);
+    g_sal_pa_sync_info = NULL;
+
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_pa_create_sync(bt_controller_id_t id, const bt_sal_pa_sync_param_t* params)

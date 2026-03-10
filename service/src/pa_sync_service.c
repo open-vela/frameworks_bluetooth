@@ -113,9 +113,13 @@ bt_status_t pa_sync_init(void)
     if (g_pa_sync_info->sync_list == NULL)
         goto error;
 
+    if (bt_sal_pa_sync_init() != BT_STATUS_SUCCESS)
+        goto error;
+
     return BT_STATUS_SUCCESS;
 
 error:
+    bt_sal_pa_sync_cleanup();
     bt_list_free(g_pa_sync_info->sync_list);
     free(g_pa_sync_info);
     return BT_STATUS_FAIL;
@@ -128,6 +132,7 @@ bt_status_t pa_sync_cleanup(void)
     if (!g_pa_sync_info)
         return BT_STATUS_DONE;
 
+    bt_sal_pa_sync_cleanup();
     bt_list_free(g_pa_sync_info->sync_list);
     free(g_pa_sync_info);
     g_pa_sync_info = NULL;
