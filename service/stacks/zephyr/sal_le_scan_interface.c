@@ -130,6 +130,11 @@ bt_status_t bt_sal_le_set_scan_parameters(bt_controller_id_t id, ble_scan_params
     scan_param.interval = params->scan_interval;
     scan_param.window = params->scan_window;
 
+    if (params->filter_type == BT_LE_SCAN_POLICY_ONLY_WHITE_LIST ||
+        params->filter_type == BT_LE_SCAN_POLICY_ONLY_WHITE_LIST_AND_RPA) {
+        scan_param.options |= BT_LE_SCAN_OPT_FILTER_ACCEPT_LIST;
+    }
+
     return BT_STATUS_SUCCESS;
 }
 
