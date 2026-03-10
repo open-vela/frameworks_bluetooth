@@ -666,6 +666,144 @@ static int scan_start_cmd(void* handle, int argc, char* argv[])
     return CMD_OK;
 }
 
+static void sync_create_cb(bt_instance_t* ins, bt_status_t status, void* userdata)
+{
+    bttool_auracast_pa_sync_t* sync = userdata;
+
+    if (!g_auracast_sink) {
+        PRINT("not initialized");
+        return;
+    }
+
+    if (status != BT_STATUS_SUCCESS) {
+        PRINT("failed to create sync, status = %d", status);
+        bt_list_remove(g_auracast_sink->sync_list, sync);
+    }
+
+    PRINT("sync create success: %p", sync);
+}
+
+static int sync_create_cmd(void* handle, int argc, char* argv[])
+{
+    int opt;
+    int ret = CMD_OK;
+    uint32_t val;
+    bt_status_t status;
+    bt_pa_sync_create_param_t params = { 0 };
+    bttool_auracast_pa_sync_t* sync;
+
+    PRINT("%s", __func__);
+
+    if (!g_auracast_sink) {
+        PRINT("not initialized");
+        return CMD_INVALID_OPT;
+    }
+
+    sync = zalloc(sizeof(bttool_auracast_pa_sync_t));
+    if (!sync) {
+        PRINT("malloc failed");
+        return CMD_ERROR;
+    }
+
+    sync->remote.sid = BLE_SCAN_SID_NOT_PROVIDED;
+
+    memcpy(&params, &default_sync_params, sizeof(bt_pa_sync_create_param_t));
+
+    while ((opt = getopt_long(argc, argv, "a:t:s:o:k:fn", sync_options, NULL)) != -1) {
+        switch (opt) {
+        case 'a':
+            if (bt_addr_str2ba(optarg, (bt_address_t*)sync->remote.addr.addr) != 0) {
+                PRINT("invalid address %s", optarg);
+                ret = CMD_INVALID_ADDR;
+                goto exit;
+            }
+
+            break;
+        case 't':
+            val = strtoul(optarg, NULL, 10);
+            if (val > 1) {
+                PRINT("invalid address type %s", optarg);
+                ret = CMD_INVALID_PARAM;
+                goto exit;
+            }
+
+            sync->remote.addr.addr_type = val;
+            break;
+        case 's':
+            val = strtoul(optarg, NULL, 16);
+            if (val > BLE_SCAN_SID_MAX) {
+                PRINT("invalid sid %s", optarg);
+                ret = CMD_INVALID_PARAM;
+                goto exit;
+            }
+
+            sync->remote.sid = val;
+            break;
+        case 'o':
+            val = strtoul(optarg, NULL, 10);
+            if (val < BT_PA_SYNC_TIMEOUT_MIN || val > BT_PA_SYNC_TIMEOUT_MAX) {
+                PRINT("invalid timeout %s", optarg);
+                ret = CMD_INVALID_PARAM;
+                goto exit;
+            }
+
+            params.timeout = val;
+            break;
+        case 'k':
+            val = strtoul(optarg, NULL, 10);
+            if (val > BT_PA_SYNC_SKIP_MAX) {
+                PRINT("invalid skip %s", optarg);
+                ret = CMD_INVALID_PARAM;
+                goto exit;
+            }
+
+            params.skip = val;
+            break;
+        case 'f':
+            params.filter = true;
+            break;
+        case 'n':
+            params.no_report = true;
+            break;
+        }
+    }
+
+    if (bt_addr_is_empty((bt_address_t*)sync->remote.addr.addr)) {
+        PRINT("sync to a nearby device");
+        if (!g_auracast_sink->nearby_pa) {
+            PRINT("device not found");
+            ret = CMD_PARAM_NOT_ENOUGH;
+            goto exit;
+        }
+
+        memcpy(sync->remote.addr.addr, g_auracast_sink->nearby_pa->addr.addr, BT_ADDR_LENGTH);
+        sync->remote.addr.addr_type = g_auracast_sink->nearby_pa->type;
+        sync->remote.sid = g_auracast_sink->nearby_pa->sid;
+    }
+
+    if (sync->remote.sid == BLE_SCAN_SID_NOT_PROVIDED) {
+        PRINT("sid not provided, input by -s <sid>");
+        ret = CMD_PARAM_NOT_ENOUGH;
+        goto exit;
+    }
+
+    status = bt_pa_sync_create_async(handle, &sync->remote.addr, sync->remote.sid, &params,
+        &pa_sync_cbs, sync, sync_create_cb, sync);
+    if (status != BT_STATUS_SUCCESS) {
+        PRINT("failed to create sync, status = %d", status);
+        ret = CMD_ERROR;
+    }
+
+exit:
+    if (ret == CMD_OK)
+        bt_list_add_tail(g_auracast_sink->sync_list, sync);
+    else
+        free(sync);
+
+    return ret;
+}
+
+
 int auracast_sink_command_init_async(void* handle)
 {
     return CMD_OK;
