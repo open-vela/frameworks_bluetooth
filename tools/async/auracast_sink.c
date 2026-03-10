@@ -931,6 +931,117 @@ static int sync_terminate_cmd(void* handle, int argc, char* argv[])
     return CMD_OK;
 }
 
+static void auracast_receive_cb(bt_instance_t* ins, bt_status_t status, void* userdata)
+{
+    if (!g_auracast_sink) {
+        PRINT("not initialized");
+        return;
+    }
+
+    if (g_auracast_sink != userdata) {
+        PRINT("unexpected auracast sink");
+        return;
+    }
+
+    if (status != BT_STATUS_SUCCESS) {
+        PRINT("failed to create sink, status = %d", status);
+        return;
+    }
+
+    PRINT("auracast receive success");
+}
+
+static int auracast_receive_cmd(void* handle, int argc, char* argv[])
+{
+    int opt, ret;
+    bt_status_t status;
+    bttool_auracast_pa_sync_t* sync;
+    uint32_t bitfield = AURACAST_BITFIELD_ALL;
+    uint8_t broadcast_code[BT_AURACAST_BROADCAST_CODE_LEN] = { 0 };
+
+    PRINT("%s", __func__);
+
+    ret = general_find_sync((void**)&sync, argc, argv, SEARCH_TYPE_SYNC);
+    if (ret != CMD_OK)
+        return ret;
+
+    while ((opt = getopt_long(argc, argv, "b:e:", auracast_recv_options, NULL)) != -1) {
+        switch (opt) {
+        case 'b':
+            bitfield = strtoul(optarg, NULL, 16);
+            bitfield <<= 1; /** match the input of bluetooth api */
+            break;
+        case 'e':
+            strlcpy((char*)broadcast_code, optarg, BT_AURACAST_BROADCAST_CODE_LEN);
+            break;
+        }
+    }
+
+    status = bt_auracast_sink_create_sync_async(handle, &sync->remote.addr, sync->remote.sid, bitfield,
+        broadcast_code, auracast_receive_cb, g_auracast_sink);
+    if (status != BT_STATUS_SUCCESS) {
+        PRINT("failed to create sink, status = %d", status);
+        return CMD_ERROR;
+    }
+
+    return CMD_OK;
+}
+
+static void on_auracast_sync_established(void* cookie, const bt_le_address_t* addr, uint8_t sid)
+{
+    bttool_auracast_sync_t* sink;
+
+    PRINT_ADDR("on_auracast_sync_established, addr:[%s][%s], sid:0x%x",
+        (const bt_address_t*)addr->addr, parse_addr_type(addr->addr_type), sid);
+
+    sink = (bttool_auracast_sync_t*)find_sync(addr, sid, SEARCH_TYPE_SINK);
+    if (sink) {
+        PRINT("already established");
+        return;
+    }
+
+    sink = zalloc(sizeof(bttool_auracast_sync_t));
+    if (!sink)
+        return;
+
+    memcpy(&sink->remote.addr, addr, sizeof(bt_le_address_t));
+    sink->remote.sid = sid;
+
+    bt_list_add_tail(g_auracast_sink->sink_list, sink);
+}
+
+static const bt_auracast_sink_callbacks_t auracast_sink_cbs = {
+    .on_sync_established = on_auracast_sync_established,
+    .on_sync_terminated = on_auracast_sync_terminated,
+};
+
+static void register_callbacks_cb(bt_instance_t* ins, bt_status_t status, void* cookie,
+    void* userdata)
+{
+    if (!g_auracast_sink) {
+        PRINT("not initialized");
+        return;
+    }
+
+    if (status != BT_STATUS_SUCCESS) {
+        PRINT("failed to register callbacks, status = %d", status);
+        if (g_auracast_sink->auracast_cbs_cookie == AURACAST_SINK_PTR_PENDING)
+            g_auracast_sink->auracast_cbs_cookie = NULL;
+
+        return;
+    }
+
+    if (g_auracast_sink == userdata
+        && g_auracast_sink->auracast_cbs_cookie == AURACAST_SINK_PTR_PENDING) {
+        PRINT("callback registered, cookie = %p", cookie);
+        g_auracast_sink->auracast_cbs_cookie = cookie;
+        return;
+    }
+
+    PRINT("unexpected registration, cookie = %p", cookie);
+    bt_auracast_sink_unregister_callbacks_async(ins, cookie, NULL, NULL);
+}
+
 int auracast_sink_command_init_async(void* handle)
 {
     bt_status_t status;
