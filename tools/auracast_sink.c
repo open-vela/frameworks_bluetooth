@@ -37,11 +37,48 @@ typedef struct {
 
 static int scan_start_cmd(void* handle, int argc, char* argv[]);
 static int scan_stop_cmd(void* handle, int argc, char* argv[]);
+static int sync_create_cmd(void* handle, int argc, char* argv[]);
 
 static bttool_auracast_sink_t* g_auracast_sink = NULL;
+
+static const struct option sync_options[] = {
+    { "addr", required_argument, 0, 'a' },
+    { "type", required_argument, 0, 't' },
+    { "sid", required_argument, 0, 's' },
+    { "timeout", required_argument, 0, 'o' },
+    { "skip", required_argument, 0, 'k' },
+    { "filter", no_argument, 0, 'f' },
+    { "no-report", no_argument, 0, 'n' },
+    { 0, 0, 0, 0 },
+};
+
 static bt_command_t g_auracast_sink_tables[] = {
-    { "scan", scan_start_cmd, 0, "\"Search for nearby Auracast sources\"" },
-    { "stopscan", scan_stop_cmd, 0, "\"Stop searching\"" },
+    { "scan", scan_start_cmd, 0, "\"search for nearby Auracast sources\"" },
+    { "stopscan", scan_stop_cmd, 0, "\"stop searching\"" },
+    { "sync", sync_create_cmd, 1, "\"sync to a specific periodic advertising via extended "
+                                  "advertising, params:\n"
+                                  "\t -a or --addr\n"
+                                  "\t\t\t the address of the advertiser, e.g., 00:01:02:03:04:05\n"
+                                  "\t\t\t the most recent device is selected if addr is not "
+                                  "provided\n"
+                                  "\t -t or --type\n"
+                                  "\t\t\t the address type, 0: public, 1: random "
+                                  "(public by default)\n"
+                                  "\t -s or --sid\n"
+                                  "\t\t\t the advertising sid (0x0-0xF) from the scan result\n"
+                                  "\t -o or --timeout\n"
+                                  "\t\t\t synchronization timeout for the periodic advertising "
+                                  "train\n"
+                                  "\t\t\t unit: 10ms\n"
+                                  "\t\t\t range: 0x000a to 0x4000 (100ms to 163.84s)\n"
+                                  "\t -k or --skip\n"
+                                  "\t\t\t the maximum number of periodic advertising events that "
+                                  "can be skipped\n"
+                                  "\t\t\t range: 0x0000 to 0x01f3\n"
+                                  "\t -f or --filter\n"
+                                  "\t\t\t duplicate filtering enabled\n"
+                                  "\t -n or --no-report\n"
+                                  "\t\t\t reporting disabled\"" },
 };
 
 static void usage(void)
@@ -250,6 +287,34 @@ static int scan_stop_cmd(void* handle, int argc, char* argv[])
 
 static int sync_create_cmd(void* handle, int argc, char* argv[])
 {
+    int opt;
+
+    PRINT("%s", __func__);
+
+    if (argc == 1) {
+        PRINT("%s, Sync to a nearby device", __func__);
+        return CMD_OK; /**< TBD */
+    }
+
+    while ((opt = getopt_long(argc, argv, "a:t:s:o:k:fn", sync_options, NULL)) != -1) {
+        switch (opt) {
+        case 'a':
+            break;
+        case 't':
+            break;
+        case 's':
+            break;
+        case 'o':
+            break;
+        case 'k':
+            break;
+        case 'f':
+            break;
+        case 'n':
+            break;
+        }
+    }
+
     return CMD_OK;
 }
 
