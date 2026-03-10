@@ -1,5 +1,5 @@
 /****************************************************************************
- *  Copyright (C) 2025 Xiaomi Corporation
+ *  Copyright (C) 2026 Xiaomi Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,10 @@
  ***************************************************************************/
 
 #include "bt_pa_sync.h"
+#include "bt_internal.h"
 
-bt_status_t bt_pa_sync_create(bt_instance_t* ins, const bt_le_address_t* addr, uint8_t sid,
-    const bt_pa_sync_create_param_t* param, const bt_pa_sync_callbacks_t* cbs)
+bt_status_t BTSYMBOLS(bt_pa_sync_create)(bt_instance_t* ins, const bt_le_address_t* addr,
+    uint8_t sid, const bt_pa_sync_create_param_t* param, const bt_pa_sync_callbacks_t* cbs)
 {
     return BT_STATUS_NOT_SUPPORTED;
 }
