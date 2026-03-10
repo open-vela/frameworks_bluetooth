@@ -85,11 +85,72 @@ typedef struct bt_sal_pa_sync_param {
     uint8_t cte;
 } bt_sal_pa_sync_param_t;
 
+/**
+ * @brief LE Periodic Advertising Create Sync command.
+ *
+ * This command is used to synchronize with a single periodic advertising train from an advertiser
+ * and begin receiving periodic advertising packets.
+ *
+ * @param[in] id The Controller ID.
+ * @param[in] params The parameters used to synchronize the periodic advertising train.
+ *
+ * @note A @ref SYNC_ESTABLISHED event, associated with a `handle`, shall be generated when starting
+ *       to receive periodic advertising packets.
+ * @note A @ref SYNC_TERMINATED event shall be generated if the sync fails to establish.
+ * @note A @ref SYNC_REPORT event may be generated when a periodic advertising packet is received.
+ */
 bt_status_t bt_sal_pa_create_sync(bt_controller_id_t id, const bt_sal_pa_sync_param_t* params);
+
+/**
+ * @brief LE Periodic Advertising Terminate Sync command.
+ *
+ * This command is used to stop reception of the periodic advertising train identified by the
+ * `handle`.
+ *
+ * @param[in] id The Controller ID.
+ * @param[in] sid The Advertising SID.
+ * @param[in] addr Public device address, random device address, public identity address, or random
+ *                 (static) identity address of the advertiser.
+ *
+ * @note A @ref SYNC_TERMINATED event shall be generated when this command is completed.
+ */
 bt_status_t bt_sal_pa_terminate_sync(bt_controller_id_t id, uint8_t sid, 
     const bt_le_address_t* addr);
+
+/**
+ * @brief LE Add Device To Periodic Advertiser List command.
+ *
+ * This command is used to add an entry, consisting of a single device address and SID, to the
+ * Periodic Advertiser list stored in the Controller.
+ *
+ * @param[in] id The Controller ID.
+ * @param[in] sid The Advertising SID.
+ * @param[in] addr Public device address, random device address, public identity address, or random
+ *                 (static) identity address of the advertiser.
+ */
 bt_status_t bt_sal_pa_list_add(bt_controller_id_t id, uint8_t sid, const bt_le_address_t* addr);
+
+/**
+ * @brief LE Remove Device From Periodic Advertiser List command.
+ *
+ * This command is used to remove one entry from the list of Periodic Advertisers stored in the
+ * Controller.
+ *
+ * @param[in] id The Controller ID.
+ * @param[in] sid The Advertising SID.
+ * @param[in] addr Public device address, random device address, public identity address, or random
+ *                 (static) identity address of the advertiser.
+ */
 bt_status_t bt_sal_pa_list_remove(bt_controller_id_t id, uint8_t sid, const bt_le_address_t* addr);
+
+/**
+ * @brief LE Clear Periodic Advertiser List command.
+ *
+ * This command is used to remove all entries from the list of periodic advertisers in the
+ * Controller.
+ *
+ * @param[in] id The Controller ID.
+ */
 bt_status_t bt_sal_pa_list_clear(bt_controller_id_t id);
 
 #endif /* __SAL_PA_SYNC_INTERFACE_H__ */
