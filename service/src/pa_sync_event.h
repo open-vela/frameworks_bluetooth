@@ -53,10 +53,10 @@ typedef struct {
 } pa_sync_event_create_sync_t;
 
 typedef struct {
-    /** TxPower in dBm (-127 to +20). 0x7F if unavailable */
+    /** TxPower in dBm (-127 to +20). `BT_POWER_UNAVAILABLE` if unavailable */
     int8_t tx_power;
 
-    /** RSSI in dBm (-127 to +20). 0x7F if unavailable */
+    /** RSSI in dBm (-127 to +20). `BT_POWER_UNAVAILABLE` if unavailable */
     int8_t rssi;
 
     /** CTE_Type, e.g., `BT_LE_PA_SYNC_EVENT_CTE_TYPE_NONE` */

@@ -209,7 +209,7 @@ static void on_recv(struct bt_le_per_adv_sync* sync,
 {
     sal_pa_sync_device_t* device;
     uint16_t periodic_event_counter = 0;
-    uint8_t subevent = 0xFF;
+    uint8_t subevent = BT_PA_SYNC_SUBEVENT_NONE;
 
     device = find_device_by_sync(sync);
     if (!device || !device->info) {

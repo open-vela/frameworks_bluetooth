@@ -184,10 +184,10 @@ static void on_scan_result(bt_scanner_t* scanner, ble_scan_result_t* result)
     if (result->sid != 0xFF)
         BTTOOL_STRCAT(log, size, ", sid:0x%x", result->sid);
 
-    if (result->tx_power != 0x7F)
+    if (result->tx_power != BT_POWER_UNAVAILABLE)
         BTTOOL_STRCAT(log, size, ", txpower:%d", result->tx_power);
 
-    if (result->rssi != 0x7F)
+    if (result->rssi != BT_POWER_UNAVAILABLE)
         BTTOOL_STRCAT(log, size, ", rssi:%d", result->rssi);
 
     PRINT("%s", log);

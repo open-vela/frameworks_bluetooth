@@ -115,6 +115,15 @@ static void sync_terminated_callback(const bt_pa_sync_callbacks_t* cbs, const bt
     cbs->on_sync_terminated(addr, sid, (void*)context);
 }
 
+static void sync_report_callback(const bt_pa_sync_callbacks_t* cbs, const bt_le_address_t* addr,
+    uint8_t sid, const bt_pa_sync_report_t* report, const void* context)
+{
+    if (!cbs || !cbs->on_sync_report)
+        return;
+
+    cbs->on_sync_report(addr, sid, report, (void*)context);
+}
+
 static void create_sync(const pa_sync_event_t* msg)
 {
     pa_sync_event_create_sync_t* params = (pa_sync_event_create_sync_t*)msg->data;
@@ -204,6 +213,40 @@ static void sync_terminated(const pa_sync_event_t* msg)
     callback_for_each_device(&iter);
 }
 
+static void report_service_to_app(bt_pa_sync_report_t* out, const pa_sync_event_report_data_t* in)
+{
+    out->tx_power = in->tx_power;
+    out->rssi = in->rssi;
+    out->cnt = in->cnt;
+    out->subevent = in->subevent;
+    out->adv_data_len = in->adv_data_len;
+    if (out->adv_data_len)
+        out->data = &in->adv_data[0];
+    else
+        out->data = NULL;
+}
+
+static void process_sync_report(const pa_sync_device_t* device, const void* data)
+{
+    const pa_sync_event_report_data_t* report_in = (const pa_sync_event_report_data_t*)data;
+    bt_pa_sync_report_t report_out = { 0 };
+
+    report_service_to_app(&report_out, report_in);
+
+    sync_report_callback(device->cbs, &device->addr, device->sid, &report_out, device->context);
+}
+
+static void sync_report(const pa_sync_event_t* msg)
+{
+    pa_sync_for_each_t iter = { 0 };
+
+    iter.func = process_sync_report;
+    iter.addr = &msg->addr;
+    iter.sid = msg->sid;
+
+    callback_for_each_device(&iter);
+}
+
 static const char* pa_sync_event_to_string(pa_sync_event_type_t event)
 {
     switch (event) {
@@ -233,6 +276,9 @@ static void pa_sync_process_message(void* data)
         break;
     case SYNC_TERMINATED:
         sync_terminated(msg);
+        break;
+    case SYNC_REPORT:
+        sync_report(msg);
         break;
     default:
         break;

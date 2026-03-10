@@ -28,6 +28,7 @@ extern "C" {
 
 #define BT_PA_SYNC_SKIP_MAX (0x01F3)
 #define BT_PA_SYNC_TIMEOUT_MAX (0x4000)
+#define BT_PA_SYNC_SUBEVENT_NONE (0xFF)
 
 /**
  * @brief Information about the periodic advertising sync.
@@ -43,6 +44,28 @@ typedef struct bt_pa_sync_info {
     /** UTF-8 string of the `Broadcast_Name` field in `AdvData` (if present) */
     char broadcast_name[BT_BROADCAST_NAME_MAX_LEN + 1];
 } bt_pa_sync_info_t;
+
+/** @brief Periodic advertising report structure */
+typedef struct bt_pa_sync_report {
+    /** TxPower in dBm (-127 to +20). `BT_POWER_UNAVAILABLE` if unavailable */
+    int8_t tx_power; 
+
+        /** RSSI in dBm (-127 to +20). `BT_POWER_UNAVAILABLE` if unavailable */
+    int8_t rssi;
+
+    /** Periodic_Event_Counter, the value of `paEventCounter` for the reported periodic advertising
+     *  packet */
+    uint16_t cnt;
+
+    /** The subevent number, range from 0x00 to 0x7F, `BT_PA_SYNC_SUBEVENT_NONE` if no subevents */
+    uint8_t subevent;
+
+    /** Length of `adv_data` */
+    uint16_t adv_data_len;
+
+    /** Data received from a Periodic Advertising packet */
+    const uint8_t* data;
+} bt_pa_sync_report_t;
 
 typedef struct bt_pa_sync_create_param {
     /** The maximum number of periodic advertising events that can be skipped after a successful
@@ -74,8 +97,14 @@ typedef void (*on_sync_terminated_callback)(const bt_le_address_t* addr, uint8_t
 
 /**
  * @brief Periodic advertising report
+ *
+ * @param addr The Bluetooth address and address type of the remote device
+ * @param sid The advertising set id (0x00-0x0F) to identify the periodic advertising
+ * @param report The received periodic advertising report, see @ref bt_pa_sync_report_t
+ * @param context User context
  */
-typedef void (*on_sync_report_callback)(const bt_le_address_t* addr, uint8_t sid, void* context);
+typedef void (*on_sync_report_callback)(const bt_le_address_t* addr, uint8_t sid,
+    const bt_pa_sync_report_t* report, void* context);
 
 typedef struct {
     on_sync_established_callback on_sync_established;

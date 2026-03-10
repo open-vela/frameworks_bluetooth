@@ -188,6 +188,9 @@ typedef enum {
 // Add new definition
 #define BT_DEVICE_TYPE_UNKNOW 0xFF
 
+// For TxPower and RSSI that are not available
+#define BT_POWER_UNAVAILABLE 0x7F
+
 typedef enum {
     BT_LE_ADDR_TYPE_PUBLIC,
     BT_LE_ADDR_TYPE_RANDOM,
