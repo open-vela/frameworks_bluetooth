@@ -38,11 +38,6 @@ typedef struct {
     sal_func_t func;
 } sal_scan_req_t;
 
-typedef struct {
-    char value[256];
-    uint8_t length;
-} le_eir_data_t;
-
 static struct bt_le_scan_param scan_param;
 
 static sal_scan_req_t* sal_scan_req(bt_controller_id_t id, sal_func_t func)
@@ -85,41 +80,81 @@ static bt_status_t sal_send_req(sal_scan_req_t* req)
     return BT_STATUS_SUCCESS;
 }
 
-static bool zblue_on_eir_found(struct bt_data* data, void* user_data)
+static ble_adv_type_t parse_adv_type(const struct bt_le_scan_recv_info* info)
 {
-    le_eir_data_t* eir = user_data;
+    switch (info->adv_type) {
+    case BT_GAP_ADV_TYPE_ADV_IND:
+        return BT_LE_ADV_IND;
+    case BT_GAP_ADV_TYPE_ADV_DIRECT_IND:
+        return BT_LE_ADV_DIRECT_IND;
+    case BT_GAP_ADV_TYPE_ADV_SCAN_IND:
+        return BT_LE_ADV_SCAN_IND;
+    case BT_GAP_ADV_TYPE_ADV_NONCONN_IND:
+        return BT_LE_ADV_NONCONN_IND;
+    case BT_GAP_ADV_TYPE_SCAN_RSP:
+        return BT_LE_SCAN_RSP;
+    case BT_GAP_ADV_TYPE_EXT_ADV:
+        break; /**< Determined via `info->adv_props` */
+    default:
+        break; /**< Unrecognized */
+    }
 
-    eir->value[eir->length++] = data->data_len + 1;
-    eir->value[eir->length++] = data->type;
-    memcpy(&eir->value[eir->length], data->data, data->data_len);
-    eir->length += data->data_len;
-    return true;
+    if (info->adv_props & BT_GAP_ADV_PROP_SCAN_RESPONSE)
+        return BT_LE_EXT_SCAN_RSP;
+    if (info->adv_props & BT_GAP_ADV_PROP_DIRECTED)
+        return BT_LE_EXT_ADV_DIRECT_IND;
+    if (!(info->adv_props & (BT_GAP_ADV_PROP_CONNECTABLE | BT_GAP_ADV_PROP_SCANNABLE)))
+        return BT_LE_EXT_ADV_NONCONN_IND;
+    if (info->adv_props & BT_GAP_ADV_PROP_SCANNABLE)
+        return BT_LE_EXT_ADV_SCAN_IND;
+    if (info->adv_props & BT_GAP_ADV_PROP_CONNECTABLE)
+        return BT_LE_EXT_ADV_IND;
+
+    return BT_LE_EXT_ADV_IND; /**< Unknown */
 }
 
-static void zblue_on_device_found(const bt_addr_le_t* addr, int8_t rssi, uint8_t type, struct net_buf_simple* ad)
+static void scan_recv_cb(const struct bt_le_scan_recv_info* info, struct net_buf_simple* ad)
 {
     ble_scan_result_t result_info = { 0 };
-    le_eir_data_t eir = { 0 };
 
-    bt_data_parse(ad, zblue_on_eir_found, &eir);
-
-    result_info.length = eir.length;
-    result_info.adv_type = type;
-    result_info.rssi = rssi;
     result_info.dev_type = BT_DEVICE_DEVTYPE_BLE;
-    result_info.addr_type = addr->type;
-    memcpy(&result_info.addr, &addr->a, sizeof(result_info.addr));
+    result_info.adv_type = parse_adv_type(info);
+    result_info.length = ad->len;
+    result_info.rssi = info->rssi;
+    result_info.tx_power = info->tx_power;
+    result_info.sid = info->sid;
+    result_info.interval = info->interval;
+    result_info.addr_type = info->addr->type;
+    memcpy(&result_info.addr, &info->addr->a, sizeof(result_info.addr));
 
-    scan_on_result_data_update(&result_info, eir.value);
+    scan_on_result_data_update(&result_info, ad->data);
 }
+
+static struct bt_le_scan_cb scan_cbs = {
+    .recv = scan_recv_cb,
+    .timeout = NULL,
+};
 
 static void STACK_CALL(start_scan)(void* args)
 {
-    SAL_CHECK(bt_le_scan_start(&scan_param, zblue_on_device_found), 0);
+    int err;
+
+    err = bt_le_scan_cb_register(&scan_cbs);
+    if (err != 0 && err != -EEXIST) {
+        BT_LOGE("%s, register failed, ret = %d", __func__, err);
+        return;
+    }
+
+    err = bt_le_scan_start(&scan_param, NULL);
+    if (err) {
+        BT_LOGE("%s, failed, ret = %d", __func__, err);
+        bt_le_scan_cb_unregister(&scan_cbs);
+    }
 }
 
 static void STACK_CALL(stop_scan)(void* args)
 {
+    bt_le_scan_cb_unregister(&scan_cbs);
     SAL_CHECK(bt_le_scan_stop(), 0);
 }
 

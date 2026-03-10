@@ -247,12 +247,10 @@ static void adv_data_parsed(adv_data_t* data, void* context)
 
 bt_status_t bt_pa_sync_parse_adv_data(bt_pa_sync_info_t* info, const ble_scan_result_t* result)
 {
-    bt_status_t status = BT_STATUS_NOT_FOUND;
-
     memset(info, 0x00, sizeof(bt_pa_sync_info_t));
     info->broadcast_id = BT_INVALID_BROADCAST_ID;
     if (!advertiser_data_parse(result->adv_data, result->length, adv_data_parsed, info))
         return BT_STATUS_FAIL;
 
-    return status;
+    return result->interval ? BT_STATUS_SUCCESS : BT_STATUS_NOT_FOUND;
 }
