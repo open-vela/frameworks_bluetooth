@@ -766,16 +766,13 @@ void zblue_on_cs_capabilities_available(struct bt_conn* conn,
         return;
     }
 
-    bt_address_t bt_addr = { 0 };
-    const bt_addr_le_t* addr = bt_conn_get_dst(conn);
-
+    bt_address_t* addr = bt_conn_get_addr(conn);
     if (!addr) {
         BT_LOGE("Can't find address for conn:%p", conn);
         return;
     }
 
-    memcpy(bt_addr.addr, addr->a.val, sizeof(bt_addr.addr));
-    msg = cs_msg_new(CAPABILITIES_RECEIVED_EVT, &bt_addr);
+    msg = cs_msg_new(CAPABILITIES_RECEIVED_EVT, addr);
     capabilities = zblue_convert_cs_capabilities_to_service(params);
     msg->cs_data.data = (void*)capabilities;
     bt_sal_cs_event_callback(msg);
@@ -973,15 +970,13 @@ void zblue_on_cs_config_created(struct bt_conn* conn, struct bt_conn_le_cs_confi
     bt_address_t bt_addr = { 0 };
     cs_msg_t* msg = NULL;
     bt_srv_conn_le_cs_config_t* cs_config = NULL;
-    const bt_addr_le_t* addr = bt_conn_get_dst(conn);
-
+    bt_address_t* addr = bt_conn_get_addr(conn);
     if (!addr) {
         BT_LOGE("Can't find address for conn:%p", conn);
         return;
     }
 
-    memcpy(bt_addr.addr, addr->a.val, sizeof(bt_addr.addr));
-    msg = cs_msg_new(CONFIG_DONE_EVT, &bt_addr);
+    msg = cs_msg_new(CONFIG_DONE_EVT, addr);
     cs_config = zblue_convert_cs_config_to_service(config);
     msg->cs_data.data = (void*)cs_config;
     bt_sal_cs_event_callback(msg);
@@ -1000,15 +995,13 @@ void zblue_on_cs_security_enabled(struct bt_conn* conn)
 {
     bt_address_t bt_addr = { 0 };
     cs_msg_t* msg = NULL;
-    const bt_addr_le_t* addr = bt_conn_get_dst(conn);
-
+    bt_address_t* addr = bt_conn_get_addr(conn);
     if (!addr) {
         BT_LOGE("Can't find address for conn:%p", conn);
         return;
     }
 
-    memcpy(bt_addr.addr, addr->a.val, sizeof(bt_addr.addr));
-    msg = cs_msg_new(SECURITY_DONE_EVT, &bt_addr);
+    msg = cs_msg_new(SECURITY_DONE_EVT, addr);
     bt_sal_cs_event_callback(msg);
     BT_LOGD("CS security enabled.\n");
     return;
@@ -1093,15 +1086,13 @@ void zblue_on_cs_procedure_enabled(struct bt_conn* conn,
     bt_address_t bt_addr = { 0 };
     cs_msg_t* msg = NULL;
     bt_srv_conn_le_cs_procedure_enable_complete_t* procedure = NULL;
-    const bt_addr_le_t* addr = bt_conn_get_dst(conn);
-
+    bt_address_t* addr = bt_conn_get_addr(conn);
     if (!addr) {
         BT_LOGE("Can't find address for conn:%p", conn);
         return;
     }
 
-    memcpy(bt_addr.addr, addr->a.val, sizeof(bt_addr.addr));
-    msg = cs_msg_new(PROCEDURE_DONE_EVT, &bt_addr);
+    msg = cs_msg_new(PROCEDURE_DONE_EVT, addr);
     procedure = zblue_convert_procedure_enable_complete_struct_to_service(params);
     msg->cs_data.data = (void*)procedure;
     bt_sal_cs_event_callback(msg);
@@ -1235,8 +1226,7 @@ void zblue_on_cs_subevent(struct bt_conn* conn, struct bt_conn_le_cs_subevent_re
     bt_address_t bt_addr = { 0 };
     cs_msg_t* msg = NULL;
     bt_srv_conn_le_cs_subevent_result_t* subevent = NULL;
-    const bt_addr_le_t* addr = bt_conn_get_dst(conn);
-
+    bt_address_t* addr = bt_conn_get_addr(conn);
     if (!addr) {
         BT_LOGE("Can't find address for conn:%p", conn);
         return;
@@ -1247,8 +1237,7 @@ void zblue_on_cs_subevent(struct bt_conn* conn, struct bt_conn_le_cs_subevent_re
         return;
     }
 
-    memcpy(bt_addr.addr, addr->a.val, sizeof(bt_addr.addr));
-    msg = cs_msg_new(SUBEVENT_RESULT_EVT, &bt_addr);
+    msg = cs_msg_new(SUBEVENT_RESULT_EVT, addr);
     subevent = zblue_convert_subevent_result_struct_to_service(result);
     msg->cs_data.data = (void*)subevent;
     bt_sal_cs_event_callback(msg);
