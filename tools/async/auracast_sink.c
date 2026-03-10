@@ -60,6 +60,14 @@ typedef struct {
 } bttool_auracast_pa_sync_t;
 
 typedef struct {
+    bt_le_address_t addr;
+    uint8_t sid;
+    uint8_t cnt;
+    uint8_t type;
+    void* out;
+} bttool_auracast_sync_iter_t;
+
+typedef struct {
     bt_scanner_t* scanner;
     bttool_auracast_pa_record_t* nearby_pa;
     void* auracast_cbs_cookie;
@@ -75,6 +83,30 @@ static int auracast_receive_cmd(void* handle, int argc, char* argv[]);
 static int auracast_terminate_cmd(void* handle, int argc, char* argv[]);
 
 static bttool_auracast_sink_t* g_auracast_sink = NULL;
+
+static const struct option sync_options[] = {
+    { "addr", required_argument, 0, 'a' },
+    { "type", required_argument, 0, 't' },
+    { "sid", required_argument, 0, 's' },
+    { "timeout", required_argument, 0, 'o' },
+    { "skip", required_argument, 0, 'k' },
+    { "filter", no_argument, 0, 'f' },
+    { "no-report", no_argument, 0, 'n' },
+    { 0, 0, 0, 0 },
+};
+
+static const struct option sync_select_options[] = {
+    { "addr", required_argument, 0, 'a' },
+    { "type", required_argument, 0, 't' },
+    { "sid", required_argument, 0, 's' },
+    { 0, 0, 0, 0 },
+};
+
+static const struct option auracast_recv_options[] = {
+    { "bis", required_argument, 0, 'b' },
+    { "encryption", required_argument, 0, 'e' },
+    { 0, 0, 0, 0 },
+};
 
 static bt_command_t g_auracast_sink_tables[] = {
     { "scan", scan_start_cmd, 0, "\"search for nearby Auracast sources\"" },
@@ -299,6 +331,95 @@ static const ble_scan_settings_t default_scan_settings = {
     .scan_phy = BT_LE_1M_PHY,
     .policy.policy = 0, /**< Unfiltered */
 };
+
+static bool sync_cmp(void* data, void* context)
+{
+    const bttool_auracast_pa_sync_t* sync_record = (const bttool_auracast_pa_sync_t*)data;
+    const bttool_auracast_pa_sync_t* sync_in = (const bttool_auracast_pa_sync_t*)context;
+
+    if (!sync_in)
+        return false;
+
+    return sync_record == sync_in;
+}
+static const bt_pa_sync_create_param_t default_sync_params = {
+    .skip = BTTOOL_PA_SYNC_DEFAULT_SKIP,
+    .timeout = BTTOOL_PA_SYNC_DEFAULT_TIMEOUT_MS / 10,
+    .filter = false,
+    .no_report = false,
+};
+
+static void cnt_sync(void* data, void* context)
+{
+    bttool_auracast_remote_t* remote = (bttool_auracast_remote_t*)data;
+    bttool_auracast_sync_iter_t* iter = (bttool_auracast_sync_iter_t*)context;
+
+    if (!bt_addr_is_empty((bt_address_t*)iter->addr.addr)
+        && memcmp(&remote->addr.addr, &iter->addr.addr, BT_ADDR_LENGTH)) {
+        /** addr provided but not match */
+        return;
+    }
+
+    if (iter->addr.addr_type != BT_LE_ADDR_TYPE_UNKNOWN
+        && iter->addr.addr_type != remote->addr.addr_type) {
+        /** addr_type provided but not match */
+        return;
+    }
+
+    if ((iter->sid != BLE_SCAN_SID_NOT_PROVIDED) && iter->sid != remote->sid) {
+        /** sid provided but not match */
+        return;
+    }
+
+    if (iter->out == NULL)
+        iter->out = remote; /**< record the first sync matched */
+
+    iter->cnt++;
+}
+
+/** @brief Find one sync with full or insufficient information */
+static bttool_auracast_remote_t* find_sync(const bt_le_address_t* addr, uint8_t sid, uint8_t type)
+{
+    bt_list_t* list;
+    bttool_auracast_sync_iter_t iter = { 0 };
+
+    list = type == SEARCH_TYPE_SINK ? g_auracast_sink->sink_list : g_auracast_sink->sync_list;
+    if (bt_list_is_empty(list))
+        return NULL;
+
+    iter.type = type;
+    iter.sid = sid;
+    iter.addr.addr_type = BT_LE_ADDR_TYPE_UNKNOWN;
+    if (addr) {
+        memcpy(&iter.addr, addr, sizeof(bt_le_address_t));
+        iter.addr.addr_type = addr->addr_type;
+    }
+
+    bt_list_foreach(list, cnt_sync, &iter);
+
+    if (!iter.out)
+        return NULL; /**< nothing matched */
+
+    if (iter.cnt == 1)
+        return iter.out; /**< the only one matched */
+
+    if (addr == NULL || bt_addr_is_empty((bt_address_t*)iter.addr.addr)) {
+        PRINT("input address by -a <addr>");
+        return NULL;
+    }
+
+    if (sid == BLE_SCAN_SID_NOT_PROVIDED) {
+        PRINT("input sid by -s <sid>");
+        return NULL;
+    }
+
+    if (addr->addr_type == BT_LE_ADDR_TYPE_UNKNOWN) {
+        PRINT("input address type by -t <type>");
+        return NULL;
+    }
+
+    return iter.out;
+}
 
 static void scan_start_cb(bt_instance_t* ins, bt_status_t status, void* scan, void* userdata)
 {
