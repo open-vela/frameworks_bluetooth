@@ -133,6 +133,93 @@ static bt_command_t g_auracast_sink_tables[] = {
                                              "\t\t\t the advertising sid (0x0-0xF)\"" },
 };
 
+static void on_scan_result(bt_scanner_t* scanner, ble_scan_result_t* result)
+{
+}
+
+static void on_scan_status(bt_scanner_t* scanner, uint8_t status)
+{
+}
+
+static void on_scan_stopped(bt_scanner_t* scanner)
+{
+}
+
+static const scanner_callbacks_t scanner_cbs = {
+    .size = sizeof(scanner_cbs),
+    .on_scan_result = on_scan_result,
+    .on_scan_start_status = on_scan_status,
+    .on_scan_stopped = on_scan_stopped,
+};
+
+static const ble_scan_settings_t default_scan_settings = {
+    .scan_mode = BT_SCAN_MODE_LOW_LATENCY,
+    .legacy = false,
+    .scan_type = BT_LE_SCAN_TYPE_PASSIVE,
+    .scan_phy = BT_LE_1M_PHY,
+    .policy.policy = 0, /**< Unfiltered */
+};
+
+static void scan_start_cb(bt_instance_t* ins, bt_status_t status, void* scan, void* userdata)
+{
+    if (!g_auracast_sink) {
+        PRINT("not initialized");
+        return;
+    }
+
+    if (status != BT_STATUS_SUCCESS) {
+        PRINT("failed to start scan, status = %d", status);
+        if (g_auracast_sink->scanner == AURACAST_SINK_PTR_PENDING)
+            g_auracast_sink->scanner = NULL;
+
+        return;
+    }
+
+    if (g_auracast_sink == userdata && g_auracast_sink->scanner == AURACAST_SINK_PTR_PENDING) {
+        PRINT("scan started, scanner = %p", scan);
+        g_auracast_sink->scanner = scan;
+        return;
+    }
+
+    PRINT("unexpected scan started, scanner = %p", scan);
+    bt_le_stop_scan_async(ins, scan, NULL, NULL);
+}
+
+static int scan_start_cmd(void* handle, int argc, char* argv[])
+{
+    bt_status_t status;
+    ble_scan_settings_t settings;
+
+    if (!g_auracast_sink) {
+        PRINT("not initialized");
+        return CMD_INVALID_OPT;
+    }
+
+    if (g_auracast_sink->scanner) {
+        PRINT("already scanning");
+        return CMD_USAGE_FAULT;
+    }
+
+    if (g_auracast_sink->scanner == AURACAST_SINK_PTR_PENDING) {
+        PRINT("previous scan is starting");
+        return CMD_USAGE_FAULT;
+    }
+
+    memcpy(&settings, &default_scan_settings, sizeof(settings));
+
+    status = bt_le_start_scan_settings_async(handle, &settings, &scanner_cbs, scan_start_cb,
+        g_auracast_sink);
+    if (status != BT_STATUS_SUCCESS) {
+        PRINT("failed to start a scan");
+        return CMD_ERROR;
+    }
+
+    g_auracast_sink->scanner = AURACAST_SINK_PTR_PENDING;
+    PRINT("starting scan");
+
+    return CMD_OK;
+}
+
 int auracast_sink_command_init_async(void* handle)
 {
     return CMD_OK;
