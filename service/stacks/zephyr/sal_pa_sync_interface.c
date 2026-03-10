@@ -40,6 +40,7 @@ typedef struct {
     bt_controller_id_t id;
     uint8_t sid;
     struct bt_le_per_adv_sync* sync; /**< zephyr sync object */
+    struct bt_le_per_adv_sync_synced_info* info; /**< zephyr sync info */
 } sal_pa_sync_device_t;
 
 typedef struct {
@@ -47,6 +48,31 @@ typedef struct {
 } sal_pa_sync_info_t;
 
 static sal_pa_sync_info_t* g_sal_pa_sync_info = NULL;
+
+static sal_pa_sync_device_t* device_new(void)
+{
+    sal_pa_sync_device_t* device = zalloc(sizeof(sal_pa_sync_device_t));
+
+    if (!device) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return NULL;
+    }
+
+    return device;
+}
+
+static void device_delete(sal_pa_sync_device_t* device)
+{
+    BT_LOGD("%s", __func__);
+
+    if (!device)
+        return;
+
+    pa_sync_on_terminated(device->id, &device->addr, device->sid);
+
+    free(device->info);
+    free(device);
+}
 
 static bool sync_cmp(void* data, void* context)
 {
@@ -73,9 +99,7 @@ static void sync_removed(void* data)
 
     BT_LOGD("%s", __func__);
 
-    pa_sync_on_terminated(device->id, &device->addr, device->sid);
-
-    free(device);
+    device_delete(device);
 }
 
 static sal_pa_sync_req_t* sal_pa_sync_req(bt_controller_id_t id, const bt_le_address_t* addr,
@@ -131,7 +155,15 @@ static void on_synced(struct bt_le_per_adv_sync* sync, struct bt_le_per_adv_sync
         return; /**< FIXME: consider periodic advertising via PAST */
     }
 
-    /** TODO: get interested information from `info` */
+    if (!device->info)
+        device->info = zalloc(sizeof(struct bt_le_per_adv_sync_synced_info));
+
+    if (!device->info) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return;
+    }
+
+    memcpy(device->info, info, sizeof(struct bt_le_per_adv_sync_synced_info));
 
     pa_sync_on_established(device->id, &device->addr, device->sid);
 }
@@ -177,9 +209,12 @@ static void create_sync(const void* data)
     sal_pa_sync_device_t* device = NULL;
     int err;
 
-    device = zalloc(sizeof(sal_pa_sync_device_t));
-    if (!device)
-        goto error;
+    device = device_new();
+    if (!device) {
+        pa_sync_on_terminated(req->id, &req->addr, z_param->sid);
+        free(z_param);
+        return;
+    }
 
     memcpy(&device->addr, &req->addr, sizeof(bt_le_address_t));
     device->id = req->id;
@@ -199,9 +234,8 @@ static void create_sync(const void* data)
     return;
 
 error:
-    pa_sync_on_terminated(req->id, &req->addr, z_param->sid);
+    device_delete(device);
     free(z_param);
-    free(device);
     return;
 }
 
