@@ -14,10 +14,20 @@
  * limitations under the License.
  ***************************************************************************/
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "bluetooth.h"
+
+#define BTTOOL_STRCAT(dst, size, src, ...)                      \
+    do {                                                        \
+        size_t _len = strlen(dst);                              \
+        size_t _size = (size);                                  \
+        if (_len + 1 >= _size)                                  \
+            break;                                              \
+        snprintf(dst + _len, _size - _len, src, ##__VA_ARGS__); \
+    } while (0)
 
 bool phy_is_vaild(uint8_t phy);
 int le_addr_type(const char* str, ble_addr_type_t* type);
