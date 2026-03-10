@@ -114,6 +114,17 @@ static pa_sync_device_t* find_device_by_msg(const pa_sync_event_t* msg)
     return bt_list_find(g_pa_sync_info->sync_list, msg_cmp, (void*)msg);
 }
 
+static pa_sync_device_t* find_device_by_addr_and_sid(const bt_le_address_t* addr, uint8_t sid)
+{
+    pa_sync_event_t msg = { 0 };
+
+    memcpy(&msg.addr, addr, sizeof(bt_le_address_t));
+    msg.id = PRIMARY_ADAPTER;
+    msg.sid = sid;
+
+    return find_device_by_msg(&msg);
+}
+
 static bt_status_t pa_sync_send_message(pa_sync_event_t* msg)
 {
     assert(msg);
@@ -695,18 +706,20 @@ void pa_sync_on_biginfo(bt_controller_id_t id, const bt_le_address_t* addr, uint
     }
 }
 
-const bt_pa_sync_data_t* pa_sync_get_report_cache(const bt_le_address_t* addr, uint8_t sid)
+const void* pa_sync_get_report_cache(const bt_le_address_t* addr, uint8_t sid)
 {
     const pa_sync_device_t* device;
-    pa_sync_event_t msg = { 0 };
+    return (device = find_device_by_addr_and_sid(addr, sid)) ? device->report : NULL;
+}
 
-    memcpy(&msg.addr, addr, sizeof(bt_le_address_t));
-    msg.id = PRIMARY_ADAPTER;
-    msg.sid = sid;
+const void* pa_sync_get_audio_info(const bt_le_address_t* addr, uint8_t sid)
+{
+    const pa_sync_device_t* device;
+    return (device = find_device_by_addr_and_sid(addr, sid)) ? device->audio_info : NULL;
+}
 
-    device = find_device_by_msg(&msg);
-    if (!device)
-        return NULL;
-
-    return device->report;
+const void* pa_sync_get_biginfo(const bt_le_address_t* addr, uint8_t sid)
+{
+    const pa_sync_device_t* device;
+    return (device = find_device_by_addr_and_sid(addr, sid)) ? device->biginfo : NULL;
 }

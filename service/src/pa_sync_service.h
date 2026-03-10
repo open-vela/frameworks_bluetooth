@@ -72,7 +72,9 @@ bt_status_t pa_sync_create(const bt_le_address_t* addr, uint8_t sid,
     const bt_pa_sync_create_param_t* params, const bt_pa_sync_callbacks_t* cbs,
     const void* context);
 bt_status_t pa_sync_terminate(const bt_le_address_t* addr, uint8_t sid);
-const bt_pa_sync_data_t* pa_sync_get_report_cache(const bt_le_address_t* addr, uint8_t sid);
+const void* pa_sync_get_report_cache(const bt_le_address_t* addr, uint8_t sid);
+const void* pa_sync_get_audio_info(const bt_le_address_t* addr, uint8_t sid);
+const void* pa_sync_get_biginfo(const bt_le_address_t* addr, uint8_t sid);
 
 /**
  * @brief Callback from SAL when a sync is established.
