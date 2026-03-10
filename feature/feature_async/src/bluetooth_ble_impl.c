@@ -2974,4 +2974,97 @@ error:
         bt_le_stop_scan_async(ins, scan, NULL, NULL);
 }
 #endif /** CONFIG_BLUETOOTH_AURACAST_SINK */
+
+void system_bluetooth_ble_AuracastSink_interface_aurasnk_startScan(FeatureInterfaceHandle handle,
+    AppendData adata, FtPromiseId __pid__, system_bluetooth_ble_StartAuracastScanParams* params)
+{
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+    bt_status_t status;
+    ble_scan_settings_t settings;
+    feature_bluetooth_aurasnk_pending_work_t* work = NULL;
+    feature_bluetooth_aurasnk_info_t* aurasnk_info = FeatureGetObjectData(handle);
+
+    if (params->callback == FEATURE_BLE_FT_CALLBACK_ID_INVALID) {
+        status = BT_STATUS_PARM_INVALID;
+        goto error;
+    }
+
+    if (!aurasnk_info) {
+        FEATURE_LOG_ERROR("%s, not initialized", __func__);
+        status = BT_STATUS_NOT_READY;
+        goto error;
+    }
+
+    if (aurasnk_info->scanner != NULL
+        || aurasnk_info->source_found_callback != FEATURE_BLE_FT_CALLBACK_ID_INVALID) {
+        FEATURE_LOG_ERROR("%s, repeated attempt", __func__);
+        status = BT_STATUS_DONE;
+        goto error;
+    }
+
+    work = zalloc(sizeof(feature_bluetooth_aurasnk_pending_work_t));
+    if (!work) {
+        status = BT_STATUS_NOMEM;
+        goto error;
+    }
+
+    memcpy(&settings, &aurasnk_scan_settings, sizeof(ble_scan_settings_t));
+    status = bt_le_start_scan_settings_async(aurasnk_info->ins, &settings, &aurasnk_scan_cbs,
+        aurasnk_start_scan_cb, aurasnk_info);
+    if (status != BT_STATUS_SUCCESS)
+        goto error;
+
+    aurasnk_info->scanner = FEATURE_BLE_PTR_PENDING;
+    aurasnk_info->source_found_callback = params->callback;
+    work->type = AURASNK_WORK_TYPE_START_SCAN;
+    work->handle = handle;
+    work->pid = __pid__;
+    work->status = BT_STATUS_FAIL; /**< Always marked as failed before done */
+    bt_list_add_tail(aurasnk_info->pending_work, work);
+    FEATURE_LOG_DEBUG("%s, scan starting.", __func__);
+
+    return;
+
+error:
+    FeaturePromiseReject(handle, __pid__, bt_status_to_feature_error(status),
+        "failed to start scan");
+    free(work);
+#else
+    FeaturePromiseReject(handle, __pid__, bt_status_to_feature_error(BT_STATUS_NOT_SUPPORTED),
+        "auracast sink is not supported");
+#endif
+}
+
+void system_bluetooth_ble_AuracastSink_interface_aurasnk_stopScan(FeatureInterfaceHandle handle,
+    AppendData adata)
+{
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+    bt_status_t status;
+    feature_bluetooth_aurasnk_info_t* aurasnk_info = FeatureGetObjectData(handle);
+
+    if (!aurasnk_info) {
+        FEATURE_LOG_ERROR("%s, not initialized", __func__);
+        return;
+    }
+
+    if (aurasnk_info->scanner == NULL) {
+        FEATURE_LOG_ERROR("%s, nothing to stop", __func__);
+        return;
+    }
+
+    if (aurasnk_info->scanner == FEATURE_BLE_PTR_PENDING) {
+        FEATURE_LOG_ERROR("%s, scan is starting", __func__);
+        return;
+    }
+
+    status = bt_le_stop_scan_async(aurasnk_info->ins, aurasnk_info->scanner, NULL, NULL);
+    if (status != BT_STATUS_SUCCESS) {
+        FEATURE_LOG_ERROR("%s, failed to stop scan, status = %d", __func__, status);
+        return;
+    }
+
+    aurasnk_info->scanner = NULL;
+    FEATURE_LOG_DEBUG("%s, scan stopping.", __func__);
+#endif
+}
 }
