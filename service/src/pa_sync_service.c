@@ -24,6 +24,8 @@
 #include "sal_pa_sync_interface.h"
 #include "service_loop.h"
 
+#include "bt_auracast_sink.h"
+
 #include "utils/log.h"
 
 #define BT_PA_SYNC_DEFAULT_SKIP (1)
@@ -41,6 +43,8 @@ typedef struct pa_sync_device {
     const bt_pa_sync_callbacks_t* cbs;
     const void* context;
     bt_pa_sync_data_t* report;
+    bt_auracast_audio_info_t* audio_info;
+    bt_pa_sync_biginfo_t* biginfo;
 } pa_sync_device_t;
 
 typedef void (*func_for_each_t)(const pa_sync_device_t* device, const void* data);
@@ -150,6 +154,15 @@ static void sync_report_callback(const bt_pa_sync_callbacks_t* cbs, const bt_le_
     cbs->on_sync_report(addr, sid, report, (void*)context);
 }
 
+static void auracast_ready_callback(const bt_pa_sync_callbacks_t* cbs, const bt_le_address_t* addr,
+    uint8_t sid, const void* context)
+{
+    if (!cbs || !cbs->on_auracast_ready)
+        return;
+
+    cbs->on_auracast_ready(addr, sid, (void*)context);
+}
+
 static void create_sync(const pa_sync_event_t* msg)
 {
     pa_sync_event_create_sync_t* params = (pa_sync_event_create_sync_t*)msg->data;
@@ -244,6 +257,8 @@ static void sync_removed(void* data)
 
     sync_terminated_callback(device->cbs, &device->addr, device->sid, device->context);
 
+    free(device->biginfo);
+    free(device->audio_info);
     free(device->report);
     free(device);
 }
@@ -299,13 +314,47 @@ static void update_report_cache(pa_sync_device_t* device,
     memcpy(device->report->data, data->adv_data, data->adv_data_len);
 }
 
+static void update_biginfo_cache(pa_sync_device_t* device, const bt_pa_sync_biginfo_t* biginfo)
+{
+    /** Since memcpy() is typically faster than memcmp(), we update the cache directly without
+     *  checking whether it needs updating. */
+    if (device->biginfo == NULL)
+        device->biginfo = malloc(sizeof(bt_pa_sync_biginfo_t));
+
+    if (device->biginfo == NULL)
+        return;
+
+    memcpy(device->biginfo, biginfo, sizeof(bt_pa_sync_biginfo_t));
+}
+
+static void get_audio_info(pa_sync_device_t* device, const bt_pa_sync_report_t* report)
+{
+    bt_auracast_audio_info_t* audio_info;
+
+    audio_info = malloc(sizeof(bt_auracast_audio_info_t));
+    if (!audio_info)
+        return;
+
+    if (bt_auracast_sink_parse_adv_data(audio_info, report) != BT_STATUS_SUCCESS) {
+        free(audio_info);
+        return;
+    }
+
+    device->audio_info = audio_info;
+}
+
 static void process_sync_report(const pa_sync_device_t* device, const void* data)
 {
     const pa_sync_event_report_data_t* report_in = (const pa_sync_event_report_data_t*)data;
+
     bt_pa_sync_report_t report_out = { 0 };
 
     update_report_cache((void*)device, report_in);
     report_service_to_app(&report_out, report_in);
+    if (!device->audio_info && device->biginfo) {
+        /** BIGInfo received, but Codec not extracted */
+        get_audio_info((pa_sync_device_t*)device, &report_out);
+    }
 
     sync_report_callback(device->cbs, &device->addr, device->sid, &report_out, device->context);
 }
@@ -345,6 +394,33 @@ static void sync_report(const pa_sync_event_t* msg)
     callback_for_each_device(&iter);
 }
 
+static void process_biginfo_received(const pa_sync_device_t* device, const void* data)
+{
+    const bt_pa_sync_biginfo_t* biginfo = (const bt_pa_sync_biginfo_t*)data;
+
+    update_biginfo_cache((void*)device, biginfo);
+
+    if (device->audio_info && device->biginfo) {
+        /** Both info collected, auracast sink is now ready to receive  */
+        auracast_ready_callback(device->cbs, &device->addr, device->sid, device->context);
+    }
+}
+
+static void biginfo_received(const pa_sync_event_t* msg)
+{
+    const bt_pa_sync_biginfo_t* biginfo = (const bt_pa_sync_biginfo_t*)msg->data;
+    pa_sync_for_each_t iter = { 0 };
+
+    /** TODO: sanity checks for BIGInfo */
+
+    iter.func = process_biginfo_received;
+    iter.addr = &msg->addr;
+    iter.sid = msg->sid;
+    iter.data = biginfo;
+
+    callback_for_each_device(&iter);
+}
+
 static const char* pa_sync_event_to_string(pa_sync_event_type_t event)
 {
     switch (event) {
@@ -353,6 +429,7 @@ static const char* pa_sync_event_to_string(pa_sync_event_type_t event)
         CASE_RETURN_STR(SYNC_ESTABLISHED)
         CASE_RETURN_STR(SYNC_TERMINATED)
         CASE_RETURN_STR(SYNC_REPORT)
+        CASE_RETURN_STR(BIGINFO_RECEIVED)
         DEFAULT_BREAK();
     }
 
@@ -363,7 +440,7 @@ static void pa_sync_process_message(void* data)
 {
     pa_sync_event_t* msg = (pa_sync_event_t*)data;
 
-    if (msg->event != SYNC_REPORT) { /**< avoid spam logs */
+    if (msg->event != SYNC_REPORT && msg->event != BIGINFO_RECEIVED) { /**< avoid spam logs */
         BT_LOGD("%s, event = %s(%d)", __func__, pa_sync_event_to_string(msg->event), msg->event);
     }
 
@@ -382,6 +459,9 @@ static void pa_sync_process_message(void* data)
         break;
     case SYNC_REPORT:
         sync_report(msg);
+        break;
+    case BIGINFO_RECEIVED:
+        biginfo_received(msg);
         break;
     default:
         break;
@@ -586,6 +666,29 @@ void pa_sync_on_received(bt_controller_id_t id, const bt_le_address_t* addr, uin
     /** Part 3, adv data */
     memcpy(data, adv_data, adv_data_len);
 
+    if (pa_sync_send_message(msg) != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, message send failed", __func__);
+        free(msg);
+    }
+}
+
+void pa_sync_on_biginfo(bt_controller_id_t id, const bt_le_address_t* addr, uint8_t sid,
+    const bt_pa_sync_biginfo_t* biginfo)
+{
+    pa_sync_event_t* msg;
+
+    msg = zalloc(sizeof(pa_sync_event_t) + sizeof(bt_pa_sync_biginfo_t));
+    if (!msg) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return;
+    }
+
+    msg->event = BIGINFO_RECEIVED;
+    msg->id = id;
+    msg->sid = sid;
+    memcpy(&msg->addr, addr, sizeof(bt_le_address_t));
+
+    memcpy(msg->data, biginfo, sizeof(bt_pa_sync_biginfo_t));
     if (pa_sync_send_message(msg) != BT_STATUS_SUCCESS) {
         BT_LOGE("%s, message send failed", __func__);
         free(msg);

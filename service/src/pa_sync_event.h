@@ -44,6 +44,7 @@ typedef enum {
     SYNC_ESTABLISHED,
     SYNC_TERMINATED,
     SYNC_REPORT,
+    BIGINFO_RECEIVED,
 } pa_sync_event_type_t;
 
 typedef struct {
