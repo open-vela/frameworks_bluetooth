@@ -19,8 +19,20 @@
 #include "bt_tools.h"
 
 #define BTTOOL_AURACAST_SINK_LOG_SIZE (256)
+#define BTTOOL_PA_SYNC_PA_REPORT_LIFE (10)
+#define BTTOOL_PA_SYNC_DEFAULT_TIMEOUT_MS (1000)
+#define BTTOOL_PA_SYNC_DEFAULT_SKIP (1)
+typedef struct {
+    bt_address_t addr;
+    ble_addr_type_t type;
+    int8_t rssi;
+    uint8_t life;
+    uint8_t sid;
+} bttool_auracast_pa_record_t;
+
 typedef struct {
     bt_scanner_t* scanner;
+    bttool_auracast_pa_record_t* nearby_pa;
 } bttool_auracast_sink_t;
 
 static int scan_start_cmd(void* handle, int argc, char* argv[]);
@@ -40,6 +52,60 @@ static void usage(void)
     for (int i = 0; i < ARRAY_SIZE(g_auracast_sink_tables); i++) {
         printf("\t%-8s\t%s\n", g_auracast_sink_tables[i].cmd, g_auracast_sink_tables[i].help);
     }
+}
+
+static const char* parse_addr_type(ble_addr_type_t type)
+{
+    switch (type) {
+    case BT_LE_ADDR_TYPE_PUBLIC:
+        return "Public";
+    case BT_LE_ADDR_TYPE_RANDOM:
+        return "Random";
+    case BT_LE_ADDR_TYPE_PUBLIC_ID:
+        return "Public ID";
+    case BT_LE_ADDR_TYPE_RANDOM_ID:
+        return "Random ID";
+    case BT_LE_ADDR_TYPE_ANONYMOUS:
+        return "Anonymous";
+    default:
+        break;
+    }
+
+    return "Unknown";
+}
+
+static void update_neaby_pa(const ble_scan_result_t* result)
+{
+    bttool_auracast_pa_record_t* prev;
+
+    if (!g_auracast_sink->nearby_pa)
+        g_auracast_sink->nearby_pa = zalloc(sizeof(bttool_auracast_pa_record_t));
+
+    prev = g_auracast_sink->nearby_pa;
+
+    if (!prev)
+        return;
+
+    if (prev->life)
+        prev->life--;
+
+    if (!prev->life)
+        prev->rssi = INT8_MIN;
+
+    if ((bt_addr_compare(&prev->addr, &result->addr) == 0) && (prev->type == result->addr_type)
+        && (prev->sid == result->sid)) {
+        prev->life = BTTOOL_PA_SYNC_PA_REPORT_LIFE;
+        prev->rssi = result->rssi;
+        return;
+    }
+
+    if ((prev->life > 0) && (prev->rssi > result->rssi))
+        return;
+
+    bt_addr_set(&prev->addr, result->addr.addr);
+    prev->life = BTTOOL_PA_SYNC_PA_REPORT_LIFE;
+    prev->type = result->addr_type;
+    prev->sid = result->sid;
 }
 
 static void on_scan_result(bt_scanner_t* scanner, ble_scan_result_t* result)
@@ -64,7 +130,10 @@ static void on_scan_result(bt_scanner_t* scanner, ble_scan_result_t* result)
     if (!log)
         goto exit;
 
-    BTTOOL_STRCAT(log, size, "%s", __func__);
+    BTTOOL_STRCAT(log, size, "%s from [%02x:%02x:%02x:%02x:%02x:%02x][%s(%d)]", __func__,
+        result->addr.addr[5], result->addr.addr[4], result->addr.addr[3], result->addr.addr[2],
+        result->addr.addr[1], result->addr.addr[0], parse_addr_type(result->addr_type),
+        result->addr_type);
 
     if (info->name[0] != '\0')
         BTTOOL_STRCAT(log, size, ", device:%s", info->name);
@@ -85,6 +154,8 @@ static void on_scan_result(bt_scanner_t* scanner, ble_scan_result_t* result)
         BTTOOL_STRCAT(log, size, ", rssi:%d", result->rssi);
 
     PRINT("%s", log);
+    update_neaby_pa(result);
+
 exit:
     free(info);
     free(log);
@@ -130,7 +201,7 @@ static const ble_scan_settings_t default_scan_settings = {
     .policy.policy = 0, /**< Unfiltered */
 };
 
-int scan_start_cmd(void* handle, int argc, char* argv[])
+static int scan_start_cmd(void* handle, int argc, char* argv[])
 {
     ble_scan_settings_t settings;
 
@@ -157,7 +228,7 @@ int scan_start_cmd(void* handle, int argc, char* argv[])
     return CMD_OK;
 }
 
-int scan_stop_cmd(void* handle, int argc, char* argv[])
+static int scan_stop_cmd(void* handle, int argc, char* argv[])
 {
     if (!g_auracast_sink) {
         PRINT("Not initialized");
@@ -177,6 +248,11 @@ int scan_stop_cmd(void* handle, int argc, char* argv[])
     return CMD_OK;
 }
 
+static int sync_create_cmd(void* handle, int argc, char* argv[])
+{
+    return CMD_OK;
+}
+
 int auracast_sink_command_init(void* handle)
 {
     g_auracast_sink = zalloc(sizeof(bttool_auracast_sink_t));
@@ -191,6 +267,7 @@ void auracast_sink_command_uninit(void* handle)
     if (!g_auracast_sink)
         return;
 
+    free(g_auracast_sink->nearby_pa);
     free(g_auracast_sink);
     g_auracast_sink = NULL;
 }
