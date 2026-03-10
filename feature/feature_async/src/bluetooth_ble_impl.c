@@ -3514,4 +3514,262 @@ void system_bluetooth_ble_AuracastSink_interface_aurasnk_terminateSync(
     aurasnk_info->stream_info = NULL;
 #endif
 }
+
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+static void auracast_on_receive_started(void* cookie, const bt_le_address_t* addr, uint8_t sid)
+{
+    bt_instance_t* ins = cookie;
+    feature_bluetooth_aurasnk_info_t* aurasnk_info = NULL;
+    feature_bluetooth_aurasnk_pending_work_t* work = NULL;
+    aurasnk_work_type_t type = AURASNK_WORK_TYPE_START_RECEIVE;
+
+    aurasnk_info = get_aurasnk_info(ins, addr, sid);
+    if (!aurasnk_info)
+        goto error;
+
+    work = bt_list_find(aurasnk_info->pending_work, aurasnk_work_cmp, &type);
+    if (!work)
+        goto error;
+
+    FEATURE_LOG_DEBUG("%s, receive started", __func__);
+    work->status = BT_STATUS_SUCCESS;
+    bt_list_remove(aurasnk_info->pending_work, work);
+
+    FeatureInvokeCallback(aurasnk_info->handle, aurasnk_info->stream_started_callback);
+    return;
+
+error:
+    FeatureRemoveCallback(aurasnk_info->handle, aurasnk_info->stream_started_callback);
+    aurasnk_info->stream_started_callback = FEATURE_BLE_FT_CALLBACK_ID_INVALID;
+    FeatureRemoveCallback(aurasnk_info->handle, aurasnk_info->stream_stopped_callback);
+    aurasnk_info->stream_stopped_callback = FEATURE_BLE_FT_CALLBACK_ID_INVALID;
+    bt_auracast_sink_terminate_sync_async(ins, addr, sid, NULL, NULL);
+    bt_auracast_sink_unregister_callbacks_async(ins, cookie, NULL, NULL);
+    aurasnk_info->auracast_cbs_cookie = NULL;
+    bt_list_remove(aurasnk_info->pending_work, work);
+}
+
+static void register_callbacks_cb(bt_instance_t* ins, bt_status_t status, void* cookie,
+    void* userdata)
+{
+    feature_bluetooth_aurasnk_info_t* aurasnk_info;
+    feature_bluetooth_aurasnk_pending_work_t* work = NULL;
+    aurasnk_work_type_t type = AURASNK_WORK_TYPE_START_RECEIVE;
+
+    FIND_INFO_BY_OBJECT(ins, userdata, aurasnk, aurasnk_info);
+    if (!aurasnk_info) {
+        FEATURE_LOG_ERROR("%s, aurasnk_info not found", __func__);
+        goto error;
+    }
+
+    work = bt_list_find(aurasnk_info->pending_work, aurasnk_work_cmp, &type);
+    if (!work)
+        goto error;
+
+    if (aurasnk_info->auracast_cbs_cookie != FEATURE_BLE_PTR_PENDING) {
+        FEATURE_LOG_ERROR("%s, unexpected registration", __func__);
+        goto error;
+    }
+
+    if (status != BT_STATUS_SUCCESS) {
+        FEATURE_LOG_ERROR("%s, failed to start receive, status = %d", __func__, status);
+        work->status = status;
+        goto error;
+    }
+
+    aurasnk_info->auracast_cbs_cookie = cookie;
+    if (cookie == NULL)
+        bt_auracast_sink_unregister_callbacks_async(ins, cookie, NULL, NULL);
+
+    FEATURE_LOG_DEBUG("%s, receive starting..", __func__);
+    return;
+
+error:
+    if (aurasnk_info) {
+        bt_list_remove(aurasnk_info->pending_work, work);
+
+        FeatureRemoveCallback(aurasnk_info->handle, aurasnk_info->stream_started_callback);
+        aurasnk_info->stream_started_callback = FEATURE_BLE_FT_CALLBACK_ID_INVALID;
+
+        FeatureRemoveCallback(aurasnk_info->handle, aurasnk_info->stream_stopped_callback);
+        aurasnk_info->stream_stopped_callback = FEATURE_BLE_FT_CALLBACK_ID_INVALID;
+
+        if (aurasnk_info->auracast_cbs_cookie == FEATURE_BLE_PTR_PENDING)
+            aurasnk_info->auracast_cbs_cookie = NULL;
+
+        if (aurasnk_info->stream_info) {
+            bt_auracast_sink_terminate_sync_async(ins, &aurasnk_info->stream_info->remote.addr,
+                aurasnk_info->stream_info->remote.sid, NULL, NULL);
+        }
+    }
+
+    if (status == BT_STATUS_SUCCESS && cookie != NULL)
+        bt_auracast_sink_unregister_callbacks_async(ins, cookie, NULL, NULL);
+}
+
+static void aurasnk_start_receive_cb(bt_instance_t* ins, bt_status_t status, void* userdata)
+{
+    feature_bluetooth_aurasnk_info_t* aurasnk_info;
+    feature_bluetooth_aurasnk_pending_work_t* work = NULL;
+    aurasnk_work_type_t type = AURASNK_WORK_TYPE_START_RECEIVE;
+
+    FIND_INFO_BY_OBJECT(ins, userdata, aurasnk, aurasnk_info);
+    if (!aurasnk_info) {
+        FEATURE_LOG_ERROR("%s, aurasnk_info not found", __func__);
+        goto error;
+    }
+
+    work = bt_list_find(aurasnk_info->pending_work, aurasnk_work_cmp, &type);
+    if (!work)
+        goto error;
+
+    if (status != BT_STATUS_SUCCESS) {
+        FEATURE_LOG_ERROR("%s, failed to start receive, status = %d", __func__, status);
+        work->status = status;
+        goto error;
+    }
+
+    return;
+
+error:
+    if (aurasnk_info) {
+        bt_list_remove(aurasnk_info->pending_work, work);
+        if (status == BT_STATUS_SUCCESS) {
+            if (aurasnk_info->stream_info) {
+                bt_auracast_sink_terminate_sync_async(ins, &aurasnk_info->stream_info->remote.addr,
+                    aurasnk_info->stream_info->remote.sid, NULL, NULL);
+            }
+        }
+
+        if (aurasnk_info->auracast_cbs_cookie != NULL
+            && aurasnk_info->auracast_cbs_cookie != FEATURE_BLE_PTR_PENDING)
+            bt_auracast_sink_unregister_callbacks_async(ins, aurasnk_info->auracast_cbs_cookie,
+                NULL, NULL);
+
+        aurasnk_info->auracast_cbs_cookie = NULL;
+    }
+}
+
+static const bt_auracast_sink_callbacks_t auracast_sink_cbs = {
+    .on_sync_established = auracast_on_receive_started,
+    .on_sync_terminated = auracast_on_receive_stopped,
+};
+#endif /** CONFIG_BLUETOOTH_AURACAST_SINK */
+
+void system_bluetooth_ble_AuracastSink_interface_aurasnk_startReceive(FeatureInterfaceHandle handle,
+    AppendData adata, FtPromiseId __pid__, system_bluetooth_ble_StartAuracastReceiveParams* params)
+{
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+    bt_status_t status;
+    feature_bluetooth_aurasnk_pending_work_t* work = NULL;
+    feature_bluetooth_aurasnk_info_t* aurasnk_info;
+    feature_bluetooth_aurasnk_stream_info_t* stream_info;
+    bt_auracast_audio_subgroup_t* subgroup;
+    bt_le_address_t addr;
+    uint8_t sid, idx;
+    uint32_t bitfield = 0;
+
+    aurasnk_info = FeatureGetObjectData(handle);
+    if (!aurasnk_info) {
+        FEATURE_LOG_ERROR("%s, not initialized", __func__);
+        status = BT_STATUS_NOT_READY;
+        goto error;
+    }
+
+    if (params->started == FEATURE_BLE_FT_CALLBACK_ID_INVALID
+        || params->stopped == FEATURE_BLE_FT_CALLBACK_ID_INVALID) {
+        FEATURE_LOG_ERROR("%s, invalid callback", __func__);
+        status = BT_STATUS_PARM_INVALID;
+        goto error;
+    }
+
+    status = aurasnk_parse_subid(&addr, &sid, &idx, params->subId);
+    if (status != BT_STATUS_SUCCESS) {
+        FEATURE_LOG_ERROR("%s, invalid subid %s", __func__, params->subId);
+        goto error;
+    }
+
+    if (aurasnk_info != get_aurasnk_info(aurasnk_info->ins, &addr, sid)) {
+        FEATURE_LOG_ERROR("%s, subid %s not tracked", __func__, params->subId);
+        status = BT_STATUS_PARM_INVALID;
+        goto error;
+    }
+
+    if (aurasnk_info->auracast_cbs_cookie != NULL
+        || aurasnk_info->stream_started_callback != FEATURE_BLE_FT_CALLBACK_ID_INVALID
+        || aurasnk_info->stream_stopped_callback != FEATURE_BLE_FT_CALLBACK_ID_INVALID) {
+        FEATURE_LOG_ERROR("%s, repeated attempt", __func__);
+        status = BT_STATUS_DONE;
+        goto error;
+    }
+
+    stream_info = aurasnk_info->stream_info;
+    if (stream_info == NULL) {
+        FEATURE_LOG_ERROR("%s, not synchronized", __func__);
+        status = BT_STATUS_NOT_READY;
+        goto error;
+    }
+
+    if (stream_info->encrypted) {
+        if (params->broadcastCode == NULL || strlen(params->broadcastCode) == 0) {
+            FEATURE_LOG_ERROR("%s, broadcast code required", __func__);
+            status = BT_STATUS_PARM_INVALID;
+            goto error;
+        }
+    }
+
+    if (idx > stream_info->audio_info.num_subgroups) {
+        FEATURE_LOG_ERROR("%s, invalid subgroup %d > %d", __func__, idx,
+            stream_info->audio_info.num_subgroups);
+        status = BT_STATUS_PARM_INVALID;
+        goto error;
+    }
+
+    subgroup = &stream_info->audio_info.subgroup[idx];
+    for (uint8_t k = 0; k < subgroup->num_bis; k++)
+        bitfield |= AURACAST_BITFIELD(subgroup->bis[k].index);
+
+    work = zalloc(sizeof(feature_bluetooth_aurasnk_pending_work_t));
+    if (!work) {
+        status = BT_STATUS_NOMEM;
+        goto error;
+    }
+
+    status = bt_auracast_sink_register_callbacks_async(aurasnk_info->ins, &auracast_sink_cbs,
+        register_callbacks_cb, aurasnk_info);
+    if (status != BT_STATUS_SUCCESS) {
+        FEATURE_LOG_ERROR("%s, failed to register callbacks, status = %d", __func__, status);
+        goto error;
+    }
+
+    status = bt_auracast_sink_create_sync_async(aurasnk_info->ins, &addr, sid, bitfield,
+        (const uint8_t*)(stream_info->encrypted ? params->broadcastCode : NULL),
+        aurasnk_start_receive_cb, aurasnk_info);
+    if (status != BT_STATUS_SUCCESS) {
+        FEATURE_LOG_ERROR("%s, failed to start receive, status = %d", __func__, status);
+        goto error;
+    }
+
+    aurasnk_info->auracast_cbs_cookie = FEATURE_BLE_PTR_PENDING;
+    aurasnk_info->stream_started_callback = params->started;
+    aurasnk_info->stream_stopped_callback = params->stopped;
+    work->type = AURASNK_WORK_TYPE_START_RECEIVE;
+    work->handle = handle;
+    work->pid = __pid__;
+    work->status = BT_STATUS_FAIL; /**< Always marked as failed before done */
+    bt_list_add_tail(aurasnk_info->pending_work, work);
+    FEATURE_LOG_DEBUG("%s, receive starting.", __func__);
+
+    return;
+
+error:
+    FeaturePromiseReject(handle, __pid__, bt_status_to_feature_error(status),
+        "failed to start receive");
+
+    free(work);
+#else
+    FeaturePromiseReject(handle, __pid__, bt_status_to_feature_error(BT_STATUS_NOT_SUPPORTED),
+        "auracast sink is not supported");
+#endif
+}
 }
