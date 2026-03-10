@@ -372,6 +372,11 @@ typedef uint8_t bt_128key_t[16];
 #define BT_UUID_MAX_NUM (32)
 #define BT_UUID_128_LEN (16)
 
+/* `Broadcast_ID` is 24-bit (0x000000-0xFFFFFF). Other values are invalid. */
+#define BT_INVALID_BROADCAST_ID (0xFFFFFFFF)
+
+#define BT_BROADCAST_NAME_MAX_LEN (128)
+
 typedef struct {
     bt_address_t addr;
     int8_t rssi;
