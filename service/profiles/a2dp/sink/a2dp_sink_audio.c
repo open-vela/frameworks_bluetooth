@@ -245,22 +245,10 @@ bool a2dp_sink_on_connection_changed(bool connected)
     return true;
 }
 
-void a2dp_sink_on_started(bool started)
-{
-    a2dp_sink_stream_t* stream = &sink_stream;
-
-    BT_LOGD("%s: %d", __func__, started);
-    audio_control_start(A2DP_SINK_PROFILE_ID, started);
-    if (started) {
-        if (stream->state != STATE_RUNNING) {
-            stream->state = STATE_RUNNING;
-        }
-    }
-}
-
 static void a2dp_sink_audio_handle_event(void* event)
 {
     a2dp_audio_event_t* audio_event = (a2dp_audio_event_t*)event;
+    a2dp_sink_stream_t* stream = &sink_stream;
 
     switch (audio_event->type) {
     case A2DP_AUDIO_EVENT_START:
@@ -269,7 +257,11 @@ static void a2dp_sink_audio_handle_event(void* event)
             break;
         }
 
-        a2dp_sink_on_started(true);
+        audio_control_start(A2DP_SINK_PROFILE_ID, true);
+        if (stream->state != STATE_RUNNING) {
+            stream->state = STATE_RUNNING;
+        }
+
         break;
     case A2DP_AUDIO_EVENT_STOP:
         a2dp_sink_stop_audio_req();
