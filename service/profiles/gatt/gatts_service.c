@@ -464,7 +464,7 @@ static int if_gatts_dump(void)
     bt_list_node_t* snode;
     bt_list_t* slist = g_gatts_manager.services;
     int s_id = 0;
-    char uuid_str[40] = { 0 };
+    char uuid_str[BT_UUID_STR_LENGTH] = { 0 };
 
     pthread_mutex_lock(&g_gatts_manager.device_lock);
 
@@ -481,7 +481,7 @@ static int if_gatts_dump(void)
 
             BT_LOGI("\tAttribute Table[%d]: Handle:0x%04x~0x%04x, Num:%d", t_id++, table->start_handle, table->end_handle, table->element_size);
             for (int i = 0; i < table->element_size; i++, element++) {
-                bt_uuid_to_string(&element->uuid, uuid_str, 40);
+                bt_uuid_to_string(&element->uuid, uuid_str, BT_UUID_STR_LENGTH);
                 BT_LOGI("\t\t>[0x%04x][Type:%d][Prop:%04x][UUID:%s]", element->handle, element->type, element->properties,
                     uuid_str);
             }

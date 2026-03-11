@@ -1514,7 +1514,7 @@ static const char* bond_state_to_string(bond_state_t state)
 
 static void device_dump(void* handle, bt_address_t* addr, bt_transport_t transport)
 {
-    char uuid_str[40] = { 0 };
+    char uuid_str[BT_UUID_STR_LENGTH] = { 0 };
     char name[64] = { 0 };
     bt_uuid_t* uuids = NULL;
     uint16_t uuid_cnt = 0;
@@ -1539,7 +1539,7 @@ static void device_dump(void* handle, bt_address_t* addr, bt_transport_t transpo
         if (uuid_cnt) {
             PRINT("\tUUIDs:[%d]", uuid_cnt);
             for (int i = 0; i < uuid_cnt; i++) {
-                bt_uuid_to_string(uuids + i, uuid_str, 40);
+                bt_uuid_to_string(uuids + i, uuid_str, BT_UUID_STR_LENGTH);
                 PRINT("\t\tuuid[%-2d]: %s", i, uuid_str);
             }
         }
@@ -1870,14 +1870,14 @@ static void on_remote_cod_changed_cb(void* cookie, bt_address_t* addr, uint32_t 
 
 static void on_remote_uuids_changed_cb(void* cookie, bt_address_t* addr, bt_uuid_t* uuids, uint16_t size)
 {
-    char uuid_str[40] = { 0 };
+    char uuid_str[BT_UUID_STR_LENGTH] = { 0 };
 
     PRINT_ADDR("Device [%s] uuids changed", addr);
 
     if (size) {
         PRINT("UUIDs:[%d]", size);
         for (int i = 0; i < size; i++) {
-            bt_uuid_to_string(uuids + i, uuid_str, 40);
+            bt_uuid_to_string(uuids + i, uuid_str, BT_UUID_STR_LENGTH);
             PRINT("\tuuid[%-2d]: %s", i, uuid_str);
         }
     }

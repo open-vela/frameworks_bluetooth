@@ -896,7 +896,7 @@ bt_status_t bt_sal_spp_connect(bt_address_t* addr, uint16_t conn_port, bt_uuid_t
     sal_spp_connection_t* spp_conn;
     uint16_t scn = PORT2SCN(conn_port);
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-    char uuid_str[40] = { 0 };
+    char uuid_str[BT_UUID_STR_LENGTH] = { 0 };
     sal_spp_client_t* spp_client;
     bt_status_t status;
 
@@ -906,7 +906,7 @@ bt_status_t bt_sal_spp_connect(bt_address_t* addr, uint16_t conn_port, bt_uuid_t
     }
 
     bt_addr_ba2str(addr, addr_str);
-    bt_uuid_to_string(uuid, uuid_str, 40);
+    bt_uuid_to_string(uuid, uuid_str, BT_UUID_STR_LENGTH);
     BT_LOGD("%s, addr:%s, scn:%d, uuid:%s", __func__, addr_str, scn, uuid_str);
 
     spp_conn_lock();
