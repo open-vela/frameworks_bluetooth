@@ -1241,7 +1241,7 @@ bt_status_t bt_sal_gatt_server_remove_elements(gatt_element_t* elements, uint16_
 
     uint16_t i;
     sal_adapter_req_t* req;
-    char uuid_str[40];
+    char uuid_str[BT_UUID_STR_LENGTH];
 
     req = calloc(1, sizeof(sal_adapter_req_t));
     if (!req)

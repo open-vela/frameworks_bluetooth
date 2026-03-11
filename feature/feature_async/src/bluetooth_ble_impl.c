@@ -191,8 +191,8 @@ bt_status_t get_valid_uuid128(uint8_t uuid128[16], const char* in)
 
 char* bt_uuid_to_feature_string(const bt_uuid_t* bt_uuid)
 {
-    char uuid[40] = { 0 };
-    bt_uuid_to_string(bt_uuid, uuid, 40);
+    char uuid[BT_UUID_STR_LENGTH] = { 0 };
+    bt_uuid_to_string(bt_uuid, uuid, BT_UUID_STR_LENGTH);
     return StringToFtString(uuid);
 }
 #endif
