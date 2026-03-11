@@ -1516,6 +1516,9 @@ bt_status_t bt_sal_hfp_ag_phone_state_change(bt_address_t* addr, uint8_t num_act
     uint8_t num_held, hfp_ag_call_state_t call_state, hfp_call_addrtype_t type,
     const char* number, const char* name)
 {
+    BT_LOGI("%s, num_active: %d, num_held: %d, call_state: %d, type: %d, number: %s, name: %s",
+        __func__, num_active, num_held, call_state, type,
+        number ? number : "(null)", name ? name : "(null)");
     bt_hfp_ag_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
         return BT_STATUS_FAIL;
@@ -1528,6 +1531,8 @@ bt_status_t bt_sal_hfp_ag_phone_state_change(bt_address_t* addr, uint8_t num_act
     };
 
     if (!call_info) {
+        BT_LOGD("%s, new call with number: %s, state: %d", __func__,
+            number ? number : "(null)", call_state);
 
         const new_call_entry_t* entry = find_new_call_entry(tele_call_state_to_sal_status(call_state));
         if (!entry) {
@@ -1548,6 +1553,9 @@ bt_status_t bt_sal_hfp_ag_phone_state_change(bt_address_t* addr, uint8_t num_act
         SAL_CHECK_RET(entry->op(&operation_context), 0);
         return BT_STATUS_SUCCESS;
     }
+
+    BT_LOGD("%s, existing call with number: %s, current state: %d, new state: %d", __func__,
+        number ? number : "(null)", call_info->state, call_state);
 
     const call_transition_t* transition = find_call_transition(call_info->state, call_state);
 
