@@ -967,7 +967,16 @@ static void zblue_on_ag_terminate(struct bt_hfp_ag_call* call)
 
     sal_call->state = BT_HFP_AG_CALL_STATUS_UNKNOWN;
 
-    hfp_ag_on_call_control(&sal_conn->addr, HFP_HF_CALL_CONTROL_CHLD_1);
+    if (!sal_conn->calls) {
+        hfp_ag_on_hangup_call(&sal_conn->addr);
+        return;
+    }
+
+    if (bt_list_length(sal_conn->calls) == 1) {
+        hfp_ag_on_hangup_call(&sal_conn->addr);
+    } else {
+        hfp_ag_on_call_control(&sal_conn->addr, HFP_HF_CALL_CONTROL_CHLD_1);
+    }
 }
 
 static void zblue_on_ag_available_codec(struct bt_hfp_ag* ag, uint32_t codec_ids)
