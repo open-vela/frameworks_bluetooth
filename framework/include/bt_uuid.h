@@ -46,6 +46,8 @@ extern "C" {
 #define BT_UUID_RANGE_DT_RD_VAL 0x2C18
 #define BT_UUID_RANGE_DT_OV_WR_VAL 0x2C19
 
+#define BT_UUID_STR_LENGTH 40
+
 typedef enum {
     BT_UUID16_TYPE = 2,
     BT_UUID32_TYPE = 4,

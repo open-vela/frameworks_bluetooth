@@ -29,7 +29,6 @@
 #include "bt_device.h"
 #include "bt_list.h"
 #include "bt_utils.h"
-#include "bt_uuid.h"
 #include "device.h"
 #include "service_loop.h"
 #include "utils/log.h"
@@ -649,7 +648,7 @@ void device_dump(bt_device_t* device)
 {
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
     char link_key_str[40] = { 0 };
-    char uuid_str[40] = { 0 };
+    char uuid_str[BT_UUID_STR_LENGTH] = { 0 };
 
     bt_addr_ba2str(&device->remote.addr, addr_str);
     printf("device: %s\n", addr_str);
@@ -668,7 +667,7 @@ void device_dump(bt_device_t* device)
         printf("\tUUIDs:\n");
         bt_uuid_t* uuid = device->remote.uuids.uuids;
         for (int i = 0; i < device->remote.uuids.uuid_cnt; i++) {
-            bt_uuid_to_string(uuid, uuid_str, 40);
+            bt_uuid_to_string(uuid, uuid_str, BT_UUID_STR_LENGTH);
             printf("\t\tuuid[%-2d]: %s\n", i, uuid_str);
             uuid++;
         }

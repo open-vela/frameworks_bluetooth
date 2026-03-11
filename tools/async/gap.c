@@ -1227,8 +1227,8 @@ static void get_uuids_cb(bt_instance_t* ins, bt_status_t status, bt_uuid_t* uuid
 {
     PRINT("\tUUIDs:[%d]", uuid_cnt);
     for (int i = 0; i < uuid_cnt; i++) {
-        char uuid_str[40] = { 0 };
-        bt_uuid_to_string(uuids + i, uuid_str, 40);
+        char uuid_str[BT_UUID_STR_LENGTH] = { 0 };
+        bt_uuid_to_string(uuids + i, uuid_str, BT_UUID_STR_LENGTH);
         PRINT("\t\tuuid[%-2d]: %s", i, uuid_str);
     }
 }
@@ -1569,14 +1569,14 @@ static void on_remote_cod_changed_cb(void* cookie, bt_address_t* addr, uint32_t 
 
 static void on_remote_uuids_changed_cb(void* cookie, bt_address_t* addr, bt_uuid_t* uuids, uint16_t size)
 {
-    char uuid_str[40] = { 0 };
+    char uuid_str[BT_UUID_STR_LENGTH] = { 0 };
 
     PRINT_ADDR("Device [%s] uuids changed", addr);
 
     if (size) {
         PRINT("UUIDs:[%d]", size);
         for (int i = 0; i < size; i++) {
-            bt_uuid_to_string(uuids + i, uuid_str, 40);
+            bt_uuid_to_string(uuids + i, uuid_str, BT_UUID_STR_LENGTH);
             PRINT("\tuuid[%-2d]: %s", i, uuid_str);
         }
     }
