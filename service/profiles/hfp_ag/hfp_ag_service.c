@@ -76,6 +76,7 @@ typedef struct
  ****************************************************************************/
 bt_status_t hfp_ag_send_message(hfp_ag_msg_t* msg);
 static void hfp_ag_process_message(void* data);
+static bool hfp_ag_unregister_callbacks(void** remote, void* cookie);
 
 /****************************************************************************
  * Private Data
@@ -220,7 +221,6 @@ static void ag_startup(profile_on_startup_t on_startup)
 
     service->max_connections = CONFIG_HFP_AG_MAX_CONNECTIONS;
     service->ag_devices = bt_list_new((bt_list_free_cb_t)ag_device_delete);
-    service->callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
     if (!service->ag_devices || !service->callbacks) {
         status = BT_STATUS_NOMEM;
         goto fail;
@@ -242,8 +242,6 @@ static void ag_startup(profile_on_startup_t on_startup)
 fail:
     bt_list_free(service->ag_devices);
     service->ag_devices = NULL;
-    bt_callbacks_list_free(service->callbacks);
-    service->callbacks = NULL;
     pthread_mutex_destroy(&service->device_lock);
     on_startup(PROFILE_HFP_AG, false);
 }
@@ -262,8 +260,6 @@ static void ag_shutdown(profile_on_shutdown_t on_shutdown)
     g_ag_service.ag_devices = NULL;
     pthread_mutex_unlock(&g_ag_service.device_lock);
     pthread_mutex_destroy(&g_ag_service.device_lock);
-    bt_callbacks_list_free(g_ag_service.callbacks);
-    g_ag_service.callbacks = NULL;
     bt_sal_hfp_ag_cleanup();
     on_shutdown(PROFILE_HFP_AG, true);
 }
@@ -279,15 +275,17 @@ static void hfp_ag_process_message(void* data)
 {
     hfp_ag_msg_t* msg = (hfp_ag_msg_t*)data;
 
-    if (!g_ag_service.started && msg->event != AG_STARTUP)
+    if (!g_ag_service.started && msg->event != AG_STARTUP) {
+        hfp_ag_msg_destory(msg);
         return;
+    }
 
     switch (msg->event) {
     case AG_STARTUP:
-        ag_startup((profile_on_startup_t)msg->data.valueint1);
+        ag_startup((profile_on_startup_t)msg->data.func);
         break;
     case AG_SHUTDOWN:
-        ag_shutdown((profile_on_shutdown_t)msg->data.valueint1);
+        ag_shutdown((profile_on_shutdown_t)msg->data.func);
         break;
     case AG_DEVICE_STATUS_CHANGED:
     case AG_PHONE_STATE_CHANGE:
@@ -397,9 +395,19 @@ static bt_status_t hfp_ag_init(void)
 {
     bt_status_t ret;
 
-    ret = audio_ctrl_init(PROFILE_HFP_AG);
+    if (g_ag_service.callbacks)
+        return BT_STATUS_SUCCESS;
+
+    g_ag_service.callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
+    if (!g_ag_service.callbacks) {
+        return BT_STATUS_NOMEM;
+    }
+
+    ret = audio_ctrl_init();
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s: failed to start audio control channel", __func__);
+        bt_callbacks_list_free(g_ag_service.callbacks);
+        g_ag_service.callbacks = NULL;
         return ret;
     }
 
@@ -408,7 +416,9 @@ static bt_status_t hfp_ag_init(void)
 
 static void hfp_ag_cleanup(void)
 {
-    audio_ctrl_cleanup(PROFILE_HFP_AG);
+    audio_ctrl_cleanup();
+    bt_callbacks_list_free(g_ag_service.callbacks);
+    g_ag_service.callbacks = NULL;
 }
 
 static bt_status_t hfp_ag_startup(profile_on_startup_t cb)
@@ -417,7 +427,7 @@ static bt_status_t hfp_ag_startup(profile_on_startup_t cb)
     if (!msg)
         return BT_STATUS_NOMEM;
 
-    msg->data.valueint1 = (uint32_t)cb;
+    msg->data.func = (void*)cb;
 
     return hfp_ag_send_message(msg);
 }
@@ -428,7 +438,7 @@ static bt_status_t hfp_ag_shutdown(profile_on_shutdown_t cb)
     if (!msg)
         return BT_STATUS_NOMEM;
 
-    msg->data.valueint1 = (uint32_t)cb;
+    msg->data.func = (void*)cb;
 
     return hfp_ag_send_message(msg);
 }
@@ -439,7 +449,16 @@ static void hfp_ag_process_msg(profile_msg_t* msg)
     case PROFILE_EVT_HFP_OFFLOADING:
         g_ag_service.offloading = msg->data.valuebool;
         break;
+    case PROFILE_EVT_REMOTE_DETACH: {
+        bt_instance_t* ins = msg->data.data;
 
+        if (ins->hfp_ag_cookie) {
+            BT_LOGD("%s PROFILE_EVT_REMOTE_DETACH", __func__);
+            hfp_ag_unregister_callbacks((void**)&ins, ins->hfp_ag_cookie);
+            ins->hfp_ag_cookie = NULL;
+        }
+        break;
+    }
     default:
         break;
     }
@@ -452,7 +471,7 @@ static int hfp_ag_get_state(void)
 
 static void* hfp_ag_register_callbacks(void* remote, const hfp_ag_callbacks_t* callbacks)
 {
-    if (!g_ag_service.started)
+    if (!g_ag_service.callbacks)
         return NULL;
 
     return bt_remote_callbacks_register(g_ag_service.callbacks, remote, (void*)callbacks);
@@ -460,7 +479,7 @@ static void* hfp_ag_register_callbacks(void* remote, const hfp_ag_callbacks_t* c
 
 static bool hfp_ag_unregister_callbacks(void** remote, void* cookie)
 {
-    if (!g_ag_service.started)
+    if (!g_ag_service.callbacks)
         return false;
 
     return bt_remote_callbacks_unregister(g_ag_service.callbacks, remote, cookie);
