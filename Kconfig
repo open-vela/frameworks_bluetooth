@@ -693,6 +693,14 @@ config GATT_CLIENT_CHAR_PER_SERVICE_MAX
 	help
 		The maximum number of characteristics that can be discovered and stored
 		under a single GATT service when using the ZBLUE stack.
+
+config BLUETOOTH_GATT_CLIENT_DEBUG
+	bool "Enable GATT Client debug"
+	default y
+	help
+		Enable debug logging for GATT Client service discovery and dump.
+		Disabling this option reduces code size by removing log strings.
+
 endif # BLUETOOTH_GATT_CLIENT
 
 menuconfig BLUETOOTH_GATT_SERVER

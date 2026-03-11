@@ -283,6 +283,9 @@ endif #CONFIG_MICO_MEDIA_MAIN_PLAYER
 ifeq ($(CONFIG_BLUETOOTH_GATT_CLIENT), y)
 	CSRCS += service/profiles/gatt/gattc_event.c
 	CSRCS += service/profiles/gatt/gattc_service.c
+ifeq ($(CONFIG_BLUETOOTH_GATT_CLIENT_DEBUG), y)
+	CSRCS += service/profiles/gatt/gattc_debug.c
+endif
 endif #CONFIG_BLUETOOTH_GATT_CLIENT
 ifeq ($(CONFIG_BLUETOOTH_GATT_SERVER), y)
 	CSRCS += service/profiles/gatt/gatts_event.c
