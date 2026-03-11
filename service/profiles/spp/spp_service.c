@@ -892,8 +892,8 @@ static void spp_on_connect_request_received(bt_address_t* addr, uint16_t port)
 
     device = alloc_new_device(addr, server->scn, &server->uuid, true, server->app_handle);
     if (device) {
-        char uuid_str[40] = { 0 };
-        bt_uuid_to_string(&server->uuid, uuid_str, 40);
+        char uuid_str[BT_UUID_STR_LENGTH] = { 0 };
+        bt_uuid_to_string(&server->uuid, uuid_str, BT_UUID_STR_LENGTH);
         BT_LOGD("CONN_REQ_RECEIVED scn:%d, uuid:%s, conn_id:%d", server->scn, uuid_str, device->conn_id);
         device->server = server;
         bt_sal_spp_connect_request_reply(addr, device->conn_port, true);
@@ -1115,8 +1115,8 @@ static bt_status_t spp_server_start(void* handle, uint16_t scn, bt_uuid_t* uuid,
         return ret;
     }
 
-    char uuid_str[40] = { 0 };
-    bt_uuid_to_string(&uuid_128_dst, uuid_str, 40);
+    char uuid_str[BT_UUID_STR_LENGTH] = { 0 };
+    bt_uuid_to_string(&uuid_128_dst, uuid_str, BT_UUID_STR_LENGTH);
     BT_LOGI("%s, scn:%d, uuid:%s", __func__, scn, uuid_str);
     bt_sal_spp_server_start(STACK_SVR_PORT(scn), &uuid_128_dst, MIN(max_connection, SERVER_CONNECTION_MAX));
 
@@ -1235,7 +1235,7 @@ static int spp_dump(void)
     struct list_node* node;
     int i = 0;
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-    char uuid_str[40] = { 0 };
+    char uuid_str[BT_UUID_STR_LENGTH] = { 0 };
 
     if (!g_spp_handle.started)
         return 0;
@@ -1244,7 +1244,7 @@ static int spp_dump(void)
     {
         i++;
         server = (spp_server_t*)node;
-        bt_uuid_to_string(&server->uuid, uuid_str, 40);
+        bt_uuid_to_string(&server->uuid, uuid_str, BT_UUID_STR_LENGTH);
         printf("\tServer[%d]: Scn:%d, UUID:%s" PRIx16 "\n", i, server->scn, uuid_str);
     }
     if (i == 0)
@@ -1257,7 +1257,7 @@ static int spp_dump(void)
         device = (spp_device_t*)node;
         bt_addr_ba2str(&device->addr, addr_str);
         if (server)
-            bt_uuid_to_string(&server->uuid, uuid_str, 40);
+            bt_uuid_to_string(&server->uuid, uuid_str, BT_UUID_STR_LENGTH);
         printf("\tDevice[%d]: ID:%d, Addr:%s, State:%d, Scn:%d, UUID:%s" PRIx16
                ", MFS:%d, Proxy:[%d,%s], Rx:%" PRIu32 ", Tx:%" PRIu32 "\n",
             i, device->conn_id, addr_str, device->state,
