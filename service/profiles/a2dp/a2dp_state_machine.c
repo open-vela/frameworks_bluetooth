@@ -388,6 +388,7 @@ static void idle_enter(state_machine_t* sm)
 
     a2dp_sm->audio_ready = false;
     prev_state = hsm_get_previous_state(sm);
+    a2dp_sm->pending = PENDING_NONE;
     if (prev_state != NULL) {
         bt_pm_conn_close(PROFILE_A2DP, &a2dp_sm->addr);
         if (a2dp_sm->peer_sep == SEP_SRC) {
