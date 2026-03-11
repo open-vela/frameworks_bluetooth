@@ -16,6 +16,7 @@
 #define LOG_TAG "gattc_debug"
 
 #include "gattc_debug.h"
+
 #include "bt_addr.h"
 #include "bt_list.h"
 #include "bt_uuid.h"

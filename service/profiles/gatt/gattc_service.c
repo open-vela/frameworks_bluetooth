@@ -18,14 +18,17 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#include "gattc_service.h"
+
 #include <stdint.h>
 #include <sys/types.h>
 
 #include "bt_config.h"
 #include "bt_list.h"
 #include "bt_profile.h"
+#include "gattc_debug.h"
 #include "gattc_event.h"
-#include "gattc_service.h"
+#include "gattc_internal.h"
 #include "index_allocator.h"
 #include "sal_gatt_client_interface.h"
 #include "service_loop.h"
@@ -71,31 +74,6 @@ typedef struct
     bt_list_t* connections;
 
 } gattc_manager_t;
-
-typedef struct
-{
-    bt_uuid_t* uuid;
-    uint16_t start_handle;
-    uint16_t end_handle;
-    int element_size;
-    gatt_element_t* elements;
-
-} gattc_service_t;
-
-typedef struct
-{
-    void* remote;
-    int conn_id;
-    profile_connection_state_t state;
-    void** user_phandle;
-    bt_address_t remote_addr;
-    gattc_manager_t* manager;
-    gattc_callbacks_t* callbacks;
-    bt_list_t* services;
-    bt_list_t* pend_ops;
-    bool discovering;
-
-} gattc_connection_t;
 
 /****************************************************************************
  * Private Function Prototypes
@@ -323,7 +301,7 @@ static void gattc_process_message(void* data)
     switch (msg->event) {
     case GATTC_EVENT_CONNECT_CHANGE: {
         profile_connection_state_t connect_state = msg->param.connect_change.state;
-        BT_ADDR_LOG("GATTC-CONNECTION-STATE-EVENT from:%s, state:%d", &connection->remote_addr, connect_state);
+        gattc_log_state(&connection->remote_addr, "GATTC-CONNECTION-STATE-EVENT", connect_state);
         if (connect_state == PROFILE_STATE_CONNECTED) {
             connection->state = connect_state;
             GATT_CBACK(connection->callbacks, on_connected, connection, &connection->remote_addr);
@@ -351,7 +329,9 @@ static void gattc_process_message(void* data)
 
         GATT_CBACK(connection->callbacks, on_discovered, connection, GATT_STATUS_SUCCESS, service->uuid, service->start_handle, service->end_handle);
     } break;
-    case GATTC_EVENT_DISOCVER_CMPL: {
+    case GATTC_EVENT_DISCOVER_CMPL: {
+        gattc_log_status(&connection->remote_addr, "GATTC-DISCOVER-COMPLETED", msg->param.discover_cmpl.status);
+        gattc_dump_services(connection);
         GATT_CBACK(connection->callbacks, on_discovered, connection, msg->param.discover_cmpl.status, NULL, 0, 0);
         connection->discovering = false;
         if (bt_list_length(connection->pend_ops))
@@ -497,31 +477,10 @@ static int if_gattc_dump(void)
 {
     bt_list_node_t* cnode;
     bt_list_t* clist = g_gattc_manager.connections;
-    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-    char uuid_str[40] = { 0 };
 
     for (cnode = bt_list_head(clist); cnode != NULL; cnode = bt_list_next(clist, cnode)) {
         gattc_connection_t* connection = (gattc_connection_t*)bt_list_node(cnode);
-        bt_list_node_t* snode;
-        bt_list_t* slist = connection->services;
-        int s_id = 0;
-
-        bt_addr_ba2str(&connection->remote_addr, addr_str);
-        BT_LOGI("GATT Client[%d]: State:%d, Peer:%s", connection->conn_id, connection->state, addr_str);
-        for (snode = bt_list_head(slist); snode != NULL; snode = bt_list_next(slist, snode)) {
-            gattc_service_t* service = (gattc_service_t*)bt_list_node(snode);
-            gatt_element_t* element = service->elements;
-
-            BT_LOGI("\tAttribute Table[%d]: Handle:0x%04x~0x%04x, Num:%d", s_id++, service->start_handle, service->end_handle, service->element_size);
-            for (int i = 0; i < service->element_size; i++, element++) {
-                bt_uuid_to_string(&element->uuid, uuid_str, 40);
-                BT_LOGI("\t\t>[0x%04x][Type:%d][Prop:%04x][UUID:%s]", element->handle, element->type, element->properties,
-                    uuid_str);
-            }
-        }
-
-        if (bt_list_is_empty(slist))
-            BT_LOGI("\tNo Services found");
+        gattc_dump_services(connection);
     }
 
     return 0;
@@ -592,7 +551,7 @@ static bt_status_t if_gattc_connect(void* conn_handle, bt_address_t* addr, ble_a
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
-    BT_ADDR_LOG("GATTC-CONNECT-REQUEST addr:%s", addr);
+    gattc_log(addr, "GATTC-CONNECT-REQUEST");
     bt_status_t status = bt_sal_gatt_client_connect(PRIMARY_ADAPTER, addr, addr_type);
     if (status == BT_STATUS_SUCCESS) {
         connection->state = PROFILE_STATE_CONNECTING;
@@ -609,7 +568,7 @@ static bt_status_t if_gattc_disconnect(void* conn_handle)
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
-    BT_ADDR_LOG("GATTC-DISCONNECT-REQUEST addr:%s", &connection->remote_addr);
+    gattc_log(&connection->remote_addr, "GATTC-DISCONNECT-REQUEST");
     bt_status_t status = bt_sal_gatt_client_disconnect(PRIMARY_ADAPTER, &connection->remote_addr);
     if (status == BT_STATUS_SUCCESS)
         connection->state = PROFILE_STATE_DISCONNECTING;
@@ -622,10 +581,14 @@ static bt_status_t if_gattc_discover_service(void* conn_handle, bt_uuid_t* filte
     gattc_op_t* pendop;
     gattc_connection_t* connection = conn_handle;
 
+    BT_LOGD("%s", __func__);
+
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
+    gattc_log(&connection->remote_addr, "GATTC-DISCOVER-REQUEST");
     if (connection->discovering) {
+        BT_LOGW("still discovering, enqueue the request");
         pendop = gattc_op_new(GATTC_REQ_DISCOVER);
         if (!pendop)
             return BT_STATUS_NOMEM;
@@ -890,7 +853,7 @@ void if_gattc_on_service_discovered(bt_address_t* addr, gatt_element_t* elements
 
 void if_gattc_on_discover_completed(bt_address_t* addr, gatt_status_t status)
 {
-    gattc_msg_t* msg = gattc_msg_new(GATTC_EVENT_DISOCVER_CMPL, addr, 0);
+    gattc_msg_t* msg = gattc_msg_new(GATTC_EVENT_DISCOVER_CMPL, addr, 0);
     msg->param.discover_cmpl.status = status;
     gattc_send_message(msg);
 }
