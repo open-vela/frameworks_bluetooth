@@ -81,6 +81,7 @@ typedef struct {
     uv_async_queue_t async;
     uv_thread_t thread;
     uv_sem_t ready;
+    uv_sem_t cmd_done;
     bool async_api;
 } bttool_t;
 

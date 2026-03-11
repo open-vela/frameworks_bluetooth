@@ -2000,6 +2000,9 @@ static void bttool_execute_command_cb(uv_async_queue_t* handle, void* buffer)
 
     // 3. free buffer alloced by getline()
     free(buffer);
+
+    // 4. notify main thread that command execution is done
+    uv_sem_post(&bttool->cmd_done);
 }
 
 static void bttool_command_uvloop_run(bttool_t* bttool)
@@ -2071,6 +2074,13 @@ static int bttool_create_thread(bttool_t* bttool)
     ret = uv_sem_init(&bttool->ready, 0);
     if (ret != 0) {
         PRINT("%s sem init error: %d", __func__, ret);
+        return ret;
+    }
+
+    ret = uv_sem_init(&bttool->cmd_done, 0);
+    if (ret != 0) {
+        PRINT("%s cmd_done sem init error: %d", __func__, ret);
+        uv_sem_destroy(&bttool->ready);
         return ret;
     }
 
@@ -2156,6 +2166,7 @@ int main(int argc, char** argv)
         len = getline(&buffer, &size, stdin);
         if (-1 == len) {
             bttool_quit(&bttool);
+            uv_sem_wait(&bttool.cmd_done);
             break;
         }
 
@@ -2172,14 +2183,17 @@ int main(int argc, char** argv)
 
         if (strcmp(buffer, "quit") == 0 || strcmp(buffer, "q") == 0) {
             uv_async_queue_send(&bttool.async, buffer);
+            uv_sem_wait(&bttool.cmd_done);
             break;
         }
 
         uv_async_queue_send(&bttool.async, buffer);
+        uv_sem_wait(&bttool.cmd_done);
 
         buffer = NULL;
     }
 
+    uv_sem_destroy(&bttool.cmd_done);
     uv_thread_join(&bttool.thread);
 
     if (g_bttool_loop) {
