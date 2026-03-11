@@ -226,7 +226,7 @@ static const bt_pm_spec_table_t g_pm_spec[] = {
             { BT_PM_NO_PREF, 0 }, /* conn close  */
             { BT_PM_NO_ACTION, 0 }, /* app open */
             { BT_PM_NO_ACTION, 0 }, /* app close */
-            { BT_PM_SNIFF3, 7000 }, /* sco open */
+            { BT_PM_ACTIVE, 0 }, /* sco open */
             { BT_PM_SNIFF, 7000 }, /* sco close */
             { BT_PM_SNIFF, 7000 }, /* idle */
             { BT_PM_ACTIVE, 0 } /* busy */
