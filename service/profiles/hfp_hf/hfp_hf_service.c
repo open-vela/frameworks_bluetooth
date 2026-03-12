@@ -197,7 +197,6 @@ static void hf_startup(profile_on_startup_t on_startup)
 
     service->max_connections = CONFIG_HFP_HF_MAX_CONNECTIONS;
     service->hf_devices = bt_list_new((bt_list_free_cb_t)hf_device_delete);
-    service->callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
     if (!service->hf_devices || !service->callbacks) {
         status = BT_STATUS_NOMEM;
         goto fail;
@@ -214,8 +213,6 @@ static void hf_startup(profile_on_startup_t on_startup)
 fail:
     bt_list_free(service->hf_devices);
     service->hf_devices = NULL;
-    bt_callbacks_list_free(service->callbacks);
-    service->callbacks = NULL;
     on_startup(PROFILE_HFP_HF, false);
 }
 
@@ -231,8 +228,6 @@ static void hf_shutdown(profile_on_shutdown_t on_shutdown)
     service->started = false;
     bt_list_free(service->hf_devices);
     service->hf_devices = NULL;
-    bt_callbacks_list_free(service->callbacks);
-    service->callbacks = NULL;
     bt_sal_hfp_hf_cleanup();
     on_shutdown(PROFILE_HFP_HF, true);
 }
@@ -371,12 +366,22 @@ bool hfp_hf_on_sco_stop(void)
 
 static bt_status_t hfp_hf_init(void)
 {
+    if (g_hfp_service.callbacks)
+        return BT_STATUS_SUCCESS;
+
+    g_hfp_service.callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
+    if (!g_hfp_service.callbacks) {
+        return BT_STATUS_NOMEM;
+    }
+
     return BT_STATUS_SUCCESS;
 }
 
 static void hfp_hf_cleanup(void)
 {
     hfp_hf_audio_cleanup();
+    bt_callbacks_list_free(g_hfp_service.callbacks);
+    g_hfp_service.callbacks = NULL;
 }
 
 static bt_status_t hfp_hf_startup(profile_on_startup_t cb)
@@ -429,7 +434,7 @@ static int hfp_hf_get_state(void)
 
 static void* hfp_hf_register_callbacks(void* remote, const hfp_hf_callbacks_t* callbacks)
 {
-    if (!g_hfp_service.started)
+    if (!g_hfp_service.callbacks)
         return NULL;
 
     return bt_remote_callbacks_register(g_hfp_service.callbacks, remote, (void*)callbacks);
@@ -437,7 +442,7 @@ static void* hfp_hf_register_callbacks(void* remote, const hfp_hf_callbacks_t* c
 
 static bool hfp_hf_unregister_callbacks(void** remote, void* cookie)
 {
-    if (!g_hfp_service.started)
+    if (!g_hfp_service.callbacks)
         return false;
 
     return bt_remote_callbacks_unregister(g_hfp_service.callbacks, remote, cookie);
