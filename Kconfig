@@ -889,4 +889,13 @@ config APP_BT_SAMPLE_CODE_ACCEPTBOND
 
 endif #APP_BT_SAMPLE_CODE
 
+config BLUETOOTH_Z_PORT
+	bool "Zephyr Bluetooth API Port Layer"
+	default n
+	depends on BLUETOOTH_FRAMEWORK
+	help
+	  Enable the Zephyr Bluetooth API port layer.
+	  This provides an adaptation layer to convert Zephyr Bluetooth
+	  API calls to the framework Bluetooth API.
+
 endif #BLUETOOTH
