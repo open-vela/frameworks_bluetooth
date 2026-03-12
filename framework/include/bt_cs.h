@@ -16,6 +16,7 @@
 #ifndef __BT_CS_H__
 #define __BT_CS_H__
 
+#include <stdbool.h>
 #include <stddef.h>
 
 #include "bluetooth.h"
@@ -139,6 +140,50 @@ bt_status_t BTSYMBOLS(bt_cs_stop_distance_measurement)(bt_instance_t* ins, bt_ad
  * @return          bt_status_t.
  */
 bt_status_t BTSYMBOLS(bt_get_cs_max_supported_security_level)(bt_instance_t* ins, bt_address_t* addr);
+
+/**
+ * @brief RAS feature bits for ras_feature field
+ */
+#define BT_CS_RAS_REAL_TIME_RANGING_DATA 0x01 /**< Bit 0: Real-time Ranging Data */
+#define BT_CS_RAS_RETRIEVE_LOST_DATA_SEGMENTS 0x02 /**< Bit 1: Retrieve Lost Ranging Data Segments */
+#define BT_CS_RAS_ABORT_OPERATION 0x04 /**< Bit 2: Abort Operation */
+#define BT_CS_RAS_FILTER_RANGING_DATA 0x08 /**< Bit 3: Filter Ranging Data */
+
+/**
+ * @brief CS_SYNC antenna selection values
+ */
+#define BT_CS_ANTENNA_SEL_1 0x01 /**< Use antenna identifier 1 */
+#define BT_CS_ANTENNA_SEL_2 0x02 /**< Use antenna identifier 2 */
+#define BT_CS_ANTENNA_SEL_3 0x03 /**< Use antenna identifier 3 */
+#define BT_CS_ANTENNA_SEL_4 0x04 /**< Use antenna identifier 4 */
+#define BT_CS_ANTENNA_SEL_SINGLE_REPEATE 0xFD /**< Antenna identifiers in repetitive order (0x01, 0x01, ..., Num_Antennae_Supported, Num_Antennae_Supported) */
+#define BT_CS_ANTENNA_SEL_DOUBLE_REPEATE 0xFE /**< Antenna identifiers in repetitive order from 0x01 to Num_Antennae_Supported */
+#define BT_CS_ANTENNA_SEL_NO_RECOMMEND 0xFF /**< Host does not have a recommendation */
+
+/**
+ * @brief CS configuration parameters for set command
+ */
+typedef struct {
+    uint32_t ras_feature; /**< RAS feature bits: Bit 0 (0x01): Real-time Ranging Data,
+                               Bit 1 (0x02): Retrieve Lost Ranging Data Segments,
+                               Bit 2 (0x04): Abort Operation,
+                               Bit 3 (0x08): Filter Ranging Data */
+    uint8_t role; /**< CS role bits: Bit 0 (0x01): initiator, Bit 1 (0x02): reflector */
+    uint8_t cs_sync_antenna_selection; /**< Antenna selection for CS_SYNC packets, see BT_CS_ANTENNA_SEL_* macros */
+    int8_t max_tx_power; /**< Maximum TX power in dBm (-127 to 20) */
+} bt_cs_set_params_t;
+
+/**
+ * @brief set CS configuration
+ *
+ * set CS configuration including RAS feature and default settings.
+ *
+ * @param ins     bt instance.
+ * @param addr    remote device address.
+ * @param params  CS configuration parameters, see @ref bt_cs_set_params_t.
+ * @return        bt_status_t.
+ */
+bt_status_t BTSYMBOLS(bt_cs_set_config)(bt_instance_t* ins, bt_address_t* addr, const bt_cs_set_params_t* params);
 
 #ifdef CONFIG_BT_CS_RAS_TEST
 /**

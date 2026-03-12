@@ -16,6 +16,7 @@
 #include "bluetooth.h"
 #include "bt_cs.h"
 #include "bt_tools.h"
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,15 +25,45 @@
 
 static int cs_start_distance_measurement_cmd(void* handle, int argc, char* argv[]);
 static int cs_stop_distance_measurement_cmd(void* handle, int argc, char* argv[]);
+static int cs_set_config_cmd(void* handle, int argc, char* argv[]);
 #ifdef CONFIG_BT_CS_RAS_TEST
 static int cs_test_cmd(void* handle, int argc, char* argv[]);
 #endif
 
 static void* cs_callbacks = NULL;
 
+static struct option cs_set_options[] = {
+    { "feature", required_argument, 0, 'f' },
+    { "role", required_argument, 0, 'r' },
+    { "antenna", required_argument, 0, 'a' },
+    { "power", required_argument, 0, 'p' },
+    { 0, 0, 0, 0 }
+};
+
 static bt_command_t g_cs_tables[] = {
     { "start", cs_start_distance_measurement_cmd, 0, "\"start distance measurement :\"" },
     { "stop", cs_stop_distance_measurement_cmd, 0, "\"stop distance measurement :\"" },
+    { "config", cs_set_config_cmd, 1, "set CS parameters\n"
+                                   "\t  -f or --feature, RAS feature bits (hex or decimal)\n"
+                                   "\t      Bit 0 (0x01): Real-time Ranging Data\n"
+                                   "\t      Bit 1 (0x02): Retrieve Lost Ranging Data Segments\n"
+                                   "\t      Bit 2 (0x04): Abort Operation\n"
+                                   "\t      Bit 3 (0x08): Filter Ranging Data\n"
+                                   "\t  -r or --role, CS role bits (hex or decimal)\n"
+                                   "\t      Bit 0 (0x01): Initiator\n"
+                                   "\t      Bit 1 (0x02): Reflector\n"
+                                   "\t  -a or --antenna, CS_SYNC antenna selection (hex or decimal)\n"
+                                   "\t      0x01 (1): antenna identifier 1\n"
+                                   "\t      0x02 (2): antenna identifier 2\n"
+                                   "\t      0x03 (3): antenna identifier 3\n"
+                                   "\t      0x04 (4): antenna identifier 4\n"
+                                   "\t      0xFD (253): repetitive order 0x01 to Num_Antennae_Supported\n"
+                                   "\t      0xFE (254): repetitive order 0x01 to 0x04\n"
+                                   "\t      0xFF (255): no recommendation\n"
+                                   "\t  -p or --power, max TX power in dBm (-127 to 20)\n"
+                                   "\t  Examples:\n"
+                                   "\t    set -f 0x07\n"
+                                   "\t    set -f 0x07 -r 0x01 -a 2 -p 10\n"},
 #ifdef CONFIG_BT_CS_RAS_TEST
     { "test", cs_test_cmd, 0, "\"Channel Sounding test mode :\"" },
 #endif
@@ -111,6 +142,55 @@ static int cs_stop_distance_measurement_cmd(void* handle, int argc, char* argv[]
 {
     bt_address_t addr = { 0 };
     bt_cs_stop_distance_measurement(handle, &addr, METHOD_CS, false);
+    return 0;
+}
+
+static int cs_set_config_cmd(void* handle, int argc, char* argv[])
+{
+    bt_cs_set_params_t params;
+    bt_address_t addr = { 0 };
+    memset(&params, 0, sizeof(params));
+    int opt;
+
+    optind = 0;
+    while ((opt = getopt_long(argc, argv, "+f:r:a:p:", cs_set_options, NULL)) != -1) {
+        switch (opt) {
+        case 'f':
+            params.ras_feature = strtoul(optarg, NULL, 0);
+            break;
+        case 'r':
+            params.role = (uint8_t)strtoul(optarg, NULL, 0);
+            break;
+        case 'a':
+            params.cs_sync_antenna_selection = (uint8_t)strtoul(optarg, NULL, 0);
+            break;
+        case 'p':
+            params.max_tx_power = (int8_t)atoi(optarg);
+            break;
+        default:
+            return CMD_USAGE_FAULT;
+        }
+    }
+
+    PRINT("Setting CS parameters:");
+    PRINT("  Feature:              0x%08" PRIx32, params.ras_feature);
+    PRINT("    Real-time Ranging Data:              %s", (params.ras_feature & 0x01) ? "Enabled" : "Disabled");
+    PRINT("    Retrieve Lost Ranging Data Segments: %s", (params.ras_feature & 0x02) ? "Enabled" : "Disabled");
+    PRINT("    Abort Operation:                     %s", (params.ras_feature & 0x04) ? "Enabled" : "Disabled");
+    PRINT("    Filter Ranging Data:                 %s", (params.ras_feature & 0x08) ? "Enabled" : "Disabled");
+    PRINT("  Role:                 0x%02x", params.role);
+    PRINT("    Initiator:                           %s", (params.role & 0x01) ? "Enabled" : "Disabled");
+    PRINT("    Reflector:                           %s", (params.role & 0x02) ? "Enabled" : "Disabled");
+    PRINT("  Antenna selection:    0x%02x", params.cs_sync_antenna_selection);
+    PRINT("  Power:                %d dBm", params.max_tx_power);
+
+    bt_status_t status = bt_cs_set_config(handle, &addr, &params);
+    if (status == BT_STATUS_SUCCESS) {
+        PRINT("Set CS parameters successfully");
+    } else {
+        PRINT("Failed to set CS parameters, status: %d", status);
+    }
+
     return 0;
 }
 

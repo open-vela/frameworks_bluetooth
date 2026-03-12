@@ -30,9 +30,11 @@
 #define BT_CS_START_DISTANCE_MEASUREMENT BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_CS, CS_SUBCODE_START_DISTANCE_MEASUREMENT)
 #define CS_SUBCODE_STOP_DISTANCE_MEASUREMENT 4
 #define BT_CS_STOP_DISTANCE_MEASUREMENT BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_CS, CS_SUBCODE_STOP_DISTANCE_MEASUREMENT)
+#define CS_SUBCODE_SET_CONFIG 5
+#define BT_CS_SET_CONFIG BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_CS, CS_SUBCODE_SET_CONFIG)
 
 #ifdef CONFIG_BT_CS_RAS_TEST
-#define CS_SUBCODE_TEST 5
+#define CS_SUBCODE_TEST 6
 #define BT_CS_TEST BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_CS, CS_SUBCODE_TEST)
 #endif /* CONFIG_BT_CS_RAS_TEST */
 
@@ -59,6 +61,11 @@ typedef union {
         uint8_t method;
         uint8_t timeout_bool; /* boolean */
     } _bt_cs_stop_distance_measurement;
+
+    struct {
+        bt_address_t addr;
+        bt_cs_set_params_t params;
+    } _bt_cs_set_config;
 
 #ifdef CONFIG_BT_CS_RAS_TEST
     struct {

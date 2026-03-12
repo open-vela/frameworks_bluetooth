@@ -152,6 +152,14 @@ static const state_t started_state = {
     .process_event = started_process_event,
 };
 
+void cs_update_default_settings(const bt_cs_set_params_t* params)
+{
+    g_default_settings.enable_initiator_role = params->role & 0x01;
+    g_default_settings.enable_reflector_role = params->role & 0x02;
+    g_default_settings.cs_sync_antenna_selection = params->cs_sync_antenna_selection;
+    g_default_settings.max_tx_power = params->max_tx_power;
+}
+
 static void stopped_enter(state_machine_t* sm)
 {
     cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
@@ -229,7 +237,6 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
             g_default_settings.enable_reflector_role = true;
         }
 
-        g_default_settings.cs_sync_antenna_selection = BT_LE_SRV_CS_ANTENNA_SELECTION_OPT_TWO;
         bt_sal_cs_set_default_settings(PRIMARY_ADAPTER, &(data->bd_addr), &g_default_settings);
         hsm_transition_to(sm, &wait_for_config_complete_state);
         break;
