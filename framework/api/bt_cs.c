@@ -56,6 +56,13 @@ bt_status_t BTSYMBOLS(bt_cs_stop_distance_measurement)(bt_instance_t* ins, bt_ad
     return profile->stop_distance_measurement(addr, method, timeout);
 }
 
+bt_status_t BTSYMBOLS(bt_cs_set_config)(bt_instance_t* ins, bt_address_t* addr, const bt_cs_set_params_t* params)
+{
+    bt_cs_interface_t* profile = get_profile_service();
+
+    return profile->set_config(addr, params);
+}
+
 #ifdef CONFIG_BT_CS_RAS_TEST
 bt_status_t BTSYMBOLS(bt_cs_test)(bt_instance_t* ins, void* data, uint16_t len)
 {

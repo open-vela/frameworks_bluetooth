@@ -971,7 +971,6 @@ static bt_srv_conn_le_cs_config_t* zblue_convert_cs_config_to_service(struct bt_
 }
 void zblue_on_cs_config_created(struct bt_conn* conn, struct bt_conn_le_cs_config* config)
 {
-    bt_address_t bt_addr = { 0 };
     cs_msg_t* msg = NULL;
     bt_srv_conn_le_cs_config_t* cs_config = NULL;
     bt_address_t* addr = bt_conn_get_addr(conn);
@@ -997,7 +996,6 @@ void zblue_on_cs_config_removed(struct bt_conn* conn, uint8_t config_id)
 
 void zblue_on_cs_security_enabled(struct bt_conn* conn)
 {
-    bt_address_t bt_addr = { 0 };
     cs_msg_t* msg = NULL;
     bt_address_t* addr = bt_conn_get_addr(conn);
     if (!addr) {
@@ -1087,7 +1085,6 @@ static bt_srv_conn_le_cs_procedure_enable_complete_t* zblue_convert_procedure_en
 void zblue_on_cs_procedure_enabled(struct bt_conn* conn,
     struct bt_conn_le_cs_procedure_enable_complete* params)
 {
-    bt_address_t bt_addr = { 0 };
     cs_msg_t* msg = NULL;
     bt_srv_conn_le_cs_procedure_enable_complete_t* procedure = NULL;
     bt_address_t* addr = bt_conn_get_addr(conn);
@@ -1227,7 +1224,6 @@ static bt_srv_conn_le_cs_subevent_result_t* zblue_convert_subevent_result_struct
 
 void zblue_on_cs_subevent(struct bt_conn* conn, struct bt_conn_le_cs_subevent_result* result)
 {
-    bt_address_t bt_addr = { 0 };
     cs_msg_t* msg = NULL;
     bt_srv_conn_le_cs_subevent_result_t* subevent = NULL;
     bt_address_t* addr = bt_conn_get_addr(conn);

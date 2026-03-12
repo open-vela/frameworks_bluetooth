@@ -33,6 +33,7 @@
 #ifndef __CS_STATE_MACHINE_H__
 #define __CS_STATE_MACHINE_H__
 
+#include "bt_cs.h"
 #include "bt_device.h"
 #include "cs_msg.h"
 
@@ -55,4 +56,5 @@ typedef struct {
 
 cs_state_machine_t* cs_state_machine_new(void* context, bt_address_t* bd_addr);
 void cs_state_machine_handle_event(cs_state_machine_t* sm, cs_msg_t* msg);
+void cs_update_default_settings(const bt_cs_set_params_t* params);
 #endif

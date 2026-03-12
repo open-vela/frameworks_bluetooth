@@ -19,6 +19,7 @@
 #define _CS_RAS_H_
 
 #include "bt_addr.h"
+#include "bt_cs.h"
 #include "bt_gatt_defs.h"
 #include "cs_ras_gatts.h"
 #include "cs_ras_test.h"
@@ -245,10 +246,11 @@ typedef uint8_t ras_rang_mode_t;
  * | 4–31   | Reserved for Future Use (RFU)                 |
  * +--------+-----------------------------------------------+
  */
-#define CS_RAS_REAL_TIME_RANG_DATA_SUPPROTED (1 << 0)
-#define CS_RAS_RETRI_LOST_RANG_DATA_SEG (1 << 1)
-#define CS_RAS_ABORT_OPRATION (1 << 2)
-#define CS_RAS_FILTER_RANG_DATA (1 << 3)
+/* Legacy compatibility - use BT_CS_RAS_* macros from bt_cs.h instead */
+#define CS_RAS_REAL_TIME_RANG_DATA_SUPPROTED BT_CS_RAS_REAL_TIME_RANGING_DATA
+#define CS_RAS_RETRI_LOST_RANG_DATA_SEG      BT_CS_RAS_RETRIEVE_LOST_DATA_SEGMENTS
+#define CS_RAS_ABORT_OPRATION                BT_CS_RAS_ABORT_OPERATION
+#define CS_RAS_FILTER_RANG_DATA              BT_CS_RAS_FILTER_RANGING_DATA
 
 /**
  * @brief RAS Control Point Operation Codes (Op Codes) and Parameters.
@@ -705,6 +707,27 @@ int bt_cs_ras_enable(void);
  * @return 0 on success, or a negative error code on failure.
  */
 int bt_cs_ras_disable(void);
+
+/**
+ * @brief Set RAS feature value.
+ *
+ * This function sets the RAS feature value in the RAS server environment.
+ *
+ * @param feature  RAS feature value to set.
+ * @return 0 on success, or a negative error code on failure.
+ */
+bt_status_t bt_cs_ras_set_feature(uint32_t feature);
+
+/**
+ * @brief Set RAS role.
+ *
+ * This function sets the RAS role (Initiator or Reflector) in the RAS server environment.
+ * The role determines how CS subevent step data is parsed.
+ *
+ * @param role  RAS role value (bit 0: initiator, bit 1: reflector).
+ * @return BT_STATUS_SUCCESS on success, or error code on failure.
+ */
+bt_status_t bt_cs_ras_set_role(uint8_t role);
 
 #ifdef CONFIG_BT_CS_RAS_TEST
 
