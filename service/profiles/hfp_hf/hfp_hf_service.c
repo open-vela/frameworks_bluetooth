@@ -73,6 +73,7 @@ typedef struct
  ****************************************************************************/
 bt_status_t hfp_hf_send_message(hfp_hf_msg_t* msg);
 static hf_state_machine_t* get_state_machine(bt_address_t* addr);
+static bool hfp_hf_unregister_callbacks(void** remote, void* cookie);
 
 /****************************************************************************
  * Private Data
@@ -196,7 +197,6 @@ static void hf_startup(profile_on_startup_t on_startup)
 
     service->max_connections = CONFIG_HFP_HF_MAX_CONNECTIONS;
     service->hf_devices = bt_list_new((bt_list_free_cb_t)hf_device_delete);
-    service->callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
     if (!service->hf_devices || !service->callbacks) {
         status = BT_STATUS_NOMEM;
         goto fail;
@@ -213,8 +213,6 @@ static void hf_startup(profile_on_startup_t on_startup)
 fail:
     bt_list_free(service->hf_devices);
     service->hf_devices = NULL;
-    bt_callbacks_list_free(service->callbacks);
-    service->callbacks = NULL;
     on_startup(PROFILE_HFP_HF, false);
 }
 
@@ -230,8 +228,6 @@ static void hf_shutdown(profile_on_shutdown_t on_shutdown)
     service->started = false;
     bt_list_free(service->hf_devices);
     service->hf_devices = NULL;
-    bt_callbacks_list_free(service->callbacks);
-    service->callbacks = NULL;
     bt_sal_hfp_hf_cleanup();
     on_shutdown(PROFILE_HFP_HF, true);
 }
@@ -247,8 +243,10 @@ static void hfp_hf_process_message(void* data)
 {
     hfp_hf_msg_t* msg = (hfp_hf_msg_t*)data;
 
-    if (!g_hfp_service.started && msg->event != HF_STARTUP)
+    if (!g_hfp_service.started && msg->event != HF_STARTUP) {
+        hfp_hf_msg_destroy(msg);
         return;
+    }
 
     switch (msg->event) {
     case HF_STARTUP:
@@ -372,9 +370,19 @@ static bt_status_t hfp_hf_init(void)
 {
     bt_status_t ret;
 
-    ret = audio_ctrl_init(PROFILE_HFP_HF);
+    if (g_hfp_service.callbacks)
+        return BT_STATUS_SUCCESS;
+
+    g_hfp_service.callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
+    if (!g_hfp_service.callbacks) {
+        return BT_STATUS_NOMEM;
+    }
+
+    ret = audio_ctrl_init();
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s: failed to start audio control channel", __func__);
+        bt_callbacks_list_free(g_hfp_service.callbacks);
+        g_hfp_service.callbacks = NULL;
         return ret;
     }
 
@@ -383,7 +391,9 @@ static bt_status_t hfp_hf_init(void)
 
 static void hfp_hf_cleanup(void)
 {
-    audio_ctrl_cleanup(PROFILE_HFP_HF);
+    audio_ctrl_cleanup();
+    bt_callbacks_list_free(g_hfp_service.callbacks);
+    g_hfp_service.callbacks = NULL;
 }
 
 static bt_status_t hfp_hf_startup(profile_on_startup_t cb)
@@ -414,7 +424,16 @@ static void hfp_hf_process_msg(profile_msg_t* msg)
     case PROFILE_EVT_HFP_OFFLOADING:
         g_hfp_service.offloading = msg->data.valuebool;
         break;
+    case PROFILE_EVT_REMOTE_DETACH: {
+        bt_instance_t* ins = msg->data.data;
 
+        if (ins->hfp_hf_cookie) {
+            BT_LOGD("%s PROFILE_EVT_REMOTE_DETACH", __func__);
+            hfp_hf_unregister_callbacks((void**)&ins, ins->hfp_hf_cookie);
+            ins->hfp_hf_cookie = NULL;
+        }
+        break;
+    }
     default:
         break;
     }
@@ -427,7 +446,7 @@ static int hfp_hf_get_state(void)
 
 static void* hfp_hf_register_callbacks(void* remote, const hfp_hf_callbacks_t* callbacks)
 {
-    if (!g_hfp_service.started)
+    if (!g_hfp_service.callbacks)
         return NULL;
 
     return bt_remote_callbacks_register(g_hfp_service.callbacks, remote, (void*)callbacks);
@@ -435,7 +454,7 @@ static void* hfp_hf_register_callbacks(void* remote, const hfp_hf_callbacks_t* c
 
 static bool hfp_hf_unregister_callbacks(void** remote, void* cookie)
 {
-    if (!g_hfp_service.started)
+    if (!g_hfp_service.callbacks)
         return false;
 
     return bt_remote_callbacks_unregister(g_hfp_service.callbacks, remote, cookie);
@@ -744,6 +763,28 @@ static bt_status_t hfp_hf_send_dtmf(bt_address_t* addr, char dtmf)
     return hfp_hf_send_message(msg);
 }
 
+static bt_status_t hfp_hf_get_subscriber_number(bt_address_t* addr)
+{
+    CHECK_ENABLED();
+
+    hfp_hf_msg_t* msg = hfp_hf_msg_new(HF_GET_SUBSCRIBER_NUMBER, addr);
+
+    if (!msg)
+        return BT_STATUS_NOMEM;
+
+    return hfp_hf_send_message(msg);
+}
+
+static bt_status_t hfp_hf_query_current_calls_with_callback(bt_address_t* addr)
+{
+    CHECK_ENABLED();
+    hfp_hf_msg_t* msg = hfp_hf_msg_new(HF_QUERY_CURRENT_CALLS_WITH_CALLBACK, addr);
+    if (!msg)
+        return BT_STATUS_NOMEM;
+
+    return hfp_hf_send_message(msg);
+}
+
 static const hfp_hf_interface_t HfInterface = {
     sizeof(HfInterface),
     .register_callbacks = hfp_hf_register_callbacks,
@@ -771,6 +812,8 @@ static const hfp_hf_interface_t HfInterface = {
     .update_battery_level = hfp_hf_update_battery_level,
     .volume_control = hfp_hf_volume_control,
     .send_dtmf = hfp_hf_send_dtmf,
+    .get_subscriber_number = hfp_hf_get_subscriber_number,
+    .query_current_calls_with_callback = hfp_hf_query_current_calls_with_callback,
 };
 
 static const void* get_hf_profile_interface(void)
@@ -846,6 +889,24 @@ void hf_service_notify_callheld(bt_address_t* addr, hfp_callheld_t callheld)
 {
     BT_LOGD("%s", __func__);
     HF_CALLBACK_FOREACH(g_hfp_service.callbacks, callheld_cb, addr, callheld);
+}
+
+void hf_service_notify_clip_received(bt_address_t* addr, const char* number, const char* name)
+{
+    BT_LOGD("%s", __func__);
+    HF_CALLBACK_FOREACH(g_hfp_service.callbacks, clip_cb, addr, number, name);
+}
+
+void hf_service_notify_subscriber_number(bt_address_t* addr, const char* number, hfp_subscriber_number_service_t service)
+{
+    BT_LOGD("%s", __func__);
+    HF_CALLBACK_FOREACH(g_hfp_service.callbacks, subscriber_number_cb, addr, number, service);
+}
+
+void hf_service_notify_current_calls(bt_address_t* addr, uint8_t num, hfp_current_call_t* calls)
+{
+    BT_LOGD("%s", __func__);
+    HF_CALLBACK_FOREACH(g_hfp_service.callbacks, query_current_calls_cb, addr, num, calls);
 }
 
 void hfp_hf_on_connection_state_changed(bt_address_t* addr, profile_connection_state_t state,
@@ -1018,6 +1079,18 @@ void hfp_hf_on_at_command_result_response(bt_address_t* addr, uint32_t at_cmd_co
 
     msg->data.valueint1 = at_cmd_code;
     msg->data.valueint2 = result;
+    hfp_hf_send_message(msg);
+}
+
+void hfp_hf_on_subscriber_number_response(bt_address_t* addr, const char* number, hfp_subscriber_number_service_t service)
+{
+    hfp_hf_msg_t* msg = hfp_hf_msg_new(HF_STACK_EVENT_CNUM, addr);
+    if (!msg)
+        return;
+
+    HF_MSG_ADD_STR(msg, 1, number, strlen(number));
+    msg->data.valueint2 = service;
+
     hfp_hf_send_message(msg);
 }
 
