@@ -161,6 +161,10 @@ static sal_spp_connection_t* spp_find_connection_by_scn(const bt_address_t* addr
     sal_spp_connection_t* spp_conn;
     bt_list_node_t* node;
 
+    if (!spp_mgr->connections || !addr) {
+        return NULL;
+    }
+
     for (node = bt_list_head(spp_mgr->connections); node != NULL;
          node = bt_list_next(spp_mgr->connections, node)) {
         spp_conn = bt_list_node(node);
@@ -178,6 +182,10 @@ static sal_spp_connection_t* spp_find_connection_by_port(uint16_t conn_port)
     sal_spp_connection_t* spp_conn;
     bt_list_node_t* node;
 
+    if (!spp_mgr->connections) {
+        return NULL;
+    }
+
     for (node = bt_list_head(spp_mgr->connections); node != NULL;
          node = bt_list_next(spp_mgr->connections, node)) {
         spp_conn = bt_list_node(node);
@@ -194,6 +202,10 @@ static sal_spp_connection_t* spp_find_connection_by_dlc(struct bt_rfcomm_dlc* rf
     sal_spp_manager_t* spp_mgr = &g_spp_manager;
     sal_spp_connection_t* spp_conn;
     bt_list_node_t* node;
+
+    if (!spp_mgr->connections || !rfcomm_dlc) {
+        return NULL;
+    }
 
     for (node = bt_list_head(spp_mgr->connections); node != NULL;
          node = bt_list_next(spp_mgr->connections, node)) {
@@ -236,6 +248,10 @@ static sal_spp_connection_t* spp_find_connection_by_dlci(const bt_address_t* add
     sal_spp_connection_t* spp_conn;
     bt_list_node_t* node;
 
+    if (!spp_mgr->connections || !addr) {
+        return NULL;
+    }
+
     for (node = bt_list_head(spp_mgr->connections); node != NULL;
          node = bt_list_next(spp_mgr->connections, node)) {
         spp_conn = bt_list_node(node);
@@ -252,6 +268,10 @@ static sal_spp_server_t* spp_find_server_by_scn(uint16_t scn)
     sal_spp_manager_t* spp_mgr = &g_spp_manager;
     sal_spp_server_t* spp_server;
     bt_list_node_t* node;
+
+    if (!spp_mgr->servers) {
+        return NULL;
+    }
 
     for (node = bt_list_head(spp_mgr->servers); node != NULL;
          node = bt_list_next(spp_mgr->servers, node)) {
