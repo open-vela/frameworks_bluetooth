@@ -843,7 +843,9 @@ bt_status_t bt_sal_get_address(bt_controller_id_t id, bt_address_t* addr)
     bt_id_get(&got, &count);
     bt_addr_set(addr, (uint8_t*)&got.a);
 
-    SAL_ASSERT(got.type == BT_ADDR_LE_PUBLIC);
+    /* Allow both public and random static addresses.
+     * BLE-only controllers (e.g. nRF54L15) only have random static. */
+    SAL_ASSERT(got.type == BT_ADDR_LE_PUBLIC || got.type == BT_ADDR_LE_RANDOM);
     return BT_STATUS_SUCCESS;
 #else
     return BT_STATUS_NOT_SUPPORTED;
