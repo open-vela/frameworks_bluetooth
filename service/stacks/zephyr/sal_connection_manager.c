@@ -343,6 +343,12 @@ static void bt_sal_cm_acl_connected(void* data)
 
     cm_data = (cm_data_t*)data;
 
+    if (!bt_sal_connecting_list) {
+        BT_LOGW("%s, bt_sal_connecting_list is NULL", __func__);
+        cm_data_destory(cm_data);
+        return;
+    }
+
     manager = bt_list_find(bt_sal_connecting_list, bt_connection_manager_find, &cm_data->addr);
 
     if (manager != NULL) {
