@@ -283,6 +283,26 @@ static bt_status_t cs_stop_distance_measurement(bt_address_t* addr, int method, 
     return BT_STATUS_SUCCESS;
 }
 
+static bt_status_t cs_set_config(bt_address_t* addr, const bt_cs_set_params_t* params)
+{
+    BT_LOGD("cs_set_config: addr=%s, ras_feature=0x%08" PRIx32 ", role=0x%02x, antenna=0x%02x, max_tx_power=%d",
+        bt_addr_str(addr), params->ras_feature, params->role,
+        params->cs_sync_antenna_selection, params->max_tx_power);
+
+    bt_status_t ret = bt_cs_ras_set_feature(params->ras_feature);
+    if (ret != BT_STATUS_SUCCESS) {
+        return ret;
+    }
+
+    ret = bt_cs_ras_set_role(params->role);
+    if (ret != BT_STATUS_SUCCESS) {
+        return ret;
+    }
+
+    cs_update_default_settings(params);
+    return BT_STATUS_SUCCESS;
+}
+
 #ifdef CONFIG_BT_CS_RAS_TEST
 static bt_status_t cs_test(void* data, uint16_t len)
 {
@@ -297,6 +317,7 @@ static const bt_cs_interface_t cs_interface = {
     .unregister_callbacks = cs_unregister_callbacks,
     .start_distance_measurement = cs_start_distance_measurement,
     .stop_distance_measurement = cs_stop_distance_measurement,
+    .set_config = cs_set_config,
 #ifdef CONFIG_BT_CS_RAS_TEST
     .cs_test = cs_test,
 #endif /* CONFIG_BT_CS_RAS_TEST */

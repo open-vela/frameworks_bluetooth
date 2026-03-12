@@ -26,6 +26,8 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
+#include "bt_internal.h"
+
 #include "bluetooth.h"
 #include "bt_cs.h"
 #include "bt_message.h"
@@ -116,6 +118,11 @@ void bt_socket_server_cs_process(service_poll_t* poll,
             &packet->cs_pl._bt_cs_stop_distance_measurement.addr,
             packet->cs_pl._bt_cs_stop_distance_measurement.method,
             packet->cs_pl._bt_cs_stop_distance_measurement.timeout_bool);
+        break;
+    case CS_SUBCODE_SET_CONFIG:
+        packet->cs_r.status = BTSYMBOLS(bt_cs_set_config)(ins,
+            &packet->cs_pl._bt_cs_set_config.addr,
+            &packet->cs_pl._bt_cs_set_config.params);
         break;
 #ifdef CONFIG_BT_CS_RAS_TEST
     case CS_SUBCODE_TEST:
