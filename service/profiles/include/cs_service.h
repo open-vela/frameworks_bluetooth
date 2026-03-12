@@ -178,8 +178,10 @@ typedef enum {
     BT_LE_SRV_CS_ANTENNA_SELECTION_OPT_THREE = 0x03,
     /** Use antenna identifier 4 for CS_SYNC packets. */
     BT_LE_SRV_CS_ANTENNA_SELECTION_OPT_FOUR = 0x04,
-    /** Use antennas in repetitive order from 1 to 4 for CS_SYNC packets. */
-    BT_LE_SRV_CS_ANTENNA_SELECTION_OPT_REPETITIVE = 0xFE,
+    /** Use antennas in repetitive order from 0x01 to Num_Antennae_Supported for CS_SYNC packets. */
+    BT_LE_SRV_CS_ANTENNA_SELECTION_OPT_REPETITIVE_1_TO_N = 0xFD,
+    /** Use antennas in repetitive order from 0x01 to 0x04 for CS_SYNC packets. */
+    BT_LE_SRV_CS_ANTENNA_SELECTION_OPT_REPETITIVE_1_TO_4 = 0xFE,
     /** No recommendation for local controller antenna selection. */
     BT_LE_SRV_CS_ANTENNA_SELECTION_OPT_NO_RECOMMENDATION = 0xFF,
 } bt_le_srv_cs_sync_antenna_selection_t;
@@ -666,6 +668,8 @@ typedef struct {
     bt_status_t (*start_distance_measurement)(bt_distance_measurement_params_t* params);
 
     bt_status_t (*stop_distance_measurement)(bt_address_t* addr, int method, bool timeout);
+
+    bt_status_t (*set_config)(bt_address_t* addr, const bt_cs_set_params_t* params);
 
 #ifdef CONFIG_BT_CS_RAS_TEST
     bt_status_t (*cs_test)(void* data, uint16_t len);

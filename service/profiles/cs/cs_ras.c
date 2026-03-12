@@ -1474,6 +1474,41 @@ int bt_cs_ras_disable(void)
     return 0;
 }
 
+bt_status_t bt_cs_ras_set_feature(uint32_t feature)
+{
+    if (!ras_srv) {
+        BT_LOGE("RAS server not initialized.");
+        return BT_STATUS_NOT_READY;
+    }
+
+    ras_srv->ras_feature = feature;
+
+    return BT_STATUS_SUCCESS;
+}
+
+bt_status_t bt_cs_ras_set_role(uint8_t role)
+{
+    if (!ras_srv) {
+        BT_LOGE("RAS server not initialized.");
+        return BT_STATUS_NOT_READY;
+    }
+
+    // Convert from bt_cs_set_params_t role format to RAS role
+    // role bit 0: initiator, bit 1: reflector
+    if (role & 0x01) {
+        ras_srv->ras_role = CS_RAS_ROLE_INITIATOR;
+    } else if (role & 0x02) {
+        ras_srv->ras_role = CS_RAS_ROLE_REFLECTOR;
+    } else {
+        // Default to initiator if no role specified
+        ras_srv->ras_role = CS_RAS_ROLE_REFLECTOR;
+    }
+
+    BT_LOGD("RAS role set to: %s", ras_srv->ras_role == CS_RAS_ROLE_INITIATOR ? "Initiator" : "Reflector");
+
+    return BT_STATUS_SUCCESS;
+}
+
 #ifdef CONFIG_BT_CS_RAS_TEST
 int ras_subevent_recv_test(ras_rang_mode_t mode, ras_testcase_t test_case,
     bt_address_t* addr, bt_srv_conn_le_cs_subevent_result_t* result)

@@ -18,13 +18,14 @@
 #ifndef _CS_RAS_H_
 #define _CS_RAS_H_
 
-#include "service_loop.h"
-#include "cs_ras_util.h"
 #include "bt_addr.h"
-#include "cs_ras_gatts.h"
+#include "bt_cs.h"
 #include "bt_gatt_defs.h"
+#include "cs_ras_gatts.h"
 #include "cs_ras_test.h"
+#include "cs_ras_util.h"
 #include "cs_service.h"
+#include "service_loop.h"
 
 #ifndef BIT
 #define BIT(n) (1UL << n)
@@ -110,8 +111,8 @@
  */
 #define CS_RAS_GATT_INDICATION (2)
 
-#define CS_RAS_CONTROL_POINT_DATA_LEN    (3)
-#define CS_RAS_CTL_OP_RSP_CODE_DATA_LEN  (2)
+#define CS_RAS_CONTROL_POINT_DATA_LEN (3)
+#define CS_RAS_CTL_OP_RSP_CODE_DATA_LEN (2)
 
 /**
  * @brief RAS sub-procedure header identifier.
@@ -126,17 +127,17 @@
  * | Ranging Counter        | 12          | Lower 12 bits of `CS_Procedure_Counter` (see *Vol 4, Part E, Sec 7.7.65.44* in [1]) provided by the Core Controller.     |
  * | Configuration ID       | 4           | CS configuration identifier. Range: 0–3.                                                                                |
  * | Selected TX Power      | 8           | Transmit power level used for the CS Procedure. Range: -127 to 20 dBm (referenced to 1 mW).                              |
- * | Antenna Paths Mask     | 8           | Indicates which antenna paths are reported: <br>• Bit0: Path 1 <br>• Bit1: Path 2 <br>• Bit2: 
+ * | Antenna Paths Mask     | 8           | Indicates which antenna paths are reported: <br>• Bit0: Path 1 <br>• Bit1: Path 2 <br>• Bit2:
  *                                          Path 3 <br>• Bit3: Path 4 <br>• Bits 4–7: RFU |
  * | Subevent Header        | —           | —                                                                                                                        |
  * | Start ACL Connection Event | 16      | Starting ACL connection event count for results reported in the event.                                                   |
  * | Frequency Compensation | 16          | Frequency compensation value in units of 0.01 ppm (15-bit signed integer).                                              |
- * | Ranging Done Status    | 4           | Completion state for the CS Procedure: <br>• 0x0 – All results complete <br>• 0x1 – Partial results, more to 
+ * | Ranging Done Status    | 4           | Completion state for the CS Procedure: <br>• 0x0 – All results complete <br>• 0x1 – Partial results, more to
  *                                          follow <br>• 0xF – All subsequent CS Procedures aborted <br>• Others – RFU |
  * | Subevent Done Status   | 4           | Completion state for the CS Subevent: <br>• 0x0 – All results complete <br>• 0xF – Subevent aborted <br>• Others – RFU |
- * | Ranging Abort Reason   | 4           | Abort reason when `Procedure_Done_Status` = 0xF; otherwise 0. <br>• 0x0 – No abort <br>• 0x1 – Local/remote abort 
+ * | Ranging Abort Reason   | 4           | Abort reason when `Procedure_Done_Status` = 0xF; otherwise 0. <br>• 0x0 – No abort <br>• 0x1 – Local/remote abort
  *                                          request <br>• 0x2 – Filtered channel map < 15 channels <br>• 0x3 – Channel map update instant passed <br>• 0xF – Unspecified <br>• Others – RFU |
- * | Subevent Abort Reason  | 4           | Abort reason when `Subevent_Done_Status` = 0xF; otherwise 0. <br>• 0x0 – No abort <br>• 0x1 – Local/remote abort request <br>• 0x2 – 
+ * | Subevent Abort Reason  | 4           | Abort reason when `Subevent_Done_Status` = 0xF; otherwise 0. <br>• 0x0 – No abort <br>• 0x1 – Local/remote abort request <br>• 0x2 –
  *                                          No CS_SYNC (mode 0) received <br>• 0x3 – Scheduling/resource conflict <br>• 0xF – Unspecified <br>• Others – RFU |
  * | Reference Power Level  | 8           | Reference power level. Range: –127 to 20 dBm.                                                                           |
  * | Number of Steps Reported | 8         | Number of steps in the CS Subevent for which results are reported. If aborted, can be set to 0.                           |
@@ -245,10 +246,11 @@ typedef uint8_t ras_rang_mode_t;
  * | 4–31   | Reserved for Future Use (RFU)                 |
  * +--------+-----------------------------------------------+
  */
-#define CS_RAS_REAL_TIME_RANG_DATA_SUPPROTED (1 << 0)
-#define CS_RAS_RETRI_LOST_RANG_DATA_SEG (1 << 1)
-#define CS_RAS_ABORT_OPRATION (1 << 2)
-#define CS_RAS_FILTER_RANG_DATA (1 << 3)
+/* Legacy compatibility - use BT_CS_RAS_* macros from bt_cs.h instead */
+#define CS_RAS_REAL_TIME_RANG_DATA_SUPPROTED BT_CS_RAS_REAL_TIME_RANGING_DATA
+#define CS_RAS_RETRI_LOST_RANG_DATA_SEG      BT_CS_RAS_RETRIEVE_LOST_DATA_SEGMENTS
+#define CS_RAS_ABORT_OPRATION                BT_CS_RAS_ABORT_OPERATION
+#define CS_RAS_FILTER_RANG_DATA              BT_CS_RAS_FILTER_RANGING_DATA
 
 /**
  * @brief RAS Control Point Operation Codes (Op Codes) and Parameters.
@@ -359,7 +361,6 @@ typedef uint8_t ras_rang_mode_t;
  *       length supported by the Bluetooth stack.
  */
 #define CS_RAS_STEP_DATA_BUF_LEN 2048
-
 
 /**
  * @brief Copy a field to the output buffer if the corresponding filter bit is enabled.
@@ -611,7 +612,7 @@ enum {
  */
 typedef enum {
     ABORT_OPERATION = 0, /**< Abort the ongoing Ranging operation. */
-    OTHER_OPERATION = 1  /**< Placeholder for other operations. */
+    OTHER_OPERATION = 1 /**< Placeholder for other operations. */
 } ras_opcode_t;
 
 /**
@@ -620,9 +621,9 @@ typedef enum {
  * Represents a single segment of Ranging Data for On-demand transfers.
  */
 typedef struct ras_segment_t {
-    cs_node_t seg_node;   /**< Node for linked list of segments. */
-    uint16_t seg_idx;          /**< Segment index in the sequence. */
-    uint16_t len;              /**< Length of the segment data. */
+    cs_node_t seg_node; /**< Node for linked list of segments. */
+    uint16_t seg_idx; /**< Segment index in the sequence. */
+    uint16_t len; /**< Length of the segment data. */
     uint8_t data[RAS_EMPTY_ARRAY]; /**< Flexible array member for segment payload. */
 } ras_segment_t;
 
@@ -632,11 +633,11 @@ typedef struct ras_segment_t {
  * Tracks the state of On-demand Ranging Data procedure for a client.
  */
 typedef struct ras_rang_on_demand_t {
-    bool proc_used;                /**< Indicates if this procedure slot is in use. */
-    uint16_t count;                /**< Count of segments or data items. */
-    service_timer_t* on_demand_timer;  /**< Timer/work item for response timeout. */
-    cs_list_t seg_list;          /**< Linked list of Ranging Data segments. */
-    ras_segment_t* seg;            /**< Pointer to the current segment being processed. */
+    bool proc_used; /**< Indicates if this procedure slot is in use. */
+    uint16_t count; /**< Count of segments or data items. */
+    service_timer_t* on_demand_timer; /**< Timer/work item for response timeout. */
+    cs_list_t seg_list; /**< Linked list of Ranging Data segments. */
+    ras_segment_t* seg; /**< Pointer to the current segment being processed. */
 } ras_rang_on_demand_t;
 
 /**
@@ -645,10 +646,10 @@ typedef struct ras_rang_on_demand_t {
  * Tracks the current operation and processing state for the RAS Control Point.
  */
 typedef struct {
-    ras_opcode_t opcode;        /**< Current opcode being processed. */
-    int is_processing;          /**< 1 if operation is in progress, 0 otherwise. */
-    int is_data_pending;        /**< 1 if data is pending to send, 0 otherwise. */
-    uint8_t response_code;      /**< Last response code sent to client. */
+    ras_opcode_t opcode; /**< Current opcode being processed. */
+    int is_processing; /**< 1 if operation is in progress, 0 otherwise. */
+    int is_data_pending; /**< 1 if data is pending to send, 0 otherwise. */
+    uint8_t response_code; /**< Last response code sent to client. */
 } ras_control_point_t;
 
 /**
@@ -657,24 +658,24 @@ typedef struct {
  * Maintains all runtime state and data for the RAS BLE Service instance.
  */
 typedef struct {
-    uint16_t step_data_attr_handle;          /**< GATT handle of Step Data characteristic. */
-    bt_address_t* addr;                      /**< Current BLE address reference. */
+    uint16_t step_data_attr_handle; /**< GATT handle of Step Data characteristic. */
+    bt_address_t* addr; /**< Current BLE address reference. */
     uint8_t latest_local_steps[CS_RAS_STEP_DATA_BUF_LEN]; /**< Buffer for step or ranging data. */
-    uint8_t rt_dt_ccc_cfg;                   /**< CCC configuration for Real-time Data characteristic. */
-    uint8_t ras_dt_rd_indicating;            /**< Flag indicating Ranging Data indication state. */
-    uint8_t ras_role;                        /**< RAS role (Server/Client). */
-    uint32_t ras_mtu;                        /**< Maximum Transfer Unit for RAS GATT operations. */
-    uint32_t ras_seg_offset;                 /**< Offset in the current Ranging Data segment. */
-    uint32_t remaining_len;                  /**< Remaining bytes to send in current operation. */
-    uint8_t ras_seg_idx;                      /**< Index of the current Ranging Data segment. */
-    uint32_t ras_feature;                     /**< Bitfield indicating RAS feature support. */
-    uint32_t char_notify_state;               /**< Bitfield tracking characteristic notification/indication state. */
+    uint8_t rt_dt_ccc_cfg; /**< CCC configuration for Real-time Data characteristic. */
+    uint8_t ras_dt_rd_indicating; /**< Flag indicating Ranging Data indication state. */
+    uint8_t ras_role; /**< RAS role (Server/Client). */
+    uint32_t ras_mtu; /**< Maximum Transfer Unit for RAS GATT operations. */
+    uint32_t ras_seg_offset; /**< Offset in the current Ranging Data segment. */
+    uint32_t remaining_len; /**< Remaining bytes to send in current operation. */
+    uint8_t ras_seg_idx; /**< Index of the current Ranging Data segment. */
+    uint32_t ras_feature; /**< Bitfield indicating RAS feature support. */
+    uint32_t char_notify_state; /**< Bitfield tracking characteristic notification/indication state. */
     uint32_t ras_filter[CS_RAS_FILTER_MODE_MAX]; /**< Filter settings per RAS mode (0-3). */
-    uint32_t on_demand_state;                 /**< Current state of the On-demand RAS procedure. */
+    uint32_t on_demand_state; /**< Current state of the On-demand RAS procedure. */
     ras_rang_on_demand_t subevent[CS_RAS_STORE_PROCEDURE_NUM_MAX]; /**< Array of On-demand procedure slots. */
-    ras_control_point_t control_point;        /**< Control Point status for current operation. */
-    cs_node_t* on_demand_curr_node;           /**< Pointer to current node in On-demand segment list. */
-    uint16_t procedure_count;                  /**< Records the current CS procedure counter for On-demand Ranging Data. */
+    ras_control_point_t control_point; /**< Control Point status for current operation. */
+    cs_node_t* on_demand_curr_node; /**< Pointer to current node in On-demand segment list. */
+    uint16_t procedure_count; /**< Records the current CS procedure counter for On-demand Ranging Data. */
 } ras_srv_env_t;
 
 /**
@@ -707,6 +708,27 @@ int bt_cs_ras_enable(void);
  */
 int bt_cs_ras_disable(void);
 
+/**
+ * @brief Set RAS feature value.
+ *
+ * This function sets the RAS feature value in the RAS server environment.
+ *
+ * @param feature  RAS feature value to set.
+ * @return 0 on success, or a negative error code on failure.
+ */
+bt_status_t bt_cs_ras_set_feature(uint32_t feature);
+
+/**
+ * @brief Set RAS role.
+ *
+ * This function sets the RAS role (Initiator or Reflector) in the RAS server environment.
+ * The role determines how CS subevent step data is parsed.
+ *
+ * @param role  RAS role value (bit 0: initiator, bit 1: reflector).
+ * @return BT_STATUS_SUCCESS on success, or error code on failure.
+ */
+bt_status_t bt_cs_ras_set_role(uint8_t role);
+
 #ifdef CONFIG_BT_CS_RAS_TEST
 
 /**
@@ -721,7 +743,7 @@ int bt_cs_ras_disable(void);
  *
  * Redirects the GATT attribute read operation to the test implementation.
  */
-#define BT_GATT_ATTR_READ(addr, attr, buf, buf_len, offset, value, value_len) //bt_gatt_attr_read_test(addr, attr, buf, buf_len, offset, value, value_len)
+#define BT_GATT_ATTR_READ(addr, attr, buf, buf_len, offset, value, value_len) // bt_gatt_attr_read_test(addr, attr, buf, buf_len, offset, value, value_len)
 
 /**
  * @brief GATT notify wrapper for test mode.

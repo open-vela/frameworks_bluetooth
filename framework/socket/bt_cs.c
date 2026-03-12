@@ -106,6 +106,24 @@ bt_status_t bt_cs_stop_distance_measurement(bt_instance_t* ins, bt_address_t* ad
     return packet.cs_r.status;
 }
 
+bt_status_t bt_cs_set_config(bt_instance_t* ins, bt_address_t* addr, const bt_cs_set_params_t* params)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    if (addr)
+        memcpy(&packet.cs_pl._bt_cs_set_config.addr, addr, sizeof(bt_address_t));
+
+    memcpy(&packet.cs_pl._bt_cs_set_config.params, params, sizeof(bt_cs_set_params_t));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_CS_SET_CONFIG);
+    if (status != BT_STATUS_SUCCESS) {
+        return status;
+    }
+    return packet.cs_r.status;
+}
+
 #ifdef CONFIG_BT_CS_RAS_TEST
 bt_status_t bt_cs_test(bt_instance_t* ins, const void* data, uint16_t len)
 {
