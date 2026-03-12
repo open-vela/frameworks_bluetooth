@@ -244,11 +244,25 @@ config BLUETOOTH_LE_SCANNER_MAX_NUM
 	help
 		LE Scanner max register number
 
+config BLUETOOTH_LE_SCANNER_DEBUG
+	bool "Enable LE Scanner debug"
+	default y
+	help
+		Enable debug logging for LE Scanner parameters and statistics.
+		Disabling this option reduces code size by removing log strings.
+
 config BLUETOOTH_LE_ADVERTISER_MAX_NUM
 	int "LE Advertiser max register number"
 	default 2
 	help
 		LE Advertiser max register number
+
+config BLUETOOTH_LE_ADVERTISER_DEBUG
+	bool "Enable LE Advertiser debug"
+	default y
+	help
+		Enable debug logging for LE Advertiser parameters and information.
+		Disabling this option reduces code size by removing log strings.
 
 config BLUETOOTH_CONNECTION_MANAGER
        bool "Bluetooth connection manager support"

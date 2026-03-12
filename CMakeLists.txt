@@ -244,12 +244,18 @@ if(CONFIG_BLUETOOTH)
 
     if(CONFIG_BLUETOOTH_BLE_ADV)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/advertising.c)
+      if(CONFIG_BLUETOOTH_LE_ADVERTISER_DEBUG)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/advertising_debug.c)
+      endif()
     endif()
 
     if(CONFIG_BLUETOOTH_BLE_SCAN)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/scan_manager.c
            ${BLUETOOTH_DIR}/service/src/scan_record.c
            ${BLUETOOTH_DIR}/service/src/scan_filter.c)
+      if(CONFIG_BLUETOOTH_LE_SCANNER_DEBUG)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/scan_debug.c)
+      endif()
     endif()
 
     if(CONFIG_BLUETOOTH_L2CAP)

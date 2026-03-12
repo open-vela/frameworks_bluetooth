@@ -213,11 +213,17 @@ ifeq ($(CONFIG_BLUETOOTH_SERVICE), y)
 	CSRCS += service/src/hci_parser.c
 ifeq ($(CONFIG_BLUETOOTH_BLE_ADV), y)
 	CSRCS += service/src/advertising.c
+ifeq ($(CONFIG_BLUETOOTH_LE_ADVERTISER_DEBUG), y)
+	CSRCS += service/src/advertising_debug.c
+endif #CONFIG_BLUETOOTH_LE_ADVERTISER_DEBUG
 endif #CONFIG_BLUETOOTH_BLE_ADV
 ifeq ($(CONFIG_BLUETOOTH_BLE_SCAN), y)
 	CSRCS += service/src/scan_manager.c
 	CSRCS += service/src/scan_record.c
 	CSRCS += service/src/scan_filter.c
+ifeq ($(CONFIG_BLUETOOTH_LE_SCANNER_DEBUG), y)
+	CSRCS += service/src/scan_debug.c
+endif #CONFIG_BLUETOOTH_LE_SCANNER_DEBUG
 endif #CONFIG_BLUETOOTH_BLE_SCAN
 ifeq ($(CONFIG_BLUETOOTH_L2CAP), y)
 	CSRCS += service/src/l2cap_service.c

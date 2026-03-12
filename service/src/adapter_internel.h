@@ -381,6 +381,7 @@ bool adapter_unregister_callback(void** remote, void* cookie);
 void adapter_dump(void);
 void adapter_dump_device(bt_address_t* addr);
 // void adapter_dump_profile(enum profile_id id);
+void adapter_dump_whitelist(void);
 void adapter_dump_all_device(void);
 
 #endif /* _BT_ADAPTER_INTERNAL_H__ */

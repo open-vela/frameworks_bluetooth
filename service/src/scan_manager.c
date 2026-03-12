@@ -27,9 +27,12 @@
 #include "bt_list.h"
 #include "bt_socket.h"
 #include "bt_time.h"
+#include "bt_utils.h"
 #include "sal_interface.h"
+#include "scan_debug.h"
 #include "scan_filter.h"
 #include "scan_manager.h"
+#include "scan_manager_internal.h"
 #include "scan_record.h"
 #include "service_loop.h"
 #include "utils/log.h"
@@ -53,31 +56,11 @@ typedef struct {
     uint32_t timestamp;
 } scanner_device_t;
 
-typedef struct scanner {
-    struct list_node scanning_node;
-    void* remote;
-    uint8_t scanner_id;
-    bool is_scanning;
-    ble_scan_filter_policy_t policy;
-    ble_scan_settings_t settings;
-    ble_scan_filter_t filter;
-    const scanner_callbacks_t* callbacks;
-} scanner_t;
-
 typedef struct {
     scanner_t* scanner;
     bool use_setting;
     ble_scan_settings_t settings;
 } scanner_ctrl_t;
-
-typedef struct scanner_manager {
-    scanner_t* scanner_list[CONFIG_BLUETOOTH_LE_SCANNER_MAX_NUM];
-    struct list_node scanning_list;
-    uint32_t hash_table[CONFIG_BT_LE_ADV_REPORT_SIZE];
-    bt_list_t* devices;
-    uint8_t scanner_cnt;
-    bool is_scanning;
-} scanner_manager_t;
 
 typedef struct {
     uint8_t mode;
@@ -103,6 +86,11 @@ static const priority_map_t g_filter_priority_map[] = {
 
 static scanner_manager_t scanner_manager;
 static void stop_scan(void* data);
+
+scanner_manager_t* scan_manager_get_interface(void)
+{
+    return &scanner_manager;
+}
 
 static bt_scanner_t* get_remote(scanner_t* scanner)
 {
@@ -381,6 +369,7 @@ static void notify_scanners_scan_result(void* data)
         }
 
     exit_filter:
+        scan_update_statistics(scanner);
         scanner->callbacks->on_scan_result(get_remote(scanner), result);
     }
 
@@ -514,15 +503,21 @@ static void start_scan(void* data)
 
     current_settings = get_best_settings(scanner);
     setup_scan_parameter(&current_settings, &params);
+    scan_dump_params(&params);
 
     if (!scanner_manager.is_scanning && !list_length(&scanner_manager.scanning_list)) {
         bt_sal_le_set_scan_parameters(PRIMARY_ADAPTER, &params);
+        scanner_manager.curr_scan_mode = start->use_setting
+            ? start->settings.scan_mode
+            : BT_SCAN_MODE_LOW_LATENCY;
         if (bt_sal_le_start_scan(PRIMARY_ADAPTER) != BT_STATUS_SUCCESS) {
             scanner->callbacks->on_scan_start_status(get_remote(scanner), BT_SCAN_STATUS_START_FAIL);
             delete_scanner(scanner);
             goto ret;
         }
         scanner_manager.is_scanning = true;
+
+        scan_debug_timer_start();
     } else if (scanner_manager.is_scanning && list_length(&scanner_manager.scanning_list)) {
         bt_sal_le_stop_scan(PRIMARY_ADAPTER);
         bt_sal_le_set_scan_parameters(PRIMARY_ADAPTER, &params);
@@ -561,6 +556,8 @@ static void stop_scan(void* data)
         bt_list_clear(scanner_manager.devices);
         scanner_hsearch_free();
         scanner_manager.is_scanning = false;
+
+        scan_debug_timer_stop();
     } else if (scanner_manager.is_scanning && list_length(&scanner_manager.scanning_list)) {
         current_settings = get_best_settings(NULL);
         setup_scan_parameter(&current_settings, &params);
@@ -691,6 +688,7 @@ void scan_manager_init(void)
 void scan_manager_cleanup(void)
 {
     cleanup_scanner(NULL);
+    scan_debug_timer_stop();
 }
 
 void scanner_dump(bt_scanner_t* scanner)

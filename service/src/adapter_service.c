@@ -3679,6 +3679,29 @@ void adapter_dump_profile(enum profile_id id)
 {
 }
 
+void adapter_dump_whitelist(void)
+{
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
+    bt_list_t* list = g_adapter_service.le_devices;
+    bt_list_node_t* node;
+    int cnt = 0;
+    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+
+    BT_LOGD("%s", __func__);
+
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        bt_device_t* device = bt_list_node(node);
+        if (device_check_flag(device, DFLAG_WHITELIST_ADDED)) {
+            bt_addr_ba2str(device_get_address(device), addr_str);
+            BT_LOGD("\twhitelist[%d] addr:%s, addr_type:%d", cnt++, addr_str,
+                device_get_address_type(device));
+        }
+    }
+
+    BT_LOGD("whitelist dump end, cnt = %d", cnt);
+#endif
+}
+
 void adapter_dump_all_device(void)
 {
     bt_list_node_t* node;

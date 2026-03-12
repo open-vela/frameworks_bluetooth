@@ -1,5 +1,5 @@
 /****************************************************************************
- *  Copyright (C) 2022 Xiaomi Corporation
+ *  Copyright (C) 2026 Xiaomi Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#ifndef _BT_TIME_H__
-#define _BT_TIME_H__
+#ifndef __ADVERTISING_DEBUG_H__
+#define __ADVERTISING_DEBUG_H__
 
-#include <stdint.h>
+#include "advertising_internal.h"
 
-uint64_t bt_get_os_timestamp_us(void);
-uint32_t bt_get_os_timestamp_ms(void);
+#ifdef CONFIG_BLUETOOTH_LE_ADVERTISER_DEBUG
 
-#define BT_SLOTS_TO_TIME_STR_LENGTH 12 /** enough for 0xffff slots, which is 40.959375 s */
-const char* bt_slots_to_time_str(char* buf, uint16_t size, uint16_t slots);
+void adv_dump_info(uint8_t adv_id, const advertising_info_t* adv_info);
+void adv_dump_advertiser(void);
 
-#endif /* _BT_TIME_H__ */
+#else
+
+#define adv_dump_info(adv_id, adv_info)
+#define adv_dump_advertiser()
+
+#endif /* CONFIG_BLUETOOTH_LE_ADVERTISER_DEBUG */
+
+#endif /* __ADVERTISING_DEBUG_H__ */

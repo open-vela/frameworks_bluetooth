@@ -1,5 +1,5 @@
 /****************************************************************************
- *  Copyright (C) 2022 Xiaomi Corporation
+ *  Copyright (C) 2026 Xiaomi Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#ifndef _BT_TIME_H__
-#define _BT_TIME_H__
+#ifndef __SCAN_DEBUG_H__
+#define __SCAN_DEBUG_H__
 
-#include <stdint.h>
+#include "scan_manager_internal.h"
 
-uint64_t bt_get_os_timestamp_us(void);
-uint32_t bt_get_os_timestamp_ms(void);
+#ifdef CONFIG_BLUETOOTH_LE_SCANNER_DEBUG
 
-#define BT_SLOTS_TO_TIME_STR_LENGTH 12 /** enough for 0xffff slots, which is 40.959375 s */
-const char* bt_slots_to_time_str(char* buf, uint16_t size, uint16_t slots);
+void scan_dump_params(const ble_scan_params_t* params);
+void scan_dump_scanners(void);
+void scan_update_statistics(scanner_t* scanner);
+void scan_debug_timer_start(void);
+void scan_debug_timer_stop(void);
 
-#endif /* _BT_TIME_H__ */
+#else
+
+#define scan_dump_params(params)
+#define scan_dump_scanners()
+#define scan_update_statistics(scanner)
+#define scan_debug_timer_start()
+#define scan_debug_timer_stop()
+
+#endif /* CONFIG_BLUETOOTH_LE_SCANNER_DEBUG */
+
+#endif /* __SCAN_DEBUG_H__ */
