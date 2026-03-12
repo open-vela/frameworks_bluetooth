@@ -720,6 +720,11 @@ static void zblue_on_ct_connected(struct bt_conn* conn, struct bt_avrcp_ct* ct)
     zblue_avrcp_info_t* avrcp_info;
     avrcp_msg_t* msg;
 
+    if (!bt_avrcp_conn) {
+        BT_LOGW("%s, bt_avrcp_conn not initialized", __func__);
+        return;
+    }
+
     avrcp_info = bt_list_find(bt_avrcp_conn, bt_avrcp_info_find_by_conn, conn);
     if (!avrcp_info)
         avrcp_info = bt_avrcp_create_avrcp_info(conn);
@@ -741,6 +746,11 @@ static void zblue_on_ct_disconnected(struct bt_avrcp_ct* ct)
 {
     zblue_avrcp_info_t* avrcp_info;
     avrcp_msg_t* msg;
+
+    if (!bt_avrcp_conn) {
+        BT_LOGW("%s, bt_avrcp_conn not initialized", __func__);
+        return;
+    }
 
     avrcp_info = bt_list_find(bt_avrcp_conn, bt_avrcp_info_find_by_ct, ct);
     if (!avrcp_info) {
@@ -1038,6 +1048,11 @@ static void zblue_on_tg_connected(struct bt_conn* conn, struct bt_avrcp_tg* tg)
 {
     zblue_avrcp_info_t* avrcp_info;
 
+    if (!bt_avrcp_conn) {
+        BT_LOGW("%s, bt_avrcp_conn not initialized", __func__);
+        return;
+    }
+
     avrcp_info = bt_list_find(bt_avrcp_conn, bt_avrcp_info_find_by_conn, conn);
     if (!avrcp_info)
         avrcp_info = bt_avrcp_create_avrcp_info(conn);
@@ -1062,6 +1077,11 @@ static void zblue_on_tg_connected(struct bt_conn* conn, struct bt_avrcp_tg* tg)
 static void zblue_on_tg_disconnected(struct bt_avrcp_tg* tg)
 {
     zblue_avrcp_info_t* avrcp_info;
+
+    if (!bt_avrcp_conn) {
+        BT_LOGW("%s, bt_avrcp_conn not initialized", __func__);
+        return;
+    }
 
     avrcp_info = bt_list_find(bt_avrcp_conn, bt_avrcp_info_find_by_tg, tg);
     if (!avrcp_info) {
@@ -1426,6 +1446,11 @@ static bt_status_t bt_sal_avrcp_disconnect(bt_controller_id_t id, bt_address_t* 
 {
     zblue_avrcp_info_t* avrcp_info;
     int err;
+
+    if (!bt_avrcp_conn || !bd_addr) {
+        BT_LOGW("%s, invalid params", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
 
     avrcp_info = bt_list_find(bt_avrcp_conn, bt_avrcp_info_find_addr, bd_addr);
     if (!avrcp_info) {

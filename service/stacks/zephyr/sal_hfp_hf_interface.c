@@ -256,11 +256,17 @@ static inline bt_hfp_hf_connection_t* find_connection_by_context(struct bt_conn*
 
 static inline bt_hfp_hf_connection_t* find_connection_by_addr(bt_address_t* addr)
 {
+    if (!g_sal_hf_conn_list || !addr) {
+        return NULL;
+    }
     return (bt_hfp_hf_connection_t*)bt_list_find(g_sal_hf_conn_list, sal_conn_addr_cmp, addr);
 }
 
 static inline bt_hfp_hf_connection_t* find_connection_by_hf(struct bt_hfp_hf* hf)
 {
+    if (!g_sal_hf_conn_list || !hf) {
+        return NULL;
+    }
     return (bt_hfp_hf_connection_t*)bt_list_find(g_sal_hf_conn_list, sal_conn_hf_cmp, hf);
 }
 
