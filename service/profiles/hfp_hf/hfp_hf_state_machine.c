@@ -70,6 +70,8 @@ typedef struct _hf_state_machine {
     connection_policy_t connection_policy;
     uint8_t spk_volume;
     uint8_t mic_volume;
+    int16_t pending_spk_volume;
+    int16_t pending_mic_volume;
     int media_volume;
     void* volume_listener;
     uint32_t set_volume_cnt;
@@ -507,6 +509,8 @@ static void disconnected_enter(state_machine_t* sm)
         bt_media_remove_listener(hfsm->volume_listener);
         hfsm->spk_volume = 0;
         hfsm->mic_volume = 0;
+        hfsm->pending_spk_volume = -1;
+        hfsm->pending_mic_volume = -1;
         hfsm->media_volume = INVALID_MEDIA_VOLUME;
         hfsm->volume_listener = NULL;
         hfsm->set_volume_cnt = 0;
@@ -1135,6 +1139,27 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, hfp_hf_da
         uint32_t cmd_result = data->valueint2;
         hf_at_cmd_t* pending_cmd;
 
+        /* Handle pending volume resend on VGS/VGM completion */
+        if (cmd_code == HFP_ATCMD_CODE_VGS && hfsm->pending_spk_volume >= 0) {
+            uint8_t vol = (uint8_t)hfsm->pending_spk_volume;
+            hfsm->pending_spk_volume = -1;
+            status = bt_sal_hfp_hf_set_volume(&hfsm->addr, HFP_VOLUME_TYPE_SPK, vol);
+            if (status == BT_STATUS_NOMEM) {
+                hfsm->pending_spk_volume = vol;
+            } else if (status == BT_STATUS_SUCCESS) {
+                hfsm->spk_volume = vol;
+            }
+        } else if (cmd_code == HFP_ATCMD_CODE_VGM && hfsm->pending_mic_volume >= 0) {
+            uint8_t vol = (uint8_t)hfsm->pending_mic_volume;
+            hfsm->pending_mic_volume = -1;
+            status = bt_sal_hfp_hf_set_volume(&hfsm->addr, HFP_VOLUME_TYPE_MIC, vol);
+            if (status == BT_STATUS_NOMEM) {
+                hfsm->pending_mic_volume = vol;
+            } else if (status == BT_STATUS_SUCCESS) {
+                hfsm->mic_volume = vol;
+            }
+        }
+
         pending_cmd = pending_action_get(hfsm);
         if (!pending_cmd)
             break;
@@ -1491,19 +1516,29 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         hf_vol = bt_media_volume_media_to_hfp(data->valueint2);
         if ((type == HFP_VOLUME_TYPE_MIC) && (hf_vol != hfsm->mic_volume)) {
             status = bt_sal_hfp_hf_set_volume(&hfsm->addr, type, hf_vol);
-            if (status != BT_STATUS_SUCCESS) {
+            if (status == BT_STATUS_NOMEM) {
+                BT_LOGW("MIC volume send no memory, pending=%d", hf_vol);
+                hfsm->pending_mic_volume = hf_vol;
+                break;
+            } else if (status != BT_STATUS_SUCCESS) {
                 BT_LOGE("Could not set mic volume");
                 break;
             }
             hfsm->mic_volume = hf_vol;
+            hfsm->pending_mic_volume = -1;
             BT_LOGD("Set Mic Volume :%" PRIu8, hfsm->mic_volume);
         } else if ((type == HFP_VOLUME_TYPE_SPK) && (hf_vol != hfsm->spk_volume)) {
             status = bt_sal_hfp_hf_set_volume(&hfsm->addr, type, hf_vol);
-            if (status != BT_STATUS_SUCCESS) {
+            if (status == BT_STATUS_NOMEM) {
+                BT_LOGW("SPK volume send no memory, pending=%d", hf_vol);
+                hfsm->pending_spk_volume = hf_vol;
+                break;
+            } else if (status != BT_STATUS_SUCCESS) {
                 BT_LOGE("Could not set speaker volume");
                 break;
             }
             hfsm->spk_volume = hf_vol;
+            hfsm->pending_spk_volume = -1;
             BT_LOGD("Set Speaker Volume :%" PRIu8, hfsm->spk_volume);
         }
         break;
@@ -1616,6 +1651,8 @@ hf_state_machine_t* hf_state_machine_new(bt_address_t* addr, void* context)
     hfsm->update_calls = bt_list_new(NULL);
     hfsm->current_calls = bt_list_new(hf_call_delete);
     hfsm->media_volume = INVALID_MEDIA_VOLUME;
+    hfsm->pending_spk_volume = -1;
+    hfsm->pending_mic_volume = -1;
     list_initialize(&hfsm->pending_actions);
     hsm_ctor(&hfsm->sm, (state_t*)&disconnected_state);
 

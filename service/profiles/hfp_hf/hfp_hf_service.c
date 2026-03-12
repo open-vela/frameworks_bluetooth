@@ -1068,6 +1068,8 @@ void hfp_hf_on_at_command_result_response(bt_address_t* addr, uint32_t at_cmd_co
     switch (at_cmd_code) {
     case HFP_ATCMD_CODE_ATD:
     case HFP_ATCMD_CODE_BLDN:
+    case HFP_ATCMD_CODE_VGS:
+    case HFP_ATCMD_CODE_VGM:
         break;
     default:
         return;

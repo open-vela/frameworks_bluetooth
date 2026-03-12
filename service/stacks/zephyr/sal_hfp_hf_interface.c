@@ -929,6 +929,10 @@ static hfp_atcmd_code_t zblue_at_cmd_to_service_cmd(
         return HFP_ATCMD_CODE_ATD;
     case BT_HFP_HF_AT_CMD_BLDN:
         return HFP_ATCMD_CODE_BLDN;
+    case BT_HFP_HF_AT_CMD_VGS:
+        return HFP_ATCMD_CODE_VGS;
+    case BT_HFP_HF_AT_CMD_VGM:
+        return HFP_ATCMD_CODE_VGM;
     default:
         return HFP_ATCMD_CODE_UNKNOWN;
     }
@@ -1490,6 +1494,10 @@ bt_status_t bt_sal_hfp_hf_set_volume(bt_address_t* addr, hfp_volume_type_t type,
 
     if (ret == -ENOTSUP) {
         return BT_STATUS_UNSUPPORTED;
+    }
+
+    if (ret == -ENOMEM) {
+        return BT_STATUS_NOMEM;
     }
 
     SAL_CHECK_RET(ret, 0);
