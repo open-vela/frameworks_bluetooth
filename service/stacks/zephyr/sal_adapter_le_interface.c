@@ -606,24 +606,32 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
 
 static void zblue_on_param_updated(struct bt_conn* conn, uint16_t interval, uint16_t latency, uint16_t timeout)
 {
-    struct bt_conn_info info;
     bt_address_t addr;
-    bt_address_t le_addr;
-    bt_address_t* remote_addr;
+    bt_conn_info_t* slot;
+    uint8_t role;
 
-    bt_conn_get_info(conn, &info);
-    memcpy(&le_addr, info.le.dst->a.val, sizeof(le_addr.addr));
-    remote_addr = adapter_get_le_remote_address(&le_addr, info.le.dst->type);
-    if (remote_addr) {
-        memcpy(&addr, remote_addr, sizeof(addr.addr));
-    } else {
-        memcpy(&addr, info.le.remote->a.val, sizeof(addr.addr));
+    if (get_le_addr_from_conn(conn, &addr) != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, get_le_addr_from_conn failed", __func__);
+        return;
     }
 
     BT_LOGD("%s, interval:%d, latency:%d, timeout:%d", __func__, interval, latency, timeout);
 
-#if defined(CONFIG_BLUETOOTH_GATT_CLIENT)
-    if (info.role == BT_HCI_ROLE_CENTRAL) {
+    slot = bt_conn_find(&addr, BT_TRANSPORT_BLE);
+    if (!slot) {
+        BT_LOGE("%s, conn null", __func__);
+        return;
+    }
+    role = slot->role;
+
+#ifdef CONFIG_BLUETOOTH_GATT_SERVER
+    if (role & GATT_ROLE_SERVER) {
+        if_gatts_on_connection_parameter_changed(&addr, interval, latency, timeout);
+    }
+#endif
+
+#ifdef CONFIG_BLUETOOTH_GATT_CLIENT
+    if (role & GATT_ROLE_CLIENT) {
         if_gattc_on_connection_parameter_updated(&addr, interval, latency, timeout, BT_STATUS_SUCCESS);
     }
 #endif
@@ -1292,34 +1300,42 @@ uint8_t le_phy_convert_from_service(ble_phy_type_t mode)
 
 static void zblue_on_phy_updated(struct bt_conn* conn, struct bt_conn_le_phy_info* phy)
 {
-    struct bt_conn_info info;
     bt_address_t addr;
-    bt_address_t le_addr;
-    bt_address_t* remote_addr;
     ble_phy_type_t tx_mode;
     ble_phy_type_t rx_mode;
-
-    bt_conn_get_info(conn, &info);
+    bt_conn_info_t* slot;
+    uint8_t role;
 
     tx_mode = le_phy_convert_from_stack(phy->tx_phy);
     rx_mode = le_phy_convert_from_stack(phy->rx_phy);
 
     BT_LOGD("%s, tx phy:%d, rx phy:%d", __func__, tx_mode, rx_mode);
-    memcpy(&le_addr, info.le.dst->a.val, sizeof(le_addr.addr));
-    remote_addr = adapter_get_le_remote_address(&le_addr, info.le.dst->type);
-    if (remote_addr) {
-        memcpy(&addr, remote_addr, sizeof(addr.addr));
-    } else {
-        memcpy(&addr, info.le.remote->a.val, sizeof(addr.addr));
+
+    if (get_le_addr_from_conn(conn, &addr) != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, get_le_addr_from_conn failed", __func__);
+        return;
     }
 
-    if_gatts_on_phy_updated(&addr, tx_mode, rx_mode, GATT_STATUS_SUCCESS);
+    adapter_on_le_phy_update(&addr, tx_mode, rx_mode, BT_STATUS_SUCCESS);
 
-    if (info.role == BT_HCI_ROLE_PERIPHERAL) {
+    slot = bt_conn_find(&addr, BT_TRANSPORT_BLE);
+    if (!slot) {
+        BT_LOGE("%s, conn null", __func__);
+        return;
+    }
+    role = slot->role;
+
+#ifdef CONFIG_BLUETOOTH_GATT_SERVER
+    if (role & GATT_ROLE_SERVER) {
         if_gatts_on_phy_updated(&addr, tx_mode, rx_mode, GATT_STATUS_SUCCESS);
-    } else if (info.role == BT_HCI_ROLE_CENTRAL) {
+    }
+#endif
+
+#ifdef CONFIG_BLUETOOTH_GATT_CLIENT
+    if (role & GATT_ROLE_CLIENT) {
         if_gattc_on_phy_updated(&addr, tx_mode, rx_mode, GATT_STATUS_SUCCESS);
     }
+#endif
 }
 #endif /*CONFIG_BT_USER_PHY_UPDATE*/
 
