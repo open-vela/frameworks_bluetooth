@@ -155,7 +155,7 @@ static bool bulk_buf_gen(uint8_t** buf, uint32_t length)
         return false;
     }
 
-    strncpy(bulk_buf->delimiter, "Vela", 4);
+    memcpy(bulk_buf->delimiter, "Vela", 4);
     bulk_buf->length = length;
     data_len = length - sizeof(struct bulk_buf_t);
     for (uint32_t i = 0; i < data_len; i++) {
@@ -752,7 +752,7 @@ static int speed_test_cmd(void* handle, int argc, char* argv[])
 
     msg->id = strtoul(argv[0], NULL, 10);
     msg->len = strtoul(argv[1], NULL, 10);
-    if (msg->id < 0 || msg->len <= 0) {
+    if (msg->len == 0) {
         PRINT("invalid param");
         free(msg);
         return CMD_ERROR;
