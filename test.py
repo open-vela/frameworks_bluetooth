@@ -1,4 +1,6 @@
 import clang.cindex
+# test
+
 index = clang.cindex.Index.create()
 tu = index.parse("framework/include/bt_device.h", args=['-std=c99'])
 
