@@ -3,6 +3,10 @@
 \[ English | [简体中文](README_zh-cn.md) \]
 
 
+
+
+
+
 ## 1. Introduction to openvela Bluetooth
 
 openvela Bluetooth has been certified for Bluetooth 5.4. It currently supports Bluetooth profiles listed as below:
