@@ -323,7 +323,7 @@ bool ras_is_filter_bit_set(uint16_t mode, uint16_t filter_bit)
     }
 
     // Retrieve the current filter mask
-    uint32_t current_filter_mask = ras_srv->ras_filter[mode];
+    uint16_t current_filter_mask = ras_srv->ras_filter[mode];
 
     // Check if the specific filter bit is set
     // We shift the filter_bit into the correct position and mask it to check
@@ -335,16 +335,9 @@ static void ras_set_filter(uint16_t filter_value)
     // Extract the mode (bits 0-1)
     uint16_t mode = filter_value & CS_RAS_FILTER_MODE_MASK;
 
-    // Extract the filter mask (bits 2-15)
-    uint16_t filter_mask = filter_value & ~CS_RAS_FILTER_MODE_MASK;
-
     // Use the mode directly as an index into ras_filter
     if (mode < CS_RAS_FILTER_MODE_MAX) {
-        // Clear the filter bits (2-15)
-        ras_srv->ras_filter[mode] &= CS_RAS_FILTER_MODE_MASK;
-
-        // Set the new filter mask (bits 2-15)
-        ras_srv->ras_filter[mode] |= filter_mask;
+        ras_srv->ras_filter[mode] = filter_value;
     } else {
         // Handle error case if mode is out of range
         BT_LOGE("Error: Mode %d is out of valid range (0 to %d)", mode, CS_RAS_FILTER_MODE_MAX - 1);
@@ -814,7 +807,7 @@ static void cs_ras_split_on_demand_segment(bt_address_t* addr, uint8_t* buf, int
  */
 static size_t transform_step_data_to_ras_format_filtered(
     uint8_t* data, size_t data_len,
-    uint8_t* buf, uint32_t* ras_filter, uint8_t role,
+    uint8_t* buf, uint16_t* ras_filter, uint8_t role,
     uint8_t num_antenna_paths)
 {
     size_t in_offset = 0;
@@ -830,7 +823,7 @@ static size_t transform_step_data_to_ras_format_filtered(
         }
 
         uint8_t* step_data = &data[in_offset + 3];
-        uint32_t filter_mask = ras_filter[step_mode];
+        uint16_t filter = ras_filter[step_mode];
 
         // Write Step_Mode to the output
         buf[out_offset++] = step_mode;
@@ -858,14 +851,14 @@ static size_t transform_step_data_to_ras_format_filtered(
              ************************************************************/
         case CS_RAS_SUBEVENT_STEP_MODE_0:
             if (role == CS_RAS_ROLE_INITIATOR) {
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_PKT_QUALITY);
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_PKT_RSSI);
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_PKT_ANTENNA);
-                COPY_FIELD_IF_ENABLED(2, CS_RAS_FILTER_BIT_FREQ_OFFSET);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_0_FILTER_PACKET_QUALITY_BIT);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_0_FILTER_PACKET_RSSI_BIT);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_0_FILTER_PACKET_ANTENNA_BIT);
+                COPY_FIELD_IF_ENABLED(2, CS_RAS_MODE_0_FILTER_MEASURED_FREQ_OFFSET_BIT);
             } else { // Reflector
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_PKT_QUALITY);
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_PKT_RSSI);
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_PKT_ANTENNA);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_0_FILTER_PACKET_QUALITY_BIT);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_0_FILTER_PACKET_RSSI_BIT);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_0_FILTER_PACKET_ANTENNA_BIT);
             }
             break;
         /*  MODE 1 — Time-of-Flight (ToF) Mode
@@ -892,22 +885,22 @@ static size_t transform_step_data_to_ras_format_filtered(
          *
          **************************************************************/
         case CS_RAS_SUBEVENT_STEP_MODE_1:
-            if (role == CS_RAS_ROLE_REFLECTOR) {
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_PKT_QUALITY);
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_PKT_NADM);
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_PKT_RSSI);
-                COPY_FIELD_IF_ENABLED(2, CS_RAS_FILTER_BIT_TOA_TOD);
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_PKT_ANTENNA);
-                COPY_FIELD_IF_ENABLED(4, CS_RAS_FILTER_BIT_PKT_PCT1);
-                COPY_FIELD_IF_ENABLED(4, CS_RAS_FILTER_BIT_PKT_PCT2);
+            if (role == CS_RAS_ROLE_INITIATOR) {
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_1_FILTER_PACKET_QUALITY_BIT);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_1_FILTER_PACKET_NADM_BIT);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_1_FILTER_PACKET_RSSI_BIT);
+                COPY_FIELD_IF_ENABLED(2, CS_RAS_MODE_1_FILTER_TOD_TOA_BIT);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_1_FILTER_PACKET_ANTENNA_BIT);
+                COPY_FIELD_IF_ENABLED(4, CS_RAS_MODE_1_FILTER_PACKET_PCT_1_BIT);
+                COPY_FIELD_IF_ENABLED(4, CS_RAS_MODE_1_FILTER_PACKET_PCT_2_BIT);
             } else { // Reflector
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_PKT_QUALITY);
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_PKT_NADM);
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_PKT_RSSI);
-                COPY_FIELD_IF_ENABLED(2, CS_RAS_FILTER_BIT_TOD_TOA);
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_PKT_ANTENNA);
-                COPY_FIELD_IF_ENABLED(4, CS_RAS_FILTER_BIT_PKT_PCT1);
-                COPY_FIELD_IF_ENABLED(4, CS_RAS_FILTER_BIT_PKT_PCT2);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_1_FILTER_PACKET_QUALITY_BIT);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_1_FILTER_PACKET_NADM_BIT);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_1_FILTER_PACKET_RSSI_BIT);
+                COPY_FIELD_IF_ENABLED(2, CS_RAS_MODE_1_FILTER_TOD_TOA_BIT);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_1_FILTER_PACKET_ANTENNA_BIT);
+                COPY_FIELD_IF_ENABLED(4, CS_RAS_MODE_1_FILTER_PACKET_PCT_1_BIT);
+                COPY_FIELD_IF_ENABLED(4, CS_RAS_MODE_1_FILTER_PACKET_PCT_2_BIT);
             }
             break;
         /*****************************************************************
@@ -922,15 +915,12 @@ static size_t transform_step_data_to_ras_format_filtered(
          *******************************************************************/
         case CS_RAS_SUBEVENT_STEP_MODE_2:
             // Initiator and Reflector are the same.
-            COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_ANT_PERM_IDX);
+            COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_2_FILTER_ANTENNA_PERMUTATION_INDEX_BIT);
 
-            // Tone_PCT[k]
-            // Actual size = (Num_Antenna_Paths + 1) × 3 octets
-            // COPY_FIELD_IF_ENABLED((num_antenna_paths + 1) * 3, CS_RAS_FILTER_BIT_TONE_PCT);
-            COPY_FIELD_IF_ENABLED((num_antenna_paths + 1) * 3, CS_RAS_FILTER_BIT_TONE_PCT);
-            // Tone_Quality_Indicator[k]
-            // COPY_FIELD_IF_ENABLED((num_antenna_paths + 1) * 1, CS_RAS_FILTER_BIT_TONE_QUALITY);
-            COPY_FIELD_IF_ENABLED((num_antenna_paths + 1) * 1, CS_RAS_FILTER_BIT_TONE_QUALITY);
+            while (remaining > 0) {
+                COPY_FIELD_IF_ENABLED(3, CS_RAS_MODE_2_FILTER_TONE_PCT_BIT);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_2_FILTER_TONE_QUALITY_INDICATOR_BIT);
+            }
             break;
         /*  MODE 3 — Combined (ToF + Tone) Mode
          *  ------------------------------------------------------------
@@ -963,27 +953,31 @@ static size_t transform_step_data_to_ras_format_filtered(
          ********************************************************************/
         case CS_RAS_SUBEVENT_STEP_MODE_3:
             if (role == CS_RAS_ROLE_INITIATOR) {
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_PKT_QUALITY);
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_PKT_NADM);
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_PKT_RSSI);
-                COPY_FIELD_IF_ENABLED(2, CS_RAS_FILTER_BIT_TOA_TOD);
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_PKT_ANTENNA);
-                COPY_FIELD_IF_ENABLED(4, CS_RAS_FILTER_BIT_PKT_PCT1);
-                COPY_FIELD_IF_ENABLED(4, CS_RAS_FILTER_BIT_PKT_PCT2);
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_ANT_PERM_IDX);
-                COPY_FIELD_IF_ENABLED((num_antenna_paths + 1) * 3, CS_RAS_FILTER_BIT_TONE_PCT);
-                COPY_FIELD_IF_ENABLED((num_antenna_paths + 1) * 1, CS_RAS_FILTER_BIT_TONE_QUALITY);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_3_FILTER_PACKET_QUALITY_BIT);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_3_FILTER_PACKET_NADM_BIT);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_3_FILTER_PACKET_RSSI_BIT);
+                COPY_FIELD_IF_ENABLED(2, CS_RAS_MODE_3_FILTER_TOD_TOA_BIT);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_3_FILTER_PACKET_ANTENNA_BIT);
+                COPY_FIELD_IF_ENABLED(4, CS_RAS_MODE_3_FILTER_PACKET_PCT_1_BIT);
+                COPY_FIELD_IF_ENABLED(4, CS_RAS_MODE_3_FILTER_PACKET_PCT_2_BIT);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_3_FILTER_ANTENNA_PERMUTATION_INDEX_BIT);
+                while (remaining > 0) {
+                    COPY_FIELD_IF_ENABLED(3, CS_RAS_MODE_3_FILTER_TONE_PCT_BIT);
+                    COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_3_FILTER_TONE_QUALITY_INDICATOR_BIT);
+                }
             } else { // Reflector
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_PKT_QUALITY);
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_PKT_NADM);
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_PKT_RSSI);
-                COPY_FIELD_IF_ENABLED(2, CS_RAS_FILTER_BIT_TOD_TOA);
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_PKT_ANTENNA);
-                COPY_FIELD_IF_ENABLED(4, CS_RAS_FILTER_BIT_PKT_PCT1);
-                COPY_FIELD_IF_ENABLED(4, CS_RAS_FILTER_BIT_PKT_PCT2);
-                COPY_FIELD_IF_ENABLED(1, CS_RAS_FILTER_BIT_ANT_PERM_IDX);
-                COPY_FIELD_IF_ENABLED((num_antenna_paths + 1) * 3, CS_RAS_FILTER_BIT_TONE_PCT);
-                COPY_FIELD_IF_ENABLED((num_antenna_paths + 1) * 1, CS_RAS_FILTER_BIT_TONE_QUALITY);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_3_FILTER_PACKET_QUALITY_BIT);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_3_FILTER_PACKET_NADM_BIT);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_3_FILTER_PACKET_RSSI_BIT);
+                COPY_FIELD_IF_ENABLED(2, CS_RAS_MODE_3_FILTER_TOD_TOA_BIT);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_3_FILTER_PACKET_ANTENNA_BIT);
+                COPY_FIELD_IF_ENABLED(4, CS_RAS_MODE_3_FILTER_PACKET_PCT_1_BIT);
+                COPY_FIELD_IF_ENABLED(4, CS_RAS_MODE_3_FILTER_PACKET_PCT_2_BIT);
+                COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_3_FILTER_ANTENNA_PERMUTATION_INDEX_BIT);
+                while (remaining > 0) {
+                    COPY_FIELD_IF_ENABLED(3, CS_RAS_MODE_3_FILTER_TONE_PCT_BIT);
+                    COPY_FIELD_IF_ENABLED(1, CS_RAS_MODE_3_FILTER_TONE_QUALITY_INDICATOR_BIT);
+                }
             }
             break;
         default:
@@ -1063,22 +1057,12 @@ static uint8_t* ras_subevent_data_conversion(bt_address_t* addr, bt_srv_conn_le_
 {
     memset(ras_srv->latest_local_steps, 0, sizeof(ras_srv->latest_local_steps));
 
-    if (result->len <= CS_RAS_STEP_DATA_BUF_LEN) {
-        memcpy(ras_srv->latest_local_steps, result->step_data_buf,
-            result->len);
-        BT_LOGD("step data[%d]", result->len);
-        BT_DUMPBUFFER("step data", result->step_data_buf, result->len);
-    } else {
-        BT_LOGD("Not enough memory to store step data. (%d > %d)",
-            result->len, CS_RAS_STEP_DATA_BUF_LEN);
-    }
-
     uint8_t* stream_buf = ras_srv->latest_local_steps;
     int bit_offset = 0;
 
     /**
-     * Rangging Counter.
-     * Rangging Counter is lower 12-bits of CS Procedure_Counter Provided by the Core Controller.
+     * Ranging Counter.
+     * Ranging Counter is lower 12-bits of CS Procedure_Counter Provided by the Core Controller.
      */
     ras_write_bits(stream_buf, &bit_offset, result->header.procedure_counter, 12);
 
@@ -1096,14 +1080,23 @@ static uint8_t* ras_subevent_data_conversion(bt_address_t* addr, bt_srv_conn_le_
      */
     ras_write_bits(stream_buf, &bit_offset, result->header.reference_power_level, 8);
     /**
-     * Antenna paths that are reported:
+     * Antenna Paths Mask (8 bits)
      * Bit0: 1 if Antenna Path_1 included; 0 if not.
      * Bit1: 1 if Antenna Path_2 included; 0 if not.
      * Bit2: 1 if Antenna Path_3 included; 0 if not.
      * Bit3: 1 if Antenna Path_4 included; 0 if not.
      * Bits 4-7: RFU
+     *
+     * Note: HCI provides num_antenna_paths as a count (1-4) of antenna paths used.
+     * The RAS Antenna_Paths_Mask sets bits 0..(N-1) for N antenna paths.
+     * Example: num_antenna_paths=4 means paths 1-4 used, mask=0x0F (bits 0-3)
      */
-    ras_write_bits(stream_buf, &bit_offset, result->header.num_antenna_paths, 8);
+    uint8_t antenna_paths_mask = 0;
+    if (result->header.num_antenna_paths >= 1 && result->header.num_antenna_paths <= 4) {
+        // Convert count to bitmask: count=1->0x01, count=2->0x03, count=3->0x07, count=4->0x0F
+        antenna_paths_mask = (1 << result->header.num_antenna_paths) - 1;
+    }
+    ras_write_bits(stream_buf, &bit_offset, antenna_paths_mask, 8);
     /**
      * Starting ACL addrection event count for the results reported in the event.
      */
@@ -1162,7 +1155,7 @@ static uint8_t* ras_subevent_data_conversion(bt_address_t* addr, bt_srv_conn_le_
     ras_srv->ras_seg_offset = 0;
     ras_srv->remaining_len = transform_step_data_to_ras_format_filtered(result->step_data_buf,
         result->len, stream_buf + CS_RAS_SUB_PROCUDURE_HEAD,
-        ras_srv->ras_filter, ras_srv->ras_role, result->header.num_antenna_paths & 0x0F);
+        ras_srv->ras_filter, ras_srv->ras_role, result->header.num_antenna_paths);
     ras_srv->remaining_len += CS_RAS_SUB_PROCUDURE_HEAD;
     ras_subevent_debug_info_print(result, stream_buf);
     return stream_buf;
@@ -1211,7 +1204,7 @@ static void cs_ras_process_on_demand_ranging_data(bt_address_t* addr, bt_srv_con
 
 static void cs_ras_subevent_result_cb(bt_address_t* addr, bt_srv_conn_le_cs_subevent_result_t* result)
 {
-    if (result->header.procedure_done_status == BT_LE_SRV_CS_PROCEDURE_COMPLETE && ras_check_ranging_mode(addr) == CS_RAS_RANGING_MODE_REAL_TIME) {
+    if (result->header.subevent_done_status == BT_LE_SRV_CS_SUBEVENT_COMPLETE && ras_check_ranging_mode(addr) == CS_RAS_RANGING_MODE_REAL_TIME) {
         BT_LOGD("Recv the real-time ranging data.");
         cs_ras_process_real_time_ranging_data(addr, result);
         return;
@@ -1453,7 +1446,7 @@ int bt_cs_ras_enable(void)
     ras_srv->ras_feature = 0x07000007;
 
     for (int i = 0; i < CS_RAS_FILTER_MODE_MAX; i++) {
-        ras_srv->ras_filter[i] = 0xFFFFFFFF;
+        ras_srv->ras_filter[i] = 0xFFFF; // All 16 bits set to 1 (all fields enabled)
     }
 
     bt_cs_ras_gatts_init(&ras_cb);
