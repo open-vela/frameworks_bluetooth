@@ -248,9 +248,9 @@ typedef uint8_t ras_rang_mode_t;
  */
 /* Legacy compatibility - use BT_CS_RAS_* macros from bt_cs.h instead */
 #define CS_RAS_REAL_TIME_RANG_DATA_SUPPROTED BT_CS_RAS_REAL_TIME_RANGING_DATA
-#define CS_RAS_RETRI_LOST_RANG_DATA_SEG      BT_CS_RAS_RETRIEVE_LOST_DATA_SEGMENTS
-#define CS_RAS_ABORT_OPRATION                BT_CS_RAS_ABORT_OPERATION
-#define CS_RAS_FILTER_RANG_DATA              BT_CS_RAS_FILTER_RANGING_DATA
+#define CS_RAS_RETRI_LOST_RANG_DATA_SEG BT_CS_RAS_RETRIEVE_LOST_DATA_SEGMENTS
+#define CS_RAS_ABORT_OPRATION BT_CS_RAS_ABORT_OPERATION
+#define CS_RAS_FILTER_RANG_DATA BT_CS_RAS_FILTER_RANGING_DATA
 
 /**
  * @brief RAS Control Point Operation Codes (Op Codes) and Parameters.
@@ -366,16 +366,16 @@ typedef uint8_t ras_rang_mode_t;
  * @brief Copy a field to the output buffer if the corresponding filter bit is enabled.
  *
  * This macro conditionally copies a field of data from a source pointer `p`
- * to an output buffer `buf` depending on the `filter_mask`. It also updates
+ * to an output buffer `buf` depending on the `filter`. It also updates
  * offsets and tracks remaining bytes.
  *
  * @param _size        Size of the field in bytes.
- * @param _filter_bit  Bitmask corresponding to the field in the filter_mask.
+ * @param _filter_bit  Bitmask corresponding to the field in the filter.
  *
  * @details
  * - The field is only copied if:
  *   1. There are enough bytes remaining (`remaining >= _size`), and
- *   2. The corresponding bit in `filter_mask` is set (`filter_mask & _filter_bit`).
+ *   2. The corresponding bit in `filter` is set (`filter & _filter_bit`).
  * - After copying, the output offset (`out_offset`) is incremented by `_size`.
  * - Regardless of copying, the source pointer `p` is advanced by `_size`,
  *   and `remaining` bytes are decreased by `_size`.
@@ -388,7 +388,7 @@ typedef uint8_t ras_rang_mode_t;
 #define COPY_FIELD_IF_ENABLED(_size, _filter_bit)              \
     do {                                                       \
         if (remaining >= (_size)) {                            \
-            if (filter_mask & (_filter_bit)) {                 \
+            if (filter & (_filter_bit)) {                      \
                 memcpy(&buf[out_offset], p, (_size));          \
                 out_offset += (_size);                         \
             }                                                  \
@@ -486,46 +486,6 @@ enum {
     CS_RAS_IDX_MAX
 };
 
-/*******************************************************************************************
- *
- *  FILTER BIT MAPPING TABLE
- *  ------------------------------------------------------------
- *  Each field can be individually filtered out using the
- *  uint32_t ras_filter[CS_RAS_FILTER_MODE_MAX] bitmask.
- *
- *  +----------------------------+-------------------------------+
- *  | Field Name                 | Bit Definition                |
- *  +----------------------------+-------------------------------+
- *  | Packet_Quality             | CS_RAS_FILTER_BIT_PKT_QUALITY     (BIT(0))  |
- *  | Packet_NADM                | CS_RAS_FILTER_BIT_PKT_NADM        (BIT(1))  |
- *  | Packet_RSSI                | CS_RAS_FILTER_BIT_PKT_RSSI        (BIT(2))  |
- *  | Packet_Antenna             | CS_RAS_FILTER_BIT_PKT_ANTENNA     (BIT(3))  |
- *  | Packet_PCT1                | CS_RAS_FILTER_BIT_PKT_PCT1        (BIT(4))  |
- *  | Packet_PCT2                | CS_RAS_FILTER_BIT_PKT_PCT2        (BIT(5))  |
- *  | Measured_Freq_Offset       | CS_RAS_FILTER_BIT_FREQ_OFFSET     (BIT(6))  |
- *  | ToA_ToD_Initiator          | CS_RAS_FILTER_BIT_TOA_TOD         (BIT(7))  |
- *  | ToD_ToA_Reflector          | CS_RAS_FILTER_BIT_TOD_TOA         (BIT(8))  |
- *  | Antenna_Permutation_Index  | CS_RAS_FILTER_BIT_ANT_PERM_IDX    (BIT(9))  |
- *  | Tone_PCT[k]                | CS_RAS_FILTER_BIT_TONE_PCT        (BIT(10)) |
- *  | Tone_Quality_Indicator[k]  | CS_RAS_FILTER_BIT_TONE_QUALITY    (BIT(11)) |
- *  +----------------------------+-------------------------------+
- *
- *******************************************************************************************/
-typedef enum {
-    CS_RAS_FILTER_BIT_PKT_QUALITY = BIT(0),
-    CS_RAS_FILTER_BIT_PKT_NADM = BIT(1),
-    CS_RAS_FILTER_BIT_PKT_RSSI = BIT(2),
-    CS_RAS_FILTER_BIT_PKT_ANTENNA = BIT(3),
-    CS_RAS_FILTER_BIT_PKT_PCT1 = BIT(4),
-    CS_RAS_FILTER_BIT_PKT_PCT2 = BIT(5),
-    CS_RAS_FILTER_BIT_FREQ_OFFSET = BIT(6),
-    CS_RAS_FILTER_BIT_TOA_TOD = BIT(7),
-    CS_RAS_FILTER_BIT_TOD_TOA = BIT(8),
-    CS_RAS_FILTER_BIT_ANT_PERM_IDX = BIT(9),
-    CS_RAS_FILTER_BIT_TONE_PCT = BIT(10),
-    CS_RAS_FILTER_BIT_TONE_QUALITY = BIT(11),
-} ras_filter_bits_t;
-
 /**
  * @brief RAS Mode 0 Filter Bit Definitions.
  *
@@ -533,13 +493,10 @@ typedef enum {
  * Each bit indicates whether a particular type of packet or measurement data
  * should be included in the Ranging Service procedure.
  */
-enum {
-    CS_RAS_MODE_0_FILTER_PACKET_QUALITY,
-    CS_RAS_MODE_0_FILTER_PACKET_RSSI,
-    CS_RAS_MODE_0_FILTER_PACKET_ANTENNA,
-    CS_RAS_MODE_0_FILTER_MEASURED_FREQ_OFFSET,
-    CS_RAS_MODE_0_FILTER_MAX,
-};
+#define CS_RAS_MODE_0_FILTER_PACKET_QUALITY_BIT BIT(2)
+#define CS_RAS_MODE_0_FILTER_PACKET_RSSI_BIT BIT(3)
+#define CS_RAS_MODE_0_FILTER_PACKET_ANTENNA_BIT BIT(4)
+#define CS_RAS_MODE_0_FILTER_MEASURED_FREQ_OFFSET_BIT BIT(5)
 
 /**
  * @brief RAS Mode 1 Filter Bit Definitions.
@@ -547,16 +504,13 @@ enum {
  * Filter bit positions for RAS Mode 1, specifying which packet or measurement
  * fields are included in the Ranging Service procedure.
  */
-enum {
-    CS_RAS_MODE_1_FILTER_PACKET_QUALITY,
-    CS_RAS_MODE_1_FILTER_PACKET_NADM,
-    CS_RAS_MODE_1_FILTER_PACKET_RSSI,
-    CS_RAS_MODE_1_FILTER_TOD_TOA,
-    CS_RAS_MODE_1_FILTER_PACKET_ANTENNA,
-    CS_RAS_MODE_1_FILTER_PACKET_PCT_1,
-    CS_RAS_MODE_1_FILTER_PACKET_PCT_2,
-    CS_RAS_MODE_1_FILTER_MAX,
-};
+#define CS_RAS_MODE_1_FILTER_PACKET_QUALITY_BIT BIT(2)
+#define CS_RAS_MODE_1_FILTER_PACKET_NADM_BIT BIT(3)
+#define CS_RAS_MODE_1_FILTER_PACKET_RSSI_BIT BIT(4)
+#define CS_RAS_MODE_1_FILTER_TOD_TOA_BIT BIT(5)
+#define CS_RAS_MODE_1_FILTER_PACKET_ANTENNA_BIT BIT(6)
+#define CS_RAS_MODE_1_FILTER_PACKET_PCT_1_BIT BIT(7)
+#define CS_RAS_MODE_1_FILTER_PACKET_PCT_2_BIT BIT(8)
 
 /**
  * @brief RAS Mode 2 Filter Bit Definitions.
@@ -564,16 +518,13 @@ enum {
  * Filter bit positions for RAS Mode 2, primarily used for antenna permutation
  * and tone analysis in the Ranging Service procedure.
  */
-enum {
-    CS_RAS_MODE_2_FILTER_ANTENNA_PERMUTATION_INDEX,
-    CS_RAS_MODE_2_FILTER_TONE_PCT,
-    CS_RAS_MODE_2_FILTER_TONE_QUALITY_INDICATOR,
-    CS_RAS_MODE_2_FILTER_ANTENNA_PATH_1,
-    CS_RAS_MODE_2_FILTER_ANTENNA_PATH_2,
-    CS_RAS_MODE_2_FILTER_ANTENNA_PATH_3,
-    CS_RAS_MODE_2_FILTER_ANTENNA_PATH_4,
-    CS_RAS_MODE_2_FILTER_MAX,
-};
+#define CS_RAS_MODE_2_FILTER_ANTENNA_PERMUTATION_INDEX_BIT BIT(2)
+#define CS_RAS_MODE_2_FILTER_TONE_PCT_BIT BIT(3)
+#define CS_RAS_MODE_2_FILTER_TONE_QUALITY_INDICATOR_BIT BIT(4)
+#define CS_RAS_MODE_2_FILTER_ANTENNA_PATH_1_BIT BIT(5)
+#define CS_RAS_MODE_2_FILTER_ANTENNA_PATH_2_BIT BIT(6)
+#define CS_RAS_MODE_2_FILTER_ANTENNA_PATH_3_BIT BIT(7)
+#define CS_RAS_MODE_2_FILTER_ANTENNA_PATH_4_BIT BIT(8)
 
 /**
  * @brief RAS Mode 3 Filter Bit Definitions.
@@ -581,23 +532,20 @@ enum {
  * Filter bit positions for RAS Mode 3. Combines Mode 1 and Mode 2 filters
  * to enable comprehensive packet and antenna/tone analysis.
  */
-enum {
-    CS_RAS_MODE_3_FILTER_PACKET_QUALITY,
-    CS_RAS_MODE_3_FILTER_PACKET_NADM,
-    CS_RAS_MODE_3_FILTER_PACKET_RSSI,
-    CS_RAS_MODE_3_FILTER_TOD_TOA,
-    CS_RAS_MODE_3_FILTER_PACKET_ANTENNA,
-    CS_RAS_MODE_3_FILTER_PACKET_PCT_1,
-    CS_RAS_MODE_3_FILTER_PACKET_PCT_2,
-    CS_RAS_MODE_3_FILTER_ANTENNA_PERMUTATION_INDEX,
-    CS_RAS_MODE_3_FILTER_TONE_PCT,
-    CS_RAS_MODE_3_FILTER_TONE_QUALITY_INDICATOR,
-    CS_RAS_MODE_3_FILTER_ANTENNA_PATH_1,
-    CS_RAS_MODE_3_FILTER_ANTENNA_PATH_2,
-    CS_RAS_MODE_3_FILTER_ANTENNA_PATH_3,
-    CS_RAS_MODE_3_FILTER_ANTENNA_PATH_4,
-    CS_RAS_MODE_3_FILTER_MAX,
-};
+#define CS_RAS_MODE_3_FILTER_PACKET_QUALITY_BIT BIT(2)
+#define CS_RAS_MODE_3_FILTER_PACKET_NADM_BIT BIT(3)
+#define CS_RAS_MODE_3_FILTER_PACKET_RSSI_BIT BIT(4)
+#define CS_RAS_MODE_3_FILTER_TOD_TOA_BIT BIT(5)
+#define CS_RAS_MODE_3_FILTER_PACKET_ANTENNA_BIT BIT(6)
+#define CS_RAS_MODE_3_FILTER_PACKET_PCT_1_BIT BIT(7)
+#define CS_RAS_MODE_3_FILTER_PACKET_PCT_2_BIT BIT(8)
+#define CS_RAS_MODE_3_FILTER_ANTENNA_PERMUTATION_INDEX_BIT BIT(9)
+#define CS_RAS_MODE_3_FILTER_TONE_PCT_BIT BIT(10)
+#define CS_RAS_MODE_3_FILTER_TONE_QUALITY_INDICATOR_BIT BIT(11)
+#define CS_RAS_MODE_3_FILTER_ANTENNA_PATH_1_BIT BIT(12)
+#define CS_RAS_MODE_3_FILTER_ANTENNA_PATH_2_BIT BIT(13)
+#define CS_RAS_MODE_3_FILTER_ANTENNA_PATH_3_BIT BIT(14)
+#define CS_RAS_MODE_3_FILTER_ANTENNA_PATH_4_BIT BIT(15)
 
 enum {
     CS_RAS_ON_DEMAND_STATE_IDLE = 1,
@@ -670,7 +618,7 @@ typedef struct {
     uint8_t ras_seg_idx; /**< Index of the current Ranging Data segment. */
     uint32_t ras_feature; /**< Bitfield indicating RAS feature support. */
     uint32_t char_notify_state; /**< Bitfield tracking characteristic notification/indication state. */
-    uint32_t ras_filter[CS_RAS_FILTER_MODE_MAX]; /**< Filter settings per RAS mode (0-3). */
+    uint16_t ras_filter[CS_RAS_FILTER_MODE_MAX]; /**< Filter settings per RAS mode (0-3), 16-bit per mode. Bits [1:0] = mode, Bits [15:2] = filter bit mask. */
     uint32_t on_demand_state; /**< Current state of the On-demand RAS procedure. */
     ras_rang_on_demand_t subevent[CS_RAS_STORE_PROCEDURE_NUM_MAX]; /**< Array of On-demand procedure slots. */
     ras_control_point_t control_point; /**< Control Point status for current operation. */
