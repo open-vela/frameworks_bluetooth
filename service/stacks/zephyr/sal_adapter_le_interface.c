@@ -569,7 +569,6 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
     bt_address_t addr;
     bt_address_t le_addr;
     bt_address_t* remote_addr;
-    int ret;
     bool encrypted = false;
 
     BT_LOGD("%s", __func__);
@@ -589,11 +588,8 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
 
     if (err && !adapter_get_pts_mode()) {
         adapter_on_bond_state_changed(&addr, BOND_STATE_NONE, BT_TRANSPORT_BLE, BT_STATUS_FAIL, false);
-        BT_LOGD("%s, err: %d, remove old key", __func__, err);
-        ret = bt_unpair(BT_ID_DEFAULT, info.le.dst);
-        if (ret < 0) {
-            BT_LOGE("%s, Failed to remove old key: %d", __func__, ret);
-        }
+        BT_LOGD("%s, err: %d, remove old key async", __func__, err);
+        bt_sal_le_remove_bond(PRIMARY_ADAPTER, &addr);
     }
 
     if (level >= BT_SECURITY_L2 && err == BT_SECURITY_ERR_SUCCESS) {
@@ -1389,7 +1385,7 @@ static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err r
 
     adapter_on_bond_state_changed(&addr, BOND_STATE_NONE, BT_TRANSPORT_BLE, BT_STATUS_AUTH_FAILURE, false);
     if (!adapter_get_pts_mode())
-        bt_conn_disconnect(conn, BT_HCI_ERR_AUTH_FAIL);
+        bt_sal_le_disconnect(PRIMARY_ADAPTER, &addr);
 }
 
 static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer)
