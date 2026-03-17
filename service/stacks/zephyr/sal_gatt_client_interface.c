@@ -349,7 +349,7 @@ bt_status_t bt_sal_gatt_client_connect(bt_controller_id_t id, bt_address_t* addr
         type = BT_ADDR_LE_ANONYMOUS;
         break;
     case BT_LE_ADDR_TYPE_UNKNOWN:
-        type = BT_ADDR_LE_RANDOM;
+        type = BT_ADDR_LE_PUBLIC;
         break;
     default:
         BT_LOGE("%s, invalid type:%d", __func__, addr_type);

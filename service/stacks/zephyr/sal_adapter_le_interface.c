@@ -188,7 +188,7 @@ static uint8_t zblue_convert_addr_type(ble_addr_type_t addr_type)
         type = BT_ADDR_LE_ANONYMOUS;
         break;
     case BT_LE_ADDR_TYPE_UNKNOWN:
-        type = BT_ADDR_LE_RANDOM;
+        type = BT_ADDR_LE_PUBLIC;
         break;
     default:
         BT_LOGE("%s, invalid type:%d", __func__, addr_type);
@@ -1907,7 +1907,7 @@ bt_status_t bt_sal_le_connect(bt_controller_id_t id, bt_address_t* addr, ble_add
         type = BT_ADDR_LE_ANONYMOUS;
         break;
     case BT_LE_ADDR_TYPE_UNKNOWN:
-        type = BT_ADDR_LE_RANDOM;
+        type = BT_ADDR_LE_PUBLIC;
         break;
     default:
         BT_LOGE("%s, invalid type:%d", __func__, addr_type);
