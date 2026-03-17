@@ -1750,28 +1750,74 @@ bt_status_t bt_sal_le_get_bonded_devices(bt_controller_id_t id, remote_device_le
 #endif
 }
 
+static void STACK_CALL(le_set_static_identity)(void* args)
+{
+    sal_adapter_req_t* req = args;
+    bt_addr_le_t le_addr = { .type = BT_ADDR_LE_RANDOM };
+
+    memcpy(&le_addr.a, &req->addr, sizeof(le_addr.a));
+
+    if (bt_id_set_default_addr_mc(req->id, &le_addr) < 0) {
+        BT_LOGE("%s, set static identity fail", __func__);
+        return;
+    }
+
+    adapter_on_le_addr_update(&req->addr, BT_LE_ADDR_TYPE_RANDOM);
+}
+
 bt_status_t bt_sal_le_set_static_identity(bt_controller_id_t id, bt_address_t* addr)
 {
-    /* stack handle this case: */
-    SAL_NOT_SUPPORT;
+    sal_adapter_req_t* req;
+
+    SAL_CHECK_PARAM(addr);
+
+    req = sal_adapter_req(id, addr, STACK_CALL(le_set_static_identity));
+    if (!req)
+        return BT_STATUS_NOMEM;
+
+    return sal_send_req(req);
+}
+
+static void STACK_CALL(le_set_public_identity)(void* args)
+{
+    sal_adapter_req_t* req = args;
+    bt_addr_le_t le_addr = { .type = BT_ADDR_LE_PUBLIC };
+
+    memcpy(&le_addr.a, &req->addr, sizeof(le_addr.a));
+
+    if (bt_id_set_default_addr_mc(req->id, &le_addr) < 0) {
+        BT_LOGE("%s, set public identity fail", __func__);
+        return;
+    }
+
+    adapter_on_le_addr_update(&req->addr, BT_LE_ADDR_TYPE_PUBLIC);
 }
 
 bt_status_t bt_sal_le_set_public_identity(bt_controller_id_t id, bt_address_t* addr)
 {
-    /* stack handle this case: */
-    SAL_NOT_SUPPORT;
+    sal_adapter_req_t* req;
+
+    SAL_CHECK_PARAM(addr);
+
+    req = sal_adapter_req(id, addr, STACK_CALL(le_set_public_identity));
+    if (!req)
+        return BT_STATUS_NOMEM;
+
+    return sal_send_req(req);
 }
 
 bt_status_t bt_sal_le_set_address(bt_controller_id_t id, bt_address_t* addr)
 {
-    /* stack handle this case: */
-    SAL_NOT_SUPPORT;
+    /* Legacy behavior: set as random static address */
+    return bt_sal_le_set_static_identity(id, addr);
 }
 
 bt_status_t bt_sal_le_get_address(bt_controller_id_t id, bt_address_t* addr)
 {
     UNUSED(id);
     bt_addr_le_t got = { 0 };
+    bt_address_t le_addr;
+    ble_addr_type_t addr_type;
     size_t count = 1;
 
     SAL_CHECK_PARAM(addr);
@@ -1779,7 +1825,10 @@ bt_status_t bt_sal_le_get_address(bt_controller_id_t id, bt_address_t* addr)
     bt_id_get(&got, &count);
     bt_addr_set(addr, (uint8_t*)&got.a);
 
-    SAL_ASSERT(got.type == BT_ADDR_LE_PUBLIC);
+    memcpy(&le_addr, addr, sizeof(le_addr));
+    addr_type = (got.type == BT_ADDR_LE_RANDOM) ? BT_LE_ADDR_TYPE_RANDOM : BT_LE_ADDR_TYPE_PUBLIC;
+    adapter_on_le_addr_update(&le_addr, addr_type);
+
     return BT_STATUS_SUCCESS;
 }
 
