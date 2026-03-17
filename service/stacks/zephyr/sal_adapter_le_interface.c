@@ -1886,7 +1886,7 @@ bt_status_t bt_sal_le_connect(bt_controller_id_t id, bt_address_t* addr, ble_add
     req->adpt.conn_param.conn.latency = params->connection_latency;
     req->adpt.conn_param.conn.timeout = params->supervision_timeout;
 
-    req->adpt.conn_param.create.options = BT_CONN_LE_OPT_NONE;
+    req->adpt.conn_param.create.options = BT_CONN_LE_OPT_USE_IDENTITY_ADDR;
     req->adpt.conn_param.create.interval = params->scan_interval;
     req->adpt.conn_param.create.window = params->scan_window;
 

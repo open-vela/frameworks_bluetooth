@@ -313,7 +313,7 @@ static void STACK_CALL(conn_connect)(void* args)
     address.type = req->addr_type;
     memcpy(&address.a, &req->addr, sizeof(address.a));
 
-    err = bt_conn_le_create(&address, BT_CONN_LE_CREATE_CONN, BT_LE_CONN_PARAM_DEFAULT, &conn);
+    err = bt_conn_le_create(&address, BT_CONN_LE_CREATE_CONN_IDENTITY, BT_LE_CONN_PARAM_DEFAULT, &conn);
     if (err) {
         bt_conn_remove(&req->addr, BT_TRANSPORT_BLE);
         BT_LOGE("%s, failed to create connection (%d)", __func__, err);
