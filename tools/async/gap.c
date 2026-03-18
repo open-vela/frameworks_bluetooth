@@ -1429,24 +1429,26 @@ int execute_async_command(void* handle, int argc, char* argv[])
 
 static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
 {
+    bt_instance_t* ins = cookie ? cookie : g_bttool_ins;
+
     PRINT("Context:%p, Adapter state changed: %d", cookie, state);
     if (state == BT_ADAPTER_STATE_ON) {
 
-        bt_tool_init(g_bttool_ins);
+        bt_tool_init(ins);
         /* get name */
-        bt_adapter_get_name_async(g_bttool_ins, get_local_name_cb, NULL);
+        bt_adapter_get_name_async(ins, get_local_name_cb, NULL);
         /* get io cap */
-        bt_adapter_get_io_capability_async(g_bttool_ins, get_iocap_cb, NULL);
+        bt_adapter_get_io_capability_async(ins, get_iocap_cb, NULL);
         /* get class */
-        bt_adapter_get_device_class_async(g_bttool_ins, get_local_cod_cb, NULL);
+        bt_adapter_get_device_class_async(ins, get_local_cod_cb, NULL);
         /* get scan mode */
-        bt_adapter_get_scan_mode_async(g_bttool_ins, get_scanmode_cb, NULL);
+        bt_adapter_get_scan_mode_async(ins, get_scanmode_cb, NULL);
         /* enable key derivation */
-        bt_adapter_le_enable_key_derivation_async(g_bttool_ins, true, true, status_cb, NULL);
-        bt_adapter_set_page_scan_parameters_async(g_bttool_ins, BT_BR_SCAN_TYPE_INTERLACED, 0x400, 0x24, status_cb, NULL);
+        bt_adapter_le_enable_key_derivation_async(ins, true, true, status_cb, NULL);
+        bt_adapter_set_page_scan_parameters_async(ins, BT_BR_SCAN_TYPE_INTERLACED, 0x400, 0x24, status_cb, NULL);
     } else if (state == BT_ADAPTER_STATE_TURNING_OFF) {
         /* code */
-        bt_tool_uninit(g_bttool_ins);
+        bt_tool_uninit(ins);
     } else if (state == BT_ADAPTER_STATE_OFF) {
         /* do something */
     }
@@ -1475,8 +1477,10 @@ static void on_device_name_changed_cb(void* cookie, const char* device_name)
 
 static void on_pair_request_cb(void* cookie, bt_address_t* addr)
 {
+    bt_instance_t* ins = cookie ? cookie : g_bttool_ins;
+
     if (g_auto_accept_pair)
-        bt_device_pair_request_reply_async(g_bttool_ins, addr, true, status_cb, NULL);
+        bt_device_pair_request_reply_async(ins, addr, true, status_cb, NULL);
 
     PRINT_ADDR("Incoming pair request from [%s] %s", addr, g_auto_accept_pair ? "auto accepted" : "please reply");
 }
@@ -1485,6 +1489,7 @@ static void on_pair_request_cb(void* cookie, bt_address_t* addr)
 
 static void on_pair_display_cb(void* cookie, bt_address_t* addr, bt_transport_t transport, bt_pair_type_t type, uint32_t passkey)
 {
+    bt_instance_t* ins = cookie ? cookie : g_bttool_ins;
     uint8_t ret = 0;
     char buff[128] = { 0 };
     char buff1[64] = { 0 };
@@ -1498,7 +1503,7 @@ static void on_pair_display_cb(void* cookie, bt_address_t* addr, bt_transport_t 
             sprintf(buff1, "[SSP][CONFIRM][%" PRIu32 "] please reply:", passkey);
             break;
         }
-        ret = bt_device_set_pairing_confirmation_async(g_bttool_ins, addr, transport, true, status_cb, NULL);
+        ret = bt_device_set_pairing_confirmation_async(ins, addr, transport, true, status_cb, NULL);
         sprintf(buff1, "[SSP][CONFIRM] Auto confirm [%" PRIu32 "] %s", passkey, ret == BT_STATUS_SUCCESS ? "SUCCESS" : "FAILED");
         break;
     case PAIR_TYPE_PASSKEY_ENTRY:
@@ -1520,7 +1525,9 @@ static void on_pair_display_cb(void* cookie, bt_address_t* addr, bt_transport_t 
 
 static void on_connect_request_cb(void* cookie, bt_address_t* addr)
 {
-    bt_device_connect_request_reply_async(g_bttool_ins, addr, true, status_cb, NULL);
+    bt_instance_t* ins = cookie ? cookie : g_bttool_ins;
+
+    bt_device_connect_request_reply_async(ins, addr, true, status_cb, NULL);
     PRINT_ADDR("Incoming connect request from [%s], auto accepted", addr);
 }
 
