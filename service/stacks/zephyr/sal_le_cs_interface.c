@@ -375,6 +375,7 @@ static bt_status_t STACK_CALL(create_config)(void* args)
         break;
     default:
         BT_LOGE("cs create config, invalid context.");
+        free(config);
         return BT_STATUS_FAIL;
     }
 
@@ -834,16 +835,16 @@ static struct bt_conn_le_cs_capabilities* convert_cs_capabilities_to_zblue(bt_sr
     return capbs;
 }
 
-static void convert_cs_capabilities_to_service(bt_srv_conn_le_cs_capabilities_t* capabilities, struct bt_conn_le_cs_capabilities* params)
+static bt_status_t convert_cs_capabilities_to_service(bt_srv_conn_le_cs_capabilities_t* capabilities, struct bt_conn_le_cs_capabilities* params)
 {
     if (!params) {
         BT_LOGE("cs get procedure parameters, invalid params.");
-        return;
+        return BT_STATUS_PARM_INVALID;
     }
 
     if (!capabilities) {
         BT_LOGE("cs get procedure parameters, invalid capabilities.");
-        return;
+        return BT_STATUS_PARM_INVALID;
     }
 
     capabilities->num_config_supported = params->num_config_supported;
@@ -866,8 +867,7 @@ static void convert_cs_capabilities_to_service(bt_srv_conn_le_cs_capabilities_t*
         break;
     default:
         BT_LOGE("Invalid rtt aa only precision.");
-        free(capabilities);
-        return;
+        return BT_STATUS_FAIL;
     }
 
     switch (params->rtt_sounding_precision) {
@@ -882,8 +882,7 @@ static void convert_cs_capabilities_to_service(bt_srv_conn_le_cs_capabilities_t*
         break;
     default:
         BT_LOGE("Invalid rtt sounding precision.");
-        free(capabilities);
-        return;
+        return BT_STATUS_FAIL;
     }
 
     switch (params->rtt_random_payload_precision) {
@@ -898,8 +897,7 @@ static void convert_cs_capabilities_to_service(bt_srv_conn_le_cs_capabilities_t*
         break;
     default:
         BT_LOGE("Invalid rtt random payload precision.");
-        free(capabilities);
-        return;
+        return BT_STATUS_FAIL;
     }
 
     capabilities->rtt_aa_only_n = params->rtt_aa_only_n;
@@ -918,6 +916,8 @@ static void convert_cs_capabilities_to_service(bt_srv_conn_le_cs_capabilities_t*
     capabilities->t_pm_times_supported = params->t_pm_times_supported;
     capabilities->t_sw_time = params->t_sw_time;
     capabilities->tx_snr_capability = params->tx_snr_capability;
+
+    return BT_STATUS_SUCCESS;
 }
 
 static bt_status_t STACK_CALL(read_local_supported_capabilities)(void* args)
@@ -952,10 +952,17 @@ static bt_status_t STACK_CALL(read_local_supported_capabilities)(void* args)
     local_capabilities = (bt_srv_conn_le_cs_capabilities_t*)zalloc(sizeof(bt_srv_conn_le_cs_capabilities_t));
     if (!local_capabilities) {
         free(capabilities);
+        cs_msg_destroy(msg);
         return BT_STATUS_FAIL;
     }
 
-    convert_cs_capabilities_to_service(local_capabilities, capabilities);
+    if (convert_cs_capabilities_to_service(local_capabilities, capabilities) != BT_STATUS_SUCCESS) {
+        BT_LOGE("cs convert capabilities to service failed.");
+        free(local_capabilities);
+        free(capabilities);
+        cs_msg_destroy(msg);
+        return BT_STATUS_FAIL;
+    }
     msg->cs_data.data = (void*)local_capabilities;
     bt_sal_cs_event_callback(msg);
 

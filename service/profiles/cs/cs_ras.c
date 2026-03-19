@@ -15,9 +15,11 @@
  *
  */
 
-#include "cs_ras.h"
+#include <inttypes.h>
+
 #include "bt_status.h"
 #include "bt_utils.h"
+#include "cs_ras.h"
 #include "cs_ras_gatts.h"
 #include "cs_ras_test.h"
 #include "cs_ras_util.h"
@@ -37,11 +39,119 @@
 
 static ras_srv_env_t* ras_srv;
 
-static void cs_ras_split_real_time_segment(bt_address_t* addr, uint8_t* buf, int len);
-static ras_rang_on_demand_t* cs_ras_rang_on_demand_find_subevent(bt_address_t* addr, uint16_t count);
+static void cs_ras_split_real_time_segment(bt_address_t* addr, ras_rt_queued_data_t* item);
+static void cs_ras_rt_try_send_next(bt_address_t* addr);
+static ras_od_procedure_t* cs_ras_od_find_procedure(bt_address_t* addr, uint16_t count);
 static bt_status_t cs_ras_data_ready_send(bt_address_t* addr, uint16_t count);
 static bt_status_t cs_ras_on_demand_send_cmp_ranging_data_rsp(bt_address_t* addr, uint16_t count);
 static ssize_t on_ras_ctr_pt_write_cb(bt_address_t* addr, const void* buf, uint16_t len);
+
+static uint32_t cs_ras_rt_queue_len(void)
+{
+    uint32_t count = 0;
+    cs_node_t* cur;
+    CS_GENLIST_FOR_EACH_NODE(list, &ras_srv->rt_queue, cur)
+    {
+        count++;
+    }
+    return count;
+}
+
+static bool cs_ras_rt_queue_remove_old(void)
+{
+    /* Remove one non-processing item to make room.
+     * Returns true if an item was removed, false if nothing could be removed. */
+    cs_node_t* prev = NULL;
+    cs_node_t* cur;
+    CS_GENLIST_FOR_EACH_NODE(list, &ras_srv->rt_queue, cur)
+    {
+        ras_rt_queued_data_t* item = container_of(cur, ras_rt_queued_data_t, node);
+        if (!item->processing) {
+            cs_list_remove(&ras_srv->rt_queue, prev, cur);
+            BT_LOGD("RT remove_old: removed item");
+            free(item);
+            return true;
+        }
+        prev = cur;
+    }
+
+    BT_LOGW("RT remove_old: all items are processing, cannot remove.");
+    return false;
+}
+
+static void cs_ras_rt_queue_free_all(void)
+{
+    ras_rt_queued_data_t *cur, *next;
+    CS_LIST_FOR_EACH_CONTAINER_SAFE(&ras_srv->rt_queue, cur, next, node)
+    {
+        cs_list_remove(&ras_srv->rt_queue, NULL, &cur->node);
+        free(cur);
+    }
+}
+
+static uint32_t cs_ras_od_list_len(void)
+{
+    uint32_t count = 0;
+    cs_node_t* cur;
+    CS_GENLIST_FOR_EACH_NODE(list, &ras_srv->od_procedure_list, cur)
+    {
+        count++;
+    }
+    return count;
+}
+
+static void cs_ras_od_free_procedure(ras_od_procedure_t* proc)
+{
+    if (!proc)
+        return;
+
+    /* Free all segments in the procedure */
+    ras_segment_t *seg_cur, *seg_next;
+    CS_LIST_FOR_EACH_CONTAINER_SAFE(&proc->seg_list, seg_cur, seg_next, seg_node)
+    {
+        cs_list_remove(&proc->seg_list, NULL, &seg_cur->seg_node);
+        free(seg_cur);
+    }
+
+    if (proc->on_demand_timer) {
+        service_loop_cancel_timer(proc->on_demand_timer);
+        proc->on_demand_timer = NULL;
+    }
+
+    free(proc);
+}
+
+static bool cs_ras_od_remove_old(void)
+{
+    /* Remove one non-processing procedure to make room.
+     * Returns true if an item was removed, false if nothing could be removed. */
+    cs_node_t* prev = NULL;
+    cs_node_t* cur;
+    CS_GENLIST_FOR_EACH_NODE(list, &ras_srv->od_procedure_list, cur)
+    {
+        ras_od_procedure_t* proc = container_of(cur, ras_od_procedure_t, node);
+        if (!proc->processing) {
+            cs_list_remove(&ras_srv->od_procedure_list, prev, cur);
+            BT_LOGD("OD remove_old: removed procedure count=%d", proc->count);
+            cs_ras_od_free_procedure(proc);
+            return true;
+        }
+        prev = cur;
+    }
+
+    BT_LOGW("OD remove_old: all procedures are processing, cannot remove.");
+    return false;
+}
+
+static void cs_ras_od_list_free_all(void)
+{
+    ras_od_procedure_t *cur, *next;
+    CS_LIST_FOR_EACH_CONTAINER_SAFE(&ras_srv->od_procedure_list, cur, next, node)
+    {
+        cs_list_remove(&ras_srv->od_procedure_list, NULL, &cur->node);
+        cs_ras_od_free_procedure(cur);
+    }
+}
 
 static void cs_ras_on_demand_notify_finished(bt_address_t* addr)
 {
@@ -49,6 +159,14 @@ static void cs_ras_on_demand_notify_finished(bt_address_t* addr)
 
     if (!on_demand_pdu) {
         BT_LOGD("Complete segment data sent.");
+        /* Reset processing flag on the procedure that just finished */
+        ras_od_procedure_t* od_proc = cs_ras_od_find_procedure(addr, ras_srv->procedure_count);
+        if (!od_proc) {
+            BT_LOGE("On-demand notify finished: procedure not found for count(%d), abort.",
+                ras_srv->procedure_count);
+            return;
+        }
+        od_proc->processing = false;
         cs_ras_on_demand_send_cmp_ranging_data_rsp(addr, ras_srv->procedure_count);
         return;
     }
@@ -64,6 +182,15 @@ static void cs_ras_on_demand_notify_finished(bt_address_t* addr)
     if (status != 0) {
         BT_LOGE("On-demand ranging data notify fail, seg_idx(%d), err(%d).",
             seg->seg_idx, status);
+        /* Reset processing flag on failure so the procedure can be removed */
+        ras_od_procedure_t* od_proc = cs_ras_od_find_procedure(addr, ras_srv->procedure_count);
+        if (!od_proc) {
+            BT_LOGE("On-demand notify error: procedure not found for count(%d), abort.",
+                ras_srv->procedure_count);
+            ras_srv->on_demand_curr_node = NULL;
+            return;
+        }
+        od_proc->processing = false;
         return;
     }
 
@@ -76,6 +203,14 @@ static void ras_on_demand_indicate_finished(bt_address_t* addr)
 
     if (!on_demand_pdu) {
         BT_LOGD("Complete segment data sent.");
+        /* Reset processing flag on the procedure that just finished */
+        ras_od_procedure_t* od_proc = cs_ras_od_find_procedure(addr, ras_srv->procedure_count);
+        if (!od_proc) {
+            BT_LOGE("On-demand indicate finished: procedure not found for count(%d), abort.",
+                ras_srv->procedure_count);
+            return;
+        }
+        od_proc->processing = false;
         cs_ras_on_demand_send_cmp_ranging_data_rsp(addr, ras_srv->procedure_count);
         return;
     }
@@ -90,6 +225,15 @@ static void ras_on_demand_indicate_finished(bt_address_t* addr)
     if (status != 0) {
         BT_LOGE("On-demand ranging data indication fail, seg_idx(%d), err(%d).",
             seg->seg_idx, status);
+        /* Reset processing flag on failure so the procedure can be removed */
+        ras_od_procedure_t* od_proc = cs_ras_od_find_procedure(addr, ras_srv->procedure_count);
+        if (!od_proc) {
+            BT_LOGE("On-demand indicate error: procedure not found for count(%d), abort.",
+                ras_srv->procedure_count);
+            ras_srv->on_demand_curr_node = NULL;
+            return;
+        }
+        od_proc->processing = false;
         return;
     }
 
@@ -105,14 +249,22 @@ static bt_status_t ras_ondemand_send_ranging_data(bt_address_t* addr, uint16_t c
 
     bt_status_t status = BT_STATUS_SUCCESS;
 
-    ras_rang_on_demand_t* on_demand_sub = cs_ras_rang_on_demand_find_subevent(addr, count);
+    ras_od_procedure_t* od_proc = cs_ras_od_find_procedure(addr, count);
 
-    if (!on_demand_sub) {
-        BT_LOGE("Haven't find subevent with count(%d).", count);
+    if (!od_proc) {
+        BT_LOGE("Haven't find procedure with count(%d).", count);
         return BT_STATUS_PARM_INVALID;
     }
 
-    const cs_node_t* on_demand_pdu = cs_list_peek_head(&on_demand_sub->seg_list);
+    od_proc->processing = true;
+
+    const cs_node_t* on_demand_pdu = cs_list_peek_head(&od_proc->seg_list);
+    if (!on_demand_pdu) {
+        BT_LOGE("Procedure count(%d) has no segments.", count);
+        od_proc->processing = false;
+        return BT_STATUS_FAIL;
+    }
+
     struct ras_segment_t* seg = container_of(on_demand_pdu, ras_segment_t, seg_node);
 
     BT_LOGD("seg:%p, seg->data(%d)", seg, seg->len);
@@ -122,6 +274,7 @@ static bt_status_t ras_ondemand_send_ranging_data(bt_address_t* addr, uint16_t c
         status = BT_GATT_NOTIFY_CB(RAS_ON_DEMAND_CHAR_SEND, addr, seg->data, seg->len);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("On-demand ranging data notify fail, status(%d).", status);
+            od_proc->processing = false;
             return status;
         }
 
@@ -129,6 +282,7 @@ static bt_status_t ras_ondemand_send_ranging_data(bt_address_t* addr, uint16_t c
         status = BT_GATT_INDICATE(RAS_ON_DEMAND_CHAR_SEND, addr, seg->data, seg->len);
         if (status != 0) {
             BT_LOGE("On-demand ranging data indicate fail, err(%d).", status);
+            od_proc->processing = false;
             return status;
         }
     }
@@ -142,9 +296,9 @@ static bt_status_t ras_ondemand_send_ranging_data(bt_address_t* addr, uint16_t c
 
 static bt_status_t cs_ras_on_demand_send_cmp_ranging_data_rsp(bt_address_t* addr, uint16_t count)
 {
-    ras_rang_on_demand_t* on_demand_data = cs_ras_rang_on_demand_find_subevent(addr, count);
+    ras_od_procedure_t* od_proc = cs_ras_od_find_procedure(addr, count);
 
-    if (!on_demand_data) {
+    if (!od_proc) {
         BT_LOGW("Haven't find the demand data with the count(%d).", count);
     }
 
@@ -177,9 +331,9 @@ static bt_status_t cs_ras_on_demand_send_cmp_ranging_data_rsp(bt_address_t* addr
 
 static bt_status_t ras_on_demand_send_code_rsp(bt_address_t* addr, uint16_t count)
 {
-    ras_rang_on_demand_t* on_demand_data = cs_ras_rang_on_demand_find_subevent(addr, count);
+    ras_od_procedure_t* od_proc = cs_ras_od_find_procedure(addr, count);
 
-    if (!on_demand_data) {
+    if (!od_proc) {
         BT_LOGW("Haven't find the demand data with the count(%d).", count);
     }
 
@@ -202,20 +356,25 @@ static bt_status_t ras_on_demand_send_code_rsp(bt_address_t* addr, uint16_t coun
         }
     }
 
-    // Free the on-demand segment list when response the ack to the Client.
-    ras_segment_t *seg_prev, *seg_next;
-    CS_LIST_FOR_EACH_CONTAINER_SAFE(&on_demand_data->seg_list,
-        seg_prev, seg_next, seg_node)
-    {
-        cs_list_remove(&on_demand_data->seg_list, NULL, &seg_prev->seg_node);
-        BT_LOGD("seg_prev:%p", seg_prev);
-        free(seg_prev);
+    /* Free the on-demand procedure and remove from list */
+    if (od_proc) {
+        if (od_proc->processing) {
+            BT_LOGW("ACK for procedure count=%d but it is still processing, defer free.", count);
+        } else {
+            cs_node_t* prev = NULL;
+            cs_node_t* cur;
+            CS_GENLIST_FOR_EACH_NODE(list, &ras_srv->od_procedure_list, cur)
+            {
+                if (cur == &od_proc->node) {
+                    cs_list_remove(&ras_srv->od_procedure_list, prev, cur);
+                    break;
+                }
+                prev = cur;
+            }
+            cs_ras_od_free_procedure(od_proc);
+        }
     }
 
-    BT_LOGD("The on-demand data has been sent, Cancel on-demand timer.");
-    /* The on-demand data has been sent, Cancel on-demand timer */
-    service_loop_cancel_timer(on_demand_data->on_demand_timer);
-    memset(on_demand_data, 0, sizeof(ras_rang_on_demand_t));
     return BT_STATUS_SUCCESS;
 }
 
@@ -263,17 +422,16 @@ static bt_status_t ras_on_demand_send_lost_ranging_data_cmp_rsp(bt_address_t* ad
 static bt_status_t ras_on_demand_retrieve_send_lost_data(bt_address_t* addr, uint16_t count,
     uint8_t first_seg, uint8_t last_seg)
 {
-    ras_rang_on_demand_t* on_demand_data = cs_ras_rang_on_demand_find_subevent(addr, count);
-    if (!on_demand_data) {
-        BT_LOGE("On-demand retrieve lost data failed: subevent not found for count(%u).", count);
+    ras_od_procedure_t* od_proc = cs_ras_od_find_procedure(addr, count);
+    if (!od_proc) {
+        BT_LOGE("On-demand retrieve lost data failed: procedure not found for count(%u).", count);
         return BT_STATUS_PARM_INVALID;
     }
 
     bt_status_t status;
 
-    // Free the on-demand segment list when response the ack to the Client.
     ras_segment_t *seg_prev, *seg_next;
-    CS_LIST_FOR_EACH_CONTAINER_SAFE(&on_demand_data->seg_list,
+    CS_LIST_FOR_EACH_CONTAINER_SAFE(&od_proc->seg_list,
         seg_prev, seg_next, seg_node)
     {
         if (seg_prev && (seg_prev->seg_idx >= first_seg) && (seg_prev->seg_idx <= last_seg)) {
@@ -597,8 +755,23 @@ static void ras_dt_rd_indicate_cb(bt_address_t* addr)
     }
 
     BT_LOGD("Indication finish");
-    if (ras_srv->remaining_len) {
-        cs_ras_split_real_time_segment(addr, &ras_srv->latest_local_steps[ras_srv->ras_seg_offset], ras_srv->remaining_len);
+
+    /* Find the current item being sent from the head of rt_queue */
+    cs_node_t* head = cs_list_peek_head(&ras_srv->rt_queue);
+    if (!head) {
+        BT_LOGD("RT queue empty after indication.");
+        return;
+    }
+
+    ras_rt_queued_data_t* item = container_of(head, ras_rt_queued_data_t, node);
+    if (item->remaining > 0) {
+        /* Continue sending the current item */
+        cs_ras_split_real_time_segment(addr, item);
+    } else {
+        /* Current item fully sent, free it and try next */
+        cs_list_remove(&ras_srv->rt_queue, NULL, head);
+        free(item);
+        cs_ras_rt_try_send_next(addr);
     }
 
     return;
@@ -629,174 +802,238 @@ static void ras_write_bits(uint8_t* buf, int* bit_offset, uint32_t value, int bi
     }
 }
 
-static void cs_ras_split_real_time_segment(bt_address_t* addr, uint8_t* buf, int len)
+static void cs_ras_split_real_time_segment(bt_address_t* addr, ras_rt_queued_data_t* item)
 {
-    if (ras_srv->remaining_len > ras_srv->ras_mtu - RAS_SEG_HEADER_SIZE - 1) {
-        int curr_seg_size = ras_srv->ras_mtu - RAS_SEG_HEADER_SIZE - 1;
-        BT_LOGD("data send: offset:%lu, len:%d", ras_srv->ras_seg_offset, curr_seg_size);
-
-        // update offset
-        ras_srv->ras_seg_offset += curr_seg_size;
-        uint8_t* send_buf = zalloc(curr_seg_size + 1);
-
-        ras_srv->remaining_len -= curr_seg_size;
-        send_buf[0] = (ras_srv->ras_seg_idx == 0) ? (0x01) : (ras_srv->ras_seg_idx << 2);
-
-        ras_srv->ras_seg_idx++;
-        memcpy(&send_buf[1], buf, curr_seg_size);
-
-        if ((send_buf[0] & 0x01) == 0x01) {
-            BT_LOGD("First seg, data(%d)", curr_seg_size + 1);
-            BT_DUMPBUFFER("seg->data", send_buf, curr_seg_size + 1);
-        } else {
-            BT_LOGD("The %d seg, data(%d)", send_buf[0] >> 2, curr_seg_size + 1);
-            BT_DUMPBUFFER("seg->data", send_buf, curr_seg_size + 1);
-        }
-
-        if (ras_srv->rt_dt_ccc_cfg == CS_RAS_GATT_NOTIFY) {
-            if (BT_GATT_NOTIFY(RAS_REAL_TIME_CHAR_SEND, addr, send_buf, curr_seg_size + 1) == 0) {
-                if (ras_srv->remaining_len) {
-                    cs_ras_split_real_time_segment(addr, &ras_srv->latest_local_steps[ras_srv->ras_seg_offset], ras_srv->remaining_len);
-                }
-                ras_srv->ras_dt_rd_indicating = 1U;
-                free(send_buf);
-            } else {
-                BT_LOGD("ras data ready Notify fail.");
-                free(send_buf);
-                return;
-            }
-        } else if (ras_srv->rt_dt_ccc_cfg == CS_RAS_GATT_INDICATION) {
-            if (BT_GATT_INDICATE(RAS_REAL_TIME_CHAR_SEND, addr, send_buf, curr_seg_size + 1) == 0) {
-                ras_srv->ras_dt_rd_indicating = 1U;
-                free(send_buf);
-            } else {
-                BT_LOGD("ras data ready Indicate fail.");
-                free(send_buf);
-                return;
-            }
-        } else {
-            BT_LOGE("Invalid range data ccc config state:0x%x", ras_srv->rt_dt_ccc_cfg);
-            free(send_buf);
-        }
-    } else {
-        int curr_seg_size = len;
-        uint8_t* send_buf = zalloc(curr_seg_size + 1);
-        send_buf[0] = (ras_srv->ras_seg_idx == 0) ? (0x01) : (ras_srv->ras_seg_idx << 2);
-        send_buf[0] |= (0x01 << 1);
-        memcpy(&send_buf[1], buf, curr_seg_size);
-
-        ras_srv->ras_seg_idx = 0;
-        ras_srv->ras_dt_rd_indicating = 0U;
-        ras_srv->remaining_len = 0;
-        ras_srv->ras_seg_offset = 0;
-        BT_LOGD("The last(%d) seg, data(%d)", send_buf[0] >> 2, curr_seg_size + 1);
-        BT_DUMPBUFFER("seg->data", send_buf, curr_seg_size + 1);
-        BT_LOGD("ras_dt_rd_indicating:%d", ras_srv->ras_dt_rd_indicating);
-        if (ras_srv->rt_dt_ccc_cfg == CS_RAS_GATT_NOTIFY) {
-            if (BT_GATT_NOTIFY(RAS_REAL_TIME_CHAR_SEND, addr, send_buf, curr_seg_size + 1) == 0) {
-                free(send_buf);
-            } else {
-                BT_LOGD("ras data ready Notify fail.");
-                free(send_buf);
-                return;
-            }
-        } else if (ras_srv->rt_dt_ccc_cfg == CS_RAS_GATT_INDICATION) {
-            if (BT_GATT_INDICATE(RAS_REAL_TIME_CHAR_SEND, addr, send_buf, curr_seg_size + 1) == 0) {
-                ras_srv->ras_dt_rd_indicating = 1U;
-                free(send_buf);
-            } else {
-                BT_LOGD("ras data ready Indicate fail.");
-                free(send_buf);
-                return;
-            }
-        } else {
-            BT_LOGE("Invalid range data ccc config state:0x%x", ras_srv->rt_dt_ccc_cfg);
-            free(send_buf);
-        }
+    if (ras_srv->ras_mtu <= RAS_SEG_HEADER_SIZE + 1) {
+        BT_LOGE("%s, ras_mtu(%" PRIu32 ") too small, minimum required: %d",
+            __func__, ras_srv->ras_mtu, RAS_SEG_HEADER_SIZE + 2);
+        return;
     }
 
-    return;
+    while (item->remaining > 0) {
+        uint8_t* buf = &item->data[item->seg_offset];
+
+        if (item->remaining > ras_srv->ras_mtu - RAS_SEG_HEADER_SIZE - 1) {
+            int curr_seg_size = ras_srv->ras_mtu - RAS_SEG_HEADER_SIZE - 1;
+            BT_LOGD("data send: offset:%" PRIu32 ", len:%d", item->seg_offset, curr_seg_size);
+
+            item->seg_offset += curr_seg_size;
+            uint8_t* send_buf = zalloc(curr_seg_size + 1);
+            if (!send_buf) {
+                BT_LOGE("Malloc send_buf fail, size=%d.", curr_seg_size + 1);
+                return;
+            }
+
+            item->remaining -= curr_seg_size;
+            send_buf[0] = (item->seg_idx == 0) ? (0x01) : (item->seg_idx << 2);
+
+            item->seg_idx++;
+            memcpy(&send_buf[1], buf, curr_seg_size);
+
+            if ((send_buf[0] & 0x01) == 0x01) {
+                BT_LOGD("First seg, data(%d)", curr_seg_size + 1);
+                BT_DUMPBUFFER("seg->data", send_buf, curr_seg_size + 1);
+            } else {
+                BT_LOGD("The %d seg, data(%d)", send_buf[0] >> 2, curr_seg_size + 1);
+                BT_DUMPBUFFER("seg->data", send_buf, curr_seg_size + 1);
+            }
+
+            if (ras_srv->rt_dt_ccc_cfg == CS_RAS_GATT_NOTIFY) {
+                if (BT_GATT_NOTIFY(RAS_REAL_TIME_CHAR_SEND, addr, send_buf, curr_seg_size + 1) == 0) {
+                    free(send_buf);
+                    /* Notify mode: loop continues to send next segment */
+                    continue;
+                } else {
+                    BT_LOGD("ras data ready Notify fail.");
+                    free(send_buf);
+                    return;
+                }
+            } else if (ras_srv->rt_dt_ccc_cfg == CS_RAS_GATT_INDICATION) {
+                if (BT_GATT_INDICATE(RAS_REAL_TIME_CHAR_SEND, addr, send_buf, curr_seg_size + 1) == 0) {
+                    ras_srv->ras_dt_rd_indicating = 1U;
+                    free(send_buf);
+                    /* Indication mode: wait for ras_dt_rd_indicate_cb to continue */
+                    return;
+                } else {
+                    BT_LOGD("ras data ready Indicate fail.");
+                    free(send_buf);
+                    return;
+                }
+            } else {
+                BT_LOGE("Invalid range data ccc config state:0x%x", ras_srv->rt_dt_ccc_cfg);
+                free(send_buf);
+                return;
+            }
+        } else {
+            /* Last segment */
+            int curr_seg_size = item->remaining;
+            uint8_t* send_buf = zalloc(curr_seg_size + 1);
+            if (!send_buf) {
+                BT_LOGE("Malloc send_buf fail, size=%d.", curr_seg_size + 1);
+                return;
+            }
+            send_buf[0] = (item->seg_idx == 0) ? (0x01) : (item->seg_idx << 2);
+            send_buf[0] |= (0x01 << 1); /* Mark as last segment */
+            memcpy(&send_buf[1], buf, curr_seg_size);
+
+            item->seg_idx = 0;
+            item->remaining = 0;
+            item->seg_offset = 0;
+            ras_srv->ras_dt_rd_indicating = 0U;
+            BT_LOGD("The last(%d) seg, data(%d)", send_buf[0] >> 2, curr_seg_size + 1);
+            BT_DUMPBUFFER("seg->data", send_buf, curr_seg_size + 1);
+            BT_LOGD("ras_dt_rd_indicating:%d", ras_srv->ras_dt_rd_indicating);
+            if (ras_srv->rt_dt_ccc_cfg == CS_RAS_GATT_NOTIFY) {
+                if (BT_GATT_NOTIFY(RAS_REAL_TIME_CHAR_SEND, addr, send_buf, curr_seg_size + 1) == 0) {
+                    free(send_buf);
+                    /* Notify mode: cleanup is handled by ras_notify_cb */
+                } else {
+                    BT_LOGD("ras data ready Notify fail.");
+                    free(send_buf);
+                    return;
+                }
+            } else if (ras_srv->rt_dt_ccc_cfg == CS_RAS_GATT_INDICATION) {
+                if (BT_GATT_INDICATE(RAS_REAL_TIME_CHAR_SEND, addr, send_buf, curr_seg_size + 1) == 0) {
+                    ras_srv->ras_dt_rd_indicating = 1U;
+                    free(send_buf);
+                    /* Indication mode: ras_dt_rd_indicate_cb will handle completion */
+                } else {
+                    BT_LOGD("ras data ready Indicate fail.");
+                    free(send_buf);
+                    return;
+                }
+            } else {
+                BT_LOGE("Invalid range data ccc config state:0x%x", ras_srv->rt_dt_ccc_cfg);
+                free(send_buf);
+            }
+            /* Last segment sent, loop exits since remaining == 0 */
+        }
+    }
+}
+
+/**
+ * @brief Try to start sending the next item in the real-time queue.
+ *
+ * Called after the current item finishes sending (all segments done).
+ */
+static void cs_ras_rt_try_send_next(bt_address_t* addr)
+{
+    cs_node_t* head = cs_list_peek_head(&ras_srv->rt_queue);
+    if (!head)
+        return;
+
+    ras_rt_queued_data_t* item = container_of(head, ras_rt_queued_data_t, node);
+    if (item->processing)
+        return;
+
+    item->processing = true;
+    BT_LOGD("RT: start sending next queued item, data_len=%" PRIu32, item->data_len);
+    cs_ras_split_real_time_segment(addr, item);
 }
 
 static void ras_on_demand_data_send_timeout(service_timer_t* timer, void* data)
 {
-    ras_rang_on_demand_t* on_demand_subevent = (ras_rang_on_demand_t*)timer->userdata;
+    ras_od_procedure_t* od_proc = (ras_od_procedure_t*)timer->userdata;
     BT_LOGD("On-demand data send timeout, remove the data in the list.");
-    // Free the on-demand segment list when response the ack to the Client.
-    ras_segment_t *seg_prev, *seg_next;
-    CS_LIST_FOR_EACH_CONTAINER_SAFE(&on_demand_subevent->seg_list,
-        seg_prev, seg_next, seg_node)
-    {
-        cs_list_remove(&on_demand_subevent->seg_list, NULL, &seg_prev->seg_node);
-        BT_LOGD("seg_prev:%p", seg_prev);
-        free(seg_prev);
+
+    if (!od_proc)
+        return;
+
+    /* Do not free a procedure that is currently being sent */
+    if (od_proc->processing) {
+        BT_LOGW("On-demand timeout: procedure count=%d is processing, skip free.", od_proc->count);
+        od_proc->on_demand_timer = NULL;
+        return;
     }
 
-    memset(on_demand_subevent, 0, sizeof(ras_rang_on_demand_t));
-    timer->userdata = NULL;
-    on_demand_subevent->on_demand_timer = NULL;
+    /* Remove from the od_procedure_list */
+    cs_node_t* prev = NULL;
+    cs_node_t* cur;
+    CS_GENLIST_FOR_EACH_NODE(list, &ras_srv->od_procedure_list, cur)
+    {
+        if (cur == &od_proc->node) {
+            cs_list_remove(&ras_srv->od_procedure_list, prev, cur);
+            break;
+        }
+        prev = cur;
+    }
+
+    od_proc->on_demand_timer = NULL; /* Prevent double-cancel in free */
+    cs_ras_od_free_procedure(od_proc);
     return;
 }
 
 static void cs_ras_split_on_demand_segment(bt_address_t* addr, uint8_t* buf, int len,
-    ras_rang_on_demand_t* subevent)
+    ras_od_procedure_t* proc, bool is_last_subevent)
 {
+    if (ras_srv->ras_mtu <= RAS_SEG_HEADER_SIZE + 1) {
+        BT_LOGE("%s, ras_mtu(%" PRIu32 ") too small, minimum required: %d",
+            __func__, ras_srv->ras_mtu, RAS_SEG_HEADER_SIZE + 2);
+        return;
+    }
+
     int curr_seg_size = 0;
-    uint16_t seg_index = 0;
-    ras_srv->ras_seg_offset = 0;
+    uint32_t seg_offset = 0;
+    uint32_t remaining = len;
 
     do {
-        if (ras_srv->remaining_len > ras_srv->ras_mtu - RAS_SEG_HEADER_SIZE - 1) {
+        if (remaining > ras_srv->ras_mtu - RAS_SEG_HEADER_SIZE - 1) {
             curr_seg_size = ras_srv->ras_mtu - RAS_SEG_HEADER_SIZE - 1;
-            BT_LOGD("data send: offset:%lu, len:%d", ras_srv->ras_seg_offset, curr_seg_size);
-            subevent->seg = (ras_segment_t*)malloc(sizeof(ras_segment_t) + curr_seg_size + 1);
+            BT_LOGD("data send: offset:%" PRIu32 ", len:%d", seg_offset, curr_seg_size);
+            proc->seg = (ras_segment_t*)malloc(sizeof(ras_segment_t) + curr_seg_size + 1);
 
-            if (!subevent->seg) {
+            if (!proc->seg) {
                 BT_LOGE("Malloc fail.");
                 return;
             }
 
-            memcpy(&subevent->seg->data[1], &buf[ras_srv->ras_seg_offset], curr_seg_size);
-            // update offset
-            ras_srv->ras_seg_offset += curr_seg_size;
-            ras_srv->remaining_len -= curr_seg_size;
+            memcpy(&proc->seg->data[1], &buf[seg_offset], curr_seg_size);
+            seg_offset += curr_seg_size;
+            remaining -= curr_seg_size;
 
-            subevent->seg->data[0] = (seg_index == 0) ? (0x01) : (seg_index << 2);
+            /* Non-last segment: set first flag only for the very first segment of the procedure */
+            proc->seg->data[0] = (proc->next_seg_index == 0) ? (0x01) : (proc->next_seg_index << 2);
         } else {
-            curr_seg_size = ras_srv->remaining_len;
-            subevent->seg = (ras_segment_t*)malloc(sizeof(ras_segment_t) + curr_seg_size + 1);
+            curr_seg_size = remaining;
+            proc->seg = (ras_segment_t*)malloc(sizeof(ras_segment_t) + curr_seg_size + 1);
 
-            if (!subevent->seg) {
+            if (!proc->seg) {
                 BT_LOGE("Malloc fail.");
                 return;
             }
 
-            memcpy(&subevent->seg->data[1], &buf[ras_srv->ras_seg_offset], curr_seg_size);
+            memcpy(&proc->seg->data[1], &buf[seg_offset], curr_seg_size);
 
-            subevent->seg->data[0] = (seg_index == 0) ? (0x01) : (seg_index << 2);
-            subevent->seg->data[0] |= (0x01 << 1);
-            ras_srv->remaining_len = 0;
+            proc->seg->data[0] = (proc->next_seg_index == 0) ? (0x01) : (proc->next_seg_index << 2);
+            /* Only set last flag when this is the final subevent of the procedure */
+            if (is_last_subevent) {
+                proc->seg->data[0] |= (0x01 << 1);
+            }
+            remaining = 0;
             BT_LOGD("ras_dt_rd_indicating:%d", ras_srv->ras_dt_rd_indicating);
         }
 
-        if ((subevent->seg->data[0] & 0x01) == 0x01) {
+        if ((proc->seg->data[0] & 0x01) == 0x01) {
             BT_LOGD("First seg, data(%d)", curr_seg_size + 1);
-            BT_DUMPBUFFER("seg->data", subevent->seg->data, curr_seg_size + 1);
+            BT_DUMPBUFFER("seg->data", proc->seg->data, curr_seg_size + 1);
         } else {
-            BT_LOGD("The %d seg, data(%d)", subevent->seg->data[0] >> 2, curr_seg_size + 1);
-            BT_DUMPBUFFER("seg->data", subevent->seg->data, curr_seg_size + 1);
+            BT_LOGD("The %d seg, data(%d)", proc->seg->data[0] >> 2, curr_seg_size + 1);
+            BT_DUMPBUFFER("seg->data", proc->seg->data, curr_seg_size + 1);
         }
 
-        subevent->seg->seg_idx = seg_index++;
-        subevent->seg->len = curr_seg_size + 1;
-        cs_list_append(&subevent->seg_list, &subevent->seg->seg_node);
-        BT_LOGD("subevent seg:%p, seg_node:%p.", subevent->seg, &subevent->seg->seg_node);
-    } while (ras_srv->remaining_len > 0);
+        proc->seg->seg_idx = proc->next_seg_index++;
+        proc->seg->len = curr_seg_size + 1;
+        cs_list_append(&proc->seg_list, &proc->seg->seg_node);
+        BT_LOGD("proc seg:%p, seg_node:%p.", proc->seg, &proc->seg->seg_node);
+    } while (remaining > 0);
 
-    if (!subevent->on_demand_timer) {
-        subevent->on_demand_timer = service_loop_timer(RAS_RSP_TIMEOUT, false, ras_on_demand_data_send_timeout, subevent);
-    } else {
-        BT_LOGE("The on demand timer already exit. subevent count:%d.", subevent->count);
+    /* Only start the timeout timer when the procedure is complete */
+    if (is_last_subevent) {
+        if (!proc->on_demand_timer) {
+            proc->on_demand_timer = service_loop_timer(RAS_RSP_TIMEOUT, false, ras_on_demand_data_send_timeout, proc);
+        } else {
+            BT_LOGE("The on demand timer already exit. procedure count:%d.", proc->count);
+        }
     }
     return;
 }
@@ -993,71 +1230,63 @@ static size_t transform_step_data_to_ras_format_filtered(
     return out_offset;
 }
 
-static ras_rang_on_demand_t* ras_rang_on_demand_subevent_pool_find(bt_address_t* addr)
+static ras_od_procedure_t* cs_ras_od_find_procedure(bt_address_t* addr, uint16_t count)
 {
     if (!ras_srv) {
         BT_LOGE("Invalid ras_srv environment, init it first.");
         return NULL;
     }
 
-    for (int i = 0; i < CS_RAS_STORE_PROCEDURE_NUM_MAX; i++) {
-        if (ras_srv->subevent[i].proc_used == false) {
-            memset(&ras_srv->subevent[i], 0, sizeof(ras_rang_on_demand_t));
-            ras_srv->subevent[i].proc_used = true;
-            return &ras_srv->subevent[i];
+    ras_od_procedure_t *cur, *next;
+    CS_LIST_FOR_EACH_CONTAINER_SAFE(&ras_srv->od_procedure_list, cur, next, node)
+    {
+        if (cur->count == count) {
+            return cur;
         }
     }
 
-    BT_LOGD("No subvent pool can be used.");
+    BT_LOGD("No procedure find with count(%d).", count);
     return NULL;
 }
 
-static ras_rang_on_demand_t* cs_ras_rang_on_demand_find_subevent(bt_address_t* addr, uint16_t count)
+static ras_od_procedure_t* cs_ras_od_alloc_procedure(bt_address_t* addr, uint16_t count)
 {
     if (!ras_srv) {
         BT_LOGE("Invalid ras_srv environment, init it first.");
         return NULL;
     }
 
-    for (int i = 0; i < CS_RAS_STORE_PROCEDURE_NUM_MAX; i++) {
-        if (ras_srv->subevent[i].count == count && ras_srv->subevent[i].proc_used == true) {
-            return &ras_srv->subevent[i];
+    /* Check if we already have a procedure with this count */
+    ras_od_procedure_t* existing = cs_ras_od_find_procedure(addr, count);
+    if (existing)
+        return existing;
+
+    /* Remove old if at max capacity */
+    while (cs_ras_od_list_len() >= RAS_OD_PROCEDURE_MAX) {
+        if (!cs_ras_od_remove_old()) {
+            BT_LOGE("Cannot remove any procedure (all processing), dropping new data.");
+            return NULL;
         }
     }
 
-    BT_LOGD("No subvent find with count(%d).", count);
-    return NULL;
+    ras_od_procedure_t* proc = (ras_od_procedure_t*)zalloc(sizeof(ras_od_procedure_t));
+    if (!proc) {
+        BT_LOGE("Malloc ras_od_procedure_t fail.");
+        return NULL;
+    }
+
+    proc->count = count;
+    cs_list_init(&proc->seg_list);
+    cs_list_append(&ras_srv->od_procedure_list, &proc->node);
+
+    return proc;
 }
 
-static void ras_subevent_debug_info_print(bt_srv_conn_le_cs_subevent_result_t* result, uint8_t* stream_buf)
+static size_t ras_subevent_data_conversion(bt_address_t* addr, bt_srv_conn_le_cs_subevent_result_t* result,
+    uint8_t* stream_buf, size_t buf_size)
 {
-    BT_LOGD("stream head");
-    BT_DUMPBUFFER("head", stream_buf, CS_RAS_SUB_PROCUDURE_HEAD);
-    BT_LOGD("stream_buf(%ld):", ras_srv->remaining_len);
-    BT_DUMPBUFFER("buf", stream_buf + 12, ras_srv->remaining_len - CS_RAS_SUB_PROCUDURE_HEAD);
-    BT_LOGD("data ready indicate count(%d)", result->header.procedure_counter);
-    BT_LOGD("procedure_counter:0x%x, config_id:0x%x, reference_power_level:0x%x",
-        result->header.procedure_counter, result->header.config_id,
-        result->header.reference_power_level);
-    BT_LOGD("num_antenna_paths:0x%x, start_acl_conn_event:0x%x, frequency_compensation:0x%x",
-        result->header.num_antenna_paths, result->header.start_acl_conn_event_counter,
-        result->header.frequency_compensation);
-    BT_LOGD("procedure_done_status:0x%x, subevent_done_status:0x%x, procedure_abort_reason:0x%x",
-        result->header.procedure_done_status, result->header.subevent_done_status,
-        result->header.procedure_abort_reason);
-    BT_LOGD("subevent_abort_reason:0x%x, reference_power_level:0x%x, num_steps_reported:0x%x",
-        result->header.subevent_abort_reason, result->header.reference_power_level,
-        result->header.num_steps_reported);
-    BT_LOGD("mode:0x%x, channel:0x%x, len:0x%x", result->step_data_buf[0],
-        result->step_data_buf[1],
-        result->step_data_buf[2]);
-}
+    memset(stream_buf, 0, buf_size);
 
-static uint8_t* ras_subevent_data_conversion(bt_address_t* addr, bt_srv_conn_le_cs_subevent_result_t* result)
-{
-    memset(ras_srv->latest_local_steps, 0, sizeof(ras_srv->latest_local_steps));
-
-    uint8_t* stream_buf = ras_srv->latest_local_steps;
     int bit_offset = 0;
 
     /**
@@ -1152,50 +1381,109 @@ static uint8_t* ras_subevent_data_conversion(bt_address_t* addr, bt_srv_conn_le_
      */
     ras_write_bits(stream_buf, &bit_offset, result->header.num_steps_reported, 8);
 
-    ras_srv->ras_seg_offset = 0;
-    ras_srv->remaining_len = transform_step_data_to_ras_format_filtered(result->step_data_buf,
+    size_t data_len = transform_step_data_to_ras_format_filtered(result->step_data_buf,
         result->len, stream_buf + CS_RAS_SUB_PROCUDURE_HEAD,
         ras_srv->ras_filter, ras_srv->ras_role, result->header.num_antenna_paths);
-    ras_srv->remaining_len += CS_RAS_SUB_PROCUDURE_HEAD;
-    ras_subevent_debug_info_print(result, stream_buf);
-    return stream_buf;
+    data_len += CS_RAS_SUB_PROCUDURE_HEAD;
+
+    /* Debug print */
+    BT_LOGD("stream head");
+    BT_DUMPBUFFER("head", stream_buf, CS_RAS_SUB_PROCUDURE_HEAD);
+    BT_LOGD("stream_buf(%zu):", data_len);
+    BT_DUMPBUFFER("buf", stream_buf + 12, data_len - CS_RAS_SUB_PROCUDURE_HEAD);
+    BT_LOGD("data ready indicate count(%d)", result->header.procedure_counter);
+    BT_LOGD("procedure_counter:0x%x, config_id:0x%x, reference_power_level:0x%x",
+        result->header.procedure_counter, result->header.config_id,
+        result->header.reference_power_level);
+    BT_LOGD("num_antenna_paths:0x%x, start_acl_conn_event:0x%x, frequency_compensation:0x%x",
+        result->header.num_antenna_paths, result->header.start_acl_conn_event_counter,
+        result->header.frequency_compensation);
+    BT_LOGD("procedure_done_status:0x%x, subevent_done_status:0x%x, procedure_abort_reason:0x%x",
+        result->header.procedure_done_status, result->header.subevent_done_status,
+        result->header.procedure_abort_reason);
+    BT_LOGD("subevent_abort_reason:0x%x, reference_power_level:0x%x, num_steps_reported:0x%x",
+        result->header.subevent_abort_reason, result->header.reference_power_level,
+        result->header.num_steps_reported);
+    BT_LOGD("mode:0x%x, channel:0x%x, len:0x%x", result->step_data_buf[0],
+        result->step_data_buf[1],
+        result->step_data_buf[2]);
+
+    return data_len;
 }
 
 static void cs_ras_process_real_time_ranging_data(bt_address_t* addr, bt_srv_conn_le_cs_subevent_result_t* result)
 {
-    if (result->len > CS_RAS_STEP_DATA_BUF_LEN) {
-        BT_LOGD("Not enough memory to store step data. (%d > %d)\n",
-            result->len, CS_RAS_STEP_DATA_BUF_LEN);
+    /* Allocate buffer based on input size: header + step data */
+    size_t buf_size = result->len + CS_RAS_SUB_PROCUDURE_HEAD;
+    uint8_t* tmp_buf = (uint8_t*)zalloc(buf_size);
+    if (!tmp_buf) {
+        BT_LOGE("Malloc tmp_buf fail, size=%zu.", buf_size);
         return;
     }
 
-    uint8_t* stream_buf = ras_subevent_data_conversion(addr, result);
-    cs_ras_split_real_time_segment(addr, stream_buf, ras_srv->remaining_len);
+    size_t data_len = ras_subevent_data_conversion(addr, result, tmp_buf, buf_size);
+
+    /* Remove old if queue is full */
+    while (cs_ras_rt_queue_len() >= RAS_RT_QUEUE_MAX) {
+        BT_LOGD("RT queue full (%" PRIu32 "), removing old.", cs_ras_rt_queue_len());
+        if (!cs_ras_rt_queue_remove_old()) {
+            BT_LOGE("Cannot remove any RT item (all processing), dropping new data.");
+            free(tmp_buf);
+            return;
+        }
+    }
+
+    /* Malloc a queued item with the data copy */
+    ras_rt_queued_data_t* item = (ras_rt_queued_data_t*)zalloc(sizeof(ras_rt_queued_data_t) + data_len);
+    if (!item) {
+        BT_LOGE("Malloc ras_rt_queued_data_t fail, len=%zu.", data_len);
+        free(tmp_buf);
+        return;
+    }
+
+    item->data_len = data_len;
+    item->remaining = data_len;
+    item->seg_offset = 0;
+    item->seg_idx = 0;
+    item->processing = false;
+    memcpy(item->data, tmp_buf, data_len);
+    free(tmp_buf);
+
+    /* Append to queue */
+    cs_list_append(&ras_srv->rt_queue, &item->node);
+    BT_LOGD("RT: enqueued item, data_len=%zu", data_len);
+
+    /* If not currently sending, start sending from head */
+    cs_ras_rt_try_send_next(addr);
 }
 
-static void cs_ras_process_on_demand_ranging_data(bt_address_t* addr, bt_srv_conn_le_cs_subevent_result_t* result)
+static void cs_ras_process_on_demand_ranging_data(bt_address_t* addr, bt_srv_conn_le_cs_subevent_result_t* result, bool procedure_complete)
 {
-    if (result->len > CS_RAS_STEP_DATA_BUF_LEN) {
-        BT_LOGD("Not enough memory to store step data. (%d > %d)\n",
-            result->len, CS_RAS_STEP_DATA_BUF_LEN);
-        return;
-    }
+    ras_od_procedure_t* proc = cs_ras_od_alloc_procedure(addr, result->header.procedure_counter);
 
-    ras_rang_on_demand_t* subevent = ras_rang_on_demand_subevent_pool_find(addr);
-
-    if (!subevent) {
-        BT_LOGE("No subevent pool found.");
+    if (!proc) {
+        BT_LOGE("No on-demand procedure slot available.");
         return;
     }
 
     BT_LOGD("procedure counter:%d.", result->header.procedure_counter);
 
-    subevent->count = result->header.procedure_counter;
-    uint8_t* stream_buf = ras_subevent_data_conversion(addr, result);
-    cs_ras_split_on_demand_segment(addr, stream_buf, ras_srv->remaining_len, subevent);
-    if (ras_srv->on_demand_state == CS_RAS_ON_DEMAND_STATE_IDLE) {
-        cs_ras_data_ready_send(addr, subevent->count);
-        // Set the on-demand state to ready.
+    /* Allocate buffer based on input size: header + step data */
+    size_t buf_size = result->len + CS_RAS_SUB_PROCUDURE_HEAD;
+    uint8_t* tmp_buf = (uint8_t*)zalloc(buf_size);
+    if (!tmp_buf) {
+        BT_LOGE("Malloc tmp_buf fail, size=%zu.", buf_size);
+        return;
+    }
+
+    size_t data_len = ras_subevent_data_conversion(addr, result, tmp_buf, buf_size);
+
+    cs_ras_split_on_demand_segment(addr, tmp_buf, data_len, proc, procedure_complete);
+    free(tmp_buf);
+
+    /* Only notify data ready when the procedure is complete */
+    if (procedure_complete && ras_srv->on_demand_state == CS_RAS_ON_DEMAND_STATE_IDLE) {
+        cs_ras_data_ready_send(addr, proc->count);
         ras_srv->on_demand_state = CS_RAS_ON_DEMAND_STATE_BUSY;
     }
 
@@ -1210,9 +1498,14 @@ static void cs_ras_subevent_result_cb(bt_address_t* addr, bt_srv_conn_le_cs_sube
         return;
     }
 
-    if (result->header.procedure_done_status == BT_LE_SRV_CS_PROCEDURE_COMPLETE && ras_check_ranging_mode(addr) == CS_RAS_RANGING_MODE_ON_DEMAND) {
-        BT_LOGD("Recv the on-demand ranging data.");
-        cs_ras_process_on_demand_ranging_data(addr, result);
+    if (ras_check_ranging_mode(addr) == CS_RAS_RANGING_MODE_ON_DEMAND) {
+        bool proc_complete = (result->header.procedure_done_status == BT_LE_SRV_CS_PROCEDURE_COMPLETE);
+        if (proc_complete) {
+            BT_LOGD("Recv the on-demand ranging data (procedure complete).");
+        } else {
+            BT_LOGD("Recv on-demand subevent (procedure partial), storing.");
+        }
+        cs_ras_process_on_demand_ranging_data(addr, result, proc_complete);
         return;
     }
 
@@ -1236,12 +1529,13 @@ static bt_status_t cs_ras_data_ready_send(bt_address_t* addr, uint16_t count)
 
 static void cs_ras_mtu_updated_cb(bt_address_t* addr, uint32_t mtu)
 {
-    if (ras_srv) {
-        ras_srv->ras_mtu = mtu;
+    if (!ras_srv) {
+        BT_LOGE("Invalid ras_srv value.");
+        return;
     }
 
-    BT_LOGD("Updated MTU, ras_mtu: %lu", ras_srv->ras_mtu);
-    return;
+    ras_srv->ras_mtu = mtu;
+    BT_LOGD("Updated MTU, ras_mtu: %" PRIu32, ras_srv->ras_mtu);
 }
 
 static void cs_ras_gatts_ccc_cfg_cb(bt_address_t* addr, ras_ccc_cfg_change_evt_t event,
@@ -1321,7 +1615,7 @@ static void cs_ras_gatts_ctr_pt_write_cb(bt_address_t* addr,
 
 static void cs_ras_gatts_feature_read_cb(bt_address_t* addr, uint32_t req_handle)
 {
-    BT_LOGI("feature read, req_handle:%lu", req_handle);
+    BT_LOGI("feature read, req_handle:%" PRIu32, req_handle);
     if (!ras_srv) {
         BT_LOGE("RAS haven't init.");
         return;
@@ -1333,21 +1627,22 @@ static void cs_ras_gatts_feature_read_cb(bt_address_t* addr, uint32_t req_handle
 
 static void ras_rang_on_demand_send_ready(bt_address_t* addr)
 {
-    uint16_t count = CS_RAS_STORE_PROCEDURE_NUM_MAX;
     if (!ras_srv) {
         BT_LOGE("Invalid ras_srv environment, init it first.");
         return;
     }
 
-    for (int i = 0; i < CS_RAS_STORE_PROCEDURE_NUM_MAX; i++) {
-        if (ras_srv->subevent[i].proc_used != true)
-            continue;
-
-        count = ras_srv->subevent[i].count < count ? ras_srv->subevent[i].count : count;
+    /* Find the procedure with the smallest count (oldest) */
+    uint16_t min_count = 0xFFFF;
+    ras_od_procedure_t *cur, *next;
+    CS_LIST_FOR_EACH_CONTAINER_SAFE(&ras_srv->od_procedure_list, cur, next, node)
+    {
+        if (cur->count < min_count) {
+            min_count = cur->count;
+        }
     }
 
-    if (count < CS_RAS_STORE_PROCEDURE_NUM_MAX && cs_ras_data_ready_send(addr, count) == BT_STATUS_SUCCESS) {
-        // Set the on-demand state to ready.
+    if (min_count < 0xFFFF && cs_ras_data_ready_send(addr, min_count) == BT_STATUS_SUCCESS) {
         ras_srv->on_demand_state = CS_RAS_ON_DEMAND_STATE_BUSY;
         return;
     }
@@ -1355,6 +1650,11 @@ static void ras_rang_on_demand_send_ready(bt_address_t* addr)
 
 static void ras_notify_cb(bt_address_t* addr, gatt_status_t status, ras_attr_notify_t attr)
 {
+    if (!ras_srv) {
+        BT_LOGE("ras_srv is NULL, service may have been disabled.");
+        return;
+    }
+
     if (status != GATT_STATUS_SUCCESS) {
         BT_LOGE("Notify fail, status(%d)", status);
         return;
@@ -1363,8 +1663,19 @@ static void ras_notify_cb(bt_address_t* addr, gatt_status_t status, ras_attr_not
     BT_LOGI("ras notify cb, attr:%d", attr);
     switch (attr) {
     case RAS_REAL_TIME_CHAR_SEND: {
-        if (ras_state_get_bit(&ras_srv->char_notify_state, RAS_RTT_DATA_INDICATE) || ras_state_get_bit(&ras_srv->char_notify_state, RAS_RTT_DATA_NOTIFY)) {
+        if (ras_state_get_bit(&ras_srv->char_notify_state, RAS_RTT_DATA_INDICATE)) {
             ras_dt_rd_indicate_cb(addr);
+        } else if (ras_state_get_bit(&ras_srv->char_notify_state, RAS_RTT_DATA_NOTIFY)) {
+            /* Notify mode: check if current item is done, dequeue next */
+            cs_node_t* head = cs_list_peek_head(&ras_srv->rt_queue);
+            if (head) {
+                ras_rt_queued_data_t* item = container_of(head, ras_rt_queued_data_t, node);
+                if (item->remaining == 0) {
+                    cs_list_remove(&ras_srv->rt_queue, NULL, head);
+                    free(item);
+                    cs_ras_rt_try_send_next(addr);
+                }
+            }
         }
     } break;
     case RAS_ON_DEMAND_CHAR_SEND: {
@@ -1389,12 +1700,21 @@ static void ras_notify_cb(bt_address_t* addr, gatt_status_t status, ras_attr_not
 
 static void ras_conn_cb(bt_address_t* addr)
 {
+    if (!ras_srv) {
+        BT_LOGE("ras_srv is NULL, service may have been disabled.");
+        return;
+    }
+
     if (ras_srv->addr) {
         BT_LOGE("The connection has been created.");
         return;
     }
 
     ras_srv->addr = (bt_address_t*)malloc(sizeof(bt_address_t));
+    if (!ras_srv->addr) {
+        BT_LOGE("Failed to allocate address.");
+        return;
+    }
 
     memcpy(ras_srv->addr, addr, sizeof(bt_address_t));
     BT_LOGD("RAS Conn to address:%s", bt_addr_str(addr));
@@ -1404,12 +1724,24 @@ static void ras_conn_cb(bt_address_t* addr)
 
 static void ras_disconn_cb(bt_address_t* addr)
 {
+    if (!ras_srv) {
+        BT_LOGE("ras_srv is NULL, service may have been disabled.");
+        return;
+    }
+
     if (ras_srv->addr == NULL) {
         BT_LOGE("The connection has been release.");
         return;
     }
 
     BT_LOGD("RAS disconn to address:%s", bt_addr_str(addr));
+
+    /* Clean up real-time queue */
+    cs_ras_rt_queue_free_all();
+
+    /* Clean up on-demand procedure list */
+    cs_ras_od_list_free_all();
+
     free(ras_srv->addr);
     ras_srv->addr = NULL;
     return;
@@ -1449,6 +1781,12 @@ int bt_cs_ras_enable(void)
         ras_srv->ras_filter[i] = 0xFFFF; // All 16 bits set to 1 (all fields enabled)
     }
 
+    /* Initialize real-time queue */
+    cs_list_init(&ras_srv->rt_queue);
+
+    /* Initialize on-demand procedure list */
+    cs_list_init(&ras_srv->od_procedure_list);
+
     bt_cs_ras_gatts_init(&ras_cb);
     bt_cs_register_subevent_cb(cs_ras_subevent_result_cb);
 
@@ -1459,6 +1797,12 @@ int bt_cs_ras_disable(void)
 {
     BT_LOGD("Disable Channel Sounding RAS Profile.");
     if (ras_srv) {
+        cs_ras_rt_queue_free_all();
+        cs_ras_od_list_free_all();
+        if (ras_srv->addr) {
+            free(ras_srv->addr);
+            ras_srv->addr = NULL;
+        }
         free(ras_srv);
         ras_srv = NULL;
     }
