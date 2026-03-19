@@ -1025,14 +1025,14 @@ static struct bt_gatt_cb zblue_gatt_callbacks = {
     .att_mtu_updated = zblue_gatts_mtu_updated_callback
 };
 
-static bt_status_t do_gatts_disconnect(bt_controller_id_t id, bt_address_t* bd_addr, void* user_data)
+static bt_status_t do_gatt_br_disconnect(bt_controller_id_t id, bt_address_t* bd_addr, void* user_data)
 {
     struct bt_conn* conn;
     int err;
 
     conn = bt_conn_lookup_addr_br((bt_addr_t*)bd_addr);
     if (!conn) {
-        BT_LOGE("No ACL connection found for address: %s", bt_addr_str(bd_addr));
+        BT_LOGE("%s, no ACL connection found", __func__);
         return BT_STATUS_FAIL;
     }
 
@@ -1070,9 +1070,17 @@ static void zblue_gatts_connected_callback(struct bt_conn* conn)
         slot->role |= GATT_ROLE_SERVER;
     }
 
-    if_gatts_on_connection_state_changed(&addr, PROFILE_STATE_CONNECTED);
-    bt_sal_cm_profile_connected_callback(&addr, PROFILE_GATTS, CONN_ID_DEFAULT);
-    bt_sal_profile_disconnect_register(&addr, PROFILE_GATTS, CONN_ID_DEFAULT, PRIMARY_ADAPTER, do_gatts_disconnect, NULL);
+    if (slot->role & GATT_ROLE_SERVER) {
+        if_gatts_on_connection_state_changed(&addr, PROFILE_STATE_CONNECTED);
+        bt_sal_cm_profile_connected_callback(&addr, PROFILE_GATTS, CONN_ID_DEFAULT);
+        bt_sal_profile_disconnect_register(&addr, PROFILE_GATTS, CONN_ID_DEFAULT, PRIMARY_ADAPTER, do_gatt_br_disconnect, NULL);
+    }
+
+    if (slot->role & GATT_ROLE_CLIENT) {
+        bt_sal_gatt_client_connection_state_changed_callback(PRIMARY_ADAPTER, &addr, PROFILE_STATE_CONNECTED);
+        bt_sal_cm_profile_connected_callback(&addr, PROFILE_GATTC, CONN_ID_DEFAULT);
+        bt_sal_profile_disconnect_register(&addr, PROFILE_GATTC, CONN_ID_DEFAULT, PRIMARY_ADAPTER, do_gatt_br_disconnect, NULL);
+    }
 }
 
 static void zblue_gatts_disconnected_callback(struct bt_conn* conn)
@@ -1094,9 +1102,17 @@ static void zblue_gatts_disconnected_callback(struct bt_conn* conn)
         return;
     }
 
+    uint8_t role = slot->role;
     bt_conn_remove(&addr, BT_TRANSPORT_BREDR);
-    if_gatts_on_connection_state_changed(&addr, PROFILE_STATE_DISCONNECTED);
-    bt_sal_cm_profile_disconnected_callback(&addr, PROFILE_GATTS, CONN_ID_DEFAULT);
+    if (role & GATT_ROLE_SERVER) {
+        if_gatts_on_connection_state_changed(&addr, PROFILE_STATE_DISCONNECTED);
+        bt_sal_cm_profile_disconnected_callback(&addr, PROFILE_GATTS, CONN_ID_DEFAULT);
+    }
+
+    if (role & GATT_ROLE_CLIENT) {
+        bt_sal_gatt_client_connection_state_changed_callback(PRIMARY_ADAPTER, &addr, PROFILE_STATE_DISCONNECTED);
+        bt_sal_cm_profile_disconnected_callback(&addr, PROFILE_GATTC, CONN_ID_DEFAULT);
+    }
 }
 
 static struct bt_att_conn_cb zblue_att_callbacks = {
@@ -1443,7 +1459,16 @@ static void STACK_CALL(conn_br_connect)(void* args)
     sal_adapter_req_t* req = args;
     bt_status_t status;
 
-    if (bt_conn_set_role(BT_TRANSPORT_BREDR, &req->addr, GATT_ROLE_SERVER) != BT_STATUS_SUCCESS) {
+    status = bt_conn_set_role(BT_TRANSPORT_BREDR, &req->addr, GATT_ROLE_SERVER);
+    if (status == BT_STATUS_DONE) {
+        /* ATT bearer already brought up by GATT client role on the same link.
+         * bt_conn_set_role has synthesized the CONNECTED callback for this role.
+         * CM bookkeeping is owned by the first role; do not register twice.
+         */
+        return;
+    }
+    if (status != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, set role failed", __func__);
         return;
     }
 
@@ -1458,6 +1483,11 @@ bt_status_t bt_sal_gatt_server_connect_bear(bt_controller_id_t id, bt_address_t*
 {
     sal_adapter_req_t* req;
     uint8_t type;
+
+    if (zblue_addr_type_from_ble(addr_type, &type) != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, invalid type:%d", __func__, addr_type);
+        return BT_STATUS_PARM_INVALID;
+    }
 
     switch (bear_type) {
     case ATT_BEAR_TYPE_LE_ATT:
@@ -1476,35 +1506,6 @@ bt_status_t bt_sal_gatt_server_connect_bear(bt_controller_id_t id, bt_address_t*
         return BT_STATUS_NOMEM;
     }
 
-    if (bear_type == ATT_BEAR_TYPE_BR_ATT) {
-        /* ATT_BEAR_TYPE_BR_ATT Skip addr_type convert */
-        return sal_send_req(req);
-    }
-
-    switch (addr_type) {
-    case BT_LE_ADDR_TYPE_PUBLIC:
-        type = BT_ADDR_LE_PUBLIC;
-        break;
-    case BT_LE_ADDR_TYPE_RANDOM:
-        type = BT_ADDR_LE_RANDOM;
-        break;
-    case BT_LE_ADDR_TYPE_PUBLIC_ID:
-        type = BT_ADDR_LE_PUBLIC_ID;
-        break;
-    case BT_LE_ADDR_TYPE_RANDOM_ID:
-        type = BT_ADDR_LE_RANDOM_ID;
-        break;
-    case BT_LE_ADDR_TYPE_ANONYMOUS:
-        type = BT_ADDR_LE_ANONYMOUS;
-        break;
-    case BT_LE_ADDR_TYPE_UNKNOWN:
-        type = BT_ADDR_LE_PUBLIC;
-        break;
-    default:
-        BT_LOGE("%s, invalid type:%d", __func__, addr_type);
-        assert(0);
-    }
-
     BT_LOGD("%s, addr_type:%d, type:%d", __func__, addr_type, type);
     req->addr_type = type;
 
@@ -1516,34 +1517,15 @@ bt_status_t bt_sal_gatt_server_connect(bt_controller_id_t id, bt_address_t* addr
     sal_adapter_req_t* req;
     uint8_t type;
 
+    if (zblue_addr_type_from_ble(addr_type, &type) != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, invalid type:%d", __func__, addr_type);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     req = sal_adapter_req(id, addr, STACK_CALL(conn_connect));
     if (!req) {
         BT_LOGE("%s, req null", __func__);
         return BT_STATUS_NOMEM;
-    }
-
-    switch (addr_type) {
-    case BT_LE_ADDR_TYPE_PUBLIC:
-        type = BT_ADDR_LE_PUBLIC;
-        break;
-    case BT_LE_ADDR_TYPE_RANDOM:
-        type = BT_ADDR_LE_RANDOM;
-        break;
-    case BT_LE_ADDR_TYPE_PUBLIC_ID:
-        type = BT_ADDR_LE_PUBLIC_ID;
-        break;
-    case BT_LE_ADDR_TYPE_RANDOM_ID:
-        type = BT_ADDR_LE_RANDOM_ID;
-        break;
-    case BT_LE_ADDR_TYPE_ANONYMOUS:
-        type = BT_ADDR_LE_ANONYMOUS;
-        break;
-    case BT_LE_ADDR_TYPE_UNKNOWN:
-        type = BT_ADDR_LE_PUBLIC;
-        break;
-    default:
-        BT_LOGE("%s, invalid type:%d", __func__, addr_type);
-        assert(0);
     }
 
     BT_LOGD("%s, addr_type:%d, type:%d", __func__, addr_type, type);
@@ -1571,7 +1553,7 @@ static void STACK_CALL(conn_cancel)(void* args)
     }
 
 br_disconn:
-    bt_sal_profile_disconnect_request(&req->addr, PROFILE_GATTS, CONN_ID_DEFAULT, PRIMARY_ADAPTER, do_gatts_disconnect, NULL);
+    bt_sal_profile_disconnect_request(&req->addr, PROFILE_GATTS, CONN_ID_DEFAULT, PRIMARY_ADAPTER, do_gatt_br_disconnect, NULL);
 }
 
 bt_status_t bt_sal_gatt_server_cancel_connection(bt_controller_id_t id, bt_address_t* addr)

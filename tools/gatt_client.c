@@ -37,6 +37,7 @@ typedef struct {
 static int create_cmd(void* handle, int argc, char* argv[]);
 static int delete_cmd(void* handle, int argc, char* argv[]);
 static int connect_cmd(void* handle, int argc, char* argv[]);
+static int connect_bear_cmd(void* handle, int argc, char* argv[]);
 static int disconnect_cmd(void* handle, int argc, char* argv[]);
 static int discover_services_cmd(void* handle, int argc, char* argv[]);
 static int read_request_cmd(void* handle, int argc, char* argv[]);
@@ -72,6 +73,7 @@ static bt_command_t g_gattc_tables[] = {
     { "create", create_cmd, 0, "\"create gatt client :\"" },
     { "delete", delete_cmd, 0, "\"delete gatt client :<conn id>\"" },
     { "connect", connect_cmd, 0, "\"connect remote device :<conn id><address>[addr type(0:public,1:random,2:public_id,3:random_id)]\"" },
+    { "connect_bear", connect_bear_cmd, 0, "\"connect remote device :<conn id><address><bear type(1:le att, 2:le eatt, 3:bredr att, 4:bredr eatt)>\"" },
     { "disconnect", disconnect_cmd, 0, "\"disconnect remote device :<conn id>\"" },
     { "discover", discover_services_cmd, 0, "\"discover all services : <conn id> [uuid]\"\n"
                                             "\t\t\t  e.g., discover 0\n"
@@ -137,6 +139,31 @@ static int connect_cmd(void* handle, int argc, char* argv[])
     }
 
     if (bt_gattc_connect(g_gattc_devies[conn_id].handle, &addr, addr_type) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    return CMD_OK;
+}
+
+static int connect_bear_cmd(void* handle, int argc, char* argv[])
+{
+    if (argc < 3)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    int conn_id = atoi(argv[0]);
+    CHECK_CONNCTION_ID(conn_id);
+
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[1], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    uint8_t bear_type = atoi(argv[2]);
+    if (bear_type <= ATT_BEAR_TYPE_NONE || bear_type >= ATT_BEAR_TYPE_ANY) {
+        PRINT("currently only LE_ATT(%d) and BR_ATT(%d) are supported",
+            ATT_BEAR_TYPE_LE_ATT, ATT_BEAR_TYPE_BR_ATT);
+        return CMD_INVALID_OPT;
+    }
+
+    if (bt_gattc_connect_bear(g_gattc_devies[conn_id].handle, &addr, BT_LE_ADDR_TYPE_UNKNOWN, bear_type) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;

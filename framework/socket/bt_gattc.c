@@ -118,6 +118,11 @@ bt_status_t bt_gattc_delete_connect(gattc_handle_t conn_handle)
 
 bt_status_t bt_gattc_connect(gattc_handle_t conn_handle, bt_address_t* addr, ble_addr_type_t addr_type)
 {
+    return bt_gattc_connect_bear(conn_handle, addr, addr_type, ATT_BEAR_TYPE_LE_ATT);
+}
+
+bt_status_t bt_gattc_connect_bear(gattc_handle_t conn_handle, bt_address_t* addr, ble_addr_type_t addr_type, uint8_t bear_type)
+{
     bt_message_packet_t packet;
     bt_status_t status;
     bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)conn_handle;
@@ -126,6 +131,7 @@ bt_status_t bt_gattc_connect(gattc_handle_t conn_handle, bt_address_t* addr, ble
 
     packet.gattc_pl._bt_gattc_connect.handle = PTR2INT(uint64_t) gattc_remote->cookie;
     packet.gattc_pl._bt_gattc_connect.addr_type = addr_type;
+    packet.gattc_pl._bt_gattc_connect.bear_type = bear_type;
     memcpy(&packet.gattc_pl._bt_gattc_connect.addr, addr, sizeof(bt_address_t));
     status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_CONNECT);
     if (status != BT_STATUS_SUCCESS)

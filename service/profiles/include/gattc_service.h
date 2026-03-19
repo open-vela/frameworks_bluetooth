@@ -53,6 +53,7 @@ typedef struct gattc_interface {
     bt_status_t (*create_connect)(void* remote, void** phandle, gattc_callbacks_t* callbacks);
     bt_status_t (*delete_connect)(void* conn_handle);
     bt_status_t (*connect)(void* conn_handle, bt_address_t* addr, ble_addr_type_t addr_type);
+    bt_status_t (*connect_bear)(void* conn_handle, bt_address_t* addr, ble_addr_type_t addr_type, uint8_t bear_type);
     bt_status_t (*disconnect)(void* conn_handle);
     bt_status_t (*discover_service)(void* conn_handle, bt_uuid_t* filter_uuid);
     bt_status_t (*get_attribute_by_handle)(void* conn_handle, uint16_t attr_handle, gatt_attr_desc_t* attr_desc);

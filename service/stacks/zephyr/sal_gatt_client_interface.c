@@ -14,6 +14,7 @@
  * limitations under the License.
  ***************************************************************************/
 
+#include <zephyr/bluetooth/att.h>
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/gatt.h>
@@ -23,6 +24,7 @@
 #include <debug.h>
 
 #include "sal_adapter_le_interface.h"
+#include "sal_connection_manager.h"
 #include "sal_gatt_client_interface.h"
 #include "sal_interface.h"
 #include "sal_zblue.h"
@@ -321,45 +323,107 @@ static void STACK_CALL(conn_connect)(void* args)
     }
 }
 
-bt_status_t bt_sal_gatt_client_connect(bt_controller_id_t id, bt_address_t* addr, ble_addr_type_t addr_type)
+static bt_status_t gattc_br_profile_connect(bt_controller_id_t id, bt_address_t* addr, void* user_data)
+{
+    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
+    int err;
+
+    if (!conn) {
+        BT_LOGE("%s, acl not connected", __func__);
+        return BT_STATUS_FAIL;
+    }
+
+    err = bt_att_br_connect(conn);
+    if (err) {
+        BT_LOGE("%s, ATT over BR connect failed", __func__);
+        goto error;
+    }
+
+    bt_conn_unref(conn);
+    return BT_STATUS_SUCCESS;
+
+error:
+    bt_conn_unref(conn);
+    return BT_STATUS_FAIL;
+}
+
+static void STACK_CALL(conn_br_connect)(void* args)
+{
+    sal_adapter_req_t* req = args;
+    bt_status_t status;
+
+    status = bt_conn_set_role(BT_TRANSPORT_BREDR, &req->addr, GATT_ROLE_CLIENT);
+    if (status == BT_STATUS_DONE) {
+        /* ATT bearer already brought up by GATT server role on the same link.
+         * bt_conn_set_role has synthesized the CONNECTED callback for this role.
+         * CM bookkeeping is owned by the first role; do not register twice.
+         */
+        return;
+    }
+    if (status != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, set role failed", __func__);
+        return;
+    }
+
+    status = bt_sal_profile_connect_request(&req->addr, PROFILE_GATTC, CONN_ID_DEFAULT, req->id, gattc_br_profile_connect, NULL);
+    if (status != BT_STATUS_SUCCESS) {
+        bt_conn_remove(&req->addr, BT_TRANSPORT_BREDR);
+        BT_LOGE("%s, PROFILE_GATTC connect failed", __func__);
+    }
+}
+
+bt_status_t bt_sal_gatt_client_connect_bear(bt_controller_id_t id, bt_address_t* addr, ble_addr_type_t addr_type, uint8_t bear_type)
 {
     sal_adapter_req_t* req;
     uint8_t type;
 
-    req = sal_adapter_req(id, addr, STACK_CALL(conn_connect));
-    if (!req) {
-        BT_LOGE("%s, req null", __func__)
-        return BT_STATUS_NOMEM;
+    if (zblue_addr_type_from_ble(addr_type, &type) != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, invalid type:%d", __func__, addr_type);
+        return BT_STATUS_PARM_INVALID;
     }
 
-    switch (addr_type) {
-    case BT_LE_ADDR_TYPE_PUBLIC:
-        type = BT_ADDR_LE_PUBLIC;
+    switch (bear_type) {
+    case ATT_BEAR_TYPE_LE_ATT:
+        req = sal_adapter_req(id, addr, STACK_CALL(conn_connect));
         break;
-    case BT_LE_ADDR_TYPE_RANDOM:
-        type = BT_ADDR_LE_RANDOM;
-        break;
-    case BT_LE_ADDR_TYPE_PUBLIC_ID:
-        type = BT_ADDR_LE_PUBLIC_ID;
-        break;
-    case BT_LE_ADDR_TYPE_RANDOM_ID:
-        type = BT_ADDR_LE_RANDOM_ID;
-        break;
-    case BT_LE_ADDR_TYPE_ANONYMOUS:
-        type = BT_ADDR_LE_ANONYMOUS;
-        break;
-    case BT_LE_ADDR_TYPE_UNKNOWN:
-        type = BT_ADDR_LE_PUBLIC;
+    case ATT_BEAR_TYPE_BR_ATT:
+        req = sal_adapter_req(id, addr, STACK_CALL(conn_br_connect));
         break;
     default:
-        BT_LOGE("%s, invalid type:%d", __func__, addr_type);
-        assert(0);
+        BT_LOGE("%s, unsupported bear_type:%d", __func__, bear_type);
+        return BT_STATUS_UNSUPPORTED;
+    }
+
+    if (!req) {
+        BT_LOGE("%s, req null", __func__);
+        return BT_STATUS_NOMEM;
     }
 
     BT_LOGD("%s, addr_type:%d, type:%d", __func__, addr_type, type);
     req->addr_type = type;
 
     return sal_send_req(req);
+}
+
+static bt_status_t do_gattc_disconnect(bt_controller_id_t id, bt_address_t* bd_addr, void* user_data)
+{
+    struct bt_conn* conn;
+    int err;
+
+    conn = bt_conn_lookup_addr_br((bt_addr_t*)bd_addr);
+    if (!conn) {
+        BT_LOGE("%s, no ACL connection found", __func__);
+        return BT_STATUS_FAIL;
+    }
+
+    err = bt_att_br_disconnect(conn);
+    bt_conn_unref(conn);
+    if (err) {
+        BT_LOGE("%s, disconnect fail err:%d", __func__, err);
+        return BT_STATUS_FAIL;
+    }
+
+    return BT_STATUS_SUCCESS;
 }
 
 static void STACK_CALL(conn_disconnect)(void* args)
@@ -371,7 +435,7 @@ static void STACK_CALL(conn_disconnect)(void* args)
     conn = get_le_conn_from_addr(&req->addr);
     if (!conn) {
         BT_LOGE("%s, conn null", __func__);
-        return;
+        goto br_disconn;
     }
 
     err = bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
@@ -379,6 +443,10 @@ static void STACK_CALL(conn_disconnect)(void* args)
         BT_LOGE("%s, disconnect fail err:%d", __func__, err);
         return;
     }
+    return;
+
+br_disconn:
+    bt_sal_profile_disconnect_request(&req->addr, PROFILE_GATTC, CONN_ID_DEFAULT, PRIMARY_ADAPTER, do_gattc_disconnect, NULL);
 }
 
 bt_status_t bt_sal_gatt_client_disconnect(bt_controller_id_t id, bt_address_t* addr)
@@ -1041,8 +1109,15 @@ bt_status_t bt_sal_gatt_client_read_element(bt_controller_id_t id, bt_address_t*
 
     conn = get_le_conn_from_addr(addr);
     if (!conn) {
-        BT_LOGE("%s, conn null", __func__);
-        return BT_STATUS_FAIL;
+        bt_conn_info_t* info;
+        BT_LOGW("%s, le conn null", __func__);
+
+        info = bt_conn_find(addr, BT_TRANSPORT_BREDR);
+        conn = info ? info->conn : NULL;
+        if (!conn) {
+            BT_LOGE("%s, br conn null", __func__);
+            return BT_STATUS_NOT_FOUND;
+        }
     }
 
     read_params.func = gatt_client_read_element_callback;
@@ -1066,8 +1141,15 @@ bt_status_t bt_sal_gatt_client_write_element(bt_controller_id_t id, bt_address_t
 
     conn = get_le_conn_from_addr(addr);
     if (!conn) {
-        BT_LOGE("%s, conn null", __func__);
-        return BT_STATUS_FAIL;
+        bt_conn_info_t* info;
+        BT_LOGW("%s, le conn null", __func__);
+
+        info = bt_conn_find(addr, BT_TRANSPORT_BREDR);
+        conn = info ? info->conn : NULL;
+        if (!conn) {
+            BT_LOGE("%s, br conn null", __func__);
+            return BT_STATUS_NOT_FOUND;
+        }
     }
 
     switch (write_type) {

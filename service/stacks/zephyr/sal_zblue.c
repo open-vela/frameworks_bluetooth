@@ -147,3 +147,29 @@ bt_status_t bt_conn_set_role(bt_transport_t transport, bt_address_t* addr, uint8
 
     return BT_STATUS_FAIL;
 }
+
+bt_status_t zblue_addr_type_from_ble(uint8_t addr_type, uint8_t* out)
+{
+    switch (addr_type) {
+    case BT_LE_ADDR_TYPE_PUBLIC:
+        *out = BT_ADDR_LE_PUBLIC;
+        return BT_STATUS_SUCCESS;
+    case BT_LE_ADDR_TYPE_RANDOM:
+        *out = BT_ADDR_LE_RANDOM;
+        return BT_STATUS_SUCCESS;
+    case BT_LE_ADDR_TYPE_PUBLIC_ID:
+        *out = BT_ADDR_LE_PUBLIC_ID;
+        return BT_STATUS_SUCCESS;
+    case BT_LE_ADDR_TYPE_RANDOM_ID:
+        *out = BT_ADDR_LE_RANDOM_ID;
+        return BT_STATUS_SUCCESS;
+    case BT_LE_ADDR_TYPE_ANONYMOUS:
+        *out = BT_ADDR_LE_ANONYMOUS;
+        return BT_STATUS_SUCCESS;
+    case BT_LE_ADDR_TYPE_UNKNOWN:
+        *out = BT_ADDR_LE_PUBLIC;
+        return BT_STATUS_SUCCESS;
+    default:
+        return BT_STATUS_PARM_INVALID;
+    }
+}

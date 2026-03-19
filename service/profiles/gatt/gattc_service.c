@@ -547,16 +547,16 @@ static bt_status_t if_gattc_delete_connect(void* conn_handle)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t if_gattc_connect(void* conn_handle, bt_address_t* addr, ble_addr_type_t addr_type)
+static bt_status_t if_gattc_connect_bear(void* conn_handle, bt_address_t* addr, ble_addr_type_t addr_type, uint8_t bear_type)
 {
     gattc_connection_t* connection = conn_handle;
 
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
-    gattc_log(addr, "GATTC-CONNECT-REQUEST");
+    gattc_log(addr, "GATTC-CONNECT-REQUEST-V2");
     BT_LOGW("if_gattc_connect: addr_type=%d (0=public, 1=random)", addr_type);
-    bt_status_t status = bt_sal_gatt_client_connect(PRIMARY_ADAPTER, addr, addr_type);
+    bt_status_t status = bt_sal_gatt_client_connect_bear(PRIMARY_ADAPTER, addr, addr_type, bear_type);
     BT_LOGW("if_gattc_connect: bt_sal_gatt_client_connect returned %d", status);
     if (status == BT_STATUS_SUCCESS) {
         connection->state = PROFILE_STATE_CONNECTING;
@@ -564,6 +564,11 @@ static bt_status_t if_gattc_connect(void* conn_handle, bt_address_t* addr, ble_a
     }
 
     return status;
+}
+
+static bt_status_t if_gattc_connect(void* conn_handle, bt_address_t* addr, ble_addr_type_t addr_type)
+{
+    return if_gattc_connect_bear(conn_handle, addr, addr_type, ATT_BEAR_TYPE_LE_ATT);
 }
 
 static bt_status_t if_gattc_disconnect(void* conn_handle)
@@ -815,6 +820,7 @@ static const gattc_interface_t gattc_if = {
     .create_connect = if_gattc_create_connect,
     .delete_connect = if_gattc_delete_connect,
     .connect = if_gattc_connect,
+    .connect_bear = if_gattc_connect_bear,
     .disconnect = if_gattc_disconnect,
     .discover_service = if_gattc_discover_service,
     .get_attribute_by_handle = if_gattc_get_attribute_by_handle,

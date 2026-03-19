@@ -417,6 +417,24 @@ if (bt_gattc_connect(g_gattc_devies[conn_id].handle, &addr, BT_LE_ADDR_TYPE_UNKN
 bt_status_t BTSYMBOLS(bt_gattc_connect)(gattc_handle_t conn_handle, bt_address_t* addr, ble_addr_type_t addr_type);
 
 /**
+ * @brief create a connect bear with peer device.
+ *
+ * @param conn_handle - gattc connection handle(void*).
+ * @param addr - peer bluetooth device address.
+ * @param addr_type - peer address type(ble_addr_type_t).
+ * @param bear_type - peer bear type(1:LE ATT, 2:LE EATT, 3:BR/EDR ATT, 4:BR/EDR EATT).
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, and other error codes on failure.
+ *
+ * **Example:**
+ * @code
+if (bt_gattc_connect_bear(g_gattc_devies[conn_id].handle, &addr, BT_LE_ADDR_TYPE_UNKNOWN, ATT_BEAR_TYPE_BR_ATT) != BT_STATUS_SUCCESS) {
+    // Handle Error
+}
+ * @endcode
+ */
+bt_status_t BTSYMBOLS(bt_gattc_connect_bear)(gattc_handle_t conn_handle, bt_address_t* addr, ble_addr_type_t addr_type, uint8_t bear_type);
+
+/**
  * @brief dicconnect ATT bearer.
  *
  * This function is used to initiate a disconnection.

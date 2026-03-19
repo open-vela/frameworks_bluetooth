@@ -29,7 +29,12 @@
 bt_status_t bt_sal_gatt_client_enable(void);
 bt_status_t bt_sal_gatt_client_disable(void);
 #endif
+/* Deprecated: new code should call bt_sal_gatt_client_connect_bear. This legacy
+ * entry point is retained only for stack backends whose
+ * connect_bear implementation delegates to it for the LE ATT bearer case.
+ */
 bt_status_t bt_sal_gatt_client_connect(bt_controller_id_t id, bt_address_t* addr, ble_addr_type_t addr_type);
+bt_status_t bt_sal_gatt_client_connect_bear(bt_controller_id_t id, bt_address_t* addr, ble_addr_type_t addr_type, uint8_t bear_type);
 bt_status_t bt_sal_gatt_client_disconnect(bt_controller_id_t id, bt_address_t* addr);
 bt_status_t bt_sal_gatt_client_discover_all_services(bt_controller_id_t id, bt_address_t* addr);
 bt_status_t bt_sal_gatt_client_discover_service_by_uuid(bt_controller_id_t id, bt_address_t* addr, bt_uuid_t* uuid);

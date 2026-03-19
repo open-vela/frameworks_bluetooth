@@ -104,6 +104,7 @@ BT_GATT_CLIENT_MESSAGE_START,
             uint64_t handle; /* gattc_handle_t */
             bt_address_t addr;
             uint8_t addr_type; /* ble_addr_type_t */
+            uint8_t bear_type; /* gatt_bear_type_t */
         } _bt_gattc_connect;
 
         struct {

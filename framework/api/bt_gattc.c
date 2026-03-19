@@ -49,6 +49,13 @@ bt_status_t BTSYMBOLS(bt_gattc_connect)(gattc_handle_t conn_handle, bt_address_t
     return profile->connect(conn_handle, addr, addr_type);
 }
 
+bt_status_t BTSYMBOLS(bt_gattc_connect_bear)(gattc_handle_t conn_handle, bt_address_t* addr, ble_addr_type_t addr_type, uint8_t bear_type)
+{
+    gattc_interface_t* profile = get_profile_service();
+
+    return profile->connect_bear(conn_handle, addr, addr_type, bear_type);
+}
+
 bt_status_t BTSYMBOLS(bt_gattc_disconnect)(gattc_handle_t conn_handle)
 {
     gattc_interface_t* profile = get_profile_service();

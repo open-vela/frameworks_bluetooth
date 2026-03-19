@@ -41,4 +41,12 @@ bt_conn_info_t* bt_conn_find(const bt_address_t* addr, uint8_t transport);
 
 bt_status_t bt_sal_get_remote_address(struct bt_conn* conn, bt_address_t* addr);
 
+/**
+ * Convert ble_addr_type_t to zephyr BT_ADDR_LE_* type.
+ * On success writes the converted value to *out and returns BT_STATUS_SUCCESS.
+ * Returns BT_STATUS_PARM_INVALID on unknown addr_type.
+ * BT_LE_ADDR_TYPE_UNKNOWN is mapped to BT_ADDR_LE_PUBLIC.
+ */
+bt_status_t zblue_addr_type_from_ble(uint8_t addr_type, uint8_t* out);
+
 #endif

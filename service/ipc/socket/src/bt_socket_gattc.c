@@ -251,10 +251,11 @@ void bt_socket_server_gattc_process(service_poll_t* poll, int fd,
         break;
     }
     case BT_GATT_CLIENT_CONNECT:
-        packet->gattc_r.status = BTSYMBOLS(bt_gattc_connect)(
+        packet->gattc_r.status = BTSYMBOLS(bt_gattc_connect_bear)(
             INT2PTR(gattc_handle_t) packet->gattc_pl._bt_gattc_connect.handle,
             &packet->gattc_pl._bt_gattc_connect.addr,
-            packet->gattc_pl._bt_gattc_connect.addr_type);
+            packet->gattc_pl._bt_gattc_connect.addr_type,
+            packet->gattc_pl._bt_gattc_connect.bear_type);
         break;
     case BT_GATT_CLIENT_DISCONNECT:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_disconnect)(
