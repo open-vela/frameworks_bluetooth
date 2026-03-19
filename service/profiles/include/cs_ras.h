@@ -233,6 +233,12 @@ typedef uint8_t ras_rang_mode_t;
  */
 #define CS_RAS_STORE_PROCEDURE_NUM_MAX (10)
 
+/** Maximum number of real-time subevent items queued for sending. */
+#define RAS_RT_QUEUE_MAX (5)
+
+/** Maximum number of on-demand procedures stored. */
+#define RAS_OD_PROCEDURE_MAX (10)
+
 /**
  * RAS Features format
  * The RAS Features characteristic bit formats are listed in
@@ -576,17 +582,144 @@ typedef struct ras_segment_t {
 } ras_segment_t;
 
 /**
- * @brief RAS On-demand Ranging Data Structure.
+ * @brief Real-time queued subevent data item.
  *
- * Tracks the state of On-demand Ranging Data procedure for a client.
+ * Each incoming real-time subevent is copied into a malloc'd buffer and
+ * appended to the rt_queue list. The item at the head is the one currently
+ * being sent (segmented). When sending completes, it is freed and the next
+ * item is dequeued.
  */
-typedef struct ras_rang_on_demand_t {
-    bool proc_used; /**< Indicates if this procedure slot is in use. */
-    uint16_t count; /**< Count of segments or data items. */
-    service_timer_t* on_demand_timer; /**< Timer/work item for response timeout. */
-    cs_list_t seg_list; /**< Linked list of Ranging Data segments. */
-    ras_segment_t* seg; /**< Pointer to the current segment being processed. */
-} ras_rang_on_demand_t;
+typedef struct ras_rt_queued_data {
+    /**
+     * Linked-list node used to chain this item into ras_srv->rt_queue.
+     * Must be the first member so that container_of() can recover the
+     * enclosing ras_rt_queued_data_t from a cs_node_t pointer.
+     */
+    cs_node_t node;
+
+    /**
+     * Set to true when cs_ras_rt_try_send_next() picks this item off the
+     * queue head and begins segmenting it.  While true the removal logic
+     * (cs_ras_rt_queue_remove_old) will skip this item so that the data being
+     * actively transmitted is never freed underneath the sender.
+     * Reset implicitly when the item is dequeued and freed after the last
+     * segment has been sent.
+     */
+    bool processing;
+
+    /**
+     * Total byte length of the converted RAS stream stored in data[].
+     * Set once at allocation time by cs_ras_process_real_time_ranging_data()
+     * and never modified afterwards.  Used only for debug logging.
+     */
+    uint32_t data_len;
+
+    /**
+     * Byte offset into data[] indicating where the next segment payload
+     * starts.  Incremented by the segment payload size each time
+     * cs_ras_split_real_time_segment() sends a non-last segment.
+     * Reset to 0 when the last segment is sent.
+     */
+    uint32_t seg_offset;
+
+    /**
+     * Number of bytes in data[] that have not yet been sent.
+     * Starts equal to data_len and is decremented by each segment's
+     * payload size.  When it reaches 0 the item is fully sent and will
+     * be dequeued and freed by ras_notify_cb / ras_dt_rd_indicate_cb.
+     */
+    uint32_t remaining;
+
+    /**
+     * Zero-based index of the next segment to build.  The first segment
+     * of an item has seg_idx == 0 (header byte encodes "first" flag),
+     * and it increments for each subsequent segment.  Reset to 0 after
+     * the last segment is sent.
+     */
+    uint8_t seg_idx;
+
+    /**
+     * Flexible array member holding the complete RAS-formatted stream
+     * produced by ras_subevent_data_conversion().  The buffer is
+     * allocated together with the struct via zalloc(sizeof(...) + data_len)
+     * so that only a single malloc/free pair is needed per item.
+     */
+    uint8_t data[];
+} ras_rt_queued_data_t;
+
+/**
+ * @brief On-demand procedure item stored in a linked list.
+ *
+ * Replaces the old static subevent[] array. Each procedure's subevents
+ * are accumulated until procedure_done_status == COMPLETE, then segments
+ * are built and the procedure becomes sendable.
+ */
+typedef struct ras_od_procedure {
+    /**
+     * Linked-list node used to chain this procedure into
+     * ras_srv->od_procedure_list.  Must be the first member so that
+     * container_of() can recover the enclosing ras_od_procedure_t
+     * from a cs_node_t pointer.
+     */
+    cs_node_t node;
+
+    /**
+     * Set to true by ras_ondemand_send_ranging_data() when the client
+     * issues a Get_Ranging_Data command and this procedure starts being
+     * transmitted segment-by-segment.  While true, the removal logic
+     * (cs_ras_od_remove_old), timeout callback (ras_on_demand_data_send_timeout),
+     * and ACK handler (ras_on_demand_send_code_rsp) will all skip freeing
+     * this procedure to prevent use-after-free.
+     * Reset to false by cs_ras_on_demand_notify_finished /
+     * ras_on_demand_indicate_finished when all segments have been sent
+     * or when a send error occurs.
+     */
+    bool processing;
+
+    /**
+     * The lower 12-bit Ranging Counter (CS Procedure_Counter) that
+     * uniquely identifies this procedure.  Set once at allocation time
+     * from result->header.procedure_counter.  Used as the lookup key
+     * by cs_ras_od_find_procedure() and included in Control Point
+     * response PDUs (Complete Ranging Data Response, ACK, etc.).
+     */
+    uint16_t count;
+
+    /**
+     * Timer started by cs_ras_split_on_demand_segment() with a
+     * RAS_RSP_TIMEOUT (5 s) duration.  If the client does not issue a
+     * Get_Ranging_Data / ACK within the timeout, the callback
+     * ras_on_demand_data_send_timeout() removes and frees this procedure
+     * (unless processing == true).  Cancelled and NULLed by
+     * cs_ras_od_free_procedure() during normal cleanup.
+     */
+    service_timer_t* on_demand_timer;
+
+    /**
+     * Singly-linked list of ras_segment_t nodes that hold the segmented
+     * RAS-formatted data for this procedure.  Segments are appended by
+     * cs_ras_split_on_demand_segment() and traversed sequentially during
+     * transmission.  All nodes are freed by cs_ras_od_free_procedure().
+     */
+    cs_list_t seg_list;
+
+    /**
+     * Temporary pointer to the most recently allocated ras_segment_t
+     * during the segment-building loop in cs_ras_split_on_demand_segment().
+     * After the loop completes, this pointer is no longer meaningful —
+     * all segments are reachable through seg_list.  Retained only to
+     * simplify the allocation code within the loop body.
+     */
+    ras_segment_t* seg;
+
+    /**
+     * Running segment index across multiple calls to
+     * cs_ras_split_on_demand_segment() for the same procedure.
+     * Ensures segment indices are unique and monotonically increasing
+     * even when a procedure is built from multiple subevents.
+     */
+    uint16_t next_seg_index;
+} ras_od_procedure_t;
 
 /**
  * @brief RAS Control Point Status.
@@ -608,22 +741,23 @@ typedef struct {
 typedef struct {
     uint16_t step_data_attr_handle; /**< GATT handle of Step Data characteristic. */
     bt_address_t* addr; /**< Current BLE address reference. */
-    uint8_t latest_local_steps[CS_RAS_STEP_DATA_BUF_LEN]; /**< Buffer for step or ranging data. */
     uint8_t rt_dt_ccc_cfg; /**< CCC configuration for Real-time Data characteristic. */
     uint8_t ras_dt_rd_indicating; /**< Flag indicating Ranging Data indication state. */
     uint8_t ras_role; /**< RAS role (Server/Client). */
     uint32_t ras_mtu; /**< Maximum Transfer Unit for RAS GATT operations. */
-    uint32_t ras_seg_offset; /**< Offset in the current Ranging Data segment. */
-    uint32_t remaining_len; /**< Remaining bytes to send in current operation. */
-    uint8_t ras_seg_idx; /**< Index of the current Ranging Data segment. */
     uint32_t ras_feature; /**< Bitfield indicating RAS feature support. */
     uint32_t char_notify_state; /**< Bitfield tracking characteristic notification/indication state. */
-    uint16_t ras_filter[CS_RAS_FILTER_MODE_MAX]; /**< Filter settings per RAS mode (0-3), 16-bit per mode. Bits [1:0] = mode, Bits [15:2] = filter bit mask. */
+    uint16_t ras_filter[CS_RAS_FILTER_MODE_MAX]; /**< Filter settings per RAS mode (0-3), 16-bit per mode. */
     uint32_t on_demand_state; /**< Current state of the On-demand RAS procedure. */
-    ras_rang_on_demand_t subevent[CS_RAS_STORE_PROCEDURE_NUM_MAX]; /**< Array of On-demand procedure slots. */
     ras_control_point_t control_point; /**< Control Point status for current operation. */
     cs_node_t* on_demand_curr_node; /**< Pointer to current node in On-demand segment list. */
     uint16_t procedure_count; /**< Records the current CS procedure counter for On-demand Ranging Data. */
+
+    /* Real-time queue (replaces shared latest_local_steps buffer) */
+    cs_list_t rt_queue; /**< Queue of ras_rt_queued_data_t items. */
+
+    /* On-demand procedure list (replaces static subevent[] array) */
+    cs_list_t od_procedure_list; /**< List of ras_od_procedure_t items. */
 } ras_srv_env_t;
 
 /**

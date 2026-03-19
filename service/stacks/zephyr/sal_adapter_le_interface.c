@@ -777,7 +777,18 @@ void zblue_on_cs_capabilities_available(struct bt_conn* conn,
     }
 
     msg = cs_msg_new(CAPABILITIES_RECEIVED_EVT, addr);
+    if (!msg) {
+        BT_LOGE("cs_msg_new failed.");
+        return;
+    }
+
     capabilities = zblue_convert_cs_capabilities_to_service(params);
+    if (!capabilities) {
+        BT_LOGE("zblue_convert_cs_capabilities_to_service failed.");
+        cs_msg_destroy(msg);
+        return;
+    }
+
     msg->cs_data.data = (void*)capabilities;
     bt_sal_cs_event_callback(msg);
 

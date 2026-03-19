@@ -16,7 +16,6 @@
 #include "bluetooth.h"
 #include "bt_cs.h"
 #include "bt_tools.h"
-#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,14 +30,6 @@ static int cs_test_cmd(void* handle, int argc, char* argv[]);
 #endif
 
 static void* cs_callbacks = NULL;
-
-static struct option cs_set_options[] = {
-    { "feature", required_argument, 0, 'f' },
-    { "role", required_argument, 0, 'r' },
-    { "antenna", required_argument, 0, 'a' },
-    { "power", required_argument, 0, 'p' },
-    { 0, 0, 0, 0 }
-};
 
 static bt_command_t g_cs_tables[] = {
     { "start", cs_start_distance_measurement_cmd, 0, "\"start distance measurement :\"" },
@@ -150,25 +141,21 @@ static int cs_set_config_cmd(void* handle, int argc, char* argv[])
     bt_cs_set_params_t params;
     bt_address_t addr = { 0 };
     memset(&params, 0, sizeof(params));
-    int opt;
 
-    optind = 0;
-    while ((opt = getopt_long(argc, argv, "+f:r:a:p:", cs_set_options, NULL)) != -1) {
-        switch (opt) {
-        case 'f':
-            params.ras_feature = strtoul(optarg, NULL, 0);
-            break;
-        case 'r':
-            params.role = (uint8_t)strtoul(optarg, NULL, 0);
-            break;
-        case 'a':
-            params.cs_sync_antenna_selection = (uint8_t)strtoul(optarg, NULL, 0);
-            break;
-        case 'p':
-            params.max_tx_power = (int8_t)atoi(optarg);
-            break;
-        default:
-            return CMD_USAGE_FAULT;
+    for (int i = 0; i < argc; i++) {
+        if ((strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--feature") == 0) && i + 1 < argc) {
+            params.ras_feature = strtoul(argv[++i], NULL, 0);
+        } else if ((strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--role") == 0) && i + 1 < argc) {
+            params.role = (uint8_t)strtoul(argv[++i], NULL, 0);
+        } else if ((strcmp(argv[i], "-a") == 0 || strcmp(argv[i], "--antenna") == 0) && i + 1 < argc) {
+            params.cs_sync_antenna_selection = (uint8_t)strtoul(argv[++i], NULL, 0);
+        } else if ((strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--power") == 0) && i + 1 < argc) {
+            int power = atoi(argv[++i]);
+            if (power < -127 || power > 20) {
+                PRINT("error tx power, range must in -127~20");
+                return CMD_INVALID_PARAM;
+            }
+            params.max_tx_power = (int8_t)power;
         }
     }
 
