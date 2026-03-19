@@ -111,7 +111,7 @@ static const char* parse_addr_type(ble_addr_type_t type)
     return "Unknown";
 }
 
-static void update_neaby_pa(const ble_scan_result_t* result)
+static void update_nearby_pa(const ble_scan_result_t* result)
 {
     bttool_auracast_pa_record_t* prev;
 
@@ -191,7 +191,7 @@ static void on_scan_result(bt_scanner_t* scanner, ble_scan_result_t* result)
         BTTOOL_STRCAT(log, size, ", rssi:%d", result->rssi);
 
     PRINT("%s", log);
-    update_neaby_pa(result);
+    update_nearby_pa(result);
 
 exit:
     free(info);
