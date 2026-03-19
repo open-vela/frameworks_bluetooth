@@ -869,7 +869,8 @@ void if_gattc_on_element_read(bt_address_t* addr, uint16_t element_id, uint8_t* 
     msg->param.read.status = status;
     msg->param.read.element_id = element_id;
     msg->param.read.length = length;
-    memcpy(msg->param.read.value, value, length);
+    if (value && length > 0)
+        memcpy(msg->param.read.value, value, length);
     gattc_send_message(msg);
 }
 
