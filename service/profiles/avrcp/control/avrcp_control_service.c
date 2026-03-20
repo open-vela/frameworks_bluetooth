@@ -223,8 +223,10 @@ static void bt_avrcp_absolute_volume_changed_notification(void* context, int vol
     uv_mutex_unlock(&device->lock);
 
     avrcp_volume = bt_media_volume_media_to_avrcp(volume);
+    bt_pm_busy(PROFILE_AVRCP_CT, &device->addr);
     status = bt_sal_avrcp_control_volume_changed_notify(PRIMARY_ADAPTER, &device->addr,
         avrcp_volume);
+    bt_pm_idle(PROFILE_AVRCP_CT, &device->addr);
     if (status != BT_STATUS_SUCCESS) {
         BT_LOGW("notified absolute volume failed, status: %d, volume: %d.", status, volume);
     }
