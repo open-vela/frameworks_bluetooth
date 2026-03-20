@@ -37,6 +37,13 @@
 #include "service_loop.h"
 #include "utils/log.h"
 
+/* zblue internal API for zero-copy */
+extern struct net_buf* bt_att_get_current_buf(struct bt_conn* conn);
+extern struct net_buf* bt_gatt_alloc_notify_pdu(struct bt_conn* conn,
+    uint16_t handle, size_t len);
+extern struct net_buf* bt_gatt_alloc_indicate_pdu(struct bt_conn* conn,
+    uint16_t handle, size_t len);
+
 #ifdef CONFIG_BLUETOOTH_GATT_SERVER
 
 #ifndef CONFIG_GATT_SERVER_MAX_SERVICES
@@ -288,6 +295,7 @@ static ssize_t write_value(struct bt_conn* conn, const struct bt_gatt_attr* attr
     uint32_t request_id;
     int ret;
     struct gatt_user_data* user_data;
+    struct net_buf* att_buf;
 
     if (!attr || !attr->user_data) {
         BT_LOGE("%s, user_data or context is NULL", __func__);
@@ -317,7 +325,14 @@ static ssize_t write_value(struct bt_conn* conn, const struct bt_gatt_attr* attr
 
     bt_sal_get_remote_address(conn, &addr);
 
-    if_gatts_on_received_element_write_request(&addr, request_id, element->handle, (uint8_t*)buf, offset, len);
+    att_buf = bt_att_get_current_buf(conn);
+    if (att_buf) {
+        net_buf_ref(att_buf);
+        if_gatts_on_received_element_write_request_v2(&addr, request_id, element->handle,
+            (uint8_t*)buf, offset, len, att_buf, (void (*)(void*))net_buf_unref);
+    } else {
+        if_gatts_on_received_element_write_request(&addr, request_id, element->handle, (uint8_t*)buf, offset, len);
+    }
 
     return ret;
 }
@@ -1524,6 +1539,7 @@ static uint8_t gatt_send_notification(const struct bt_gatt_attr* attr, uint16_t 
     struct gatt_server_context* context = user_data;
     struct bt_gatt_notify_params params;
     union uuid u;
+    struct net_buf* pdu;
 
     if (!bt_uuid_create(&u.uuid, (uint8_t*)&context->uuid->val, context->uuid->type)) {
         BT_LOGE("%s, uuid convert fail", __func__);
@@ -1537,13 +1553,26 @@ static uint8_t gatt_send_notification(const struct bt_gatt_attr* attr, uint16_t 
     memset(&params, 0, sizeof(params));
 
     params.attr = attr;
-    params.data = context->value;
-    params.len = context->length;
     params.func = send_notification_result;
     params.user_data = context->element;
 #if defined(CONFIG_BT_EATT)
     params.chan_opt = BT_ATT_CHAN_OPT_NONE;
 #endif /* CONFIG_BT_EATT */
+
+    /* Zero-copy TX: pre-build ATT PDU with data, skip memcpy in Zephyr */
+    pdu = bt_gatt_alloc_notify_pdu(context->conn, handle, context->length);
+    if (pdu) {
+        /* nfy->value area is already reserved, copy data directly into PDU */
+        memcpy(pdu->data + pdu->len - context->length, context->value, context->length);
+        params.pdu = pdu;
+        params.data = NULL;
+        params.len = context->length;
+    } else {
+        /* Fallback to original path */
+        params.data = context->value;
+        params.len = context->length;
+        params.pdu = NULL;
+    }
 
     bt_gatt_notify_cb(context->conn, &params);
 
@@ -1619,6 +1648,7 @@ static uint8_t gatt_send_indication(const struct bt_gatt_attr* attr, uint16_t ha
     struct gatt_server_context* context = user_data;
     union uuid u;
     struct bt_gatt_indicate_params* params;
+    struct net_buf* pdu;
     int ret;
 
     if (!bt_uuid_create(&u.uuid, (uint8_t*)&context->uuid->val, context->uuid->type)) {
@@ -1637,10 +1667,22 @@ static uint8_t gatt_send_indication(const struct bt_gatt_attr* attr, uint16_t ha
     }
 
     params->attr = attr;
-    params->data = context->value;
-    params->len = context->length;
     params->func = send_indication_result;
     params->destroy = send_indication_destory;
+
+    /* Zero-copy TX: pre-build ATT PDU with data */
+    pdu = bt_gatt_alloc_indicate_pdu(context->conn, handle, context->length);
+    if (pdu) {
+        memcpy(pdu->data + pdu->len - context->length, context->value, context->length);
+        params->pdu = pdu;
+        params->data = NULL;
+        params->len = context->length;
+    } else {
+        params->data = context->value;
+        params->len = context->length;
+        params->pdu = NULL;
+    }
+
     ret = bt_gatt_indicate(context->conn, params);
     if (ret) {
         BT_LOGE("%s, indicate fail err:%d", __func__, ret);

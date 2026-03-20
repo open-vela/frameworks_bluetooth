@@ -904,6 +904,7 @@ void if_gattc_on_element_read(bt_address_t* addr, uint16_t element_id, uint8_t* 
     msg->param.read.status = status;
     msg->param.read.element_id = element_id;
     msg->param.read.length = length;
+    msg->param.read.value = (uint8_t*)msg + sizeof(gattc_msg_t);
     memcpy(msg->param.read.value, value, length);
     gattc_send_message(msg);
 }
@@ -931,7 +932,21 @@ void if_gattc_on_element_changed(bt_address_t* addr, uint16_t element_id, uint8_
     msg->param.notify.is_notify = true;
     msg->param.notify.element_id = element_id;
     msg->param.notify.length = length;
+    msg->param.notify.value = (uint8_t*)msg + sizeof(gattc_msg_t);
     memcpy(msg->param.notify.value, value, length);
+    gattc_send_message(msg);
+}
+
+void if_gattc_on_element_changed_v2(bt_address_t* addr, uint16_t element_id, uint8_t* value, uint16_t length,
+    void* zephyr_buf, void (*zephyr_buf_free)(void*))
+{
+    gattc_msg_t* msg = gattc_msg_new_zerocopy(GATTC_EVENT_NOTIFY, addr);
+    msg->param.notify.is_notify = true;
+    msg->param.notify.element_id = element_id;
+    msg->param.notify.length = length;
+    msg->param.notify.value = value;
+    msg->_zephyr_buf = zephyr_buf;
+    msg->_zephyr_buf_free = zephyr_buf_free;
     gattc_send_message(msg);
 }
 

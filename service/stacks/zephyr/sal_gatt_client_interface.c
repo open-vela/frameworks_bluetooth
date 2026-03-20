@@ -30,6 +30,13 @@
 #include "service_loop.h"
 #include "utils/log.h"
 
+/* zblue internal API for zero-copy */
+extern struct net_buf* bt_att_get_current_buf(struct bt_conn* conn);
+extern struct net_buf* bt_gatt_alloc_write_cmd_pdu(struct bt_conn* conn,
+    uint16_t handle, size_t len, bool sign);
+extern int bt_gatt_write_without_response_cb_zerocopy(struct bt_conn* conn,
+    struct net_buf* pdu, bt_gatt_complete_func_t func, void* user_data);
+
 #undef CONFIG_GATT_CLIENT_LOG
 
 #ifdef CONFIG_BLUETOOTH_GATT_CLIENT
@@ -904,6 +911,7 @@ static uint8_t bt_gatt_notify_handler(struct bt_conn* conn, struct bt_gatt_subsc
 {
     uint16_t handle;
     bt_address_t addr;
+    struct net_buf* att_buf;
 
     bt_sal_get_remote_address(conn, &addr);
 
@@ -913,7 +921,14 @@ static uint8_t bt_gatt_notify_handler(struct bt_conn* conn, struct bt_gatt_subsc
         return BT_GATT_ITER_STOP;
     }
 
-    if_gattc_on_element_changed(&addr, handle, (uint8_t*)data, length);
+    att_buf = bt_att_get_current_buf(conn);
+    if (att_buf) {
+        net_buf_ref(att_buf);
+        if_gattc_on_element_changed_v2(&addr, handle, (uint8_t*)data, length,
+            att_buf, (void (*)(void*))net_buf_unref);
+    } else {
+        if_gattc_on_element_changed(&addr, handle, (uint8_t*)data, length);
+    }
     return BT_GATT_ITER_CONTINUE;
 }
 
@@ -1082,6 +1097,7 @@ bt_status_t bt_sal_gatt_client_write_element(bt_controller_id_t id, bt_address_t
         write_params->data = value;
         write_params->length = length;
         write_params->offset = 0;
+        write_params->pdu = NULL;
 
         err = bt_gatt_write(conn, write_params);
         if (err) {
@@ -1099,8 +1115,18 @@ bt_status_t bt_sal_gatt_client_write_element(bt_controller_id_t id, bt_address_t
         }
         *handle = element_id;
 
-        err = bt_gatt_write_without_response_cb(conn, element_id, value, length,
-            false, gatt_client_write_callback, handle);
+        /* Zero-copy TX: pre-build ATT PDU for write without response */
+        {
+            struct net_buf* pdu = bt_gatt_alloc_write_cmd_pdu(conn, element_id, length, false);
+            if (pdu) {
+                memcpy(pdu->data + pdu->len - length, value, length);
+                err = bt_gatt_write_without_response_cb_zerocopy(conn, pdu,
+                    gatt_client_write_callback, handle);
+            } else {
+                err = bt_gatt_write_without_response_cb(conn, element_id, value, length,
+                    false, gatt_client_write_callback, handle);
+            }
+        }
         if (err) {
             BT_LOGE("%s, gatt write without rsp fail err:%d", __func__, err);
             free(handle);
@@ -1117,8 +1143,18 @@ bt_status_t bt_sal_gatt_client_write_element(bt_controller_id_t id, bt_address_t
         }
         *handle = element_id;
 
-        err = bt_gatt_write_without_response_cb(conn, element_id, value, length,
-            true, gatt_client_write_callback, handle);
+        /* Zero-copy TX: pre-build ATT PDU for signed write */
+        {
+            struct net_buf* pdu = bt_gatt_alloc_write_cmd_pdu(conn, element_id, length, true);
+            if (pdu) {
+                memcpy(pdu->data + pdu->len - length, value, length);
+                err = bt_gatt_write_without_response_cb_zerocopy(conn, pdu,
+                    gatt_client_write_callback, handle);
+            } else {
+                err = bt_gatt_write_without_response_cb(conn, element_id, value, length,
+                    true, gatt_client_write_callback, handle);
+            }
+        }
         if (err) {
             BT_LOGE("%s, gatt write (signed) fail err:%d", __func__, err);
             free(handle);

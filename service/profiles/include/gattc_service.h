@@ -34,6 +34,8 @@ void if_gattc_on_element_read(bt_address_t* addr, uint16_t element_id, uint8_t* 
 void if_gattc_on_element_written(bt_address_t* addr, uint16_t element_id, gatt_status_t status);
 void if_gattc_on_element_subscribed(bt_address_t* addr, uint16_t element_id, gatt_status_t status, bool enable);
 void if_gattc_on_element_changed(bt_address_t* addr, uint16_t element_id, uint8_t* value, uint16_t length);
+void if_gattc_on_element_changed_v2(bt_address_t* addr, uint16_t element_id, uint8_t* value, uint16_t length,
+    void* zephyr_buf, void (*zephyr_buf_free)(void*));
 void if_gattc_on_mtu_changed(bt_address_t* addr, uint32_t mtu, gatt_status_t status);
 void if_gattc_on_phy_read(bt_address_t* addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
 void if_gattc_on_phy_updated(bt_address_t* addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy, gatt_status_t status);

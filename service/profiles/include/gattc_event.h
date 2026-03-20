@@ -91,7 +91,7 @@ typedef struct
             gatt_status_t status;
             uint16_t element_id;
             uint16_t length;
-            uint8_t value[0];
+            uint8_t* value;
         } read;
 
         /**
@@ -118,7 +118,7 @@ typedef struct
             bool is_notify;
             uint16_t element_id;
             uint16_t length;
-            uint8_t value[0];
+            uint8_t* value;
         } notify;
 
         /**
@@ -157,6 +157,9 @@ typedef struct
         } conn_param;
 
     } param;
+
+    void* _zephyr_buf;                    /* Zephyr net_buf reference for zero-copy */
+    void (*_zephyr_buf_free)(void* buf);  /* Release function for _zephyr_buf */
 
 } gattc_msg_t;
 
@@ -239,6 +242,7 @@ typedef struct
  * Public Functions
  ****************************************************************************/
 gattc_msg_t* gattc_msg_new(gattc_event_t event, bt_address_t* addr, uint16_t playload_length);
+gattc_msg_t* gattc_msg_new_zerocopy(gattc_event_t event, bt_address_t* addr);
 void gattc_msg_destory(gattc_msg_t* msg);
 gattc_op_t* gattc_op_new(gattc_request_t request);
 void gattc_op_destory(gattc_op_t* operation);

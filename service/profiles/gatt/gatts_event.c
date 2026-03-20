@@ -27,12 +27,32 @@ gatts_msg_t* gatts_msg_new(gatts_event_t event, uint16_t playload_length)
         return NULL;
 
     msg->event = event;
+    msg->_zephyr_buf = NULL;
+    msg->_zephyr_buf_free = NULL;
+
+    return msg;
+}
+
+gatts_msg_t* gatts_msg_new_zerocopy(gatts_event_t event)
+{
+    gatts_msg_t* msg;
+
+    msg = (gatts_msg_t*)malloc(sizeof(gatts_msg_t));
+    if (msg == NULL)
+        return NULL;
+
+    msg->event = event;
+    msg->_zephyr_buf = NULL;
+    msg->_zephyr_buf_free = NULL;
 
     return msg;
 }
 
 void gatts_msg_destory(gatts_msg_t* msg)
 {
+    if (msg->_zephyr_buf && msg->_zephyr_buf_free) {
+        msg->_zephyr_buf_free(msg->_zephyr_buf);
+    }
     free(msg);
 }
 

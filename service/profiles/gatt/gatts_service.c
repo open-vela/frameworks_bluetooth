@@ -903,7 +903,24 @@ void if_gatts_on_received_element_write_request(bt_address_t* addr, uint32_t req
     msg->param.write.request_id = request_id;
     msg->param.write.offset = offset;
     msg->param.write.length = length;
+    msg->param.write.value = (uint8_t*)msg + sizeof(gatts_msg_t);
     memcpy(msg->param.write.value, value, length);
+    gatts_send_message(msg);
+}
+
+void if_gatts_on_received_element_write_request_v2(bt_address_t* addr, uint32_t request_id, uint16_t element_id,
+    uint8_t* value, uint16_t offset, uint16_t length,
+    void* zephyr_buf, void (*zephyr_buf_free)(void*))
+{
+    gatts_msg_t* msg = gatts_msg_new_zerocopy(GATTS_EVENT_WRITE_REQUEST);
+    memcpy(&msg->param.write.addr, addr, sizeof(bt_address_t));
+    msg->param.write.element_id = element_id;
+    msg->param.write.request_id = request_id;
+    msg->param.write.offset = offset;
+    msg->param.write.length = length;
+    msg->param.write.value = value;
+    msg->_zephyr_buf = zephyr_buf;
+    msg->_zephyr_buf_free = zephyr_buf_free;
     gatts_send_message(msg);
 }
 

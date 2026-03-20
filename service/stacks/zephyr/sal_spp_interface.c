@@ -98,6 +98,10 @@ extern struct net_buf_pool sdp_pool;
 NET_BUF_POOL_FIXED_DEFINE(rfcomm_tx_pool, SPP_DEFAULT_CREDITS,
     SAL_SPP_RFCOMM_MFS + SPP_MFS_EXTRA_SIZE, CONFIG_BT_CONN_TX_USER_DATA_SIZE, NULL);
 
+/* Fixed pool for sal_spp_buffer_t to avoid heap malloc on TX path */
+K_MEM_SLAB_DEFINE(spp_txbuf_slab, sizeof(sal_spp_buffer_t),
+    SPP_DEFAULT_CREDITS, __alignof__(sal_spp_buffer_t));
+
 static struct bt_sdp_attribute spp_attrs_template[] = {
     BT_SDP_NEW_SERVICE,
     BT_SDP_LIST(
@@ -489,7 +493,7 @@ static void spp_tx_clean(void* data)
 
     /* Notify SPP service that data has been sent */
     spp_on_data_sent(tx_buf->conn_port, tx_buf->buf, 0, 0);
-    free(tx_buf);
+    k_mem_slab_free(&spp_txbuf_slab, tx_buf);
 }
 
 static void spp_rx_buf_free(void* data)
@@ -1056,8 +1060,8 @@ bt_status_t bt_sal_spp_write(uint16_t conn_port, uint8_t* buf, uint16_t size)
 
     BT_DUMPBUFFER("SPP TX", buf, size);
 
-    spp_buf = malloc(sizeof(sal_spp_buffer_t));
-    if (!spp_buf) {
+    spp_buf = NULL;
+    if (k_mem_slab_alloc(&spp_txbuf_slab, (void**)&spp_buf, K_NO_WAIT)) {
         BT_LOGE("Failed to allocate memory for SPP buffer");
         net_buf_unref(nbuf);
         return BT_STATUS_NOMEM;

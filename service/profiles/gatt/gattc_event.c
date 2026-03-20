@@ -28,12 +28,33 @@ gattc_msg_t* gattc_msg_new(gattc_event_t event, bt_address_t* addr, uint16_t pla
 
     msg->event = event;
     memcpy(&msg->addr, addr, sizeof(bt_address_t));
+    msg->_zephyr_buf = NULL;
+    msg->_zephyr_buf_free = NULL;
+
+    return msg;
+}
+
+gattc_msg_t* gattc_msg_new_zerocopy(gattc_event_t event, bt_address_t* addr)
+{
+    gattc_msg_t* msg;
+
+    msg = (gattc_msg_t*)malloc(sizeof(gattc_msg_t));
+    if (msg == NULL)
+        return NULL;
+
+    msg->event = event;
+    memcpy(&msg->addr, addr, sizeof(bt_address_t));
+    msg->_zephyr_buf = NULL;
+    msg->_zephyr_buf_free = NULL;
 
     return msg;
 }
 
 void gattc_msg_destory(gattc_msg_t* msg)
 {
+    if (msg->_zephyr_buf && msg->_zephyr_buf_free) {
+        msg->_zephyr_buf_free(msg->_zephyr_buf);
+    }
     free(msg);
 }
 

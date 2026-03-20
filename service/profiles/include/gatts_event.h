@@ -100,7 +100,7 @@ typedef struct
             uint32_t request_id;
             uint16_t offset;
             uint16_t length;
-            uint8_t value[0];
+            uint8_t* value;
         } write;
 
         /**
@@ -153,6 +153,9 @@ typedef struct
 #endif
 
     } param;
+
+    void* _zephyr_buf;                    /* Zephyr net_buf reference for zero-copy */
+    void (*_zephyr_buf_free)(void* buf);  /* Release function for _zephyr_buf */
 
 } gatts_msg_t;
 
@@ -217,6 +220,7 @@ typedef struct
  * Public Functions
  ****************************************************************************/
 gatts_msg_t* gatts_msg_new(gatts_event_t event, uint16_t playload_length);
+gatts_msg_t* gatts_msg_new_zerocopy(gatts_event_t event);
 void gatts_msg_destory(gatts_msg_t* msg);
 gatts_op_t* gatts_op_new(gatts_request_t request);
 void gatts_op_destory(gatts_op_t* operation);
