@@ -156,6 +156,30 @@ typedef struct {
     struct bt_sdp_record* record;
 } sal_gatt_sdp_record_t;
 
+/* Request struct for async notify/indicate dispatch.
+ * First four fields mirror sal_adapter_req_t so sal_invoke_async can cast safely.
+ */
+typedef struct {
+    bt_controller_id_t id;
+    bt_address_t addr;
+    ble_addr_type_t addr_type; /* unused, kept for layout compatibility */
+    sal_func_t func;
+    gatt_element_t* element;
+    uint16_t length;
+    uint8_t value[];
+} sal_gatts_notify_req_t;
+
+/* Request struct for async send_response dispatch. */
+typedef struct {
+    bt_controller_id_t id;
+    bt_address_t addr;
+    ble_addr_type_t addr_type; /* unused, kept for layout compatibility */
+    sal_func_t func;
+    uint32_t request_id;
+    uint16_t length;
+    uint8_t value[];
+} sal_gatts_rsp_req_t;
+
 static size_t attr_count;
 static size_t svc_attr_count;
 
@@ -1467,46 +1491,81 @@ bt_status_t bt_sal_gatt_server_cancel_connection(bt_controller_id_t id, bt_addre
     return sal_send_req(req);
 }
 
-bt_status_t bt_sal_gatt_server_send_response(bt_controller_id_t id, bt_address_t* addr, uint32_t request_id, uint8_t* value, uint16_t length)
+static void zblue_conn_send_response(void* args)
 {
+    sal_gatts_rsp_req_t* req = args;
     struct bt_conn* conn;
+    bt_conn_info_t* info;
     uint16_t handle;
     uint8_t op_type;
     int err;
-    if (!addr || request_id == REQUEST_ID_NORSP) {
-        return BT_STATUS_PARM_INVALID;
-    }
 
     /* FIXME: If the LE address matches the BREDR address, only the LE connection will send rsp. */
-    conn = get_le_conn_from_addr(addr);
+    conn = get_le_conn_from_addr(&req->addr);
     if (!conn) {
-        bt_conn_info_t* info;
         BT_LOGW("%s, le conn null", __func__);
-
-        info = bt_conn_find(addr, BT_TRANSPORT_BREDR);
+        info = bt_conn_find(&req->addr, BT_TRANSPORT_BREDR);
         conn = info ? info->conn : NULL;
         if (!conn) {
             BT_LOGE("%s, br conn null", __func__);
-            return BT_STATUS_NOT_FOUND;
+            return;
         }
     }
 
-    handle = REQUEST_ID_HANDLE(request_id);
-    op_type = REQUEST_ID_OP_TYPE(request_id);
+    handle = REQUEST_ID_HANDLE(req->request_id);
+    op_type = REQUEST_ID_OP_TYPE(req->request_id);
     switch (op_type) {
     case GATT_OPS_READ_REQUEST:
-        if (!value) {
-            return BT_STATUS_PARM_INVALID;
-        }
-        err = bt_gatt_send_read_rsp(conn, 0, handle, value, length);
+        err = bt_gatt_send_read_rsp(conn, 0, handle, req->value, req->length);
         break;
     case GATT_OPS_WRITE_REQUEST:
         err = bt_gatt_send_write_rsp(conn, 0, handle);
         break;
     default:
-        return BT_STATUS_UNSUPPORTED;
+        BT_LOGE("%s, unsupported op_type:%d", __func__, op_type);
+        return;
     }
-    return (!err) ? BT_STATUS_SUCCESS : BT_STATUS_FAIL;
+    if (err) {
+        BT_LOGE("%s, send rsp failed err:%d", __func__, err);
+    }
+}
+
+bt_status_t bt_sal_gatt_server_send_response(bt_controller_id_t id, bt_address_t* addr, uint32_t request_id, uint8_t* value, uint16_t length)
+{
+    sal_gatts_rsp_req_t* req;
+    uint8_t op_type;
+
+    if (!addr || request_id == REQUEST_ID_NORSP) {
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    op_type = REQUEST_ID_OP_TYPE(request_id);
+    if (op_type == GATT_OPS_READ_REQUEST && !value) {
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    req = malloc(sizeof(sal_gatts_rsp_req_t) + length);
+    if (!req) {
+        BT_LOGE("%s, malloc fail", __func__);
+        return BT_STATUS_NOMEM;
+    }
+
+    req->id = id;
+    memcpy(&req->addr, addr, sizeof(bt_address_t));
+    req->func = zblue_conn_send_response;
+    req->request_id = request_id;
+    req->length = length;
+    if (length > 0 && value) {
+        memcpy(req->value, value, length);
+    }
+
+    if (!service_loop_work((void*)req, sal_invoke_async, NULL)) {
+        BT_LOGE("%s, service_loop_work failed", __func__);
+        free(req);
+        return BT_STATUS_FAIL;
+    }
+
+    return BT_STATUS_SUCCESS;
 }
 
 static void send_notification_result(struct bt_conn* conn, void* user_data)
@@ -1555,31 +1614,78 @@ static uint8_t gatt_send_notification(const struct bt_gatt_attr* attr, uint16_t 
     return BT_GATT_ITER_STOP;
 }
 
-bt_status_t bt_sal_gatt_server_send_notification(bt_controller_id_t id, bt_address_t* addr, gatt_element_t* element, uint8_t* value, uint16_t length)
+static uint8_t gatt_send_indication(const struct bt_gatt_attr* attr, uint16_t handle, void* user_data);
+
+static void zblue_conn_send_notification(void* args)
 {
+    sal_gatts_notify_req_t* req = args;
     struct gatt_server_context context = {
-        .addr = addr,
-        .uuid = &element->uuid,
-        .value = value,
-        .length = length,
-        .element = element,
+        .addr = &req->addr,
+        .uuid = &req->element->uuid,
+        .value = req->value,
+        .length = req->length,
+        .element = req->element,
     };
 
-    /* FIXME: If the LE address matches the BREDR address, only the LE connection will be notified. */
-    context.conn = get_le_conn_from_addr(addr);
+    context.conn = get_le_conn_from_addr(&req->addr);
     if (!context.conn) {
-        bt_conn_info_t* info;
-        BT_LOGW("%s, le conn null", __func__);
-
-        info = bt_conn_find(addr, BT_TRANSPORT_BREDR);
+        bt_conn_info_t* info = bt_conn_find(&req->addr, BT_TRANSPORT_BREDR);
         context.conn = info ? info->conn : NULL;
         if (!context.conn) {
-            BT_LOGE("%s, br conn null", __func__);
-            return BT_STATUS_FAIL;
+            BT_LOGE("%s, conn null", __func__);
+            return;
         }
     }
 
-    bt_gatt_foreach_attr(0x0001, 0xffff, gatt_send_notification, (void*)&context);
+    bt_gatt_foreach_attr(0x0001, 0xffff, gatt_send_notification, &context);
+}
+
+static void zblue_conn_send_indication(void* args)
+{
+    sal_gatts_notify_req_t* req = args;
+    struct gatt_server_context context = {
+        .addr = &req->addr,
+        .uuid = &req->element->uuid,
+        .value = req->value,
+        .length = req->length,
+        .element = req->element,
+    };
+
+    context.conn = get_le_conn_from_addr(&req->addr);
+    if (!context.conn) {
+        bt_conn_info_t* info = bt_conn_find(&req->addr, BT_TRANSPORT_BREDR);
+        context.conn = info ? info->conn : NULL;
+        if (!context.conn) {
+            BT_LOGE("%s, conn null", __func__);
+            return;
+        }
+    }
+
+    bt_gatt_foreach_attr(0x0001, 0xffff, gatt_send_indication, &context);
+}
+
+bt_status_t bt_sal_gatt_server_send_notification(bt_controller_id_t id, bt_address_t* addr, gatt_element_t* element, uint8_t* value, uint16_t length)
+{
+    sal_gatts_notify_req_t* req = malloc(sizeof(sal_gatts_notify_req_t) + length);
+
+    if (!req) {
+        BT_LOGE("%s, malloc fail", __func__);
+        return BT_STATUS_NOMEM;
+    }
+
+    req->id = id;
+    memcpy(&req->addr, addr, sizeof(bt_address_t));
+    req->func = zblue_conn_send_notification;
+    req->element = element;
+    req->length = length;
+    memcpy(req->value, value, length);
+
+    if (!service_loop_work((void*)req, sal_invoke_async, NULL)) {
+        BT_LOGE("%s, service_loop_work failed", __func__);
+        free(req);
+        return BT_STATUS_FAIL;
+    }
+
     return BT_STATUS_SUCCESS;
 }
 
@@ -1656,29 +1762,26 @@ static uint8_t gatt_send_indication(const struct bt_gatt_attr* attr, uint16_t ha
 
 bt_status_t bt_sal_gatt_server_send_indication(bt_controller_id_t id, bt_address_t* addr, gatt_element_t* element, uint8_t* value, uint16_t length)
 {
-    struct gatt_server_context context = {
-        .addr = addr,
-        .uuid = &element->uuid,
-        .value = value,
-        .length = length,
-        .element = element,
-    };
+    sal_gatts_notify_req_t* req = malloc(sizeof(sal_gatts_notify_req_t) + length);
 
-    /* FIXME: If the LE address matches the BREDR address, only the LE connection will be indicated. */
-    context.conn = get_le_conn_from_addr(addr);
-    if (!context.conn) {
-        bt_conn_info_t* info;
-        BT_LOGW("%s, le conn null", __func__);
-
-        info = bt_conn_find(addr, BT_TRANSPORT_BREDR);
-        context.conn = info ? info->conn : NULL;
-        if (!context.conn) {
-            BT_LOGE("%s, br conn null", __func__);
-            return BT_STATUS_FAIL;
-        }
+    if (!req) {
+        BT_LOGE("%s, malloc fail", __func__);
+        return BT_STATUS_NOMEM;
     }
 
-    bt_gatt_foreach_attr(0x0001, 0xffff, gatt_send_indication, (void*)&context);
+    req->id = id;
+    memcpy(&req->addr, addr, sizeof(bt_address_t));
+    req->func = zblue_conn_send_indication;
+    req->element = element;
+    req->length = length;
+    memcpy(req->value, value, length);
+
+    if (!service_loop_work((void*)req, sal_invoke_async, NULL)) {
+        BT_LOGE("%s, service_loop_work failed", __func__);
+        free(req);
+        return BT_STATUS_FAIL;
+    }
+
     return BT_STATUS_SUCCESS;
 }
 
