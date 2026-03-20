@@ -28,6 +28,7 @@
 #include "sal_connection_manager.h"
 #include "sal_interface.h"
 #include "sal_zblue.h"
+#include "service_loop.h"
 #include "utils/log.h"
 
 #include "bt_uuid.h"
@@ -74,6 +75,7 @@ struct zblue_a2dp_info_t {
     uint8_t state;
     bool disconnecting; // true if a disconnection is in progress.
     uint8_t codec_type; // The codec type to be set during reconfiguration.
+    service_timer_t* discover_timer; // timer for ACP discover
 };
 
 static bt_list_t* bt_a2dp_conn = NULL;
@@ -637,6 +639,12 @@ static void a2dp_info_destroy(void* data)
     if (!a2dp_info)
         return;
 
+    if (a2dp_info->discover_timer) {
+        BT_LOGD("ACP discover timer cancelled (destroy)");
+        service_loop_cancel_timer(a2dp_info->discover_timer);
+        a2dp_info->discover_timer = NULL;
+    }
+
     if (a2dp_info->peer_endpoint)
         bt_list_free(a2dp_info->peer_endpoint);
 
@@ -1155,6 +1163,14 @@ static uint8_t bt_a2dp_discover_endpoint_cb(struct bt_a2dp* a2dp,
         if (ep == NULL)
             return BT_A2DP_DISCOVER_EP_STOP;
 
+        if (a2dp_info->role == SEP_INVALID && info->sep_info) {
+            if (info->sep_info->tsep == BT_AVDTP_SOURCE) {
+                a2dp_info->role = SEP_SNK;
+            } else if (info->sep_info->tsep == BT_AVDTP_SINK) {
+                a2dp_info->role = SEP_SRC;
+            }
+        }
+
         struct bt_a2dp_ep* found_peer_endpoint = (struct bt_a2dp_ep*)calloc(1, sizeof(struct bt_a2dp_ep));
         found_peer_endpoint->codec_cap = (struct bt_a2dp_codec_ie*)calloc(1, sizeof(struct bt_a2dp_codec_ie));
 
@@ -1175,7 +1191,7 @@ static uint8_t bt_a2dp_discover_endpoint_cb(struct bt_a2dp* a2dp,
 #endif
         bt_a2dp_set_config(a2dp_info, &a2dp_sbc_src_endpoint_local, src_sbc_cfg_preferred, ARRAY_SIZE(src_sbc_cfg_preferred));
 #endif
-    } else if (a2dp_info->role == SEP_SNK && a2dp_info->int_acp == A2DP_INT) {
+    } else if (a2dp_info->role == SEP_SNK) {
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
 #ifdef CONFIG_BLUETOOTH_A2DP_AAC_CODEC
         bt_status_t status = bt_a2dp_set_config(a2dp_info, &a2dp_aac_snk_endpoint_local, snk_aac_cfg_preferred, ARRAY_SIZE(snk_aac_cfg_preferred));
@@ -1198,6 +1214,35 @@ struct bt_a2dp_discover_param bt_discover_param = {
     .sep_count = A2DP_PEER_ENDPOINT_MAX,
 };
 
+#define SAL_A2DP_ACP_DISCOVER_TIMEOUT_MS 2000
+
+static void a2dp_acp_discover_timeout(service_timer_t* timer, void* data)
+{
+    struct zblue_a2dp_info_t* a2dp_info = (struct zblue_a2dp_info_t*)data;
+
+    a2dp_info->discover_timer = NULL;
+
+    if (!a2dp_info->a2dp) {
+        BT_LOGE("%s, a2dp is null", __func__);
+        return;
+    }
+
+    BT_LOGD("%s, ACP discover timeout, initiate discover", __func__);
+
+    if (a2dp_info->stream) {
+        BT_LOGI("%s, stream already established, skip discover", __func__);
+        return;
+    }
+
+    a2dp_info->peer_endpoint = bt_list_new(a2dp_peer_endpoint_destroy);
+    if (!a2dp_info->peer_endpoint) {
+        BT_LOGE("%s, peer_endpoint alloc failed", __func__);
+        return;
+    }
+
+    bt_a2dp_discover(a2dp_info->a2dp, &bt_discover_param);
+}
+
 static void zblue_on_connected(struct bt_a2dp* a2dp, int err)
 {
     struct zblue_a2dp_info_t* a2dp_info;
@@ -1206,16 +1251,16 @@ static void zblue_on_connected(struct bt_a2dp* a2dp, int err)
 
     a2dp_info = bt_list_find(bt_a2dp_conn, bt_a2dp_info_find_a2dp, a2dp);
 
+    /* INT path: a2dp_info was created when we initiated the connection */
     if (a2dp_info) {
         BT_LOGW("a2dp_info already exists");
         flag_set(a2dp_info, A2DP_STATE_BIT_SIG_CONN);
-        if (a2dp_info->int_acp == A2DP_INT) {
-            a2dp_info->peer_endpoint = bt_list_new(a2dp_peer_endpoint_destroy);
-            bt_a2dp_discover(a2dp, &bt_discover_param);
-            return;
-        }
+        a2dp_info->peer_endpoint = bt_list_new(a2dp_peer_endpoint_destroy);
+        bt_a2dp_discover(a2dp, &bt_discover_param);
+        return;
     }
 
+    /* ACP path: remote initiated the connection, create a2dp_info now */
     conn = bt_a2dp_get_conn(a2dp);
     if (conn == NULL) {
         BT_LOGE("conn is null");
@@ -1238,6 +1283,11 @@ static void zblue_on_connected(struct bt_a2dp* a2dp, int err)
     }
 
     bt_list_add_tail(bt_a2dp_conn, a2dp_info);
+
+    /* Wait 2s for remote to drive set_config; if not, we initiate discover */
+    BT_LOGD("%s, ACP discover timer started (%d ms)", __func__, SAL_A2DP_ACP_DISCOVER_TIMEOUT_MS);
+    a2dp_info->discover_timer = service_loop_timer(SAL_A2DP_ACP_DISCOVER_TIMEOUT_MS, 0,
+        a2dp_acp_discover_timeout, a2dp_info);
 }
 
 static void bt_list_remove_a2dp_info(struct zblue_a2dp_info_t* a2dp_info)
@@ -1426,6 +1476,12 @@ static int zblue_on_config_req(struct bt_a2dp* a2dp, struct bt_a2dp_ep* ep,
         BT_LOGE("%s, a2dp_info not found", __func__);
         *rsp_err_code = BT_AVDTP_BAD_STATE;
         return -1;
+    }
+
+    if (a2dp_info->discover_timer) {
+        service_loop_cancel_timer(a2dp_info->discover_timer);
+        a2dp_info->discover_timer = NULL;
+        BT_LOGD("%s, ACP discover timer cancelled (config_req received)", __func__);
     }
 
     a2dp_info->stream = (struct bt_a2dp_stream*)calloc(1, sizeof(struct bt_a2dp_stream));
