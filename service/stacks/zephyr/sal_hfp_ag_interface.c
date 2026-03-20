@@ -1349,6 +1349,120 @@ typedef struct {
 /* unified wrapper signature */
 typedef int (*call_operation_t)(hfp_ag_operation_context_t* operation_context);
 
+typedef struct {
+    enum bt_hfp_ag_call_status new_state;
+    call_operation_t op;
+} new_call_entry_t;
+
+typedef struct {
+    enum bt_hfp_ag_call_status previous;
+    hfp_ag_call_state_t next;
+    call_operation_t op;
+} call_transition_t;
+
+/* forward declarations */
+static const new_call_entry_t* find_new_call_entry(enum bt_hfp_ag_call_status state);
+static const call_transition_t* find_call_transition(
+    enum bt_hfp_ag_call_status prev, hfp_ag_call_state_t next);
+
+typedef struct _ag_call_op_params {
+    bt_address_t addr;
+    char number[CONFIG_BT_HFP_AG_PHONE_NUMBER_MAX_LEN + 1];
+    hfp_ag_call_state_t call_state;
+    hfp_call_addrtype_t type;
+} ag_call_op_params_t;
+
+static void do_ag_call_op(service_work_t* work, void* userdata)
+{
+    ag_call_op_params_t* params = (ag_call_op_params_t*)userdata;
+    if (!params) {
+        BT_LOGE("%s, Invalid parameters", __func__);
+        return;
+    }
+
+    bt_hfp_ag_connection_t* sal_conn = find_connection_by_addr(&params->addr);
+    if (!sal_conn) {
+        BT_LOGW("%s, connection no longer valid, skip", __func__);
+        free(params);
+        return;
+    }
+
+    enum bt_hfp_ag_call_status new_state = tele_call_state_to_sal_status(params->call_state);
+    bt_hfp_ag_call_info_t* call_info = find_call_by_number(sal_conn, params->number);
+
+    if (!call_info) {
+        /* new call path */
+        const new_call_entry_t* entry = find_new_call_entry(new_state);
+        if (!entry) {
+            BT_LOGE("%s, no new_call_entry for state %d, number: %s",
+                __func__, params->call_state, params->number);
+            free(params);
+            return;
+        }
+
+        call_info = build_sal_call(HFP_CALL_DIRECTION_INCOMING, params->call_state,
+            params->type, params->number);
+        if (!call_info) {
+            BT_LOGE("%s, failed to build sal call", __func__);
+            free(params);
+            return;
+        }
+
+        bt_list_add_head(sal_conn->calls, call_info);
+
+        hfp_ag_operation_context_t context = {
+            .call_info = call_info,
+            .connection = sal_conn,
+        };
+
+        int ret = entry->op(&context);
+        if (ret) {
+            BT_LOGE("%s, new call op failed, err=%d, rolling back", __func__, ret);
+            bt_list_remove(sal_conn->calls, call_info);
+        }
+
+        free(params);
+        return;
+    }
+
+    /* existing call path */
+    const call_transition_t* transition = find_call_transition(call_info->state, params->call_state);
+
+    if (!transition) {
+        if (call_info->state == new_state) {
+            BT_LOGI("%s, state already %d, skip transition", __func__, new_state);
+            if (new_state == BT_HFP_AG_CALL_STATUS_UNKNOWN) {
+                bt_list_remove(sal_conn->calls, call_info);
+            }
+        } else {
+            BT_LOGE("%s, no valid transition from %d to %d",
+                __func__, call_info->state, params->call_state);
+        }
+        free(params);
+        return;
+    }
+
+    hfp_ag_operation_context_t context = {
+        .call_info = call_info,
+        .connection = sal_conn,
+    };
+
+    int ret = transition->op(&context);
+    if (ret) {
+        BT_LOGE("%s, call transition op failed, err=%d", __func__, ret);
+        free(params);
+        return;
+    }
+
+    if (new_state == BT_HFP_AG_CALL_STATUS_UNKNOWN) {
+        bt_list_remove(sal_conn->calls, call_info);
+    } else {
+        call_info->state = new_state;
+    }
+
+    free(params);
+}
+
 /* ============================================================
  * Wrapper
  * ============================================================ */
@@ -1438,17 +1552,6 @@ static int incoming_call(hfp_ag_operation_context_t* operation_context)
  * Transition Table
  * ============================================================ */
 
-typedef struct {
-    enum bt_hfp_ag_call_status new_state;
-    call_operation_t op;
-} new_call_entry_t;
-
-typedef struct {
-    enum bt_hfp_ag_call_status previous;
-    hfp_ag_call_state_t next;
-    call_operation_t op;
-} call_transition_t;
-
 /* ------ new call operation table ------ */
 
 static const new_call_entry_t new_call_map[] = {
@@ -1519,74 +1622,25 @@ bt_status_t bt_sal_hfp_ag_phone_state_change(bt_address_t* addr, uint8_t num_act
     BT_LOGI("%s, num_active: %d, num_held: %d, call_state: %d, type: %d, number: %s, name: %s",
         __func__, num_active, num_held, call_state, type,
         number ? number : "(null)", name ? name : "(null)");
-    bt_hfp_ag_connection_t* sal_conn = find_connection_by_addr(addr);
-    if (!sal_conn) {
+
+    ag_call_op_params_t* params = (ag_call_op_params_t*)zalloc(sizeof(ag_call_op_params_t));
+    if (!params) {
+        BT_LOGE("%s, Failed to allocate memory", __func__);
+        return BT_STATUS_NOMEM;
+    }
+
+    memcpy(&params->addr, addr, sizeof(bt_address_t));
+    params->call_state = call_state;
+    params->type = type;
+    if (number) {
+        strlcpy(params->number, number, sizeof(params->number));
+    }
+
+    if (!service_loop_work(params, do_ag_call_op, NULL)) {
+        BT_LOGE("%s, Failed to schedule call op to service loop", __func__);
+        free(params);
         return BT_STATUS_FAIL;
     }
-
-    bt_hfp_ag_call_info_t* call_info = find_call_by_number(sal_conn, number);
-    hfp_ag_operation_context_t operation_context = {
-        .call_info = call_info,
-        .connection = sal_conn,
-    };
-
-    if (!call_info) {
-        BT_LOGD("%s, new call with number: %s, state: %d", __func__,
-            number ? number : "(null)", call_state);
-
-        const new_call_entry_t* entry = find_new_call_entry(tele_call_state_to_sal_status(call_state));
-        if (!entry) {
-            BT_LOGE("%s, no new_call_entry for state %d, number: %s",
-                __func__, call_state, number ? number : "(null)");
-            return BT_STATUS_FAIL;
-        }
-
-        call_info = build_sal_call(HFP_CALL_DIRECTION_INCOMING, call_state,
-            type, number);
-        if (!call_info) {
-            return BT_STATUS_FAIL;
-        }
-
-        bt_list_add_head(sal_conn->calls, call_info);
-        operation_context.call_info = call_info;
-
-        SAL_CHECK_RET(entry->op(&operation_context), 0);
-        return BT_STATUS_SUCCESS;
-    }
-
-    BT_LOGD("%s, existing call with number: %s, current state: %d, new state: %d", __func__,
-        number ? number : "(null)", call_info->state, call_state);
-
-    const call_transition_t* transition = find_call_transition(call_info->state, call_state);
-
-    if (!transition) {
-        enum bt_hfp_ag_call_status new_state = tele_call_state_to_sal_status(call_state);
-
-        if (call_info->state == new_state) {
-            /* state already updated by a zblue callback, nothing to do */
-            BT_LOGI("%s, state already %d, skip transition", __func__, new_state);
-            if (new_state == BT_HFP_AG_CALL_STATUS_UNKNOWN) {
-                /* call ended, remove it from tracking list */
-                bt_list_remove(sal_conn->calls, call_info);
-            }
-            return BT_STATUS_SUCCESS;
-        }
-
-        BT_LOGE("%s, no valid transition from %d to %d",
-            __func__, call_info->state, call_state);
-        return BT_STATUS_FAIL;
-    }
-
-    SAL_CHECK_RET(transition->op(&operation_context), 0);
-
-    enum bt_hfp_ag_call_status new_state = tele_call_state_to_sal_status(call_state);
-    if (new_state == BT_HFP_AG_CALL_STATUS_UNKNOWN) {
-        /* call ended (IDLE/DISCONNECTED), remove it from tracking list */
-        bt_list_remove(sal_conn->calls, call_info);
-        return BT_STATUS_SUCCESS;
-    }
-
-    call_info->state = new_state;
 
     return BT_STATUS_SUCCESS;
 }
