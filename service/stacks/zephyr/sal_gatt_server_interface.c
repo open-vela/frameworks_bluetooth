@@ -24,6 +24,7 @@
 #include <zephyr/bluetooth/l2cap.h>
 #include <zephyr/bluetooth/uuid.h>
 
+#include "adapter_internel.h"
 #include "bluetooth.h"
 #include "bt_list.h"
 #include "bt_status.h"
@@ -66,6 +67,8 @@
 #define REQUEST_ID_HANDLE(id) ((uint16_t)((id) & (0xFFFF)))
 #define REQUEST_ID_OP_TYPE(id) (((id) >> 31) & 0x1)
 #define REQUEST_ID_NORSP ((uint32_t)0xFFFFFFFF)
+
+#define BT_ATT_ERR_APP_NOT_ALLOWED 0x80
 
 #define STACK_CALL(func) zblue_##func
 
@@ -275,13 +278,51 @@ static struct bt_sdp_attribute gatt_attrs_template[] = {
                     }, ) }, )),
 };
 
+static gatt_element_t* get_service_element_from_element(gatt_element_t* element)
+{
+    gatt_element_t* cur;
+    int max_steps = GATTS_MAX_ATTRIBUTE_NUM;
+
+    if (!element) {
+        return NULL;
+    }
+
+    if (element->type == GATT_PRIMARY_SERVICE
+        || element->type == GATT_SECONDARY_SERVICE) {
+        return element;
+    }
+
+    /*
+     * Elements within a service table are stored contiguously in memory
+     * (allocated as service_table_t.elements[]). Walk backwards from the
+     * given characteristic/descriptor element until we hit the leading
+     * service declaration element.
+     */
+    for (cur = element - 1; max_steps > 0; cur--, max_steps--) {
+        if (cur->type == GATT_PRIMARY_SERVICE
+            || cur->type == GATT_SECONDARY_SERVICE) {
+            return cur;
+        }
+
+        /* Stop if handle ordering is broken, which indicates we've
+         * walked past the beginning of the table. */
+        if (cur->handle >= (cur + 1)->handle) {
+            break;
+        }
+    }
+
+    BT_LOGW("%s, service element not found for handle 0x%04x", __func__, element->handle);
+    return NULL;
+}
+
 static ssize_t read_value(struct bt_conn* conn, const struct bt_gatt_attr* attr,
     void* buf, uint16_t len, uint16_t offset)
 {
     bt_address_t addr;
-    gatt_element_t* element;
+    gatt_element_t *element, *srv_elem;
     uint32_t request_id;
     struct gatt_user_data* user_data;
+    struct bt_conn_info info;
 
     if (!attr || !attr->user_data) {
         BT_LOGE("%s, user_data or context is NULL", __func__);
@@ -294,6 +335,25 @@ static ssize_t read_value(struct bt_conn* conn, const struct bt_gatt_attr* attr,
     if (!element) {
         BT_LOGE("%s, element is NULL", __func__);
         return BT_GATT_ERR(BT_ATT_ERR_UNLIKELY);
+    }
+
+    /* In PTS mode, reject cross-transport access:
+     * - BR conn accessing a service without EXPOSED_OVER_BREDR -> 0x80
+     * - LE conn accessing a service with EXPOSED_OVER_BREDR -> 0x80 */
+    if (adapter_get_pts_mode()) {
+        srv_elem = get_service_element_from_element(element);
+        if (conn && srv_elem && bt_conn_get_info(conn, &info) == 0) {
+            if (info.type == BT_CONN_TYPE_BR
+                && !(srv_elem->properties & GATT_PROP_EXPOSED_OVER_BREDR)) {
+                BT_LOGE("%s, PTS: BR conn cannot access LE-only service", __func__);
+                return BT_GATT_ERR(BT_ATT_ERR_APP_NOT_ALLOWED);
+            }
+            if (info.type == BT_CONN_TYPE_LE
+                && (srv_elem->properties & GATT_PROP_EXPOSED_OVER_BREDR)) {
+                BT_LOGE("%s, PTS: LE conn cannot access BR-only service", __func__);
+                return BT_GATT_ERR(BT_ATT_ERR_APP_NOT_ALLOWED);
+            }
+        }
     }
 
     bt_sal_get_remote_address(conn, &addr);
