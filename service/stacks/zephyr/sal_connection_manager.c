@@ -368,9 +368,17 @@ static void bt_sal_cm_acl_disconnected(void* data)
     if (bt_sal_connecting_list != NULL) {
         manager = bt_list_find(bt_sal_connecting_list, bt_connection_manager_find, &cm_data->addr);
         if (manager != NULL) {
-            bt_list_remove(bt_sal_connecting_list, manager);
-        } else {
-            BT_LOGW("%s, manager not found.", __func__);
+            /*
+             * Trigger pending profile handlers to let them detect ACL failure
+             * and clean up properly. The handlers will fail (e.g., bt_conn_lookup
+             * returns NULL) and report disconnected state to upper layer.
+             */
+            if (bt_list_is_empty(manager->profile_conn_handler_list)) {
+                /* No pending handlers, remove manager directly */
+                bt_list_remove(bt_sal_connecting_list, manager);
+            } else {
+                bt_sal_trigger_profile_conn_act(manager, bt_sal_connecting_list);
+            }
         }
     }
 
@@ -382,8 +390,6 @@ static void bt_sal_cm_acl_disconnected(void* data)
                 bt_sal_remove_bond_internal(PRIMARY_ADAPTER, &manager->device_addr);
             }
             bt_list_remove(bt_sal_disconnecting_list, manager);
-        } else {
-            BT_LOGW("%s, manager not found.", __func__);
         }
     }
 

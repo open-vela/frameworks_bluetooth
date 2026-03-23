@@ -715,10 +715,11 @@ static zblue_avrcp_info_t* bt_avrcp_create_avrcp_info(struct bt_conn* conn)
 }
 
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+static void avrcp_on_connection_state_changed(bt_address_t* bd_addr,
+    profile_connection_state_t state);
 static void zblue_on_ct_connected(struct bt_conn* conn, struct bt_avrcp_ct* ct)
 {
     zblue_avrcp_info_t* avrcp_info;
-    avrcp_msg_t* msg;
 
     if (!bt_avrcp_conn) {
         BT_LOGW("%s, bt_avrcp_conn not initialized", __func__);
@@ -734,10 +735,7 @@ static void zblue_on_ct_connected(struct bt_conn* conn, struct bt_avrcp_ct* ct)
 
     avrcp_info->ct = ct;
 
-    msg = avrcp_msg_new(AVRC_CONNECTION_STATE_CHANGED, &avrcp_info->bd_addr);
-    msg->data.conn_state.conn_state = PROFILE_STATE_CONNECTED;
-    msg->data.conn_state.reason = PROFILE_REASON_UNSPECIFIED;
-    bt_sal_avrcp_control_event_callback(msg);
+    avrcp_on_connection_state_changed(&avrcp_info->bd_addr, PROFILE_STATE_CONNECTED);
     bt_sal_cm_profile_connected_callback(&avrcp_info->bd_addr, PROFILE_AVRCP_CT, CONN_ID_DEFAULT);
     bt_sal_profile_disconnect_register(&avrcp_info->bd_addr, PROFILE_AVRCP_CT, CONN_ID_DEFAULT, PRIMARY_ADAPTER, bt_sal_avrcp_disconnect, NULL);
 }
@@ -745,7 +743,6 @@ static void zblue_on_ct_connected(struct bt_conn* conn, struct bt_avrcp_ct* ct)
 static void zblue_on_ct_disconnected(struct bt_avrcp_ct* ct)
 {
     zblue_avrcp_info_t* avrcp_info;
-    avrcp_msg_t* msg;
 
     if (!bt_avrcp_conn) {
         BT_LOGW("%s, bt_avrcp_conn not initialized", __func__);
@@ -760,10 +757,7 @@ static void zblue_on_ct_disconnected(struct bt_avrcp_ct* ct)
 
     avrcp_info->ct = NULL;
 
-    msg = avrcp_msg_new(AVRC_CONNECTION_STATE_CHANGED, &avrcp_info->bd_addr);
-    msg->data.conn_state.conn_state = PROFILE_STATE_DISCONNECTED;
-    msg->data.conn_state.reason = PROFILE_REASON_UNSPECIFIED;
-    bt_sal_avrcp_control_event_callback(msg);
+    avrcp_on_connection_state_changed(&avrcp_info->bd_addr, PROFILE_STATE_DISCONNECTED);
     bt_sal_cm_profile_disconnected_callback(&avrcp_info->bd_addr, PROFILE_AVRCP_CT, CONN_ID_DEFAULT);
 
     bt_list_remove_avrcp_info(avrcp_info);
@@ -1412,13 +1406,32 @@ static void zblue_on_tg_get_play_status_req(struct bt_avrcp_tg* tg, uint8_t tid)
 #endif
 
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+static void avrcp_on_connection_state_changed(bt_address_t* bd_addr,
+    profile_connection_state_t state)
+{
+    avrcp_msg_t* msg;
+
+    msg = avrcp_msg_new(AVRC_CONNECTION_STATE_CHANGED, bd_addr);
+    if (!msg) {
+        BT_LOGE("%s, avrcp_msg_new failed", __func__);
+        return;
+    }
+
+    msg->data.conn_state.conn_state = state;
+    msg->data.conn_state.reason = PROFILE_REASON_UNSPECIFIED;
+    bt_sal_avrcp_control_event_callback(msg);
+}
+
 static bt_status_t avrcp_control_connect(bt_controller_id_t id, bt_address_t* bd_addr, void* user_data)
 {
     int err;
-    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)bd_addr);
+    struct bt_conn* conn;
 
+    conn = bt_conn_lookup_addr_br((bt_addr_t*)bd_addr);
     if (!conn) {
-        BT_LOGW("avrcp_info not found");
+        BT_LOGW("BR/EDR connection not found for AVRCP connect");
+        avrcp_on_connection_state_changed(bd_addr, PROFILE_STATE_DISCONNECTED);
+        bt_sal_cm_profile_disconnected_callback(bd_addr, PROFILE_AVRCP_CT, CONN_ID_DEFAULT);
         return BT_STATUS_FAIL;
     }
 
@@ -1426,8 +1439,11 @@ static bt_status_t avrcp_control_connect(bt_controller_id_t id, bt_address_t* bd
 
     bt_conn_unref(conn);
 
-    if (err < 0)
+    if (err < 0) {
+        avrcp_on_connection_state_changed(bd_addr, PROFILE_STATE_DISCONNECTED);
+        bt_sal_cm_profile_disconnected_callback(bd_addr, PROFILE_AVRCP_CT, CONN_ID_DEFAULT);
         return BT_STATUS_FAIL;
+    }
 
     return BT_STATUS_SUCCESS;
 }
