@@ -397,6 +397,7 @@ static bt_status_t do_ag_sdp_discover(bt_controller_id_t id, bt_address_t* addr,
     if (!conn) {
         BT_LOGE("%s, Failed to lookup connection", __func__);
         hfp_ag_on_connection_state_changed(addr, PROFILE_STATE_DISCONNECTED, 0, 0);
+        bt_sal_cm_profile_disconnected_callback(addr, PROFILE_HFP_AG, CONN_ID_DEFAULT);
         return BT_STATUS_NOT_FOUND;
     }
 
@@ -404,6 +405,7 @@ static bt_status_t do_ag_sdp_discover(bt_controller_id_t id, bt_address_t* addr,
     if (!sal_conn) {
         BT_LOGE("%s, could not create new ag connection", __func__);
         hfp_ag_on_connection_state_changed(addr, PROFILE_STATE_DISCONNECTED, 0, 0);
+        bt_sal_cm_profile_disconnected_callback(addr, PROFILE_HFP_AG, CONN_ID_DEFAULT);
         bt_conn_unref(conn);
         return BT_STATUS_NOMEM;
     }
@@ -412,6 +414,7 @@ static bt_status_t do_ag_sdp_discover(bt_controller_id_t id, bt_address_t* addr,
     if (bt_sdp_discover(conn, &sdp_discover) < 0) {
         BT_LOGE("%s, failed to start a SDP discovery", __func__);
         hfp_ag_on_connection_state_changed(addr, PROFILE_STATE_DISCONNECTED, 0, 0);
+        bt_sal_cm_profile_disconnected_callback(addr, PROFILE_HFP_AG, CONN_ID_DEFAULT);
         bt_conn_unref(conn);
         bt_list_remove(g_sal_ag_conn_list, sal_conn);
         return BT_STATUS_FAIL;

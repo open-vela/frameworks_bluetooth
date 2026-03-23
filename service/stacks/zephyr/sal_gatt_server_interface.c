@@ -1292,11 +1292,14 @@ static void STACK_CALL(conn_connect)(void* args)
 
 static bt_status_t gatts_br_profile_connect(bt_controller_id_t id, bt_address_t* addr, void* user_data)
 {
-    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
+    struct bt_conn* conn;
     int err;
 
+    conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
     if (!conn) {
         BT_LOGE("%s, acl not connected", __func__);
+        if_gatts_on_connection_state_changed(addr, PROFILE_STATE_DISCONNECTED);
+        bt_sal_cm_profile_disconnected_callback(addr, PROFILE_GATTS, CONN_ID_DEFAULT);
         return BT_STATUS_FAIL;
     }
 
@@ -1310,6 +1313,8 @@ static bt_status_t gatts_br_profile_connect(bt_controller_id_t id, bt_address_t*
     return BT_STATUS_SUCCESS;
 
 error:
+    if_gatts_on_connection_state_changed(addr, PROFILE_STATE_DISCONNECTED);
+    bt_sal_cm_profile_disconnected_callback(addr, PROFILE_GATTS, CONN_ID_DEFAULT);
     bt_conn_unref(conn);
     return BT_STATUS_FAIL;
 }
