@@ -1172,7 +1172,10 @@ static void STACK_CALL(acl_connection_reply)(void* args)
 {
 #ifndef CONFIG_BT_CONN_REQ_AUTO_HANDLE
     sal_adapter_req_t* req = args;
-    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)&req->addr);
+    struct bt_conn* conn;
+    int ret;
+
+    conn = bt_conn_lookup_addr_br((bt_addr_t*)&req->addr);
 
     if (!conn) {
         BT_LOGE("%s, conn null", __func__);
@@ -1180,9 +1183,13 @@ static void STACK_CALL(acl_connection_reply)(void* args)
     }
 
     if (req->adpt.accept) {
-        SAL_CHECK(bt_conn_accept_acl_conn(conn), 0);
+        ret = bt_conn_accept_acl_conn(conn);
+        if (ret && ret != -EALREADY)
+            BT_LOGE("%s, accept return:%d", __func__, ret);
     } else {
-        SAL_CHECK(bt_conn_reject_acl_conn(conn, BT_HCI_ERR_INSUFFICIENT_RESOURCES), 0);
+        ret = bt_conn_reject_acl_conn(conn, BT_HCI_ERR_INSUFFICIENT_RESOURCES);
+        if (ret && ret != -EALREADY)
+            BT_LOGE("%s, reject return:%d", __func__, ret);
     }
 
     bt_conn_unref(conn);
