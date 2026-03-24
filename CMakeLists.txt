@@ -99,9 +99,17 @@ if(CONFIG_BLUETOOTH)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/api/bt_pan.c)
   endif()
 
+  if(CONFIG_BLUETOOTH_LE_CS)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/api/bt_cs.c)
+  endif()
+
   if(CONFIG_BLUETOOTH_BLE_AUDIO)
     file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/framework/api/bt_lea*.c)
     list(APPEND CSRCS ${APPEND_FILES})
+  endif()
+
+  if(CONFIG_BLUETOOTH_AURACAST_SINK)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/api/bt_auracast_sink.c)
   endif()
 
   if(CONFIG_BLUETOOTH_FRAMEWORK_SOCKET_IPC)
@@ -192,6 +200,11 @@ if(CONFIG_BLUETOOTH)
     if(CONFIG_BLUETOOTH_PAN)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/socket/bt_pan.c)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_pan.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_AURACAST_SINK)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/socket/bt_auracast_sink.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_auracast_sink.c)
     endif()
 
     if(CONFIG_BLUETOOTH_LOG)
@@ -299,6 +312,10 @@ if(CONFIG_BLUETOOTH)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_adapter_interface.c)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_connection_manager.c)
 
+      if(CONFIG_BLUETOOTH_SPP)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_spp_interface.c)
+      endif()
+
       if(CONFIG_BLUETOOTH_A2DP)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_a2dp_interface.c)
       endif()
@@ -307,20 +324,16 @@ if(CONFIG_BLUETOOTH)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_avrcp_interface.c)
       endif()
 
+      if(CONFIG_BLUETOOTH_HID_DEVICE)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_hid_device_interface.c)
+      endif()
+
       if(CONFIG_BLUETOOTH_HFP_HF)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_hfp_hf_interface.c)
       endif()
 
       if(CONFIG_BLUETOOTH_HFP_AG)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_hfp_ag_interface.c)
-      endif()
-
-      if(CONFIG_BLUETOOTH_SPP)
-        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_spp_interface.c)
-      endif()
-
-      if(CONFIG_BLUETOOTH_HID_DEVICE)
-        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_hid_device_stub.c)
       endif()
 
     endif()
@@ -350,6 +363,10 @@ if(CONFIG_BLUETOOTH)
 
       if(CONFIG_BLUETOOTH_LE_CS)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_le_cs_interface.c)
+      endif()
+
+      if(CONFIG_BLUETOOTH_AURACAST_SINK)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_auracast_sink_interface.c)
       endif()
     endif()
 
@@ -517,6 +534,18 @@ if(CONFIG_BLUETOOTH)
       list(APPEND CSRCS ${APPEND_FILES})
     endif()
 
+    if(CONFIG_BLUETOOTH_LE_CS)
+      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/cs/*.c)
+      list(APPEND CSRCS ${APPEND_FILES})
+      list(APPEND INCDIR ${BLUETOOTH_DIR}/service/profiles/cs)
+    endif()
+
+    if(CONFIG_BLUETOOTH_AURACAST_SINK)
+      file(GLOB APPEND_FILES
+           ${BLUETOOTH_DIR}/service/profiles/auracast/sink/*.c)
+      list(APPEND CSRCS ${APPEND_FILES})
+    endif()
+
     if(CONFIG_BLUETOOTH_LOG)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/utils/log_server.c)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/utils/btsnoop_log.c)
@@ -546,23 +575,23 @@ if(CONFIG_BLUETOOTH)
 
   if(CONFIG_APP_BT_SAMPLE_CODE)
   if(CONFIG_APP_BT_SAMPLE_CODE_BASIC)
-    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/basic/*.c)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/basic/app_bt_gap.c)
   endif()
 
   if(CONFIG_APP_BT_SAMPLE_CODE_ENABLE)
-    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/enable/*.c)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/enable/app_bt_gap.c)
   endif()
 
   if(CONFIG_APP_BT_SAMPLE_CODE_DISCOVERY)
-    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/discovery/*.c)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/discovery/app_bt_gap.c)
   endif()
 
   if(CONFIG_APP_BT_SAMPLE_CODE_CREATEBOND)
-    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/createbond/*.c)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/createbond/app_bt_gap.c)
   endif()
 
   if(CONFIG_APP_BT_SAMPLE_CODE_ACCEPTBOND)
-    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/acceptbond/*.c)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/acceptbond/app_bt_gap.c)
   endif()
   endif()
 
@@ -592,6 +621,10 @@ if(CONFIG_BLUETOOTH)
 
     if(CONFIG_BLUETOOTH_BLE_SCAN)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/scan.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_L2CAP)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/l2cap.c)
     endif()
 
     if(CONFIG_BLUETOOTH_A2DP_SINK)
@@ -624,7 +657,10 @@ if(CONFIG_BLUETOOTH)
 
     if(CONFIG_BLUETOOTH_LOG)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/log.c)
-        list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/bt_trace.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_DEBUG_TRACE)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/bt_trace.c)
     endif()
 
     if(CONFIG_BLUETOOTH_SPP)
@@ -677,6 +713,7 @@ if(CONFIG_BLUETOOTH)
 
     if(CONFIG_BLUETOOTH_LE_CS)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/le_cs.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/le_rap.c)
     endif()
   endif()
 
@@ -820,7 +857,7 @@ if(CONFIG_BLUETOOTH)
           INCLUDE_DIRECTORIES
           ${INCDIR}
           STACKSIZE
-          8192
+          4096
           PRIORITY
           ${SCHED_PRIORITY_DEFAULT}
           COMPILE_FLAGS

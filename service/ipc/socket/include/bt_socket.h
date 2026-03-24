@@ -64,6 +64,7 @@ typedef struct {
     callbacks_list_t* spp_callbacks;
     callbacks_list_t* hidd_callbacks;
     callbacks_list_t* l2cap_callbacks;
+    callbacks_list_t* auracast_sink_callbacks;
     callbacks_list_t* cs_callbacks;
 
     bt_list_t* gattc_remote_list;
@@ -243,6 +244,14 @@ void bt_socket_server_l2cap_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
 
 int bt_socket_client_l2cap_callback(service_poll_t* poll,
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async);
+
+/* Auracast sink */
+
+void bt_socket_server_auracast_sink_process(service_poll_t* poll,
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+
+int bt_socket_client_auracast_sink_callback(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async);
 
 void bt_socket_server_log_process(service_poll_t* poll,

@@ -86,6 +86,10 @@
 #include "avrcp_control_service.h"
 #endif
 
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+#include "auracast_sink_service.h"
+#endif
+
 #define LOG_TAG "bt_service"
 #include "utils/log.h"
 
@@ -181,6 +185,11 @@ void bt_profile_init(void)
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
     register_lea_vmicp_service();
 #endif
+
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+    register_auracast_sink_service();
+#endif
+
 #ifdef CONFIG_BLUETOOTH_LE_CS
     register_cs_service();
 #endif /* CONFIG_BLUETOOTH_LE_CS */

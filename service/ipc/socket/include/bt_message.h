@@ -29,6 +29,7 @@ extern "C" {
 #include "bt_message_a2dp_source.h"
 #include "bt_message_adapter.h"
 #include "bt_message_advertiser.h"
+#include "bt_message_auracast_sink.h"
 #include "bt_message_avrcp_control.h"
 #include "bt_message_avrcp_target.h"
 #include "bt_message_device.h"
@@ -121,6 +122,7 @@ typedef struct
         bt_hid_device_result_t hidd_r;
         bt_l2cap_result_t l2cap_r;
         bt_pa_sync_result_t pa_sync_r;
+        bt_auracast_sink_result_t auracast_sink_r;
     };
     union {
         bt_message_manager_t manager_pl;
@@ -175,6 +177,9 @@ typedef struct
 
         bt_message_pa_sync_t pa_sync_pl;
         bt_message_pa_sync_callbacks_t pa_sync_cb;
+
+        bt_message_auracast_sink_t auracast_sink_pl;
+        bt_message_auracast_sink_callbacks_t auracast_sink_cb;
 
         bt_message_log_t log_pl;
     };
