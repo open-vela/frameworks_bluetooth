@@ -48,9 +48,11 @@ static bt_list_t* g_sal_ag_conn_list = NULL;
 extern struct net_buf_pool sdp_pool;
 
 static uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_result* result, const struct bt_sdp_discover_params* ignore);
+static void zblue_on_sdp_disconnected(struct bt_conn* conn, const struct bt_sdp_discover_params* params);
 
 static struct bt_sdp_discover_params sdp_discover = {
     .func = zblue_on_sdp_done,
+    .disconnected = zblue_on_sdp_disconnected,
     .pool = &sdp_pool,
     .uuid = BT_UUID_DECLARE_16(BT_SDP_HANDSFREE_SVCLASS),
     .type = BT_SDP_DISCOVER_SERVICE_SEARCH_ATTR
@@ -547,6 +549,19 @@ static void do_ag_sco_disconnect(service_work_t* work, void* userdata)
     if (err) {
         BT_LOGE("%s, Failed to disconnect HFP AG SCO, err=%d", __func__, err);
     }
+}
+
+static void zblue_on_sdp_disconnected(struct bt_conn* conn, const struct bt_sdp_discover_params* params)
+{
+    bt_address_t bd_addr;
+    if (bt_sal_get_remote_address(conn, &bd_addr) != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, failed to get remote address", __func__);
+        return;
+    }
+
+    BT_LOGW("%s, SDP disconnected during discovery", __func__);
+    bt_sal_cm_profile_disconnected_callback(&bd_addr, PROFILE_HFP_AG, CONN_ID_DEFAULT);
+    hfp_ag_on_connection_state_changed(&bd_addr, PROFILE_STATE_DISCONNECTED, 0, 0);
 }
 
 static uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_result* result,
