@@ -53,6 +53,7 @@ static gatts_device_t* find_gatts_device(bt_address_t* addr);
 static gatts_handle_t g_dis_handle = NULL;
 static gatts_handle_t g_bas_handle = NULL;
 static gatts_handle_t g_custom_handle = NULL;
+static gatts_handle_t g_bredr_handle = NULL;
 static volatile uint32_t throughtput_cursor = 0;
 static uint16_t cccd_enable = 0;
 static struct list_node gatts_device_list = LIST_INITIAL_VALUE(gatts_device_list);
@@ -60,7 +61,8 @@ static struct list_node gatts_device_list = LIST_INITIAL_VALUE(gatts_device_list
 enum {
     GATT_SERVICE_DIS = 1,
     GATT_SERVICE_BAS = 2,
-    GATT_SERVICE_CUSTOM = 3
+    GATT_SERVICE_CUSTOM = 3,
+    GATT_SERVICE_BREDR = 4
 };
 
 #define GET_SERVICE_HANDLE(id, handle)                   \
@@ -74,6 +76,9 @@ enum {
             break;                                       \
         case GATT_SERVICE_CUSTOM:                        \
             handle = g_custom_handle;                    \
+            break;                                       \
+        case GATT_SERVICE_BREDR:                         \
+            handle = g_bredr_handle;                     \
             break;                                       \
         default:                                         \
             PRINT("invalid service id: %d", id);         \
@@ -110,6 +115,14 @@ enum {
     IOT_SERVICE_PTS_MTU_CHR_ID,
     IOT_SERVICE_SIGN_RW_CHR_ID,
     IOT_SERVICE_AUTH_CHR_ID,
+};
+
+enum {
+    /* IDs of BR/EDR service */
+    BREDR_SERVICE_ID = 1,
+    BREDR_SERVICE_TX_CHR_ID,
+    BREDR_SERVICE_TX_CHR_CCC_ID,
+    BREDR_SERVICE_RX_CHR_ID,
 };
 
 uint8_t read_pts_char_value[] = { 'H', 'e', 'l', 'l', 'o', ' ', 'P', 'T', 'S', '!' };
@@ -254,8 +267,24 @@ static gatt_srv_db_t s_iot_service_db = {
     .attr_num = sizeof(s_iot_attr_db) / sizeof(gatt_attr_db_t),
 };
 
+static gatt_attr_db_t s_bredr_attr_db[] = {
+    /* BR/EDR Service - 0xFF10 */
+    GATT_H_PRIMARY_SERVICE_OVER_BREDR(BT_UUID_DECLARE_16(0xFF10), BREDR_SERVICE_ID),
+    /* TX Characteristic - 0xFF11 */
+    GATT_H_CHARACTERISTIC_AUTO_RSP(BT_UUID_DECLARE_16(0xFF11), GATT_PROP_NOTIFY | GATT_PROP_INDICATE, 0, NULL, 0, BREDR_SERVICE_TX_CHR_ID),
+    /* CCCD - 0x2902 */
+    GATT_H_CCCD(GATT_PERM_READ | GATT_PERM_WRITE, tx_char_ccc_changed, BREDR_SERVICE_TX_CHR_CCC_ID),
+    /* RX Characteristic - 0xFF12 */
+    GATT_H_CHARACTERISTIC_USER_RSP(BT_UUID_DECLARE_16(0xFF12), GATT_PROP_READ | GATT_PROP_WRITE_NR | GATT_PROP_WRITE, GATT_PERM_READ | GATT_PERM_WRITE, rx_char_on_read, rx_char_on_write, BREDR_SERVICE_RX_CHR_ID),
+};
+
+static gatt_srv_db_t s_bredr_service_db = {
+    .attr_db = s_bredr_attr_db,
+    .attr_num = sizeof(s_bredr_attr_db) / sizeof(gatt_attr_db_t),
+};
+
 static bt_command_t g_gatts_tables[] = {
-    { "register", register_cmd, 0, "\"register gatt service(DIS = 1, BAS = 2, CUSTOM = 3) :<id>\"" },
+    { "register", register_cmd, 0, "\"register gatt service(DIS = 1, BAS = 2, CUSTOM = 3, BREDR = 4) :<id>\"" },
     { "unregister", unregister_cmd, 0, "\"unregister gatt service :<id>\"" },
     { "start", start_cmd, 0, "\"start gatt service :<id>\"" },
     { "stop", stop_cmd, 0, "\"stop gatt service :<id>\"" },
@@ -411,6 +440,10 @@ static int start_cmd(void* handle, int argc, char* argv[])
         service_handle = g_custom_handle;
         service_db = &s_iot_service_db;
         break;
+    case GATT_SERVICE_BREDR:
+        service_handle = g_bredr_handle;
+        service_db = &s_bredr_service_db;
+        break;
     default:
         PRINT("invalid service id: %d", service_id);
         return CMD_INVALID_OPT;
@@ -447,6 +480,10 @@ static int stop_cmd(void* handle, int argc, char* argv[])
     case GATT_SERVICE_CUSTOM:
         service_handle = g_custom_handle;
         attr_handle = IOT_SERVICE_ID;
+        break;
+    case GATT_SERVICE_BREDR:
+        service_handle = g_bredr_handle;
+        attr_handle = BREDR_SERVICE_ID;
         break;
     default:
         PRINT("invalid service id: %d", service_id);
@@ -799,6 +836,13 @@ static int register_cmd(void* handle, int argc, char* argv[])
         }
         ret = bt_gatts_register_service(handle, &g_custom_handle, &gatts_cbs);
         break;
+    case GATT_SERVICE_BREDR:
+        if (g_bredr_handle) {
+            PRINT("bredr service has registed, please unregister then try again");
+            return CMD_OK;
+        }
+        ret = bt_gatts_register_service(handle, &g_bredr_handle, &gatts_cbs);
+        break;
     default:
         PRINT("invalid service id: %d", service_id);
         return CMD_INVALID_OPT;
@@ -845,6 +889,10 @@ int gatts_command_uninit(void* handle)
 
     if (g_custom_handle) {
         bt_gatts_unregister_service(g_custom_handle);
+    }
+
+    if (g_bredr_handle) {
+        bt_gatts_unregister_service(g_bredr_handle);
     }
 
     return 0;
