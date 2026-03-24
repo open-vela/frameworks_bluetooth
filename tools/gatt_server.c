@@ -213,7 +213,7 @@ static const gatt_attr_db_t s_dis_attr_db[] = {
 };
 
 static gatt_srv_db_t s_dis_service_db = {
-    .attr_db = (gatt_attr_db_t *)s_dis_attr_db,
+    .attr_db = (gatt_attr_db_t*)s_dis_attr_db,
     .attr_num = sizeof(s_dis_attr_db) / sizeof(gatt_attr_db_t),
 };
 
@@ -226,7 +226,7 @@ static const gatt_attr_db_t s_bas_attr_db[] = {
 };
 
 static gatt_srv_db_t s_bas_service_db = {
-    .attr_db = (gatt_attr_db_t *)s_bas_attr_db,
+    .attr_db = (gatt_attr_db_t*)s_bas_attr_db,
     .attr_num = sizeof(s_bas_attr_db) / sizeof(gatt_attr_db_t),
 };
 
@@ -250,7 +250,7 @@ static const gatt_attr_db_t s_iot_attr_db[] = {
 };
 
 static gatt_srv_db_t s_iot_service_db = {
-    .attr_db = (gatt_attr_db_t *)s_iot_attr_db,
+    .attr_db = (gatt_attr_db_t*)s_iot_attr_db,
     .attr_num = sizeof(s_iot_attr_db) / sizeof(gatt_attr_db_t),
 };
 

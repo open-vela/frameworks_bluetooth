@@ -131,7 +131,7 @@ int a2dp_src_command_exec(void* handle, int argc, char* argv[])
     int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
-        ret = execute_command_in_table(handle, (bt_command_t *)g_a2dp_tables, ARRAY_SIZE(g_a2dp_tables), argc, argv);
+        ret = execute_command_in_table(handle, (bt_command_t*)g_a2dp_tables, ARRAY_SIZE(g_a2dp_tables), argc, argv);
 
     if (ret < 0)
         usage();

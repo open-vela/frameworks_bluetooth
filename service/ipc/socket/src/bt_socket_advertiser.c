@@ -106,7 +106,7 @@ void bt_socket_server_advertiser_process(service_poll_t* poll,
             packet->adv_pl._bt_le_start_advertising.adv_len,
             packet->adv_pl._bt_le_start_advertising.scan_rsp_data,
             packet->adv_pl._bt_le_start_advertising.scan_rsp_len,
-            (advertiser_callback_t *)&g_advertiser_socket_cb);
+            (advertiser_callback_t*)&g_advertiser_socket_cb);
 
         if (!packet->adv_r.remote)
             free(adver);

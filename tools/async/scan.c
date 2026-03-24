@@ -226,7 +226,7 @@ int scan_command_exec_async(void* handle, int argc, char* argv[])
     int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
-        ret = execute_command_in_table_offset(handle, (bt_command_t *)g_scanner_async_tables,
+        ret = execute_command_in_table_offset(handle, (bt_command_t*)g_scanner_async_tables,
             ARRAY_SIZE(g_scanner_async_tables),
             argc, argv, 0);
 

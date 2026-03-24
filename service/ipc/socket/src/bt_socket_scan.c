@@ -221,7 +221,7 @@ void bt_socket_server_scan_process(service_poll_t* poll,
 
         scan->ins = ins;
         scan->remote = packet->scan_pl._bt_le_start_scan.remote;
-        packet->scan_r.remote = PTR2INT(uint64_t) scanner_start_scan(scan, (scanner_callbacks_t *)&g_scanner_socket_cb);
+        packet->scan_r.remote = PTR2INT(uint64_t) scanner_start_scan(scan, (scanner_callbacks_t*)&g_scanner_socket_cb);
         if (!packet->scan_r.remote)
             free(scan);
         break;

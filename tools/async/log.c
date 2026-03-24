@@ -243,7 +243,7 @@ int log_command_async(void* handle, int argc, char* argv[])
     int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
-        ret = execute_command_in_table(handle, (bt_command_t *)g_log_async_tables, ARRAY_SIZE(g_log_async_tables), argc, argv);
+        ret = execute_command_in_table(handle, (bt_command_t*)g_log_async_tables, ARRAY_SIZE(g_log_async_tables), argc, argv);
 
     if (ret < 0)
         usage();
