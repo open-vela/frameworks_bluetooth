@@ -197,6 +197,9 @@ static bt_command_t g_async_cmd_tables[] = {
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
     { "vmicp", vmicp_command_exec, 0, "vcp/micp client cmd, input \'vmicp\' show usage" },
 #endif
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+    { "aurasnk", auracast_sink_command_exec_async, 0, "auracast sink cmd, input \'aurasnk\' show usage" },
+#endif
     { "dump", dump_cmd, 0, "dump adapter state" },
 #ifdef CONFIG_BLUETOOTH_LOG
     { "log", log_command_async, 0, "log control command" },
@@ -277,6 +280,9 @@ static void bt_tool_init(void* handle)
 #ifdef CONFIG_BLUETOOTH_GATT
     gattc_command_init_async(handle);
 #endif
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+    auracast_sink_command_init_async(handle);
+#endif
 
     g_cmd_had_inited = true;
 }
@@ -291,6 +297,9 @@ static void bt_tool_uninit(void* handle)
 #endif
 #ifdef CONFIG_BLUETOOTH_GATT
     gattc_command_uninit_async(handle);
+#endif
+#ifdef CONFIG_BLUETOOTH_AURACAST_SINK
+    auracast_sink_command_uninit_async(handle);
 #endif
 
     g_cmd_had_inited = false;
@@ -1430,8 +1439,12 @@ int execute_async_command(void* handle, int argc, char* argv[])
 static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
 {
     PRINT("Context:%p, Adapter state changed: %d", cookie, state);
-    if (state == BT_ADAPTER_STATE_ON) {
-
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+    if (state == BT_ADAPTER_STATE_ON)
+#else
+    if (state == BT_ADAPTER_STATE_BLE_ON)
+#endif
+    {
         bt_tool_init(g_bttool_ins);
         /* get name */
         bt_adapter_get_name_async(g_bttool_ins, get_local_name_cb, NULL);
@@ -1444,7 +1457,13 @@ static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
         /* enable key derivation */
         bt_adapter_le_enable_key_derivation_async(g_bttool_ins, true, true, status_cb, NULL);
         bt_adapter_set_page_scan_parameters_async(g_bttool_ins, BT_BR_SCAN_TYPE_INTERLACED, 0x400, 0x24, status_cb, NULL);
-    } else if (state == BT_ADAPTER_STATE_TURNING_OFF) {
+    } else
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+        if (state == BT_ADAPTER_STATE_TURNING_OFF)
+#else
+        if (state == BT_ADAPTER_STATE_BLE_TURNING_OFF)
+#endif
+    {
         /* code */
         bt_tool_uninit(g_bttool_ins);
     } else if (state == BT_ADAPTER_STATE_OFF) {
@@ -1609,7 +1628,11 @@ static void state_on_cb(bt_instance_t* ins, bt_status_t status, bt_adapter_state
 {
     PRINT("%s state: %d", __func__, state);
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     if (state == BT_ADAPTER_STATE_ON)
+#else
+    if (state == BT_ADAPTER_STATE_BLE_ON)
+#endif
         bt_tool_init(g_bttool_ins);
 }
 
