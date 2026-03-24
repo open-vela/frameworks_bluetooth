@@ -42,9 +42,11 @@ static bt_list_t* g_sal_hf_conn_list = NULL;
 extern struct net_buf_pool sdp_pool;
 
 static uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_result* result, const struct bt_sdp_discover_params* ignore);
+static void zblue_on_sdp_disconnected(struct bt_conn* conn, const struct bt_sdp_discover_params* params);
 
 static struct bt_sdp_discover_params sdp_discover = {
     .func = zblue_on_sdp_done,
+    .disconnected = zblue_on_sdp_disconnected,
     .pool = &sdp_pool,
     .uuid = BT_UUID_DECLARE_16(BT_SDP_HANDSFREE_AGW_SVCLASS),
     .type = BT_SDP_DISCOVER_SERVICE_SEARCH_ATTR
@@ -509,6 +511,22 @@ error:
     bt_sal_cm_profile_disconnected_callback(&sal_conn->addr, PROFILE_HFP_HF, CONN_ID_DEFAULT);
     bt_list_remove(g_sal_hf_conn_list, sal_conn);
     return;
+}
+
+static void zblue_on_sdp_disconnected(struct bt_conn* conn, const struct bt_sdp_discover_params* params)
+{
+    bt_address_t bd_addr;
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_context(conn);
+    if (!sal_conn) {
+        BT_LOGW("%s, no pending connection found", __func__);
+        return;
+    }
+    memcpy(&bd_addr, &sal_conn->addr, sizeof(bt_address_t));
+
+    BT_LOGW("%s, SDP disconnected during discovery", __func__);
+    bt_list_remove(g_sal_hf_conn_list, sal_conn);
+    hfp_hf_on_connection_state_changed(&bd_addr, PROFILE_STATE_DISCONNECTED, 0, 0);
+    bt_sal_cm_profile_disconnected_callback(&bd_addr, PROFILE_HFP_HF, CONN_ID_DEFAULT);
 }
 
 static uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_result* result,
