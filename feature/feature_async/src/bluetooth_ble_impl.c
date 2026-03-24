@@ -595,7 +595,7 @@ void system_bluetooth_ble_Advertiser_interface_adv_startAdvertising(FeatureInter
     adv_info->start_userdata = (void*)data;
 
     status = bt_le_start_advertising_async(adv_info->ins, &adv_params,
-        p_adv_data, adv_len, p_scan_rsp_data, scan_rsp_len, (advertiser_callback_t *)&adv_callback,
+        p_adv_data, adv_len, p_scan_rsp_data, scan_rsp_len, (advertiser_callback_t*)&adv_callback,
         start_adv_cb, (void*)data);
 
     if (status != BT_STATUS_SUCCESS) {
@@ -1761,7 +1761,7 @@ void system_bluetooth_ble_GattClient_interface_gattc_connect(FeatureInterfaceHan
             gattc_info->gattc->addr_type, gattc_connect_cb, (void*)data);
     } else {
         status = bt_gattc_feature_create_client_async(gattc_info->ins, &gattc_info->gattc->remote_address, gattc_create_cb,
-            (bt_gattc_feature_callbacks_t *)&gattc_cbs, (void*)data);
+            (bt_gattc_feature_callbacks_t*)&gattc_cbs, (void*)data);
     }
 
     if (status != BT_STATUS_SUCCESS) {

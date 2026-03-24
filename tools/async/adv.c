@@ -346,7 +346,7 @@ static int start_adv_cmd(void* handle, int argc, char* argv[])
     bt_le_start_advertising_async(handle, &params,
         p_adv_data, adv_len,
         p_scan_rsp_data, scan_rsp_len,
-        (advertiser_callback_t *)&adv_callback,
+        (advertiser_callback_t*)&adv_callback,
         start_advertising_callback_cb, NULL);
 
     /* free advertiser data */
@@ -421,7 +421,7 @@ int adv_command_exec_async(void* handle, int argc, char* argv[])
     int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
-        ret = execute_command_in_table_offset(handle, (bt_command_t *)g_adv_async_tables, ARRAY_SIZE(g_adv_async_tables), argc, argv, 0);
+        ret = execute_command_in_table_offset(handle, (bt_command_t*)g_adv_async_tables, ARRAY_SIZE(g_adv_async_tables), argc, argv, 0);
 
     if (ret < 0)
         usage();

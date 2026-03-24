@@ -661,20 +661,20 @@ static const struct bt_br_discovery_cb g_br_discovery_cb = {
 
 static void zblue_register_callback(void)
 {
-    bt_br_discovery_cb_register((struct bt_br_discovery_cb *)&g_br_discovery_cb);
-    bt_conn_cb_register((struct bt_conn_cb *)&g_conn_cbs);
-    bt_conn_auth_cb_register((struct bt_conn_auth_cb *)&g_conn_auth_cbs);
-    bt_conn_auth_info_cb_register((struct bt_conn_auth_info_cb *)&g_conn_auth_info_cbs);
+    bt_br_discovery_cb_register((struct bt_br_discovery_cb*)&g_br_discovery_cb);
+    bt_conn_cb_register((struct bt_conn_cb*)&g_conn_cbs);
+    bt_conn_auth_cb_register((struct bt_conn_auth_cb*)&g_conn_auth_cbs);
+    bt_conn_auth_info_cb_register((struct bt_conn_auth_info_cb*)&g_conn_auth_info_cbs);
 #ifdef CONFIG_SETTINGS_ZBLUE
-    bt_setting_cb_register((struct bt_settings_zblue_cb *)&g_setting_cbs);
+    bt_setting_cb_register((struct bt_settings_zblue_cb*)&g_setting_cbs);
 #endif
 }
 
 static void zblue_unregister_callback(void)
 {
-    bt_br_discovery_cb_unregister((struct bt_br_discovery_cb *)&g_br_discovery_cb);
+    bt_br_discovery_cb_unregister((struct bt_br_discovery_cb*)&g_br_discovery_cb);
     bt_conn_auth_cb_register(NULL);
-    bt_conn_auth_info_cb_unregister((struct bt_conn_auth_info_cb *)&g_conn_auth_info_cbs);
+    bt_conn_auth_info_cb_unregister((struct bt_conn_auth_info_cb*)&g_conn_auth_info_cbs);
 }
 #endif
 

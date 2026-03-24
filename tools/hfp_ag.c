@@ -326,7 +326,7 @@ int hfp_ag_command_exec(void* handle, int argc, char* argv[])
     int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
-        ret = execute_command_in_table(handle, (bt_command_t *)g_hfp_ag_tables, ARRAY_SIZE(g_hfp_ag_tables), argc, argv);
+        ret = execute_command_in_table(handle, (bt_command_t*)g_hfp_ag_tables, ARRAY_SIZE(g_hfp_ag_tables), argc, argv);
 
     if (ret < 0)
         usage();

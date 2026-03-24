@@ -1180,7 +1180,7 @@ static uint8_t bt_a2dp_discover_endpoint_cb(struct bt_a2dp* a2dp,
     }
 
     a2dp_info->stream = (struct bt_a2dp_stream*)calloc(1, sizeof(struct bt_a2dp_stream));
-    bt_a2dp_stream_cb_register(a2dp_info->stream, (struct bt_a2dp_stream_ops *)&stream_ops);
+    bt_a2dp_stream_cb_register(a2dp_info->stream, (struct bt_a2dp_stream_ops*)&stream_ops);
 
     if (a2dp_info->role == SEP_SRC) {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
@@ -1486,7 +1486,7 @@ static int zblue_on_config_req(struct bt_a2dp* a2dp, struct bt_a2dp_ep* ep,
 
     a2dp_info->stream = (struct bt_a2dp_stream*)calloc(1, sizeof(struct bt_a2dp_stream));
     *stream = a2dp_info->stream; /* The a2dp_stream saved in SAL is assigned a value in zblue. */
-    bt_a2dp_stream_cb_register(a2dp_info->stream, (struct bt_a2dp_stream_ops *)&stream_ops);
+    bt_a2dp_stream_cb_register(a2dp_info->stream, (struct bt_a2dp_stream_ops*)&stream_ops);
     *rsp_err_code = BT_AVDTP_SUCCESS;
     return 0;
 }
@@ -1621,7 +1621,7 @@ bt_status_t bt_sal_a2dp_source_init(uint8_t max_connections)
     }
 #endif /* CONFIG_BLUETOOTH_A2DP_AAC_CODEC */
 
-    SAL_CHECK_RET(bt_a2dp_register_cb((struct bt_a2dp_cb *)&a2dp_cbks), 0);
+    SAL_CHECK_RET(bt_a2dp_register_cb((struct bt_a2dp_cb*)&a2dp_cbks), 0);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -1661,7 +1661,7 @@ bt_status_t bt_sal_a2dp_sink_init(uint8_t max_connections)
     }
 #endif /* CONFIG_BLUETOOTH_A2DP_AAC_CODEC */
 
-    SAL_CHECK_RET(bt_a2dp_register_cb((struct bt_a2dp_cb *)&a2dp_cbks), 0);
+    SAL_CHECK_RET(bt_a2dp_register_cb((struct bt_a2dp_cb*)&a2dp_cbks), 0);
 
     return BT_STATUS_SUCCESS;
 #else

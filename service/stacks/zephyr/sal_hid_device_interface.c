@@ -564,7 +564,7 @@ bt_status_t bt_sal_hid_device_init()
     int err;
     sal_bt_hid_device_mgr_t* hid_mgr = &g_hid_device_mgr;
 
-    err = Z_API(bt_hid_device_register)((struct bt_hid_device_cb *)&hid_callback);
+    err = Z_API(bt_hid_device_register)((struct bt_hid_device_cb*)&hid_callback);
     if (err != 0) {
         BT_LOGE("HID register cb fail,err:%d", err);
         return BT_STATUS_FAIL;

@@ -708,7 +708,7 @@ static int create_cmd(void* handle, int argc, char* argv[])
         return CMD_OK;
     }
 
-    if (bt_gattc_create_connect(handle, &g_gattc_devies[conn_id].handle, (gattc_callbacks_t *)&gattc_cbs) != BT_STATUS_SUCCESS)
+    if (bt_gattc_create_connect(handle, &g_gattc_devies[conn_id].handle, (gattc_callbacks_t*)&gattc_cbs) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     PRINT("create connection success, conn_id: %d", conn_id);
@@ -752,7 +752,7 @@ int gattc_command_exec(void* handle, int argc, char* argv[])
     int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
-        ret = execute_command_in_table(handle, (bt_command_t *)g_gattc_tables, ARRAY_SIZE(g_gattc_tables), argc, argv);
+        ret = execute_command_in_table(handle, (bt_command_t*)g_gattc_tables, ARRAY_SIZE(g_gattc_tables), argc, argv);
 
     if (ret < 0)
         usage();

@@ -761,7 +761,7 @@ static int create_cmd(void* handle, int argc, char* argv[])
 
     int* conn_id = (int*)malloc(sizeof(int));
     *conn_id = index;
-    if (bt_gattc_create_connect_async(handle, &g_gattc_devies[index].handle, (gattc_callbacks_t *)&gattc_cbs, create_connect_cb,
+    if (bt_gattc_create_connect_async(handle, &g_gattc_devies[index].handle, (gattc_callbacks_t*)&gattc_cbs, create_connect_cb,
             conn_id)
         != BT_STATUS_SUCCESS) {
         free(conn_id);
@@ -812,7 +812,7 @@ int gattc_command_exec_async(void* handle, int argc, char* argv[])
     int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
-        ret = execute_command_in_table(handle, (bt_command_t *)g_gattc_async_tables, ARRAY_SIZE(g_gattc_async_tables), argc, argv);
+        ret = execute_command_in_table(handle, (bt_command_t*)g_gattc_async_tables, ARRAY_SIZE(g_gattc_async_tables), argc, argv);
 
     if (ret < 0)
         usage();

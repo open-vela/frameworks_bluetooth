@@ -404,7 +404,7 @@ static int start_adv_cmd(void* handle, int argc, char* argv[])
     adv_handle = bt_le_start_advertising(handle, &params,
         p_adv_data, adv_len,
         p_scan_rsp_data, scan_rsp_len,
-        (advertiser_callback_t *)&adv_callback);
+        (advertiser_callback_t*)&adv_callback);
 
     PRINT("Advertising handle:%p", adv_handle);
     /* free advertiser data */
@@ -482,7 +482,7 @@ int adv_command_exec(void* handle, int argc, char* argv[])
     int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
-        ret = execute_command_in_table_offset(handle, (bt_command_t *)g_adv_tables, ARRAY_SIZE(g_adv_tables), argc, argv, 0);
+        ret = execute_command_in_table_offset(handle, (bt_command_t*)g_adv_tables, ARRAY_SIZE(g_adv_tables), argc, argv, 0);
 
     if (ret < 0)
         usage();

@@ -399,7 +399,7 @@ static int set_adapter_cmd(void* handle, int argc, char** argv)
         return CMD_PARAM_NOT_ENOUGH;
     }
 
-    int ret = execute_command_in_table(handle, (bt_command_t *)g_set_cmd_tables, ARRAY_SIZE(g_set_cmd_tables), argc, argv);
+    int ret = execute_command_in_table(handle, (bt_command_t*)g_set_cmd_tables, ARRAY_SIZE(g_set_cmd_tables), argc, argv);
     if (ret != CMD_OK)
         set_usage();
 
@@ -413,7 +413,7 @@ static int get_adapter_cmd(void* handle, int argc, char** argv)
         return CMD_PARAM_NOT_ENOUGH;
     }
 
-    int ret = execute_command_in_table(handle, (bt_command_t *)g_get_cmd_tables, ARRAY_SIZE(g_get_cmd_tables), argc, argv);
+    int ret = execute_command_in_table(handle, (bt_command_t*)g_get_cmd_tables, ARRAY_SIZE(g_get_cmd_tables), argc, argv);
     if (ret != CMD_OK)
         get_usage();
 
@@ -649,7 +649,7 @@ static int pair_cmd(void* handle, int argc, char** argv)
         return CMD_PARAM_NOT_ENOUGH;
     }
 
-    int ret = execute_command_in_table(handle, (bt_command_t *)g_pair_cmd_tables, ARRAY_SIZE(g_pair_cmd_tables), argc, argv);
+    int ret = execute_command_in_table(handle, (bt_command_t*)g_pair_cmd_tables, ARRAY_SIZE(g_pair_cmd_tables), argc, argv);
     if (ret != CMD_OK)
         pair_usage();
 

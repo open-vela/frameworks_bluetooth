@@ -557,7 +557,7 @@ static sal_spp_connection_t* spp_connection_new(bt_address_t* addr, uint16_t con
         return NULL;
     }
 
-    spp_conn->rfcomm_dlc.ops = (struct bt_rfcomm_dlc_ops *)&g_rfcomm_ops;
+    spp_conn->rfcomm_dlc.ops = (struct bt_rfcomm_dlc_ops*)&g_rfcomm_ops;
     spp_conn->rfcomm_dlc.mtu = SAL_SPP_RFCOMM_MFS;
     memcpy(&spp_conn->addr, addr, sizeof(bt_address_t));
 
