@@ -1711,15 +1711,26 @@ static int execute_command(void* handle, int argc, char* argv[])
     return CMD_UNKNOWN;
 }
 
-static void bt_tool_uninit_cb(void* data)
+static void bttool_uninit(void)
 {
-    bttool_ins_uninit(NULL);
+#ifdef CONFIG_LIBUV_EXTENSION
+    if (g_bttool_loop && g_bttool_loop->data && !uv_loop_is_close(g_bttool_loop)) {
+        bttool_t* bttool = g_bttool_loop->data;
+        char* cmd = strdup("_uninit");
 
-    if (g_bttool_loop) {
-        uv_loop_close(g_bttool_loop);
-        free(g_bttool_loop);
-        g_bttool_loop = NULL;
+        if (!cmd) {
+            PRINT("%s: strdup failed, skip uninit", __func__);
+            return;
+        }
+
+        uv_async_queue_send(&bttool->async, cmd);
+    } else {
+        PRINT("%s: loop not ready (loop:%p, data:%p), skip uninit", __func__,
+            g_bttool_loop, g_bttool_loop ? g_bttool_loop->data : NULL);
     }
+#else
+    bt_tool_uninit(g_bttool_ins);
+#endif
 }
 
 static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
@@ -1742,10 +1753,7 @@ static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
         bt_adapter_set_page_scan_parameters(g_bttool_ins, BT_BR_SCAN_TYPE_INTERLACED, 0x400, 0x24);
         PRINT("Adapter Name: %s, Cap: %d, Class: 0x%08" PRIX32 ", Mode:%d", name, cap, class, mode);
     } else if (state == BT_ADAPTER_STATE_TURNING_OFF) {
-        /* code */
-        if (g_bttool_loop && g_bttool_loop->data && !uv_loop_is_close(g_bttool_loop)) {
-            do_in_thread_loop(g_bttool_loop, bt_tool_uninit_cb, NULL);
-        }
+        bttool_uninit();
     } else if (state == BT_ADAPTER_STATE_OFF) {
         /* do something */
     }
@@ -1965,6 +1973,13 @@ static void bttool_execute_command_cb(uv_async_queue_t* handle, void* buffer)
     char* tmpstr = buffer;
     bttool_t* bttool = handle->data;
 
+    /* handle internal uninit command from TURNING_OFF callback */
+    if (strcmp(buffer, "_uninit") == 0) {
+        bt_tool_uninit(g_bttool_ins);
+        free(buffer);
+        return;
+    }
+
     memset(_argv, 0, sizeof(_argv));
 
     // 1. split command
@@ -2138,6 +2153,8 @@ int main(int argc, char** argv)
         g_bttool_loop = NULL;
         return -1;
     }
+
+    g_bttool_loop->data = &bttool;
 
     // Call the bttool_create_thread function to create a new thread
     // If thread creation fails, the return value is non-zero
