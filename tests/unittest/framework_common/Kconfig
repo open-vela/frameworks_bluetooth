@@ -1,0 +1,23 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+config CM_FRAMEWORK_COMMON_TEST
+	tristate "vela auto tests framework_common"
+	default y
+	depends on BLUETOOTH_UNITTEST
+	---help---
+		Enable auto tests for the vela framework_common module
+
+if CM_FRAMEWORK_COMMON_TEST
+
+config CM_FRAMEWORK_COMMON_TEST_PRIORITY
+	int "Task priority"
+	default 100
+
+config CM_FRAMEWORK_COMMON_TEST_STACKSIZE
+	int "Stack size"
+	default 8192
+
+endif
