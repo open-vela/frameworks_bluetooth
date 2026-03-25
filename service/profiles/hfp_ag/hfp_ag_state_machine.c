@@ -1200,6 +1200,7 @@ static void audio_on_exit(state_machine_t* sm)
     AG_DBG_EXIT(sm, &agsm->addr);
 
     bt_pm_sco_close(PROFILE_HFP_AG, &agsm->addr);
+    bt_pm_idle(PROFILE_HFP_AG, &agsm->addr);
     /* set sco device unavaliable */
     bt_media_set_sco_unavailable();
 
