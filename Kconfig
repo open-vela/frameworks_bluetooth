@@ -897,4 +897,20 @@ config APP_BT_SAMPLE_CODE_ACCEPTBOND
 
 endif #APP_BT_SAMPLE_CODE
 
+menuconfig BLUETOOTH_UNITTEST
+	bool "Bluetooth Unit Tests"
+	default n
+	depends on TESTING_CMOCKA
+	help
+		Enable Bluetooth cmocka unit test modules
+
+if BLUETOOTH_UNITTEST
+source "tests/unittest/framework_common/Kconfig"
+source "tests/unittest/framework_api/Kconfig"
+source "tests/unittest/service_device/Kconfig"
+source "tests/unittest/service_manager/Kconfig"
+source "tests/unittest/service_utils/Kconfig"
+source "tests/unittest/service_profiles/Kconfig"
+endif #BLUETOOTH_UNITTEST
+
 endif #BLUETOOTH

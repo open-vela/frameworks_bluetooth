@@ -1023,3 +1023,8 @@ if(CONFIG_BLUETOOTH)
   target_include_directories(libbluetooth PRIVATE ${INCDIR})
 
 endif()
+
+# Test modules
+if(EXISTS ${CMAKE_CURRENT_LIST_DIR}/tests/unittest/CMakeLists.txt)
+  include(${CMAKE_CURRENT_LIST_DIR}/tests/unittest/CMakeLists.txt)
+endif()
