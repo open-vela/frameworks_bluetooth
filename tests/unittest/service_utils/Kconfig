@@ -1,0 +1,23 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+config CM_SERVICE_UTILS_TEST
+	tristate "vela auto tests service_utils"
+	default n
+	depends on BLUETOOTH_UNITTEST
+	---help---
+		Enable auto tests for the vela service utils module
+
+if CM_SERVICE_UTILS_TEST
+
+config CM_SERVICE_UTILS_TEST_PRIORITY
+	int "Task priority"
+	default 100
+
+config CM_SERVICE_UTILS_TEST_STACKSIZE
+	int "Stack size"
+	default 16384
+
+endif
