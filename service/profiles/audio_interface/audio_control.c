@@ -415,6 +415,10 @@ void audio_control_start(uint8_t profile_id, bool started)
 
     if (!started) {
         BT_LOGD("%s, start fail", __func__);
+
+        if (audio->cmd_flag == AUDIO_CTRL_MSG_START)
+            audio_transport_reset(audio->cps);
+
         audio->cmd_flag = AUDIO_CTRL_MSG_NONE;
         return;
     }
