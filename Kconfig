@@ -905,12 +905,12 @@ menuconfig BLUETOOTH_UNITTEST
 		Enable Bluetooth cmocka unit test modules
 
 if BLUETOOTH_UNITTEST
-source "tests/unittest/framework_common/Kconfig"
-source "tests/unittest/framework_api/Kconfig"
-source "tests/unittest/service_device/Kconfig"
-source "tests/unittest/service_manager/Kconfig"
-source "tests/unittest/service_utils/Kconfig"
-source "tests/unittest/service_profiles/Kconfig"
+source "$APPSDIR/frameworks/connectivity/bluetooth/tests/unittest/framework_common/Kconfig"
+source "$APPSDIR/frameworks/connectivity/bluetooth/tests/unittest/framework_api/Kconfig"
+source "$APPSDIR/frameworks/connectivity/bluetooth/tests/unittest/service_device/Kconfig"
+source "$APPSDIR/frameworks/connectivity/bluetooth/tests/unittest/service_manager/Kconfig"
+source "$APPSDIR/frameworks/connectivity/bluetooth/tests/unittest/service_utils/Kconfig"
+source "$APPSDIR/frameworks/connectivity/bluetooth/tests/unittest/service_profiles/Kconfig"
 endif #BLUETOOTH_UNITTEST
 
 endif #BLUETOOTH
