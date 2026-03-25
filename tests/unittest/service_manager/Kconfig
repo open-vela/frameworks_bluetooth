@@ -1,0 +1,23 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+config CM_SERVICE_MANAGER_TEST
+	tristate "vela auto tests service_manager"
+	default n
+	depends on TESTING_CMOCKA
+	---help---
+		Enable auto tests for the vela service manager module
+
+if CM_SERVICE_MANAGER_TEST
+
+config CM_SERVICE_MANAGER_TEST_PRIORITY
+	int "Task priority"
+	default 100
+
+config CM_SERVICE_MANAGER_TEST_STACKSIZE
+	int "Stack size"
+	default DEFAULT_TASK_STACKSIZE
+
+endif

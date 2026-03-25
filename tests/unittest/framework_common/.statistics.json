@@ -1,0 +1,10 @@
+{
+    "user": "huangyulong3",
+    "module": "framework_common",
+    "module_path": "frameworks/connectivity/bluetooth/tests/velatest/framework_common",
+    "test_case_count": 101,
+    "compile_fix_rounds": 0,
+    "test_fix_rounds": 0,
+    "manual_modification_lines": 0,
+    "total_code_lines": 2489
+}

@@ -897,4 +897,11 @@ config APP_BT_SAMPLE_CODE_ACCEPTBOND
 
 endif #APP_BT_SAMPLE_CODE
 
+source "$APPSDIR/frameworks/connectivity/bluetooth/tests/unittest/framework_common/Kconfig"
+source "$APPSDIR/frameworks/connectivity/bluetooth/tests/unittest/framework_api/Kconfig"
+source "$APPSDIR/frameworks/connectivity/bluetooth/tests/unittest/service_device/Kconfig"
+source "$APPSDIR/frameworks/connectivity/bluetooth/tests/unittest/service_manager/Kconfig"
+source "$APPSDIR/frameworks/connectivity/bluetooth/tests/unittest/service_utils/Kconfig"
+source "$APPSDIR/frameworks/connectivity/bluetooth/tests/unittest/service_profiles/Kconfig"
+
 endif #BLUETOOTH

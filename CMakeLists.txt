@@ -1000,3 +1000,6 @@ if(CONFIG_BLUETOOTH)
   target_include_directories(libbluetooth PRIVATE ${INCDIR})
 
 endif()
+
+# Test modules
+include(${CMAKE_CURRENT_LIST_DIR}/tests/velatest/CMakeLists.txt)
