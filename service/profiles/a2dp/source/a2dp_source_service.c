@@ -595,6 +595,11 @@ static int a2dp_src_get_state(void)
     return 1;
 }
 
+static bt_status_t a2dp_source_set_bitpool(uint8_t bitpool)
+{
+    return bt_sal_a2dp_source_set_bitpool(bitpool);
+}
+
 static const a2dp_source_interface_t a2dp_sourceInterface = {
     .size = sizeof(a2dp_sourceInterface),
     .register_callbacks = a2dp_source_register_callbacks,
@@ -606,6 +611,7 @@ static const a2dp_source_interface_t a2dp_sourceInterface = {
     .disconnect = a2dp_source_disconnect,
     .set_silence_device = a2dp_source_set_silence_device,
     .set_active_device = a2dp_source_set_active_device,
+    .set_bitpool = a2dp_source_set_bitpool,
 };
 
 static const void* get_a2dp_source_profile_interface(void)

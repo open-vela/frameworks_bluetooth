@@ -135,6 +135,11 @@ void bt_socket_server_a2dp_source_process(service_poll_t* poll,
             &packet->a2dp_source_pl._bt_a2dp_source_set_active_device.addr);
         break;
     }
+    case BT_A2DP_SOURCE_SET_BITPOOL: {
+        packet->a2dp_source_r.status = BTSYMBOLS(bt_a2dp_source_set_bitpool)(ins,
+            packet->a2dp_source_pl._bt_a2dp_source_set_bitpool.bitpool);
+        break;
+    }
     case BT_A2DP_SOURCE_SET_SILENCE_DEVICE: {
         packet->a2dp_source_r.status = BTSYMBOLS(bt_a2dp_source_set_active_device)(ins,
             &packet->a2dp_source_pl._bt_a2dp_source_set_silence_device.addr);

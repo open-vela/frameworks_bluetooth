@@ -135,6 +135,11 @@ void bt_socket_server_a2dp_sink_process(service_poll_t* poll,
             &packet->a2dp_sink_pl._bt_a2dp_sink_set_active_device.addr);
         break;
     }
+    case BT_A2DP_SINK_SET_BITPOOL: {
+        packet->a2dp_sink_r.status = BTSYMBOLS(bt_a2dp_sink_set_bitpool)(ins,
+            packet->a2dp_sink_pl._bt_a2dp_sink_set_bitpool.bitpool);
+        break;
+    }
     case BT_A2DP_SINK_REGISTER_CALLBACKS: {
         if (ins->a2dp_sink_cookie == NULL) {
             a2dp_sink_interface_t* profile = get_profile_service();

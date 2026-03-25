@@ -90,6 +90,13 @@ typedef struct {
      */
     bt_status_t (*set_active_device)(bt_address_t* addr);
 
+    /**
+     * @brief Set SBC max bitpool value
+     * @param[in] bitpool  SBC max bitpool value (2-250).
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
+    bt_status_t (*set_bitpool)(uint8_t bitpool);
+
 } a2dp_source_interface_t;
 
 /*

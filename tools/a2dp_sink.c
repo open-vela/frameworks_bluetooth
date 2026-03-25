@@ -26,11 +26,13 @@
 static int connect_cmd(void* handle, int argc, char* argv[]);
 static int disconnect_cmd(void* handle, int argc, char* argv[]);
 static int get_state_cmd(void* handle, int argc, char* argv[]);
+static int set_bitpool_cmd(void* handle, int argc, char* argv[]);
 
 static bt_command_t g_a2dp_sink_tables[] = {
     { "connect", connect_cmd, 0, "\"establish a2dp sink signal and stream connection, params: <address>\"" },
     { "disconnect", disconnect_cmd, 0, "\"disconnect a2dp sink signal and stream connection, params: <address>\"" },
     { "state", get_state_cmd, 0, "\"get a2dp sink connection or audio state , params: <address>\"" },
+    { "setbitpool", set_bitpool_cmd, 0, "\"set SBC max bitpool value, params: <bitpool(2-250)>\"" },
 };
 
 static void* sink_cbks_cookie = NULL;
@@ -86,6 +88,24 @@ static int get_state_cmd(void* handle, int argc, char* argv[])
 
     int state = bt_a2dp_sink_get_connection_state(handle, &addr);
     PRINT("A2DP sink connection state: %d", state);
+    return CMD_OK;
+}
+
+static int set_bitpool_cmd(void* handle, int argc, char* argv[])
+{
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    int bitpool = atoi(argv[0]);
+    if (bitpool < 2 || bitpool > 250) {
+        PRINT("Invalid bitpool value, range: 2-250");
+        return CMD_INVALID_PARAM;
+    }
+
+    if (bt_a2dp_sink_set_bitpool(handle, (uint8_t)bitpool) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    PRINT("Set A2DP sink SBC max bitpool to %d", bitpool);
     return CMD_OK;
 }
 

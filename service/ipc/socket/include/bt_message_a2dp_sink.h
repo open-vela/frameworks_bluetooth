@@ -24,6 +24,7 @@ BT_A2DP_SINK_MESSAGE_START,
     BT_A2DP_SINK_CONNECT,
     BT_A2DP_SINK_DISCONNECT,
     BT_A2DP_SINK_SET_ACTIVE_DEVICE,
+    BT_A2DP_SINK_SET_BITPOOL,
     BT_A2DP_SINK_MESSAGE_END,
 #endif
 
@@ -69,6 +70,9 @@ BT_A2DP_SINK_MESSAGE_START,
             _bt_a2dp_sink_connect,
             _bt_a2dp_sink_disconnect,
             _bt_a2dp_sink_set_active_device;
+        union {
+            uint8_t bitpool;
+        } _bt_a2dp_sink_set_bitpool;
     } bt_message_a2dp_sink_t;
 
     typedef union {

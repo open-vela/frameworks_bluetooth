@@ -25,6 +25,7 @@ BT_A2DP_SOURCE_MESSAGE_START,
     BT_A2DP_SOURCE_DISCONNECT,
     BT_A2DP_SOURCE_SET_SILENCE_DEVICE,
     BT_A2DP_SOURCE_SET_ACTIVE_DEVICE,
+    BT_A2DP_SOURCE_SET_BITPOOL,
     BT_A2DP_SOURCE_MESSAGE_END,
 #endif
 
@@ -74,6 +75,9 @@ BT_A2DP_SOURCE_MESSAGE_START,
             bt_address_t addr;
             uint8_t silence; /* boolean */
         } _bt_a2dp_source_set_silence_device;
+        union {
+            uint8_t bitpool;
+        } _bt_a2dp_source_set_bitpool;
     } bt_message_a2dp_source_t;
 
     typedef union {

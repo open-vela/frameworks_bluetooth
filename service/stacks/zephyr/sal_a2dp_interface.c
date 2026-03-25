@@ -1629,6 +1629,52 @@ bt_status_t bt_sal_a2dp_source_init(uint8_t max_connections)
 #endif /* CONFIG_BLUETOOTH_A2DP_SOURCE */
 }
 
+bt_status_t bt_sal_a2dp_source_set_bitpool(uint8_t bitpool)
+{
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
+    if (bitpool < 2 || bitpool > 250) {
+        BT_LOGE("%s, invalid bitpool value: %u, range: 2-250", __func__, bitpool);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    /* Update source endpoint capability */
+    sbc_src_ie.codec_ie[3] = bitpool;
+
+    /* Update all source preferred configs */
+    for (size_t i = 0; i < ARRAY_SIZE(src_sbc_ie_default); i++) {
+        src_sbc_ie_default[i].codec_ie[3] = bitpool;
+    }
+
+    BT_LOGI("%s, set source SBC max bitpool to %u", __func__, bitpool);
+    return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif /* CONFIG_BLUETOOTH_A2DP_SOURCE */
+}
+
+bt_status_t bt_sal_a2dp_sink_set_bitpool(uint8_t bitpool)
+{
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+    if (bitpool < 2 || bitpool > 250) {
+        BT_LOGE("%s, invalid bitpool value: %u, range: 2-250", __func__, bitpool);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    /* Update sink endpoint capability */
+    sbc_snk_ie.codec_ie[3] = bitpool;
+
+    /* Update all sink preferred configs */
+    for (size_t i = 0; i < ARRAY_SIZE(snk_sbc_ie_default); i++) {
+        snk_sbc_ie_default[i].codec_ie[3] = bitpool;
+    }
+
+    BT_LOGI("%s, set sink SBC max bitpool to %u", __func__, bitpool);
+    return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif /* CONFIG_BLUETOOTH_A2DP_SINK */
+}
+
 bt_status_t bt_sal_a2dp_sink_init(uint8_t max_connections)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK

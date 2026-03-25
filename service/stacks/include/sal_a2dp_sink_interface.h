@@ -26,6 +26,7 @@ void bt_sal_a2dp_sink_cleanup(void);
 bt_status_t bt_sal_a2dp_sink_connect(bt_controller_id_t id, bt_address_t* addr);
 bt_status_t bt_sal_a2dp_sink_disconnect(bt_controller_id_t id, bt_address_t* addr);
 bt_status_t bt_sal_a2dp_sink_start_stream(bt_controller_id_t id, bt_address_t* addr);
+bt_status_t bt_sal_a2dp_sink_set_bitpool(uint8_t bitpool);
 
 void bt_sal_a2dp_sink_event_callback(a2dp_event_t* event);
 

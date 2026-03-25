@@ -264,6 +264,15 @@ int enable_source_device(void* ins, bt_address_t* addr)
  */
 bt_status_t BTSYMBOLS(bt_a2dp_sink_set_active_device)(bt_instance_t* ins, bt_address_t* addr);
 
+/**
+ * @brief Set SBC max bitpool value for A2DP Sink.
+ *
+ * @param ins - Bluetooth client instance.
+ * @param bitpool - SBC max bitpool value (2-250).
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_a2dp_sink_set_bitpool)(bt_instance_t* ins, uint8_t bitpool);
+
 #ifdef __cplusplus
 }
 #endif

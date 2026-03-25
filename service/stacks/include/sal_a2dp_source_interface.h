@@ -29,6 +29,7 @@ bt_status_t bt_sal_a2dp_source_start_stream(bt_controller_id_t id, bt_address_t*
 bt_status_t bt_sal_a2dp_source_suspend_stream(bt_controller_id_t id, bt_address_t* remote_addr);
 bt_status_t bt_sal_a2dp_source_send_data(bt_controller_id_t id, bt_address_t* remote_addr,
     uint8_t* buf, uint16_t nbytes, uint8_t nb_frames, uint64_t timestamp, uint32_t seq);
+bt_status_t bt_sal_a2dp_source_set_bitpool(uint8_t bitpool);
 
 void bt_sal_a2dp_source_event_callback(a2dp_event_t* event);
 

@@ -407,6 +407,11 @@ static int a2dp_sink_get_state(void)
     return 1;
 }
 
+static bt_status_t a2dp_sink_set_bitpool(uint8_t bitpool)
+{
+    return bt_sal_a2dp_sink_set_bitpool(bitpool);
+}
+
 static const a2dp_sink_interface_t a2dp_sinkInterface = {
     .size = sizeof(a2dp_sinkInterface),
     .register_callbacks = a2dp_sink_register_callbacks,
@@ -417,6 +422,7 @@ static const a2dp_sink_interface_t a2dp_sinkInterface = {
     .connect = a2dp_sink_connect,
     .disconnect = a2dp_sink_disconnect,
     .set_active_device = a2dp_sink_set_active_device,
+    .set_bitpool = a2dp_sink_set_bitpool,
 };
 
 static const void* get_a2dp_sink_profile_interface(void)

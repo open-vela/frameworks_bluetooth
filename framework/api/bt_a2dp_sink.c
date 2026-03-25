@@ -84,3 +84,10 @@ bt_status_t BTSYMBOLS(bt_a2dp_sink_set_active_device)(bt_instance_t* ins, bt_add
 
     return profile->set_active_device(addr);
 }
+
+bt_status_t BTSYMBOLS(bt_a2dp_sink_set_bitpool)(bt_instance_t* ins, uint8_t bitpool)
+{
+    a2dp_sink_interface_t* profile = get_profile_service();
+
+    return profile->set_bitpool(bitpool);
+}

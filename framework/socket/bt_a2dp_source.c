@@ -192,3 +192,19 @@ bt_status_t bt_a2dp_source_set_active_device(bt_instance_t* ins, bt_address_t* a
 
     return packet.a2dp_source_r.status;
 }
+
+bt_status_t bt_a2dp_source_set_bitpool(bt_instance_t* ins, uint8_t bitpool)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+    packet.a2dp_source_pl._bt_a2dp_source_set_bitpool.bitpool = bitpool;
+
+    status = bt_socket_client_sendrecv(ins, &packet, BT_A2DP_SOURCE_SET_BITPOOL);
+    if (status != BT_STATUS_SUCCESS) {
+        return status;
+    }
+
+    return packet.a2dp_source_r.status;
+}
