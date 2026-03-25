@@ -1898,6 +1898,13 @@ bt_status_t bt_sal_a2dp_source_send_data(bt_controller_id_t id, bt_address_t* re
         return BT_STATUS_NOMEM;
     }
 
+    if (nbytes > net_buf_tailroom(media_packet_buf)) {
+        BT_LOGE("%s, nbytes(%u) exceeds tailroom(%zu)", __func__,
+            nbytes, net_buf_tailroom(media_packet_buf));
+        net_buf_unref(media_packet_buf);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     // buf = Media Packet Header(AVDTP_RTP_HEADER_LEN) + Media Payload
     // nbytes = Media Payload Length
     net_buf_add_mem(media_packet_buf, &buf[AVDTP_RTP_HEADER_LEN], nbytes);
