@@ -623,11 +623,10 @@ static void zblue_hf_disconnected(struct bt_hfp_hf* hf)
         BT_LOGE("%s, Failed to find connection", __func__);
         return;
     }
-    bt_address_t* bd_addr = &conn->addr;
 
-    hfp_hf_on_connection_state_changed(bd_addr, PROFILE_STATE_DISCONNECTING, 0, 0);
-    hfp_hf_on_connection_state_changed(bd_addr, PROFILE_STATE_DISCONNECTED, 0, 0);
-    bt_sal_cm_profile_disconnected_callback(bd_addr, PROFILE_HFP_HF, CONN_ID_DEFAULT);
+    hfp_hf_on_connection_state_changed(&conn->addr, PROFILE_STATE_DISCONNECTING, 0, 0);
+    hfp_hf_on_connection_state_changed(&conn->addr, PROFILE_STATE_DISCONNECTED, 0, 0);
+    bt_sal_cm_profile_disconnected_callback(&conn->addr, PROFILE_HFP_HF, CONN_ID_DEFAULT);
 
     bt_list_remove(g_sal_hf_conn_list, conn);
 }
