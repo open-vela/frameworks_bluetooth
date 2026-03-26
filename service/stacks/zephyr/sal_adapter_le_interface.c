@@ -127,9 +127,6 @@ static void zblue_on_cs_procedure_enabled(struct bt_conn* conn,
     struct bt_conn_le_cs_procedure_enable_complete* params);
 #endif /* CONFIG_BLUETOOTH_LE_CS &&  CONFIG_BT_CHANNEL_SOUNDING*/
 
-static le_conn_info_t* le_conn_add(const bt_address_t* addr);
-static le_conn_info_t* le_conn_find(const bt_address_t* addr);
-
 static const struct bt_conn_cb g_conn_cbs = {
     .connected = zblue_on_connected,
     .disconnected = zblue_on_disconnected,
