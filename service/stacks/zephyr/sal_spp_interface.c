@@ -768,8 +768,13 @@ static uint8_t sdp_discovered_cb(struct bt_conn* conn, struct bt_sdp_client_resu
     err = spp_connect_with_channel(spp_conn, scn);
     if (err < 0) {
         BT_LOGE("SPP connect RFCOMM fail, err:%d", err);
-        ret = BT_SDP_DISCOVER_UUID_STOP;
-        goto fail;
+        /* RFCOMM connect failed, clean up resources directly */
+        spp_on_connection_state_changed(&spp_conn->addr, spp_conn->conn_port,
+            PROFILE_STATE_DISCONNECTED);
+        spp_conn_lock();
+        bt_list_remove(g_spp_manager.connections, spp_conn);
+        spp_conn_unlock();
+        return BT_SDP_DISCOVER_UUID_STOP;
     }
 
     spp_conn->spp_client->discovered = true;
