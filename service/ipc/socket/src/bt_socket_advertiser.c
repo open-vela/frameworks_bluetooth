@@ -34,6 +34,7 @@
 #include <sys/un.h>
 
 #include "bt_internal.h"
+#include "utils/log.h"
 
 #include "advertising.h"
 #include "bluetooth.h"
@@ -82,10 +83,38 @@ static void on_advertising_stopped_cb(bt_advertiser_t* adv, uint8_t adv_id)
     free(adv);
 }
 
+static void on_advertising_terminated_cb(bt_advertiser_t* adv,
+    uint8_t adv_id, bt_le_address_t* addr)
+{
+    bt_advertiser_remote_t* adver = adv;
+    bt_message_packet_t packet = { 0 };
+
+    /* Send stopped first for backward compatibility */
+    BT_LOGD("adv_id:%d ipc send stopped+terminated, has_addr:%d", adv_id, (addr != NULL));
+    packet.adv_cb._on_advertising_stopped.adver = adver->remote;
+    packet.adv_cb._on_advertising_stopped.adv_id = adv_id;
+    bt_socket_server_send(adver->ins, &packet, BT_LE_ON_ADVERTISER_STOPPED);
+
+    /* Then send terminated for new clients */
+    memset(&packet, 0, sizeof(packet));
+    packet.adv_cb._on_advertising_terminated.adver = adver->remote;
+    packet.adv_cb._on_advertising_terminated.adv_id = adv_id;
+    packet.adv_cb._on_advertising_terminated.has_addr = (addr != NULL);
+    if (addr) {
+        memcpy(&packet.adv_cb._on_advertising_terminated.addr,
+               addr, sizeof(bt_le_address_t));
+    }
+    bt_socket_server_send(adver->ins, &packet,
+        BT_LE_ON_ADVERTISER_TERMINATED);
+
+    free(adv);
+}
+
 static advertiser_callback_t g_advertiser_socket_cb = {
     sizeof(g_advertiser_socket_cb),
     on_advertising_start_cb,
     on_advertising_stopped_cb,
+    on_advertising_terminated_cb,
 };
 
 /****************************************************************************
@@ -151,9 +180,30 @@ int bt_socket_client_advertiser_callback(service_poll_t* poll,
     case BT_LE_ON_ADVERTISER_STOPPED: {
         bt_advertiser_remote_t* adver = INT2PTR(bt_advertiser_remote_t*) packet->adv_cb._on_advertising_stopped.adver;
 
+        if (adver->terminated_received) {
+            BT_LOGD("adv stopped skipped, terminated already received");
+            adver->terminated_received = false;
+            break;
+        }
+
         CALLBACK_REMOTE(adver, advertiser_callback_t,
             on_advertising_stopped,
             packet->adv_cb._on_advertising_stopped.adv_id);
+        free(adver);
+        break;
+    }
+    case BT_LE_ON_ADVERTISER_TERMINATED: {
+        bt_advertiser_remote_t* adver = INT2PTR(bt_advertiser_remote_t*) packet->adv_cb._on_advertising_terminated.adver;
+
+        adver->terminated_received = true;
+
+        bt_le_address_t* addr =
+            packet->adv_cb._on_advertising_terminated.has_addr
+            ? &packet->adv_cb._on_advertising_terminated.addr : NULL;
+
+        CALLBACK_REMOTE(adver, advertiser_callback_t,
+            on_advertising_terminated,
+            packet->adv_cb._on_advertising_terminated.adv_id, addr);
         free(adver);
         break;
     }

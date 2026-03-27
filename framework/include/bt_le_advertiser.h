@@ -98,46 +98,51 @@ typedef void bt_advertiser_t;
 /**
  * @brief Callback for advertising started notification.
  *
- * This callback is used to notify the application of the adverter handle, ID, and
- * start status of the advertiser. It will be triggered in the following cases:
- * 1. Advertiser ID allocates failed or the return value of the function "bt_sal_le_start_adv"
- *    is not "BT_STATUS_SUCCESS" within the advertiser starting event.
- * 2. 1 second after the successful notification of the start of LE advertising to the
- *    Bluetooth protocol stack.
+ * Always triggered to report the result of an advertising start attempt.
+ * - BT_ADV_STATUS_SUCCESS: protocol stack confirmed advertising started.
+ * - BT_ADV_STATUS_START_NOMEM: advertiser ID allocation failed.
+ * - BT_ADV_STATUS_STACK_ERR: bt_sal_le_start_adv returned an error.
+ * - BT_ADV_STATUS_START_TIMEOUT: protocol stack did not respond within 1 second.
  *
- * @param adv - Notifies the allocated Advertiser handle.
- * @param adv_id - Notifies the allocated Advertiser ID.
- * @param status - Notifies the starting status of the advertiser. BT_ADV_STATUS_SUCCESS
- *                 indicates that the advertiser has started successfully.
- *
- * **Example:**
- * @code
-void on_advertising_start(bt_advertiser_t* adv, uint8_t adv_id, uint8_t status)
-{
-    printf("on_advertising_start, adv_id: %d, status: %d\n", adv_id, status);
-}
- * @endcode
+ * @param adv - Advertiser handle.
+ * @param adv_id - Advertiser ID (0 on allocation failure).
+ * @param status - Starting status code.
  */
 typedef void (*on_advertising_start_cb_t)(bt_advertiser_t* adv, uint8_t adv_id, uint8_t status);
 
 /**
  * @brief Callback for advertising stopped notification.
  *
- * This callback is used to notify the application of the handle and ID corresponding to
- * the stopped advertising.
+ * Triggered when the Host explicitly stops advertising via bt_le_stop_advertising()
+ * or bt_le_stop_advertising_id(). This callback is mutually exclusive with
+ * on_advertising_terminated — they will never both fire for the same advertising set.
  *
  * @param adv - Advertiser handle.
  * @param adv_id - Advertiser ID.
- *
- * **Example:**
- * @code
-void on_advertising_stopped(bt_advertiser_t* adv, uint8_t adv_id)
-{
-    printf("on_advertising_stopped, adv_id: %d\n", adv_id);
-}
- * @endcode
  */
 typedef void (*on_advertising_stopped_cb_t)(bt_advertiser_t* adv, uint8_t adv_id);
+
+/**
+ * @brief Callback for advertising terminated notification.
+ *
+ * Triggered when the Controller autonomously terminates advertising. This happens
+ * in three cases defined by HCI LE Advertising Set Terminated event:
+ * - A connection is established (addr is non-NULL, carrying the peer address).
+ * - The advertising duration expires.
+ * - The maximum number of advertising events is reached.
+ *
+ * This callback is NOT triggered when the Host explicitly stops advertising.
+ * It is mutually exclusive with on_advertising_stopped.
+ *
+ * If this callback is not registered (NULL), the stack falls back to
+ * on_advertising_stopped for backward compatibility.
+ *
+ * @param adv - Advertiser handle.
+ * @param adv_id - Advertiser ID.
+ * @param addr - Peer BLE address (with address type) if terminated due to connection,
+ *               NULL if terminated due to duration/max events.
+ */
+typedef void (*on_advertising_terminated_cb_t)(bt_advertiser_t* adv, uint8_t adv_id, bt_le_address_t* addr);
 
 /**
  * @cond
@@ -151,6 +156,7 @@ typedef struct {
     uint32_t size;
     on_advertising_start_cb_t on_advertising_start;
     on_advertising_stopped_cb_t on_advertising_stopped;
+    on_advertising_terminated_cb_t on_advertising_terminated;
 } advertiser_callback_t;
 
 /* * BLE ADV Parameters */

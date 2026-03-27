@@ -22,10 +22,12 @@
 
 enum advertising_state {
     LE_ADVERTISING_STARTED = 0,
-    LE_ADVERTISING_STOPPED
+    LE_ADVERTISING_STOPPED,
+    LE_ADVERTISING_TERMINATED,
 };
 
 void advertising_on_state_changed(uint8_t adv_id, uint8_t state);
+void advertising_on_terminated(uint8_t adv_id, bt_le_address_t* addr);
 bt_advertiser_t* start_advertising(void* remote,
     ble_adv_params_t* params,
     uint8_t* adv_data,

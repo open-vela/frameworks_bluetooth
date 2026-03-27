@@ -18,6 +18,7 @@
 #include "include/sal_le_advertise_interface.h"
 
 #include "advertising.h"
+#include "bt_addr.h"
 #include "sal_interface.h"
 #include "service_loop.h"
 #include "utils/log.h"
@@ -122,7 +123,7 @@ static bt_status_t parse_bt_adv_data(uint8_t* raw, uint16_t raw_len,
     return BT_STATUS_SUCCESS;
 }
 
-static void ext_adv_terminated_cb(struct bt_le_ext_adv* adv)
+static void ext_adv_sent(struct bt_le_ext_adv* adv, struct bt_le_ext_adv_sent_info* info)
 {
     int index;
 
@@ -134,22 +135,36 @@ static void ext_adv_terminated_cb(struct bt_le_ext_adv* adv)
         return;
     }
 
-    advertising_on_state_changed(g_adv_sets[index]->adv_id, LE_ADVERTISING_STOPPED);
+    BT_LOGD("%s, adv_id:%d terminated by timeout/max_events", __func__,
+        g_adv_sets[index]->adv_id);
+    advertising_on_terminated(g_adv_sets[index]->adv_id, NULL);
     zblue_le_ext_delete(g_adv_sets[index]);
-}
-
-static void ext_adv_sent(struct bt_le_ext_adv* adv, struct bt_le_ext_adv_sent_info* info)
-{
-    BT_LOGD("%s ", __func__);
-
-    ext_adv_terminated_cb(adv);
 }
 
 static void ext_adv_connected(struct bt_le_ext_adv* adv, struct bt_le_ext_adv_connected_info* info)
 {
+    int index;
+
     BT_LOGD("%s ", __func__);
 
-    ext_adv_terminated_cb(adv);
+    index = bt_le_ext_adv_get_index(adv);
+    if (!g_adv_sets[index]) {
+        BT_LOGE("%s, adv set index:%d null", __func__, index);
+        return;
+    }
+
+    const bt_addr_le_t *dst = bt_conn_get_dst(info->conn);
+    bt_le_address_t peer_addr;
+    memcpy(peer_addr.addr, dst->a.val, BT_ADDR_LENGTH);
+    peer_addr.addr_type = dst->type;
+
+    BT_LOGD("%s, adv_id:%d terminated by connection, peer:%02x:%02x:%02x:%02x:%02x:%02x type:%d",
+        __func__, g_adv_sets[index]->adv_id,
+        peer_addr.addr[5], peer_addr.addr[4], peer_addr.addr[3],
+        peer_addr.addr[2], peer_addr.addr[1], peer_addr.addr[0],
+        peer_addr.addr_type);
+    advertising_on_terminated(g_adv_sets[index]->adv_id, &peer_addr);
+    zblue_le_ext_delete(g_adv_sets[index]);
 }
 
 static bt_status_t zblue_le_ext_convert_param(ble_adv_params_t* params, struct bt_le_adv_param* param)

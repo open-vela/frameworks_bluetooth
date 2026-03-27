@@ -59,6 +59,8 @@ typedef struct {
     uint8_t adv_id;
     advertising_info_t* adv_info;
     uint8_t state;
+    bt_le_address_t addr;
+    bool has_addr;
 } adv_event_t;
 
 static adv_manager_t adv_manager;
@@ -267,6 +269,19 @@ static void advertiser_notify_state(void* data)
         delete_advertiser(adver);
         adver->callbacks.on_advertising_stopped(get_adver(adver), advstate->adv_id);
         destroy_advertiser(adver);
+    } else if (advstate->state == LE_ADVERTISING_TERMINATED) {
+        delete_advertiser(adver);
+        if (adver->callbacks.on_advertising_terminated) {
+            BT_LOGD("adv_id:%d notify terminated, has_addr:%d", advstate->adv_id, advstate->has_addr);
+            adver->callbacks.on_advertising_terminated(
+                get_adver(adver), advstate->adv_id,
+                advstate->has_addr ? &advstate->addr : NULL);
+        } else if (adver->callbacks.on_advertising_stopped) {
+            BT_LOGD("adv_id:%d terminated fallback to stopped", advstate->adv_id);
+            adver->callbacks.on_advertising_stopped(
+                get_adver(adver), advstate->adv_id);
+        }
+        destroy_advertiser(adver);
     }
 
 exit:
@@ -306,6 +321,27 @@ void advertising_on_state_changed(uint8_t adv_id, uint8_t state)
 
     advstate->adv_id = adv_id;
     advstate->state = state;
+    advstate->has_addr = false;
+    do_in_service_loop(advertiser_notify_state, advstate);
+}
+
+void advertising_on_terminated(uint8_t adv_id, bt_le_address_t* addr)
+{
+    adv_event_t* advstate = malloc(sizeof(adv_event_t));
+
+    if (!advstate) {
+        BT_LOGE("adv_id: %d terminated malloc failed", adv_id);
+        return;
+    }
+
+    advstate->adv_id = adv_id;
+    advstate->state = LE_ADVERTISING_TERMINATED;
+    if (addr) {
+        memcpy(&advstate->addr, addr, sizeof(bt_le_address_t));
+        advstate->has_addr = true;
+    } else {
+        advstate->has_addr = false;
+    }
     do_in_service_loop(advertiser_notify_state, advstate);
 }
 
