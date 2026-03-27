@@ -299,6 +299,7 @@ static spp_device_t* alloc_new_device(bt_address_t* addr, int16_t scn,
     device = malloc(sizeof(spp_device_t));
     if (device == NULL) {
         BT_LOGE("No memory for spp device");
+        index_free(g_spp_handle.allocator, conn_id);
         return NULL;
     }
 
