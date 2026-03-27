@@ -35,10 +35,10 @@ extern "C" {
  */
 
 /**
- * @brief Unknow server channel number
- *
+ * @brief Unknown server channel number
+ * @note SCN valid range is 1-30 per RFCOMM spec, 0 means unspecified
  */
-#define UNKNOWN_SERVER_CHANNEL_NUM -1
+#define UNKNOWN_SERVER_CHANNEL_NUM 0
 
 /**
  * @brief Serial Port Profile (SPP) UUID
