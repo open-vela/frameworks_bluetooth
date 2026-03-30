@@ -136,7 +136,7 @@ public class BtSock {
 
         mSockRole = SOCK_ROLE_CLIENT;
 
-        BluetoothDevice device = bluetoothAdapter.getRemoteDevice(bdAddr);
+        BluetoothDevice device = bluetoothAdapter.getRemoteDevice(bdAddr.toUpperCase());
 
         // Connect remote device with different API, based on mType
         connectRemote(device, var);
