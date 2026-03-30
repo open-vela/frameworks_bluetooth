@@ -22,6 +22,7 @@
 #include <stdlib.h>
 
 #include "a2dp_device.h"
+#include "adapter_internel.h"
 #include "bt_list.h"
 #include "sal_a2dp_sink_interface.h"
 #include "sal_a2dp_source_interface.h"
@@ -1243,11 +1244,37 @@ static void a2dp_acp_discover_timeout(service_timer_t* timer, void* data)
     bt_a2dp_discover(a2dp_info->a2dp, &bt_discover_param);
 }
 
+#define SAL_A2DP_SBC_PTS_MAX_BIT_POOL 53
+#define SAL_SBC_IE_MAX_BITPOOL_OFFSET 3
+
+static void a2dp_select_bitpool(void)
+{
+    uint8_t max_bitpool = adapter_get_pts_mode()
+        ? SAL_A2DP_SBC_PTS_MAX_BIT_POOL
+        : CONFIG_ZBLUE_A2DP_SBC_MAX_BIT_POOL;
+
+    BT_LOGI("%s, set max bitpool to %d", __func__, max_bitpool);
+
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
+    sbc_src_ie.codec_ie[SAL_SBC_IE_MAX_BITPOOL_OFFSET] = max_bitpool;
+    for (size_t i = 0; i < ARRAY_SIZE(src_sbc_ie_default); i++)
+        src_sbc_ie_default[i].codec_ie[SAL_SBC_IE_MAX_BITPOOL_OFFSET] = max_bitpool;
+#endif
+
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+    sbc_snk_ie.codec_ie[SAL_SBC_IE_MAX_BITPOOL_OFFSET] = max_bitpool;
+    for (size_t i = 0; i < ARRAY_SIZE(snk_sbc_ie_default); i++)
+        snk_sbc_ie_default[i].codec_ie[SAL_SBC_IE_MAX_BITPOOL_OFFSET] = max_bitpool;
+#endif
+}
+
 static void zblue_on_connected(struct bt_a2dp* a2dp, int err)
 {
     struct zblue_a2dp_info_t* a2dp_info;
     struct bt_conn* conn;
     BT_LOGI("%s", __func__);
+
+    a2dp_select_bitpool();
 
     a2dp_info = bt_list_find(bt_a2dp_conn, bt_a2dp_info_find_a2dp, a2dp);
 
