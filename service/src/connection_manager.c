@@ -49,7 +49,7 @@
 
 #define CM_RECONNECT_INTERVAL (12000) /* reconnect Interval */
 #define PROFILE_CONNECT_INTERVAL (500) /* Interval between HFP and A2DP */
-#define CM_RECONNECT_TIMES ((60 * 30) / 8) /* Continuous 30-mins reconnect */
+#define CM_RECONNECT_TIMES ((60 * 30 * 1000) / CM_RECONNECT_INTERVAL) /* Continuous 30-mins reconnect */
 #define CM_RSSI_UPDATE_INTERVAL_MS (5 * 1000)
 #define CM_RSSI_DUMP_INTERVAL_MS (60 * 1000)
 
