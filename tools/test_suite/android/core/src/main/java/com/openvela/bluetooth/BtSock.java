@@ -39,7 +39,7 @@ public class BtSock {
 
     private int mSockTxState;
     private final int SOCK_TX_STATE_IDLE = 0;
-    private final int SOCK_TX_STATE_SENDING = 0;
+    private final int SOCK_TX_STATE_SENDING = 1;
     private String mVar;
     public static final int MESSAGE_SOCK_LOGGING = 1;
     private BluetoothAdapter bluetoothAdapter;
