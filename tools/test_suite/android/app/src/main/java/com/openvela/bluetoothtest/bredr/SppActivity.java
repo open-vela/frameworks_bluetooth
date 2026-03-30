@@ -185,8 +185,8 @@ public class SppActivity extends AppCompatActivity {
         // DataToSend #2
         textDataToSend_2 = (EditText) findViewById(R.id.text_data_to_send_2);
 
-        // Cycles #1
-        textCycles_2 = (EditText) findViewById(R.id.text_cycles_1);
+        // Cycles #2
+        textCycles_2 = (EditText) findViewById(R.id.text_cycles_2);
 
         // Send to Client/Server #2
         Button buttonSend_2 = findViewById(R.id.button_spp_send_2);
