@@ -52,6 +52,8 @@
 
 #define STACK_CALL(func) zblue_##func
 
+static void STACK_CALL(pending_connect_complete)(void* args);
+
 typedef void (*sal_func_t)(void* args);
 
 typedef union {
@@ -116,6 +118,8 @@ struct device_context {
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 extern int zblue_main(void);
+static void sal_pending_connect_init(void);
+static void sal_pending_connect_cleanup(void);
 #ifndef CONFIG_BT_CONN_REQ_AUTO_HANDLE
 static void zblue_on_connect_req(struct bt_conn* conn, uint8_t link_type, uint8_t* cod);
 #endif
@@ -280,6 +284,10 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
 
 error:
     adapter_on_connection_state_changed(&state);
+
+    /* Dispatch to worker thread to safely operate on pending connect list */
+    sal_send_req(sal_adapter_req(PRIMARY_ADAPTER, &state.addr,
+        STACK_CALL(pending_connect_complete)));
 }
 
 static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
@@ -699,6 +707,7 @@ bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
     extern void z_sys_init(void);
     z_sys_init();
     bt_sal_cm_conn_init();
+    sal_pending_connect_init();
 
     return BT_STATUS_SUCCESS;
 #else
@@ -709,6 +718,7 @@ bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
 void bt_sal_cleanup(void)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+    sal_pending_connect_cleanup();
     bt_sal_cm_conn_cleanup();
 #endif
 
@@ -1412,25 +1422,125 @@ uint16_t bt_sal_get_sco_connection_handle(bt_controller_id_t id, bt_address_t* a
 }
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-static void STACK_CALL(connect)(void* args)
+static bt_list_t* g_pending_connect_list = NULL;
+
+static void sal_pending_connect_init(void)
 {
-    sal_adapter_req_t* req = args;
+    if (!g_pending_connect_list)
+        g_pending_connect_list = bt_list_new(free);
+}
+
+static void sal_pending_connect_cleanup(void)
+{
+    if (g_pending_connect_list) {
+        bt_list_free(g_pending_connect_list);
+        g_pending_connect_list = NULL;
+    }
+}
+
+static void sal_pending_connect_done(bt_address_t* addr)
+{
+    bt_list_node_t* node;
+    sal_adapter_req_t* pending;
+
+    if (!g_pending_connect_list)
+        return;
+
+    for (node = bt_list_head(g_pending_connect_list); node;
+         node = bt_list_next(g_pending_connect_list, node)) {
+        pending = (sal_adapter_req_t*)bt_list_node(node);
+        if (pending && !memcmp(&pending->addr, addr, sizeof(bt_address_t))) {
+            bt_list_remove(g_pending_connect_list, pending);
+            return;
+        }
+    }
+}
+
+static bool sal_start_connect(void)
+{
+    bt_list_node_t* node;
+    sal_adapter_req_t* pending;
     struct bt_conn* conn;
     acl_state_param_t state;
 
-    conn = bt_conn_create_br((const bt_addr_t*)&req->addr, BT_BR_CONN_PARAM_DEFAULT);
+    if (!g_pending_connect_list)
+        return false;
+
+    node = bt_list_head(g_pending_connect_list);
+    if (!node)
+        return false;
+
+    pending = (sal_adapter_req_t*)bt_list_node(node);
+    if (!pending)
+        return false;
+
+    conn = bt_conn_create_br((const bt_addr_t*)&pending->addr, BT_BR_CONN_PARAM_DEFAULT);
     if (!conn) {
-        BT_LOGW("bt_conn_create_br Connection failed");
-        return;
+        bt_list_remove(g_pending_connect_list, pending);
+        BT_LOGW("bt_conn_create_br failed");
+        return false;
     }
 
     memset(&state, 0, sizeof(state));
     state.transport = BT_TRANSPORT_BREDR;
     state.connection_state = CONNECTION_STATE_CONNECTING;
-    memcpy(&state.addr, &req->addr, sizeof(bt_address_t));
+    memcpy(&state.addr, &pending->addr, sizeof(bt_address_t));
     adapter_on_connection_state_changed(&state);
 
     bt_conn_unref(conn);
+    return true;
+}
+
+static void STACK_CALL(pending_connect_complete)(void* args)
+{
+    sal_adapter_req_t* req = args;
+
+    sal_pending_connect_done(&req->addr);
+    sal_start_connect();
+}
+
+static bool sal_pending_connect_exists(bt_address_t* addr)
+{
+    bt_list_node_t* node;
+    sal_adapter_req_t* pending;
+
+    if (!g_pending_connect_list)
+        return false;
+
+    for (node = bt_list_head(g_pending_connect_list); node;
+         node = bt_list_next(g_pending_connect_list, node)) {
+        pending = (sal_adapter_req_t*)bt_list_node(node);
+        if (pending && !memcmp(&pending->addr, addr, sizeof(bt_address_t)))
+            return true;
+    }
+
+    return false;
+}
+
+static void STACK_CALL(connect)(void* args)
+{
+    sal_adapter_req_t* req = args;
+    sal_adapter_req_t* pending;
+
+    if (sal_pending_connect_exists(&req->addr)) {
+        BT_LOGD("bt_sal_connect: already connecting or queued");
+        return;
+    }
+
+    pending = zalloc(sizeof(sal_adapter_req_t));
+    if (!pending)
+        return;
+
+    memcpy(&pending->addr, &req->addr, sizeof(bt_address_t));
+    bt_list_add_tail(g_pending_connect_list, pending);
+
+    if (bt_list_length(g_pending_connect_list) > 1) {
+        BT_LOGD("bt_sal_connect: queued pending connect");
+        return;
+    }
+
+    if (!sal_start_connect())
+        BT_LOGW("bt_sal_connect: first connection failed");
 }
 #endif
 
