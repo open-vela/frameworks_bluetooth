@@ -148,6 +148,8 @@ static void zblue_on_br_pairing_complete_ctkd(struct bt_conn* conn, bool is_link
 static void zblue_on_br_pairing_complete(struct bt_conn* conn, bool bonding_flag);
 static void zblue_on_br_pairing_failed(struct bt_conn* conn, enum bt_security_err reason);
 static void zblue_on_br_bond_deleted(uint8_t id, const bt_addr_le_t* peer);
+bt_status_t bt_sal_disconnect_internal(bt_controller_id_t id, bt_address_t* addr, uint8_t reason);
+bt_status_t bt_sal_remove_bond_internal(bt_controller_id_t id, bt_address_t* addr);
 static void zblue_register_callback(void);
 static void zblue_unregister_callback(void);
 #if defined(CONFIG_SETTINGS_ZBLUE)
@@ -362,7 +364,7 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
 {
     bt_address_t addr;
     struct bt_conn_info info;
-    int ret;
+    bt_status_t ret;
     bool encrypted = false;
 
     if (bt_conn_get_info(conn, &info) < 0) {
@@ -375,7 +377,8 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
 
     bt_addr_set(&addr, info.br.dst->val);
 
-    BT_LOGD("%s, level: %d, required level: %d, err: %d", __func__, level, g_security_level, err);
+    BT_LOGD("%s, state: %d, level: %d, required level: %d, err: %d",
+        __func__, info.state, level, g_security_level, err);
 
     if (level >= g_security_level && err == BT_SECURITY_ERR_SUCCESS) {
         encrypted = true;
@@ -383,14 +386,23 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
         return;
     }
 
-    adapter_on_bond_state_changed(&addr, BOND_STATE_NONE, BT_TRANSPORT_BREDR, BT_STATUS_FAIL, false);
-    ret = bt_br_unpair((bt_addr_t*)info.br.dst);
-    if (ret < 0) {
-        BT_LOGE("%s, Failed to remove old BR key: %d", __func__, ret);
+    if ((level < g_security_level) && (err == BT_SECURITY_ERR_AUTH_FAIL || err == BT_SECURITY_ERR_PIN_OR_KEY_MISSING)) {
+        adapter_on_bond_state_changed(&addr, BOND_STATE_NONE, BT_TRANSPORT_BREDR, BT_STATUS_FAIL, false);
+        BT_LOGD("%s, err: %d, remove old key async", __func__, err);
+        ret = bt_sal_remove_bond_internal(PRIMARY_ADAPTER, &addr);
+        if (ret != BT_STATUS_SUCCESS) {
+            BT_LOGE("%s, Failed to remove old BR key async: %d", __func__, ret);
+        }
+    } else if (err != BT_SECURITY_ERR_SUCCESS) {
+        BT_LOGW("%s, preserve bond on BR security failure, state: %d, level: %d, required: %d, err: %d",
+            __func__, info.state, level, g_security_level, err);
     }
 
-    if (err == BT_SECURITY_ERR_AUTH_FAIL || (err == BT_SECURITY_ERR_SUCCESS && level < g_security_level)) {
-        bt_conn_disconnect(conn, BT_HCI_ERR_AUTH_FAIL);
+    if (err == BT_SECURITY_ERR_AUTH_FAIL || err == BT_SECURITY_ERR_PIN_OR_KEY_MISSING || (err == BT_SECURITY_ERR_SUCCESS && level < g_security_level)) {
+        ret = bt_sal_disconnect_internal(PRIMARY_ADAPTER, &addr, BT_HCI_ERR_AUTH_FAIL);
+        if (ret != BT_STATUS_SUCCESS) {
+            BT_LOGE("%s, disconnect async failed: %d", __func__, ret);
+        }
         return;
     }
 

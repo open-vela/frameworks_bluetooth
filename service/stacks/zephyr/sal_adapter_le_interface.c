@@ -571,12 +571,14 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
     bt_address_t* remote_addr;
     bool encrypted = false;
 
-    BT_LOGD("%s, level: %d", __func__, level);
     bt_conn_get_info(conn, &info);
 
     if (info.type != BT_CONN_TYPE_LE) {
         return;
     }
+
+    BT_LOGD("%s, state: %d, level: %d, required level: %d, err: %d",
+        __func__, info.state, level, g_security_level, err);
 
     memcpy(&le_addr, info.le.dst->a.val, sizeof(le_addr.addr));
     remote_addr = adapter_get_le_remote_address(&le_addr, info.le.dst->type);
@@ -586,14 +588,22 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
         memcpy(&addr, info.le.remote->a.val, sizeof(addr.addr));
     }
 
-    if (err && !adapter_get_pts_mode()) {
+    if (level >= g_security_level && err == BT_SECURITY_ERR_SUCCESS) {
+        encrypted = true;
+        adapter_on_encryption_state_changed(&addr, encrypted, BT_TRANSPORT_BLE);
+        return;
+    }
+
+    if (!adapter_get_pts_mode() && (level < g_security_level) && (err == BT_SECURITY_ERR_AUTH_FAIL || err == BT_SECURITY_ERR_PIN_OR_KEY_MISSING)) {
         adapter_on_bond_state_changed(&addr, BOND_STATE_NONE, BT_TRANSPORT_BLE, BT_STATUS_FAIL, false);
         BT_LOGD("%s, err: %d, remove old key async", __func__, err);
         bt_sal_le_remove_bond(PRIMARY_ADAPTER, &addr);
-    }
-
-    if (level >= BT_SECURITY_L2 && err == BT_SECURITY_ERR_SUCCESS) {
-        encrypted = true;
+    } else if (err != BT_SECURITY_ERR_SUCCESS) {
+        BT_LOGW("%s, preserve bond on LE security failure, state: %d, level: %d, required: %d, err: %d",
+            __func__, info.state, level, g_security_level, err);
+    } else if (level < g_security_level) {
+        BT_LOGW("%s, security level insufficient: achieved %d, required %d",
+            __func__, level, g_security_level);
     }
 
     adapter_on_encryption_state_changed(&addr, encrypted, BT_TRANSPORT_BLE);
