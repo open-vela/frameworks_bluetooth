@@ -57,6 +57,12 @@ typedef struct _bt_hfp_hf_slc_connect_param {
     uint8_t channel;
 } bt_hfp_hf_slc_connect_param_t;
 
+typedef struct _bt_hfp_hf_set_volume_param {
+    bt_address_t addr;
+    hfp_volume_type_t type;
+    uint8_t gain;
+} bt_hfp_hf_set_volume_param_t;
+
 typedef struct _bt_hfp_hf_call_info {
     uint8_t index;
     uint8_t type;
@@ -458,6 +464,44 @@ static void do_hf_sco_connect(service_work_t* work, void* userdata)
         BT_LOGE("%s, Failed to connect HFP HF SCO, err=%d", __func__, err);
         hfp_hf_on_audio_connection_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_DISCONNECTED, 0);
     }
+}
+
+static void do_hf_set_volume(service_work_t* work, void* userdata)
+{
+    bt_hfp_hf_set_volume_param_t* params = (bt_hfp_hf_set_volume_param_t*)userdata;
+    bt_hfp_hf_connection_t* sal_conn;
+    int ret;
+
+    if (!params) {
+        BT_LOGE("%s, params is NULL", __func__);
+        return;
+    }
+
+    sal_conn = find_connection_by_addr(&params->addr);
+    if (!sal_conn || !sal_conn->hf) {
+        BT_LOGW("%s, connection no longer available, skip set volume", __func__);
+        free(params);
+        return;
+    }
+
+    switch (params->type) {
+    case HFP_VOLUME_TYPE_MIC:
+        ret = Z_API(bt_hfp_hf_vgm)(sal_conn->hf, params->gain);
+        break;
+    case HFP_VOLUME_TYPE_SPK:
+        ret = Z_API(bt_hfp_hf_vgs)(sal_conn->hf, params->gain);
+        break;
+    default:
+        BT_LOGE("%s, Unknown volume type: %d", __func__, params->type);
+        free(params);
+        return;
+    }
+
+    if (ret) {
+        BT_LOGE("%s, Failed to set volume, type=%d, ret=%d", __func__, params->type, ret);
+    }
+
+    free(params);
 }
 
 static void do_hf_slc_connect(service_work_t* work, void* userdata)
@@ -1473,26 +1517,27 @@ bt_status_t bt_sal_hfp_hf_set_volume(bt_address_t* addr, hfp_volume_type_t type,
         return BT_STATUS_PARM_INVALID;
     }
 
-    uint8_t gain = volume > 15 ? 15 : volume;
-
-    int ret;
-    switch (type) {
-    case HFP_VOLUME_TYPE_MIC:
-        ret = Z_API(bt_hfp_hf_vgm)(sal_conn->hf, gain);
-        break;
-    case HFP_VOLUME_TYPE_SPK:
-        ret = Z_API(bt_hfp_hf_vgs)(sal_conn->hf, gain);
-        break;
-    default:
-        BT_LOGE("%s, Unknown volume type: %d", __func__, type);
-        return BT_STATUS_PARM_INVALID;
+    if (!sal_conn->hf) {
+        BT_LOGE("%s, connection is not ready", __func__);
+        return BT_STATUS_NOT_READY;
     }
 
-    if (ret == -ENOTSUP) {
-        return BT_STATUS_UNSUPPORTED;
+    bt_hfp_hf_set_volume_param_t* params = zalloc(sizeof(bt_hfp_hf_set_volume_param_t));
+    if (!params) {
+        BT_LOGE("%s, Failed to allocate params", __func__);
+        return BT_STATUS_NOMEM;
     }
 
-    SAL_CHECK_RET(ret, 0);
+    memcpy(&params->addr, addr, sizeof(bt_address_t));
+    params->type = type;
+    params->gain = volume > 15 ? 15 : volume;
+
+    if (!service_loop_work(params, do_hf_set_volume, NULL)) {
+        BT_LOGE("%s, service loop work submit failed", __func__);
+        free(params);
+        return BT_STATUS_FAIL;
+    }
+
     return BT_STATUS_SUCCESS;
 }
 
