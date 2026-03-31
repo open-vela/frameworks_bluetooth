@@ -1271,9 +1271,16 @@ static struct bt_gatt_exchange_params gatt_exchange_params = {
 
 bt_status_t bt_sal_gatt_client_send_mtu_req(bt_controller_id_t id, bt_address_t* addr, uint32_t mtu)
 {
+    struct bt_conn* conn;
     int err;
 
-    err = bt_gatt_exchange_mtu(get_le_conn_from_addr(addr), &gatt_exchange_params);
+    conn = get_le_conn_from_addr(addr);
+    if (!conn) {
+        BT_LOGE("%s, conn null", __func__);
+        return BT_STATUS_FAIL;
+    }
+
+    err = bt_gatt_exchange_mtu(conn, &gatt_exchange_params);
     if (err) {
         BT_LOGE("%s, exchange MTU failed err: %u", __func__, err);
         return BT_STATUS_FAIL;
