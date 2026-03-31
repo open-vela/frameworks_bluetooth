@@ -88,14 +88,20 @@ typedef struct _bt_hfp_ag_slc_connect_param {
     uint8_t channel;
 } bt_hfp_ag_slc_connect_param_t;
 
-typedef struct _ag_connect_sco_params {
+typedef struct _bt_hfp_ag_connect_sco_param {
     struct bt_hfp_ag* ag;
     uint8_t codec; /* e.g., BT_HFP_AG_CODEC_CVSD */
-} ag_connect_sco_params_t;
+} bt_hfp_ag_connect_sco_param_t;
 
-typedef struct _ag_disconnect_sco_params {
+typedef struct _bt_hfp_ag_disconnect_sco_param {
     struct bt_conn* sco_context;
-} ag_disconnect_sco_params_t;
+} bt_hfp_ag_disconnect_sco_param_t;
+
+typedef struct _bt_hfp_ag_set_volume_param {
+    bt_address_t addr;
+    hfp_volume_type_t type;
+    uint8_t gain;
+} bt_hfp_ag_set_volume_param_t;
 
 static void free_connection(void* data)
 {
@@ -527,14 +533,14 @@ static int hfp_codec_to_service_cfg(uint8_t codec_id, hfp_codec_config_t* cfg)
 
 static void do_ag_sco_connect(service_work_t* work, void* userdata)
 {
-    ag_connect_sco_params_t* params;
+    bt_hfp_ag_connect_sco_param_t* params;
     struct bt_hfp_ag* ag;
     uint8_t codec;
     bt_hfp_ag_connection_t* sal_conn;
     hfp_codec_config_t cfg = { 0 };
     int err;
 
-    params = (ag_connect_sco_params_t*)userdata;
+    params = (bt_hfp_ag_connect_sco_param_t*)userdata;
     if (!params) {
         BT_LOGE("%s, Invalid parameters", __func__);
         return;
@@ -580,12 +586,12 @@ static void do_ag_sco_connect(service_work_t* work, void* userdata)
 
 static void do_ag_sco_disconnect(service_work_t* work, void* userdata)
 {
-    ag_disconnect_sco_params_t* params;
+    bt_hfp_ag_disconnect_sco_param_t* params;
     struct bt_conn* sco_context;
     bt_hfp_ag_connection_t* sal_conn;
     int err;
 
-    params = (ag_disconnect_sco_params_t*)userdata;
+    params = (bt_hfp_ag_disconnect_sco_param_t*)userdata;
     if (!params) {
         BT_LOGE("%s, Invalid parameters", __func__);
         return;
@@ -628,6 +634,44 @@ static void zblue_on_sdp_disconnected(struct bt_conn* conn, const struct bt_sdp_
     bt_list_remove(g_sal_ag_conn_list, sal_conn);
     hfp_ag_on_connection_state_changed(&bd_addr, PROFILE_STATE_DISCONNECTED, 0, 0);
     bt_sal_cm_profile_disconnected_callback(&bd_addr, PROFILE_HFP_AG, CONN_ID_DEFAULT);
+}
+
+static void do_ag_set_volume(service_work_t* work, void* userdata)
+{
+    bt_hfp_ag_set_volume_param_t* params = (bt_hfp_ag_set_volume_param_t*)userdata;
+    bt_hfp_ag_connection_t* sal_conn;
+    int ret;
+
+    if (!params) {
+        BT_LOGE("%s, params is NULL", __func__);
+        return;
+    }
+
+    sal_conn = find_connection_by_addr(&params->addr);
+    if (!sal_conn || !sal_conn->ag) {
+        BT_LOGW("%s, connection no longer available, skip set volume", __func__);
+        free(params);
+        return;
+    }
+
+    switch (params->type) {
+    case HFP_VOLUME_TYPE_SPK:
+        ret = Z_API(bt_hfp_ag_vgs)(sal_conn->ag, params->gain);
+        break;
+    case HFP_VOLUME_TYPE_MIC:
+        ret = Z_API(bt_hfp_ag_vgm)(sal_conn->ag, params->gain);
+        break;
+    default:
+        BT_LOGE("%s, Unknown volume type: %d", __func__, params->type);
+        free(params);
+        return;
+    }
+
+    if (ret) {
+        BT_LOGE("%s, Failed to set volume, type=%d, ret=%d", __func__, params->type, ret);
+    }
+
+    free(params);
 }
 
 static uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_result* result,
@@ -1112,7 +1156,7 @@ static void zblue_on_ag_audio_connect_req(struct bt_hfp_ag* ag)
 {
     bt_hfp_ag_connection_t* sal_conn;
     hfp_codec_config_t cfg = { 0 };
-    ag_connect_sco_params_t* params;
+    bt_hfp_ag_connect_sco_param_t* params;
     uint8_t codec;
     int err;
 
@@ -1145,7 +1189,7 @@ static void zblue_on_ag_audio_connect_req(struct bt_hfp_ag* ag)
     /* Report the actual codec that will be used for this audio connection */
     hfp_ag_on_codec_changed(&sal_conn->addr, &cfg);
 
-    params = (ag_connect_sco_params_t*)zalloc(sizeof(ag_connect_sco_params_t));
+    params = (bt_hfp_ag_connect_sco_param_t*)zalloc(sizeof(bt_hfp_ag_connect_sco_param_t));
     if (!params) {
         BT_LOGE("%s, Failed to allocate memory", __func__);
         return;
@@ -1347,7 +1391,7 @@ bt_status_t bt_sal_hfp_ag_connect_audio(bt_address_t* addr)
         return BT_STATUS_PARM_INVALID;
     }
 
-    ag_connect_sco_params_t* params = (ag_connect_sco_params_t*)zalloc(sizeof(ag_connect_sco_params_t));
+    bt_hfp_ag_connect_sco_param_t* params = (bt_hfp_ag_connect_sco_param_t*)zalloc(sizeof(bt_hfp_ag_connect_sco_param_t));
     if (!params) {
         BT_LOGE("%s, Failed to allocate memory", __func__);
         return BT_STATUS_NOMEM;
@@ -1382,7 +1426,7 @@ bt_status_t bt_sal_hfp_ag_disconnect_audio(bt_address_t* addr)
         return BT_STATUS_FAIL;
     }
 
-    ag_disconnect_sco_params_t* params = (ag_disconnect_sco_params_t*)zalloc(sizeof(ag_disconnect_sco_params_t));
+    bt_hfp_ag_disconnect_sco_param_t* params = (bt_hfp_ag_disconnect_sco_param_t*)zalloc(sizeof(bt_hfp_ag_disconnect_sco_param_t));
     if (!params) {
         BT_LOGE("%s, Failed to allocate memory", __func__);
         return BT_STATUS_NOMEM;
@@ -1446,16 +1490,16 @@ static const new_call_entry_t* find_new_call_entry(enum bt_hfp_ag_call_status st
 static const call_transition_t* find_call_transition(
     enum bt_hfp_ag_call_status prev, hfp_ag_call_state_t next);
 
-typedef struct _ag_call_op_params {
+typedef struct _bt_hfp_ag_call_op_param {
     bt_address_t addr;
     char number[CONFIG_BT_HFP_AG_PHONE_NUMBER_MAX_LEN + 1];
     hfp_ag_call_state_t call_state;
     hfp_call_addrtype_t type;
-} ag_call_op_params_t;
+} bt_hfp_ag_call_op_param_t;
 
 static void do_ag_call_op(service_work_t* work, void* userdata)
 {
-    ag_call_op_params_t* params = (ag_call_op_params_t*)userdata;
+    bt_hfp_ag_call_op_param_t* params = (bt_hfp_ag_call_op_param_t*)userdata;
     if (!params) {
         BT_LOGE("%s, Invalid parameters", __func__);
         return;
@@ -1704,7 +1748,7 @@ bt_status_t bt_sal_hfp_ag_phone_state_change(bt_address_t* addr, uint8_t num_act
         __func__, num_active, num_held, call_state, type,
         number ? number : "(null)", name ? name : "(null)");
 
-    ag_call_op_params_t* params = (ag_call_op_params_t*)zalloc(sizeof(ag_call_op_params_t));
+    bt_hfp_ag_call_op_param_t* params = (bt_hfp_ag_call_op_param_t*)zalloc(sizeof(bt_hfp_ag_call_op_param_t));
     if (!params) {
         BT_LOGE("%s, Failed to allocate memory", __func__);
         return BT_STATUS_NOMEM;
@@ -1946,13 +1990,20 @@ bt_status_t bt_sal_hfp_ag_set_volume(bt_address_t* addr, hfp_volume_type_t type,
         return BT_STATUS_PARM_INVALID;
     }
 
-    if (type == HFP_VOLUME_TYPE_SPK) {
-        SAL_CHECK_RET(Z_API(bt_hfp_ag_vgs)(sal_conn->ag, volume), 0);
-    } else if (type == HFP_VOLUME_TYPE_MIC) {
-        SAL_CHECK_RET(Z_API(bt_hfp_ag_vgm)(sal_conn->ag, volume), 0);
-    } else {
-        BT_LOGE("%s, invalid volume type: %d", __func__, type);
-        return BT_STATUS_PARM_INVALID;
+    bt_hfp_ag_set_volume_param_t* params = zalloc(sizeof(bt_hfp_ag_set_volume_param_t));
+    if (!params) {
+        BT_LOGE("%s, Failed to allocate params", __func__);
+        return BT_STATUS_NOMEM;
+    }
+
+    memcpy(&params->addr, addr, sizeof(bt_address_t));
+    params->type = type;
+    params->gain = volume > 15 ? 15 : volume;
+
+    if (!service_loop_work(params, do_ag_set_volume, NULL)) {
+        BT_LOGE("%s, service loop work submit failed", __func__);
+        free(params);
+        return BT_STATUS_FAIL;
     }
 
     return BT_STATUS_SUCCESS;
