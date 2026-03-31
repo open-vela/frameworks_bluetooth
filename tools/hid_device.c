@@ -202,6 +202,7 @@ static void hidd_connection_state_cb(void* cookie, bt_address_t* addr, bool le_h
 static void hidd_get_report_cb(void* cookie, bt_address_t* addr, uint8_t rpt_type,
     uint8_t rpt_id, uint16_t buffer_size)
 {
+    extern bt_instance_t* g_bttool_ins;
     uint8_t rpt_data[] = { 0x00, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
@@ -211,18 +212,19 @@ static void hidd_get_report_cb(void* cookie, bt_address_t* addr, uint8_t rpt_typ
     if (rpt_id != 0)
         rpt_data[0] = rpt_id;
 
-    bt_hid_device_response_report(cookie, addr, rpt_type, rpt_data, sizeof(rpt_data));
+    bt_hid_device_response_report(g_bttool_ins, addr, rpt_type, rpt_data, sizeof(rpt_data));
 }
 
 static void hidd_set_report_cb(void* cookie, bt_address_t* addr, uint8_t rpt_type,
     uint16_t rpt_size, uint8_t* rpt_data)
 {
+    extern bt_instance_t* g_bttool_ins;
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     bt_addr_ba2str(addr, addr_str);
     PRINT("%s, addr:%s, report type: %d", __func__, addr_str, rpt_type);
     lib_dumpbuffer("report data:", rpt_data, rpt_size);
-    bt_hid_device_report_error(cookie, addr, HID_STATUS_OK);
+    bt_hid_device_report_error(g_bttool_ins, addr, HID_STATUS_OK);
 }
 
 static void hidd_receive_report_cb(void* cookie, bt_address_t* addr, uint8_t rpt_type,

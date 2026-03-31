@@ -47,6 +47,16 @@
 #define BT_HID_DEVICE_REPORT_DESC_SIZE 256
 #define BT_HID_DEVICE_DESC_VALUE_INDEX 3
 
+/* struct bt_hid_report field offsets (with alignment padding) */
+#define BT_HID_REPORT_TYPE_OFFSET 0
+#define BT_HID_REPORT_LEN_OFFSET 4
+#define BT_HID_REPORT_DATA_OFFSET 8
+
+/* Minimum data lengths for report parsing */
+#define BT_HID_REPORT_HDR_SIZE 8
+#define BT_HID_REPORT_MIN_RPT_ID 9
+#define BT_HID_REPORT_MIN_BUF_SIZE 11
+
 typedef struct sal_hid_connection {
     struct bt_hid_device* hid_device;
     bt_address_t addr;
@@ -469,8 +479,14 @@ static void hid_disconnected_callback(struct bt_hid_device* hid)
 void hid_set_report_callback(struct bt_hid_device* hid, const uint8_t* data, uint16_t len)
 {
     sal_hid_connection_t* hid_conn;
+    bt_address_t addr;
 
     BT_LOGD("hid:%p set report cb, len:%d", hid, len);
+
+    if (!data || len < 1) {
+        BT_LOGE("hid:%p set report data invalid, data:%p len:%d", hid, data, len);
+        return;
+    }
 
     hid_conn_lock();
     hid_conn = hid_find_connections_by_device(hid);
@@ -480,15 +496,26 @@ void hid_set_report_callback(struct bt_hid_device* hid, const uint8_t* data, uin
         return;
     }
 
+    memcpy(&addr, &hid_conn->addr, sizeof(bt_address_t));
     hid_conn_unlock();
-    hid_device_on_set_report(&hid_conn->addr, data[0], len - 1, (uint8_t*)&data[1]);
+    hid_device_on_set_report(&addr, data[0], len - 1, (uint8_t*)&data[1]);
 }
 
 void hid_get_report_callback(struct bt_hid_device* hid, const uint8_t* data, uint16_t len)
 {
     sal_hid_connection_t* hid_conn;
+    bt_address_t addr;
+    uint8_t rpt_type;
+    uint8_t rpt_id = 0;
+    uint16_t buffer_size = 0;
+    int rpt_len;
 
     BT_LOGD("hid:%p get report cb, len:%d", hid, len);
+
+    if (len < BT_HID_REPORT_HDR_SIZE) {
+        BT_LOGE("hid:%p get report data too short: %d", hid, len);
+        return;
+    }
 
     hid_conn_lock();
     hid_conn = hid_find_connections_by_device(hid);
@@ -498,8 +525,26 @@ void hid_get_report_callback(struct bt_hid_device* hid, const uint8_t* data, uin
         return;
     }
 
+    memcpy(&addr, &hid_conn->addr, sizeof(bt_address_t));
     hid_conn_unlock();
-    hid_device_on_get_report(&hid_conn->addr, data[0], data[1], data[2]);
+
+    /* data points to struct bt_hid_report:
+     *   uint8_t type;    (offset BT_HID_REPORT_TYPE_OFFSET)
+     *   int     len;     (offset BT_HID_REPORT_LEN_OFFSET, due to alignment)
+     *   uint8_t data[];  (offset BT_HID_REPORT_DATA_OFFSET)
+     */
+    rpt_type = data[BT_HID_REPORT_TYPE_OFFSET];
+    memcpy(&rpt_len, &data[BT_HID_REPORT_LEN_OFFSET], sizeof(int));
+
+    if (rpt_len >= 1 && len >= BT_HID_REPORT_MIN_RPT_ID) {
+        rpt_id = data[BT_HID_REPORT_DATA_OFFSET];
+    }
+
+    if (rpt_len >= 3 && len >= BT_HID_REPORT_MIN_BUF_SIZE) {
+        buffer_size = data[BT_HID_REPORT_DATA_OFFSET + 1] | (data[BT_HID_REPORT_DATA_OFFSET + 2] << 8);
+    }
+
+    hid_device_on_get_report(&addr, rpt_type, rpt_id, buffer_size);
 }
 
 void hid_set_protocol_callback(struct bt_hid_device* hid, uint8_t protocol)
