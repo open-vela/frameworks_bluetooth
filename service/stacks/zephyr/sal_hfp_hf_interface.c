@@ -63,6 +63,47 @@ typedef struct _bt_hfp_hf_set_volume_param {
     uint8_t gain;
 } bt_hfp_hf_set_volume_param_t;
 
+typedef struct _bt_hfp_hf_simple_addr_param {
+    bt_address_t addr;
+} bt_hfp_hf_simple_addr_param_t;
+
+typedef struct _bt_hfp_hf_call_control_param {
+    bt_address_t addr;
+    hfp_call_control_t chld;
+    uint32_t index;
+} bt_hfp_hf_call_control_param_t;
+
+typedef struct _bt_hfp_hf_dial_number_param {
+    bt_address_t addr;
+    char number[HFP_PHONENUM_DIGITS_MAX + 1];
+    bool has_number;
+} bt_hfp_hf_dial_number_param_t;
+
+typedef struct _bt_hfp_hf_dial_memory_param {
+    bt_address_t addr;
+    char mem_in_str[HFP_PHONENUM_DIGITS_MAX + 1];
+} bt_hfp_hf_dial_memory_param_t;
+
+typedef struct _bt_hfp_hf_voice_recognition_param {
+    bt_address_t addr;
+    bool activate;
+} bt_hfp_hf_voice_recognition_param_t;
+
+typedef struct _bt_hfp_hf_battery_level_param {
+    bt_address_t addr;
+    uint8_t level;
+} bt_hfp_hf_battery_level_param_t;
+
+typedef struct _bt_hfp_hf_send_at_cmd_param {
+    bt_address_t addr;
+    char cmd[HFP_AT_LEN_MAX + 1];
+} bt_hfp_hf_send_at_cmd_param_t;
+
+typedef struct _bt_hfp_hf_send_dtmf_param {
+    bt_address_t addr;
+    char dtmf;
+} bt_hfp_hf_send_dtmf_param_t;
+
 typedef struct _bt_hfp_hf_call_info {
     uint8_t index;
     uint8_t type;
@@ -499,6 +540,431 @@ static void do_hf_set_volume(service_work_t* work, void* userdata)
 
     if (ret) {
         BT_LOGE("%s, Failed to set volume, type=%d, ret=%d", __func__, params->type, ret);
+    }
+
+    free(params);
+}
+
+static void do_hf_answer_call(service_work_t* work, void* userdata)
+{
+    bt_hfp_hf_simple_addr_param_t* params = (bt_hfp_hf_simple_addr_param_t*)userdata;
+    bt_hfp_hf_connection_t* sal_conn;
+
+    if (!params) {
+        BT_LOGE("%s, params is NULL", __func__);
+        return;
+    }
+
+    sal_conn = find_connection_by_addr(&params->addr);
+    if (!sal_conn) {
+        BT_LOGW("%s, connection no longer available", __func__);
+        free(params);
+        return;
+    }
+
+    bt_hfp_hf_call_info_t* incoming = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_INCOMING);
+    if (!incoming) {
+        BT_LOGE("%s, No incoming call to answer", __func__);
+        free(params);
+        return;
+    }
+
+    int ret = Z_API(bt_hfp_hf_accept)(incoming->context);
+    if (ret) {
+        BT_LOGE("%s, bt_hfp_hf_accept failed, ret=%d", __func__, ret);
+    }
+
+    free(params);
+}
+
+static void do_hf_reject_call(service_work_t* work, void* userdata)
+{
+    bt_hfp_hf_simple_addr_param_t* params = (bt_hfp_hf_simple_addr_param_t*)userdata;
+    bt_hfp_hf_connection_t* sal_conn;
+
+    if (!params) {
+        BT_LOGE("%s, params is NULL", __func__);
+        return;
+    }
+
+    sal_conn = find_connection_by_addr(&params->addr);
+    if (!sal_conn) {
+        BT_LOGW("%s, connection no longer available", __func__);
+        free(params);
+        return;
+    }
+
+    bt_hfp_hf_call_info_t* incoming_call = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_INCOMING);
+    if (!incoming_call) {
+        BT_LOGE("%s, No incoming call to reject", __func__);
+        free(params);
+        return;
+    }
+
+    int ret = Z_API(bt_hfp_hf_reject)(incoming_call->context);
+    if (ret) {
+        BT_LOGE("%s, bt_hfp_hf_reject failed, ret=%d", __func__, ret);
+    }
+
+    free(params);
+}
+
+static void do_hf_hold_call(service_work_t* work, void* userdata)
+{
+    bt_hfp_hf_simple_addr_param_t* params = (bt_hfp_hf_simple_addr_param_t*)userdata;
+    bt_hfp_hf_connection_t* sal_conn;
+
+    if (!params) {
+        BT_LOGE("%s, params is NULL", __func__);
+        return;
+    }
+
+    sal_conn = find_connection_by_addr(&params->addr);
+    if (!sal_conn) {
+        BT_LOGW("%s, connection no longer available", __func__);
+        free(params);
+        return;
+    }
+
+    int ret = Z_API(bt_hfp_hf_hold_active_accept_other)(sal_conn->hf);
+    if (ret) {
+        BT_LOGE("%s, bt_hfp_hf_hold_active_accept_other failed, ret=%d", __func__, ret);
+    }
+
+    free(params);
+}
+
+static void do_hf_hangup_call(service_work_t* work, void* userdata)
+{
+    bt_hfp_hf_simple_addr_param_t* params = (bt_hfp_hf_simple_addr_param_t*)userdata;
+    bt_hfp_hf_connection_t* sal_conn;
+
+    if (!params) {
+        BT_LOGE("%s, params is NULL", __func__);
+        return;
+    }
+
+    sal_conn = find_connection_by_addr(&params->addr);
+    if (!sal_conn) {
+        BT_LOGW("%s, connection no longer available", __func__);
+        free(params);
+        return;
+    }
+
+    bt_hfp_hf_call_info_t* target = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_ACTIVE);
+    if (!target) {
+        target = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_DIALING);
+    }
+    if (!target) {
+        target = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_ALERTING);
+    }
+
+    if (!target) {
+        BT_LOGE("%s, No active/dialing/alerting call to hang up", __func__);
+        free(params);
+        return;
+    }
+
+    int ret;
+    if (count_call(sal_conn) == 1) {
+        ret = Z_API(bt_hfp_hf_terminate)(target->context);
+    } else {
+        ret = Z_API(bt_hfp_hf_release_active_accept_other)(sal_conn->hf);
+    }
+
+    if (ret) {
+        BT_LOGE("%s, hangup failed, ret=%d", __func__, ret);
+    }
+
+    free(params);
+}
+
+static void do_hf_dial_number(service_work_t* work, void* userdata)
+{
+    bt_hfp_hf_dial_number_param_t* params = (bt_hfp_hf_dial_number_param_t*)userdata;
+    bt_hfp_hf_connection_t* sal_conn;
+
+    if (!params) {
+        BT_LOGE("%s, params is NULL", __func__);
+        return;
+    }
+
+    sal_conn = find_connection_by_addr(&params->addr);
+    if (!sal_conn || !sal_conn->hf) {
+        BT_LOGW("%s, connection no longer available", __func__);
+        free(params);
+        return;
+    }
+
+    int ret;
+    if (!params->has_number) {
+        ret = Z_API(bt_hfp_hf_redial)(sal_conn->hf);
+    } else {
+        ret = Z_API(bt_hfp_hf_number_call)(sal_conn->hf, params->number);
+    }
+
+    if (ret) {
+        BT_LOGE("%s, dial failed, ret=%d", __func__, ret);
+    }
+
+    free(params);
+}
+
+static void do_hf_dial_memory(service_work_t* work, void* userdata)
+{
+    bt_hfp_hf_dial_memory_param_t* params = (bt_hfp_hf_dial_memory_param_t*)userdata;
+    bt_hfp_hf_connection_t* sal_conn;
+
+    if (!params) {
+        BT_LOGE("%s, params is NULL", __func__);
+        return;
+    }
+
+    sal_conn = find_connection_by_addr(&params->addr);
+    if (!sal_conn || !sal_conn->hf) {
+        BT_LOGW("%s, connection no longer available", __func__);
+        free(params);
+        return;
+    }
+
+    int ret = Z_API(bt_hfp_hf_memory_dial)(sal_conn->hf, params->mem_in_str);
+    if (ret) {
+        BT_LOGE("%s, bt_hfp_hf_memory_dial failed, ret=%d", __func__, ret);
+    }
+
+    free(params);
+}
+
+static void do_hf_call_control(service_work_t* work, void* userdata)
+{
+    bt_hfp_hf_call_control_param_t* params = (bt_hfp_hf_call_control_param_t*)userdata;
+    bt_hfp_hf_connection_t* sal_conn;
+
+    if (!params) {
+        BT_LOGE("%s, params is NULL", __func__);
+        return;
+    }
+
+    sal_conn = find_connection_by_addr(&params->addr);
+    if (!sal_conn || !sal_conn->hf) {
+        BT_LOGW("%s, connection no longer available", __func__);
+        free(params);
+        return;
+    }
+
+    int ret = -ENOTSUP;
+    switch (params->chld) {
+    case HFP_HF_CALL_CONTROL_CHLD_0: {
+        bt_hfp_hf_call_info_t* waiting = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_WAITING);
+        if (waiting) {
+            ret = Z_API(bt_hfp_hf_set_udub)(sal_conn->hf);
+        } else {
+            bt_hfp_hf_call_info_t* held = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_HELD);
+            if (held) {
+                ret = Z_API(bt_hfp_hf_release_all_held)(sal_conn->hf);
+            } else {
+                BT_LOGW("%s, No waiting/held call for CHLD=0", __func__);
+            }
+        }
+        break;
+    }
+    case HFP_HF_CALL_CONTROL_CHLD_1:
+        if (params->index > 0) {
+            bt_hfp_hf_call_info_t* by_idx = find_call_by_index(sal_conn, (uint8_t)params->index);
+            if (!by_idx) {
+                BT_LOGE("%s, No call with index %u for CHLD=1<idx>", __func__, (unsigned)params->index);
+                free(params);
+                return;
+            }
+            ret = Z_API(bt_hfp_hf_release_specified_call)(by_idx->context);
+        } else {
+            ret = Z_API(bt_hfp_hf_release_active_accept_other)(sal_conn->hf);
+        }
+        break;
+    case HFP_HF_CALL_CONTROL_CHLD_2:
+        if (params->index > 0) {
+            bt_hfp_hf_call_info_t* by_idx = find_call_by_index(sal_conn, (uint8_t)params->index);
+            if (!by_idx) {
+                BT_LOGE("%s, No call with index %u for CHLD=2<idx>", __func__, (unsigned)params->index);
+                free(params);
+                return;
+            }
+            ret = Z_API(bt_hfp_hf_private_consultation_mode)(by_idx->context);
+        } else {
+            ret = Z_API(bt_hfp_hf_hold_active_accept_other)(sal_conn->hf);
+        }
+        break;
+    case HFP_HF_CALL_CONTROL_CHLD_3:
+        ret = Z_API(bt_hfp_hf_join_conversation)(sal_conn->hf);
+        break;
+    case HFP_HF_CALL_CONTROL_CHLD_4:
+        ret = Z_API(bt_hfp_hf_explicit_call_transfer)(sal_conn->hf);
+        break;
+    default:
+        BT_LOGE("%s, unsupported CHLD=%d", __func__, params->chld);
+        break;
+    }
+
+    if (ret) {
+        BT_LOGE("%s, call control failed, chld=%d, ret=%d", __func__, params->chld, ret);
+    }
+
+    free(params);
+}
+
+static void do_hf_get_current_calls(service_work_t* work, void* userdata)
+{
+    bt_hfp_hf_simple_addr_param_t* params = (bt_hfp_hf_simple_addr_param_t*)userdata;
+    bt_hfp_hf_connection_t* sal_conn;
+
+    if (!params) {
+        BT_LOGE("%s, params is NULL", __func__);
+        return;
+    }
+
+    sal_conn = find_connection_by_addr(&params->addr);
+    if (!sal_conn || !sal_conn->hf) {
+        BT_LOGW("%s, connection no longer available", __func__);
+        free(params);
+        return;
+    }
+
+    int ret = Z_API(bt_hfp_hf_query_list_of_current_calls)(sal_conn->hf);
+    if (ret) {
+        BT_LOGE("%s, bt_hfp_hf_query_list_of_current_calls failed, ret=%d", __func__, ret);
+    }
+
+    free(params);
+}
+
+static void do_hf_voice_recognition(service_work_t* work, void* userdata)
+{
+    bt_hfp_hf_voice_recognition_param_t* params = (bt_hfp_hf_voice_recognition_param_t*)userdata;
+    bt_hfp_hf_connection_t* sal_conn;
+
+    if (!params) {
+        BT_LOGE("%s, params is NULL", __func__);
+        return;
+    }
+
+    sal_conn = find_connection_by_addr(&params->addr);
+    if (!sal_conn || !sal_conn->hf) {
+        BT_LOGW("%s, connection no longer available", __func__);
+        free(params);
+        return;
+    }
+
+    int ret = Z_API(bt_hfp_hf_voice_recognition)(sal_conn->hf, params->activate);
+    if (ret) {
+        BT_LOGE("%s, Failed to %s voice recognition, ret=%d", __func__,
+            params->activate ? "start" : "stop", ret);
+    }
+
+    free(params);
+}
+
+static void do_hf_send_battery_level(service_work_t* work, void* userdata)
+{
+    bt_hfp_hf_battery_level_param_t* params = (bt_hfp_hf_battery_level_param_t*)userdata;
+    bt_hfp_hf_connection_t* sal_conn;
+
+    if (!params) {
+        BT_LOGE("%s, params is NULL", __func__);
+        return;
+    }
+
+    sal_conn = find_connection_by_addr(&params->addr);
+    if (!sal_conn || !sal_conn->hf) {
+        BT_LOGW("%s, connection no longer available", __func__);
+        free(params);
+        return;
+    }
+
+    int ret = Z_API(bt_hfp_hf_battery)(sal_conn->hf, params->level);
+    if (ret) {
+        BT_LOGE("%s, bt_hfp_hf_battery failed, ret=%d", __func__, ret);
+    }
+
+    free(params);
+}
+
+static void do_hf_send_at_cmd(service_work_t* work, void* userdata)
+{
+    bt_hfp_hf_send_at_cmd_param_t* params = (bt_hfp_hf_send_at_cmd_param_t*)userdata;
+    bt_hfp_hf_connection_t* sal_conn;
+
+    if (!params) {
+        BT_LOGE("%s, params is NULL", __func__);
+        return;
+    }
+
+    sal_conn = find_connection_by_addr(&params->addr);
+    if (!sal_conn || !sal_conn->hf) {
+        BT_LOGW("%s, connection no longer available", __func__);
+        free(params);
+        return;
+    }
+
+    int ret = Z_API(bt_hfp_hf_send_vendor)(sal_conn->hf, params->cmd);
+    if (ret) {
+        BT_LOGE("%s, bt_hfp_hf_send_vendor failed, ret=%d", __func__, ret);
+    }
+
+    free(params);
+}
+
+static void do_hf_send_dtmf(service_work_t* work, void* userdata)
+{
+    bt_hfp_hf_send_dtmf_param_t* params = (bt_hfp_hf_send_dtmf_param_t*)userdata;
+    bt_hfp_hf_connection_t* sal_conn;
+
+    if (!params) {
+        BT_LOGE("%s, params is NULL", __func__);
+        return;
+    }
+
+    sal_conn = find_connection_by_addr(&params->addr);
+    if (!sal_conn) {
+        BT_LOGW("%s, connection no longer available", __func__);
+        free(params);
+        return;
+    }
+
+    bt_hfp_hf_call_info_t* active = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_ACTIVE);
+    if (!active) {
+        BT_LOGE("%s, No active call for DTMF", __func__);
+        free(params);
+        return;
+    }
+
+    int ret = Z_API(bt_hfp_hf_transmit_dtmf_code)(active->context, params->dtmf);
+    if (ret) {
+        BT_LOGE("%s, bt_hfp_hf_transmit_dtmf_code failed, ret=%d", __func__, ret);
+    }
+
+    free(params);
+}
+
+static void do_hf_get_subscriber_number(service_work_t* work, void* userdata)
+{
+    bt_hfp_hf_simple_addr_param_t* params = (bt_hfp_hf_simple_addr_param_t*)userdata;
+    bt_hfp_hf_connection_t* sal_conn;
+
+    if (!params) {
+        BT_LOGE("%s, params is NULL", __func__);
+        return;
+    }
+
+    sal_conn = find_connection_by_addr(&params->addr);
+    if (!sal_conn || !sal_conn->hf) {
+        BT_LOGW("%s, connection no longer available", __func__);
+        free(params);
+        return;
+    }
+
+    int ret = Z_API(bt_hfp_hf_query_subscriber)(sal_conn->hf);
+    if (ret) {
+        BT_LOGE("%s, bt_hfp_hf_query_subscriber failed, ret=%d", __func__, ret);
     }
 
     free(params);
@@ -1261,19 +1727,24 @@ bt_status_t bt_sal_hfp_hf_answer_call(bt_address_t* addr)
 
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-        bt_addr_ba2str(addr, addr_str);
-        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
+        BT_LOGE("%s, Failed to find connection", __func__);
         return BT_STATUS_PARM_INVALID;
     }
 
-    bt_hfp_hf_call_info_t* incoming = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_INCOMING);
-    if (!incoming) {
-        BT_LOGE("%s, No incoming call to answer", __func__);
-        return BT_STATUS_PARM_INVALID;
+    bt_hfp_hf_simple_addr_param_t* params = zalloc(sizeof(bt_hfp_hf_simple_addr_param_t));
+    if (!params) {
+        BT_LOGE("%s, Failed to allocate params", __func__);
+        return BT_STATUS_NOMEM;
     }
 
-    SAL_CHECK_RET(Z_API(bt_hfp_hf_accept)(incoming->context), 0);
+    memcpy(&params->addr, addr, sizeof(bt_address_t));
+
+    if (!service_loop_work(params, do_hf_answer_call, NULL)) {
+        BT_LOGE("%s, service loop work submit failed", __func__);
+        free(params);
+        return BT_STATUS_FAIL;
+    }
+
     return BT_STATUS_SUCCESS;
 }
 
@@ -1286,19 +1757,24 @@ bt_status_t bt_sal_hfp_hf_reject_call(bt_address_t* addr)
 
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-        bt_addr_ba2str(addr, addr_str);
-        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
+        BT_LOGE("%s, Failed to find connection", __func__);
         return BT_STATUS_FAIL;
     }
 
-    bt_hfp_hf_call_info_t* incoming_call = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_INCOMING);
-    if (!incoming_call) {
-        BT_LOGE("%s, No incoming call to reject", __func__);
+    bt_hfp_hf_simple_addr_param_t* params = zalloc(sizeof(bt_hfp_hf_simple_addr_param_t));
+    if (!params) {
+        BT_LOGE("%s, Failed to allocate params", __func__);
+        return BT_STATUS_NOMEM;
+    }
+
+    memcpy(&params->addr, addr, sizeof(bt_address_t));
+
+    if (!service_loop_work(params, do_hf_reject_call, NULL)) {
+        BT_LOGE("%s, service loop work submit failed", __func__);
+        free(params);
         return BT_STATUS_FAIL;
     }
 
-    SAL_CHECK_RET(Z_API(bt_hfp_hf_reject)(incoming_call->context), 0);
     return BT_STATUS_SUCCESS;
 }
 
@@ -1311,18 +1787,24 @@ bt_status_t bt_sal_hfp_hf_hold_call(bt_address_t* addr)
 
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-        bt_addr_ba2str(addr, addr_str);
-        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
+        BT_LOGE("%s, Failed to find connection", __func__);
         return BT_STATUS_FAIL;
     }
 
-    int ret = Z_API(bt_hfp_hf_hold_active_accept_other)(sal_conn->hf);
-    if (ret == -ENOTSUP) {
-        return BT_STATUS_UNSUPPORTED;
+    bt_hfp_hf_simple_addr_param_t* params = zalloc(sizeof(bt_hfp_hf_simple_addr_param_t));
+    if (!params) {
+        BT_LOGE("%s, Failed to allocate params", __func__);
+        return BT_STATUS_NOMEM;
     }
 
-    SAL_CHECK_RET(ret, 0);
+    memcpy(&params->addr, addr, sizeof(bt_address_t));
+
+    if (!service_loop_work(params, do_hf_hold_call, NULL)) {
+        BT_LOGE("%s, service loop work submit failed", __func__);
+        free(params);
+        return BT_STATUS_FAIL;
+    }
+
     return BT_STATUS_SUCCESS;
 }
 
@@ -1335,29 +1817,22 @@ bt_status_t bt_sal_hfp_hf_hangup_call(bt_address_t* addr)
 
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-        bt_addr_ba2str(addr, addr_str);
-        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
+        BT_LOGE("%s, Failed to find connection", __func__);
         return BT_STATUS_FAIL;
     }
 
-    bt_hfp_hf_call_info_t* target = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_ACTIVE);
-    if (!target) {
-        target = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_DIALING);
-    }
-    if (!target) {
-        target = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_ALERTING);
+    bt_hfp_hf_simple_addr_param_t* params = zalloc(sizeof(bt_hfp_hf_simple_addr_param_t));
+    if (!params) {
+        BT_LOGE("%s, Failed to allocate params", __func__);
+        return BT_STATUS_NOMEM;
     }
 
-    if (!target) {
-        BT_LOGE("%s, No active/dialing/alerting call to hang up", __func__);
+    memcpy(&params->addr, addr, sizeof(bt_address_t));
+
+    if (!service_loop_work(params, do_hf_hangup_call, NULL)) {
+        BT_LOGE("%s, service loop work submit failed", __func__);
+        free(params);
         return BT_STATUS_FAIL;
-    }
-
-    if (count_call(sal_conn) == 1) {
-        SAL_CHECK_RET(Z_API(bt_hfp_hf_terminate)(target->context), 0);
-    } else {
-        SAL_CHECK_RET(Z_API(bt_hfp_hf_release_active_accept_other)(sal_conn->hf), 0);
     }
 
     return BT_STATUS_SUCCESS;
@@ -1372,18 +1847,30 @@ bt_status_t bt_sal_hfp_hf_dial_number(bt_address_t* addr, const char* number)
 
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-        bt_addr_ba2str(addr, addr_str);
-        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
+        BT_LOGE("%s, Failed to find connection", __func__);
         return BT_STATUS_PARM_INVALID;
     }
 
-    if (!number) {
-        SAL_CHECK_RET(Z_API(bt_hfp_hf_redial)(sal_conn->hf), 0);
-        return BT_STATUS_SUCCESS;
+    bt_hfp_hf_dial_number_param_t* params = zalloc(sizeof(bt_hfp_hf_dial_number_param_t));
+    if (!params) {
+        BT_LOGE("%s, Failed to allocate params", __func__);
+        return BT_STATUS_NOMEM;
     }
 
-    SAL_CHECK_RET(Z_API(bt_hfp_hf_number_call)(sal_conn->hf, number), 0);
+    memcpy(&params->addr, addr, sizeof(bt_address_t));
+    if (number) {
+        strlcpy(params->number, number, sizeof(params->number));
+        params->has_number = true;
+    } else {
+        params->has_number = false;
+    }
+
+    if (!service_loop_work(params, do_hf_dial_number, NULL)) {
+        BT_LOGE("%s, service loop work submit failed", __func__);
+        free(params);
+        return BT_STATUS_FAIL;
+    }
+
     return BT_STATUS_SUCCESS;
 }
 
@@ -1395,16 +1882,26 @@ bt_status_t bt_sal_hfp_hf_dial_memory(bt_address_t* addr, uint32_t memory)
     }
 
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
-    char mem_in_str[HFP_PHONENUM_DIGITS_MAX + 1];
     if (!sal_conn) {
-        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-        bt_addr_ba2str(addr, addr_str);
-        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
+        BT_LOGE("%s, Failed to find connection", __func__);
         return BT_STATUS_PARM_INVALID;
     }
 
-    snprintf(mem_in_str, sizeof(mem_in_str), "%" PRIu32, memory);
-    SAL_CHECK_RET(Z_API(bt_hfp_hf_memory_dial)(sal_conn->hf, mem_in_str), 0);
+    bt_hfp_hf_dial_memory_param_t* params = zalloc(sizeof(bt_hfp_hf_dial_memory_param_t));
+    if (!params) {
+        BT_LOGE("%s, Failed to allocate params", __func__);
+        return BT_STATUS_NOMEM;
+    }
+
+    memcpy(&params->addr, addr, sizeof(bt_address_t));
+    snprintf(params->mem_in_str, sizeof(params->mem_in_str), "%" PRIu32, memory);
+
+    if (!service_loop_work(params, do_hf_dial_memory, NULL)) {
+        BT_LOGE("%s, service loop work submit failed", __func__);
+        free(params);
+        return BT_STATUS_FAIL;
+    }
+
     return BT_STATUS_SUCCESS;
 }
 
@@ -1417,68 +1914,26 @@ bt_status_t bt_sal_hfp_hf_call_control(bt_address_t* addr, hfp_call_control_t ch
 
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-        bt_addr_ba2str(addr, addr_str);
-        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
+        BT_LOGE("%s, Failed to find connection", __func__);
         return BT_STATUS_PARM_INVALID;
     }
 
-    int ret = -ENOTSUP;
-    switch (chld) {
-    case HFP_HF_CALL_CONTROL_CHLD_0: {
-        bt_hfp_hf_call_info_t* waiting = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_WAITING);
-        if (waiting) {
-            ret = Z_API(bt_hfp_hf_set_udub)(sal_conn->hf);
-        } else {
-            bt_hfp_hf_call_info_t* held = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_HELD);
-            if (held) {
-                ret = Z_API(bt_hfp_hf_release_all_held)(sal_conn->hf);
-            } else {
-                BT_LOGW("%s, No waiting/held call for CHLD=0", __func__);
-                return BT_STATUS_PARM_INVALID;
-            }
-        }
-        break;
-    }
-    case HFP_HF_CALL_CONTROL_CHLD_1:
-        if (index > 0) {
-            bt_hfp_hf_call_info_t* by_idx = find_call_by_index(sal_conn, (uint8_t)index);
-            if (!by_idx) {
-                BT_LOGE("%s, No call with index %u for CHLD=1<idx>", __func__, (unsigned)index);
-                return BT_STATUS_PARM_INVALID;
-            }
-            ret = Z_API(bt_hfp_hf_release_specified_call)(by_idx->context);
-        } else {
-            ret = Z_API(bt_hfp_hf_release_active_accept_other)(sal_conn->hf);
-        }
-        break;
-    case HFP_HF_CALL_CONTROL_CHLD_2:
-        if (index > 0) {
-            bt_hfp_hf_call_info_t* by_idx = find_call_by_index(sal_conn, (uint8_t)index);
-            if (!by_idx) {
-                BT_LOGE("%s, No call with index %u for CHLD=2<idx>", __func__, (unsigned)index);
-                return BT_STATUS_PARM_INVALID;
-            }
-            ret = Z_API(bt_hfp_hf_private_consultation_mode)(by_idx->context);
-        } else {
-            ret = Z_API(bt_hfp_hf_hold_active_accept_other)(sal_conn->hf);
-        }
-        break;
-    case HFP_HF_CALL_CONTROL_CHLD_3:
-        ret = Z_API(bt_hfp_hf_join_conversation)(sal_conn->hf);
-        break;
-    case HFP_HF_CALL_CONTROL_CHLD_4:
-        ret = Z_API(bt_hfp_hf_explicit_call_transfer)(sal_conn->hf);
-        break;
-    default:
-        return BT_STATUS_UNSUPPORTED;
+    bt_hfp_hf_call_control_param_t* params = zalloc(sizeof(bt_hfp_hf_call_control_param_t));
+    if (!params) {
+        BT_LOGE("%s, Failed to allocate params", __func__);
+        return BT_STATUS_NOMEM;
     }
 
-    if (ret == -ENOTSUP) {
-        return BT_STATUS_UNSUPPORTED;
+    memcpy(&params->addr, addr, sizeof(bt_address_t));
+    params->chld = chld;
+    params->index = index;
+
+    if (!service_loop_work(params, do_hf_call_control, NULL)) {
+        BT_LOGE("%s, service loop work submit failed", __func__);
+        free(params);
+        return BT_STATUS_FAIL;
     }
 
-    SAL_CHECK_RET(ret, 0);
     return BT_STATUS_SUCCESS;
 }
 
@@ -1491,13 +1946,23 @@ bt_status_t bt_sal_hfp_hf_get_current_calls(bt_address_t* addr)
 
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-        bt_addr_ba2str(addr, addr_str);
-        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
+        BT_LOGE("%s, Failed to find connection", __func__);
         return BT_STATUS_PARM_INVALID;
     }
 
-    SAL_CHECK_RET(Z_API(bt_hfp_hf_query_list_of_current_calls)(sal_conn->hf), 0);
+    bt_hfp_hf_simple_addr_param_t* params = zalloc(sizeof(bt_hfp_hf_simple_addr_param_t));
+    if (!params) {
+        BT_LOGE("%s, Failed to allocate params", __func__);
+        return BT_STATUS_NOMEM;
+    }
+
+    memcpy(&params->addr, addr, sizeof(bt_address_t));
+
+    if (!service_loop_work(params, do_hf_get_current_calls, NULL)) {
+        BT_LOGE("%s, service loop work submit failed", __func__);
+        free(params);
+        return BT_STATUS_FAIL;
+    }
 
     return BT_STATUS_SUCCESS;
 }
@@ -1550,18 +2015,25 @@ bt_status_t bt_sal_hfp_hf_start_voice_recognition(bt_address_t* addr)
 
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-        bt_addr_ba2str(addr, addr_str);
-        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
+        BT_LOGE("%s, Failed to find connection", __func__);
         return BT_STATUS_PARM_INVALID;
     }
 
-    int ret = Z_API(bt_hfp_hf_voice_recognition)(sal_conn->hf, true);
-    if (ret == -ENOTSUP) {
-        return BT_STATUS_UNSUPPORTED;
+    bt_hfp_hf_voice_recognition_param_t* params = zalloc(sizeof(bt_hfp_hf_voice_recognition_param_t));
+    if (!params) {
+        BT_LOGE("%s, Failed to allocate params", __func__);
+        return BT_STATUS_NOMEM;
     }
 
-    SAL_CHECK_RET(ret, 0);
+    memcpy(&params->addr, addr, sizeof(bt_address_t));
+    params->activate = true;
+
+    if (!service_loop_work(params, do_hf_voice_recognition, NULL)) {
+        BT_LOGE("%s, service loop work submit failed", __func__);
+        free(params);
+        return BT_STATUS_FAIL;
+    }
+
     return BT_STATUS_SUCCESS;
 }
 
@@ -1574,18 +2046,25 @@ bt_status_t bt_sal_hfp_hf_stop_voice_recognition(bt_address_t* addr)
 
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-        bt_addr_ba2str(addr, addr_str);
-        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
+        BT_LOGE("%s, Failed to find connection", __func__);
         return BT_STATUS_PARM_INVALID;
     }
 
-    int ret = Z_API(bt_hfp_hf_voice_recognition)(sal_conn->hf, false);
-    if (ret == -ENOTSUP) {
-        return BT_STATUS_UNSUPPORTED;
+    bt_hfp_hf_voice_recognition_param_t* params = zalloc(sizeof(bt_hfp_hf_voice_recognition_param_t));
+    if (!params) {
+        BT_LOGE("%s, Failed to allocate params", __func__);
+        return BT_STATUS_NOMEM;
     }
 
-    SAL_CHECK_RET(ret, 0);
+    memcpy(&params->addr, addr, sizeof(bt_address_t));
+    params->activate = false;
+
+    if (!service_loop_work(params, do_hf_voice_recognition, NULL)) {
+        BT_LOGE("%s, service loop work submit failed", __func__);
+        free(params);
+        return BT_STATUS_FAIL;
+    }
+
     return BT_STATUS_SUCCESS;
 }
 
@@ -1598,20 +2077,25 @@ bt_status_t bt_sal_hfp_hf_send_battery_level(bt_address_t* addr, uint8_t value)
 
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-        bt_addr_ba2str(addr, addr_str);
-        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
+        BT_LOGE("%s, Failed to find connection", __func__);
         return BT_STATUS_PARM_INVALID;
     }
 
-    uint8_t level = (value > 100) ? 100 : value;
-
-    int ret = Z_API(bt_hfp_hf_battery)(sal_conn->hf, level);
-    if (ret == -ENOTSUP) {
-        return BT_STATUS_UNSUPPORTED;
+    bt_hfp_hf_battery_level_param_t* params = zalloc(sizeof(bt_hfp_hf_battery_level_param_t));
+    if (!params) {
+        BT_LOGE("%s, Failed to allocate params", __func__);
+        return BT_STATUS_NOMEM;
     }
 
-    SAL_CHECK_RET(ret, 0);
+    memcpy(&params->addr, addr, sizeof(bt_address_t));
+    params->level = (value > 100) ? 100 : value;
+
+    if (!service_loop_work(params, do_hf_send_battery_level, NULL)) {
+        BT_LOGE("%s, service loop work submit failed", __func__);
+        free(params);
+        return BT_STATUS_FAIL;
+    }
+
     return BT_STATUS_SUCCESS;
 }
 
@@ -1624,9 +2108,7 @@ bt_status_t bt_sal_hfp_hf_send_at_cmd(bt_address_t* addr, const char* cmd, uint1
 
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-        bt_addr_ba2str(addr, addr_str);
-        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
+        BT_LOGE("%s, Failed to find connection", __func__);
         return BT_STATUS_PARM_INVALID;
     }
 
@@ -1635,14 +2117,23 @@ bt_status_t bt_sal_hfp_hf_send_at_cmd(bt_address_t* addr, const char* cmd, uint1
         return BT_STATUS_PARM_INVALID;
     }
 
-    BT_LOGD("%s, Sending AT command: %.*s", __func__, len, cmd);
-
-    int ret = Z_API(bt_hfp_hf_send_vendor)(sal_conn->hf, cmd);
-    if (ret == -ENOTSUP) {
-        return BT_STATUS_UNSUPPORTED;
+    bt_hfp_hf_send_at_cmd_param_t* params = zalloc(sizeof(bt_hfp_hf_send_at_cmd_param_t));
+    if (!params) {
+        BT_LOGE("%s, Failed to allocate params", __func__);
+        return BT_STATUS_NOMEM;
     }
 
-    SAL_CHECK_RET(ret, 0);
+    memcpy(&params->addr, addr, sizeof(bt_address_t));
+    strlcpy(params->cmd, cmd, sizeof(params->cmd));
+
+    BT_LOGD("%s, Sending AT command: %.*s", __func__, len, cmd);
+
+    if (!service_loop_work(params, do_hf_send_at_cmd, NULL)) {
+        BT_LOGE("%s, service loop work submit failed", __func__);
+        free(params);
+        return BT_STATUS_FAIL;
+    }
+
     return BT_STATUS_SUCCESS;
 }
 
@@ -1655,24 +2146,25 @@ bt_status_t bt_sal_hfp_hf_send_dtmf(bt_address_t* addr, char dtmf)
 
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-        bt_addr_ba2str(addr, addr_str);
-        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
+        BT_LOGE("%s, Failed to find connection", __func__);
         return BT_STATUS_PARM_INVALID;
     }
 
-    bt_hfp_hf_call_info_t* active = find_call_by_state(sal_conn, HFP_HF_CALL_STATE_ACTIVE);
-    if (!active) {
-        BT_LOGE("%s, No active call for DTMF", __func__);
-        return BT_STATUS_PARM_INVALID;
+    bt_hfp_hf_send_dtmf_param_t* params = zalloc(sizeof(bt_hfp_hf_send_dtmf_param_t));
+    if (!params) {
+        BT_LOGE("%s, Failed to allocate params", __func__);
+        return BT_STATUS_NOMEM;
     }
 
-    int ret = Z_API(bt_hfp_hf_transmit_dtmf_code)(active->context, dtmf);
-    if (ret == -ENOTSUP) {
-        return BT_STATUS_UNSUPPORTED;
+    memcpy(&params->addr, addr, sizeof(bt_address_t));
+    params->dtmf = dtmf;
+
+    if (!service_loop_work(params, do_hf_send_dtmf, NULL)) {
+        BT_LOGE("%s, service loop work submit failed", __func__);
+        free(params);
+        return BT_STATUS_FAIL;
     }
 
-    SAL_CHECK_RET(ret, 0);
     return BT_STATUS_SUCCESS;
 }
 
@@ -1685,13 +2177,23 @@ bt_status_t bt_sal_hfp_hf_get_subscriber_number(bt_address_t* addr)
 
     bt_hfp_hf_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
-        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-        bt_addr_ba2str(addr, addr_str);
-        BT_LOGE("%s, Failed to find connection for address: %s", __func__, addr_str);
+        BT_LOGE("%s, Failed to find connection", __func__);
         return BT_STATUS_PARM_INVALID;
     }
 
-    SAL_CHECK_RET(Z_API(bt_hfp_hf_query_subscriber)(sal_conn->hf), 0);
+    bt_hfp_hf_simple_addr_param_t* params = zalloc(sizeof(bt_hfp_hf_simple_addr_param_t));
+    if (!params) {
+        BT_LOGE("%s, Failed to allocate params", __func__);
+        return BT_STATUS_NOMEM;
+    }
+
+    memcpy(&params->addr, addr, sizeof(bt_address_t));
+
+    if (!service_loop_work(params, do_hf_get_subscriber_number, NULL)) {
+        BT_LOGE("%s, service loop work submit failed", __func__);
+        free(params);
+        return BT_STATUS_FAIL;
+    }
 
     return BT_STATUS_SUCCESS;
 }
