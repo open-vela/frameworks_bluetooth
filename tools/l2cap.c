@@ -119,6 +119,19 @@ static void l2cap_trans_reset(void)
     memset(&g_trans_ctx, 0, sizeof(g_trans_ctx));
 }
 
+static void l2cap_trans_reset_cb(void* data)
+{
+    (void)data;
+
+    /* Only reset if we're in SENDING state but bulk transfer hasn't
+     * started yet (bulk_buf is NULL). This means we sent START but
+     * never received START_ACK, so it's safe to reset.
+     * If bulk transfer is in progress, leave it alone. */
+
+    if (g_trans_ctx.state == TRANS_SENDING && g_trans_ctx.bulk_buf == NULL)
+        l2cap_trans_reset();
+}
+
 static void write_complete_cb(euv_pipe_t* handle, uint8_t* buf, int status)
 {
     free(buf);
@@ -127,6 +140,13 @@ static void write_complete_cb(euv_pipe_t* handle, uint8_t* buf, int status)
 static void bulk_trans_complete(euv_pipe_t* handle, uint8_t* buf, int status)
 {
     l2cap_trans_ctx_t* ctx = &g_trans_ctx;
+
+    if (status != 0 || ctx->bulk_count <= 0) {
+        PRINT("bulk trans end, status:%d, count:%" PRId32, status, ctx->bulk_count);
+        l2cap_trans_reset();
+        free(buf);
+        return;
+    }
 
     ctx->bulk_count--;
     if (ctx->bulk_count)
@@ -764,7 +784,7 @@ static int speed_test_cmd(void* handle, int argc, char* argv[])
     ts.tv_sec += 2;
     if (sem_timedwait(&speed_tx_sem, &ts) < 0) {
         PRINT("wait speed test ack failed");
-        l2cap_trans_reset();
+        do_in_thread_loop_sync(&g_l2cap_thread, l2cap_trans_reset_cb, NULL);
         return CMD_ERROR;
     }
 
