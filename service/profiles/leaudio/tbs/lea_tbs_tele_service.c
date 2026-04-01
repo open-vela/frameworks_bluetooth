@@ -235,7 +235,7 @@ lea_tbs_calls_t* lea_tbs_tele_add_call(tapi_call_info* call_info)
 
 static void tbs_on_tapi_client_ready(const char* client_name, void* user_data)
 {
-    char* name = (char*)BTS_DEFAULT_NAME;
+    char name[MAX_NETWORK_OPERATOR_NAME_LENGTH + 1] = { 0 };
     tapi_signal_strength ss = { 0 };
     tapi_pref_net_mode value = NETWORK_PREF_NET_TYPE_ANY;
     lea_tbs_telephone_bearer_t* bearer;
@@ -244,7 +244,9 @@ static void tbs_on_tapi_client_ready(const char* client_name, void* user_data)
     if (client_name != NULL)
         BT_LOGD("%s :tapi is ready for %s\n", __func__, client_name);
 
-    tapi_network_get_display_name(context, PRIMARY_SLOT, &name);
+    if (tapi_network_get_display_name(context, PRIMARY_SLOT, name, sizeof(name))) {
+        strlcpy(name, BTS_DEFAULT_NAME, sizeof(name));
+    }
     tapi_get_pref_net_mode(context, PRIMARY_SLOT, &value);
     tapi_network_get_signalstrength(context, PRIMARY_SLOT, &ss);
 
