@@ -1416,12 +1416,19 @@ static void STACK_CALL(connect)(void* args)
 {
     sal_adapter_req_t* req = args;
     struct bt_conn* conn;
+    acl_state_param_t state;
 
     conn = bt_conn_create_br((const bt_addr_t*)&req->addr, BT_BR_CONN_PARAM_DEFAULT);
     if (!conn) {
         BT_LOGW("bt_conn_create_br Connection failed");
         return;
     }
+
+    memset(&state, 0, sizeof(state));
+    state.transport = BT_TRANSPORT_BREDR;
+    state.connection_state = CONNECTION_STATE_CONNECTING;
+    memcpy(&state.addr, &req->addr, sizeof(bt_address_t));
+    adapter_on_connection_state_changed(&state);
 
     bt_conn_unref(conn);
 }
