@@ -122,7 +122,7 @@ static bt_status_t parse_bt_adv_data(uint8_t* raw, uint16_t raw_len,
     return BT_STATUS_SUCCESS;
 }
 
-static void ext_adv_terminated_cb(struct bt_le_ext_adv* adv)
+static void ext_adv_sent(struct bt_le_ext_adv* adv, struct bt_le_ext_adv_sent_info* info)
 {
     int index;
 
@@ -134,22 +134,35 @@ static void ext_adv_terminated_cb(struct bt_le_ext_adv* adv)
         return;
     }
 
-    advertising_on_state_changed(g_adv_sets[index]->adv_id, LE_ADVERTISING_STOPPED);
+    /* duration/max events expired, no peer address */
+    advertising_on_terminated(g_adv_sets[index]->adv_id, NULL);
     zblue_le_ext_delete(g_adv_sets[index]);
-}
-
-static void ext_adv_sent(struct bt_le_ext_adv* adv, struct bt_le_ext_adv_sent_info* info)
-{
-    BT_LOGD("%s ", __func__);
-
-    ext_adv_terminated_cb(adv);
 }
 
 static void ext_adv_connected(struct bt_le_ext_adv* adv, struct bt_le_ext_adv_connected_info* info)
 {
+    int index;
+    const bt_addr_le_t* dst;
+
     BT_LOGD("%s ", __func__);
 
-    ext_adv_terminated_cb(adv);
+    index = bt_le_ext_adv_get_index(adv);
+    if (!g_adv_sets[index]) {
+        BT_LOGE("%s, adv set index:%d null", __func__, index);
+        return;
+    }
+
+    /* Extract peer address from the new connection */
+    dst = bt_conn_get_dst(info->conn);
+    if (dst) {
+        bt_le_address_t peer_addr;
+        memcpy(peer_addr.addr, dst->a.val, BT_ADDR_LENGTH);
+        peer_addr.addr_type = dst->type;
+        advertising_on_terminated(g_adv_sets[index]->adv_id, &peer_addr);
+    } else {
+        advertising_on_terminated(g_adv_sets[index]->adv_id, NULL);
+    }
+    zblue_le_ext_delete(g_adv_sets[index]);
 }
 
 static bt_status_t zblue_le_ext_convert_param(ble_adv_params_t* params, struct bt_le_adv_param* param)
