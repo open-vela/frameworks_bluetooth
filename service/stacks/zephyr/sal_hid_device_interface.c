@@ -29,6 +29,7 @@
 #include "sal_hid_device_interface.h"
 #include "sal_interface.h"
 #include "sal_zblue.h"
+#include "service_loop.h"
 
 #define BT_HID_DEVICE_VERSION 0x0101
 #define BT_HID_PARSER_VERSION 0x0111
@@ -503,13 +504,175 @@ void hid_set_protocol_callback(struct bt_hid_device* hid, uint8_t protocol)
     BT_LOGD("hid:%p set protocol:%d, ", hid, protocol);
 }
 
+typedef struct {
+    bt_address_t addr;
+    uint8_t type;
+    uint8_t data[BT_HID_REPORT_DATA_LEN];
+    uint16_t len;
+} hid_send_data_param_t;
+
+typedef struct {
+    bt_address_t addr;
+    hid_status_error_t param;
+} hid_device_cmd_param_t;
+
+/**
+ * Lookup hid_device pointer safely under lock by address.
+ * Returns NULL if the connection has already been torn down.
+ */
+static struct bt_hid_device* hid_device_lookup_by_addr(bt_address_t* addr)
+{
+    sal_hid_connection_t* hid_conn;
+    struct bt_hid_device* hid_device = NULL;
+
+    hid_conn_lock();
+    hid_conn = hid_find_connection_by_address(addr);
+    if (hid_conn) {
+        hid_device = hid_conn->hid_device;
+    }
+    hid_conn_unlock();
+
+    return hid_device;
+}
+
+static void do_hid_send_ctrl_data(service_work_t* work, void* userdata)
+{
+    hid_send_data_param_t* params = (hid_send_data_param_t*)userdata;
+    struct bt_hid_device* hid_device;
+    int ret;
+
+    if (!params) {
+        BT_LOGE("%s, params is NULL", __func__);
+        return;
+    }
+
+    hid_device = hid_device_lookup_by_addr(&params->addr);
+    if (!hid_device) {
+        BT_LOGW("%s, connection already released, skip", __func__);
+        free(params);
+        return;
+    }
+
+    ret = Z_API(bt_hid_device_send_ctrl_data)(hid_device, params->type,
+        params->data, params->len);
+    if (ret < 0) {
+        BT_LOGE("%s, send ctrl data failed: %d", __func__, ret);
+    }
+
+    free(params);
+}
+
+static void do_hid_send_intr_data(service_work_t* work, void* userdata)
+{
+    hid_send_data_param_t* params = (hid_send_data_param_t*)userdata;
+    struct bt_hid_device* hid_device;
+    int ret;
+
+    if (!params) {
+        BT_LOGE("%s, params is NULL", __func__);
+        return;
+    }
+
+    hid_device = hid_device_lookup_by_addr(&params->addr);
+    if (!hid_device) {
+        BT_LOGW("%s, connection already released, skip", __func__);
+        free(params);
+        return;
+    }
+
+    ret = Z_API(bt_hid_device_send_intr_data)(hid_device, params->type,
+        params->data, params->len);
+    if (ret < 0) {
+        BT_LOGE("%s, send intr data failed: %d", __func__, ret);
+    }
+
+    free(params);
+}
+
+static void do_hid_report_error(service_work_t* work, void* userdata)
+{
+    hid_device_cmd_param_t* params = (hid_device_cmd_param_t*)userdata;
+    struct bt_hid_device* hid_device;
+    int ret;
+
+    if (!params) {
+        BT_LOGE("%s, params is NULL", __func__);
+        return;
+    }
+
+    hid_device = hid_device_lookup_by_addr(&params->addr);
+    if (!hid_device) {
+        BT_LOGW("%s, connection already released, skip", __func__);
+        free(params);
+        return;
+    }
+
+    ret = Z_API(bt_hid_device_report_error)(hid_device, params->param);
+    if (ret < 0) {
+        BT_LOGE("%s, report error failed: %d", __func__, ret);
+    }
+
+    free(params);
+}
+
+static void do_hid_virtual_unplug(service_work_t* work, void* userdata)
+{
+    hid_device_cmd_param_t* params = (hid_device_cmd_param_t*)userdata;
+    struct bt_hid_device* hid_device;
+    int ret;
+
+    if (!params) {
+        BT_LOGE("%s, params is NULL", __func__);
+        return;
+    }
+
+    hid_device = hid_device_lookup_by_addr(&params->addr);
+    if (!hid_device) {
+        BT_LOGW("%s, connection already released, skip", __func__);
+        free(params);
+        return;
+    }
+
+    ret = Z_API(bt_hid_device_virtual_unplug)(hid_device);
+    if (ret < 0) {
+        BT_LOGE("%s, virtual unplug failed: %d", __func__, ret);
+    }
+
+    free(params);
+}
+
 void hid_get_protocol_callback(struct bt_hid_device* hid)
 {
-    uint8_t protocol = BT_HID_PROTOCOL_REPORT_MODE;
+    hid_send_data_param_t* params;
+    sal_hid_connection_t* hid_conn;
 
     BT_LOGD("hid:%p get protocol", hid);
-    Z_API(bt_hid_device_send_ctrl_data)
-    (hid, BT_HID_REPORT_TYPE_OTHER, &protocol, sizeof(protocol));
+
+    hid_conn_lock();
+    hid_conn = hid_find_connections_by_device(hid);
+    if (!hid_conn) {
+        hid_conn_unlock();
+        BT_LOGE("%s, hid:%p connection not found", __func__, hid);
+        return;
+    }
+
+    params = zalloc(sizeof(hid_send_data_param_t));
+    if (!params) {
+        hid_conn_unlock();
+        BT_LOGE("%s, Failed to allocate memory", __func__);
+        return;
+    }
+
+    memcpy(&params->addr, &hid_conn->addr, sizeof(bt_address_t));
+    params->type = BT_HID_REPORT_TYPE_OTHER;
+    params->data[0] = BT_HID_PROTOCOL_REPORT_MODE;
+    params->len = sizeof(uint8_t);
+    hid_conn_unlock();
+
+    if (!service_loop_work(params, do_hid_send_ctrl_data, NULL)) {
+        BT_LOGE("%s, service_loop_work failed", __func__);
+        free(params);
+    }
 }
 
 void hid_intr_data_callback(struct bt_hid_device* hid, uint8_t* data, uint16_t len)
@@ -771,10 +934,25 @@ void bt_sal_hid_device_cleanup()
     hid_conn_unlock();
 }
 
+/*
+ * NOTE: Async via service_loop_work(). Returns BT_STATUS_SUCCESS once
+ * the work is queued, not when the Z_API call completes. Actual send
+ * failures are logged in the worker callback.
+ */
 bt_status_t bt_sal_hid_device_get_report_response(bt_address_t* addr, uint8_t rpt_type, uint8_t* rpt_data, int rpt_size)
 {
     sal_hid_connection_t* hid_conn;
-    int ret;
+    hid_send_data_param_t* params;
+
+    if (rpt_size < 0 || rpt_size > BT_HID_REPORT_DATA_LEN) {
+        BT_LOGE("Invalid report size %d (max %d)", rpt_size, BT_HID_REPORT_DATA_LEN);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    if (rpt_size > 0 && !rpt_data) {
+        BT_LOGE("rpt_data is NULL but rpt_size is %d", rpt_size);
+        return BT_STATUS_PARM_INVALID;
+    }
 
     hid_conn_lock();
     hid_conn = hid_find_connection_by_address(addr);
@@ -784,21 +962,35 @@ bt_status_t bt_sal_hid_device_get_report_response(bt_address_t* addr, uint8_t rp
         return BT_STATUS_PARM_INVALID;
     }
 
+    params = zalloc(sizeof(hid_send_data_param_t));
+    if (!params) {
+        hid_conn_unlock();
+        BT_LOGE("Failed to allocate memory");
+        return BT_STATUS_NOMEM;
+    }
+
+    memcpy(&params->addr, &hid_conn->addr, sizeof(bt_address_t));
+    params->type = rpt_type;
+    if (rpt_data && rpt_size > 0) {
+        memcpy(params->data, rpt_data, rpt_size);
+    }
+    params->len = (uint16_t)rpt_size;
     hid_conn_unlock();
 
-    ret = Z_API(bt_hid_device_send_ctrl_data)(hid_conn->hid_device, rpt_type, rpt_data, rpt_size);
-    if (ret < 0) {
-        BT_LOGE("Failed to send report: %d", ret);
+    if (!service_loop_work(params, do_hid_send_ctrl_data, NULL)) {
+        BT_LOGE("service_loop_work failed");
+        free(params);
         return BT_STATUS_FAIL;
     }
 
     return BT_STATUS_SUCCESS;
 }
 
+/* NOTE: Async via service_loop_work(). See bt_sal_hid_device_get_report_response. */
 bt_status_t bt_sal_hid_device_report_error(bt_address_t* addr, hid_status_error_t error)
 {
     sal_hid_connection_t* hid_conn;
-    int ret;
+    hid_device_cmd_param_t* params;
 
     hid_conn_lock();
     hid_conn = hid_find_connection_by_address(addr);
@@ -808,21 +1000,41 @@ bt_status_t bt_sal_hid_device_report_error(bt_address_t* addr, hid_status_error_
         return BT_STATUS_PARM_INVALID;
     }
 
+    params = zalloc(sizeof(hid_device_cmd_param_t));
+    if (!params) {
+        hid_conn_unlock();
+        BT_LOGE("Failed to allocate memory");
+        return BT_STATUS_NOMEM;
+    }
+
+    memcpy(&params->addr, &hid_conn->addr, sizeof(bt_address_t));
+    params->param = error;
     hid_conn_unlock();
 
-    ret = Z_API(bt_hid_device_report_error)(hid_conn->hid_device, error);
-    if (ret < 0) {
-        BT_LOGE("Failed to send report: %d", ret);
+    if (!service_loop_work(params, do_hid_report_error, NULL)) {
+        BT_LOGE("service_loop_work failed");
+        free(params);
         return BT_STATUS_FAIL;
     }
 
     return BT_STATUS_SUCCESS;
 }
 
+/* NOTE: Async via service_loop_work(). See bt_sal_hid_device_get_report_response. */
 bt_status_t bt_sal_hid_device_send_report(bt_address_t* addr, uint8_t rpt_id, uint8_t* rpt_data, int rpt_size)
 {
     sal_hid_connection_t* hid_conn;
-    int ret;
+    hid_send_data_param_t* params;
+
+    if (rpt_size < 0 || rpt_size > BT_HID_REPORT_DATA_LEN) {
+        BT_LOGE("Invalid report size %d (max %d)", rpt_size, BT_HID_REPORT_DATA_LEN);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    if (rpt_size > 0 && !rpt_data) {
+        BT_LOGE("rpt_data is NULL but rpt_size is %d", rpt_size);
+        return BT_STATUS_PARM_INVALID;
+    }
 
     hid_conn_lock();
     hid_conn = hid_find_connection_by_address(addr);
@@ -832,21 +1044,35 @@ bt_status_t bt_sal_hid_device_send_report(bt_address_t* addr, uint8_t rpt_id, ui
         return BT_STATUS_PARM_INVALID;
     }
 
+    params = zalloc(sizeof(hid_send_data_param_t));
+    if (!params) {
+        hid_conn_unlock();
+        BT_LOGE("Failed to allocate memory");
+        return BT_STATUS_NOMEM;
+    }
+
+    memcpy(&params->addr, &hid_conn->addr, sizeof(bt_address_t));
+    params->type = BT_HID_REPORT_TYPE_INPUT;
+    if (rpt_data && rpt_size > 0) {
+        memcpy(params->data, rpt_data, rpt_size);
+    }
+    params->len = (uint16_t)rpt_size;
     hid_conn_unlock();
 
-    ret = Z_API(bt_hid_device_send_intr_data)(hid_conn->hid_device, BT_HID_REPORT_TYPE_INPUT, rpt_data, rpt_size);
-    if (ret < 0) {
-        BT_LOGE("Failed to send report: %d", ret);
+    if (!service_loop_work(params, do_hid_send_intr_data, NULL)) {
+        BT_LOGE("service_loop_work failed");
+        free(params);
         return BT_STATUS_FAIL;
     }
 
     return BT_STATUS_SUCCESS;
 }
 
+/* NOTE: Async via service_loop_work(). See bt_sal_hid_device_get_report_response. */
 bt_status_t bt_sal_hid_device_virtual_unplug(bt_address_t* addr)
 {
     sal_hid_connection_t* hid_conn;
-    int ret;
+    hid_device_cmd_param_t* params;
 
     hid_conn_lock();
     hid_conn = hid_find_connection_by_address(addr);
@@ -856,11 +1082,19 @@ bt_status_t bt_sal_hid_device_virtual_unplug(bt_address_t* addr)
         return BT_STATUS_PARM_INVALID;
     }
 
+    params = zalloc(sizeof(hid_device_cmd_param_t));
+    if (!params) {
+        hid_conn_unlock();
+        BT_LOGE("Failed to allocate memory");
+        return BT_STATUS_NOMEM;
+    }
+
+    memcpy(&params->addr, &hid_conn->addr, sizeof(bt_address_t));
     hid_conn_unlock();
 
-    ret = Z_API(bt_hid_device_virtual_unplug)(hid_conn->hid_device);
-    if (ret < 0) {
-        BT_LOGE("Failed to send virtual unplug: %d", ret);
+    if (!service_loop_work(params, do_hid_virtual_unplug, NULL)) {
+        BT_LOGE("service_loop_work failed");
+        free(params);
         return BT_STATUS_FAIL;
     }
 
