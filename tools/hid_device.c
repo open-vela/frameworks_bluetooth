@@ -207,7 +207,14 @@ static void hidd_get_report_cb(void* cookie, bt_address_t* addr, uint8_t rpt_typ
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     bt_addr_ba2str(addr, addr_str);
-    PRINT("%s, addr:%s, buffer size: %d", __func__, addr_str, buffer_size);
+    PRINT("%s, addr:%s, rpt_type:%d, rpt_id:%d, buffer size: %d",
+        __func__, addr_str, rpt_type, rpt_id, buffer_size);
+
+    /* Only report ID 0x01 and 0x02 are valid per HID descriptor */
+    if (rpt_id != 0x01 && rpt_id != 0x02) {
+        bt_hid_device_report_error(g_bttool_ins, addr, HID_STATUS_HANDSHAKE_INVALID_REPORT_ID);
+        return;
+    }
 
     if (rpt_id != 0)
         rpt_data[0] = rpt_id;
