@@ -482,8 +482,7 @@ static int if_gattc_dump(void)
     bt_list_t* clist = g_gattc_manager.connections;
 
     for (cnode = bt_list_head(clist); cnode != NULL; cnode = bt_list_next(clist, cnode)) {
-        gattc_connection_t* connection = (gattc_connection_t*)bt_list_node(cnode);
-        gattc_dump_services(connection);
+        gattc_dump_services((gattc_connection_t*)bt_list_node(cnode));
     }
 
     return 0;

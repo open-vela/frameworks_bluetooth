@@ -40,6 +40,7 @@
 #define STACK_SVR_PORT(scn) (((scn << 1) & 0x3E) + 1)
 
 #define SAL_SPP_RFCOMM_MFS 990
+#define SPP_SDP_DISCOVER_TIMEOUT_MS 3000
 #define SPP_DEFAULT_CREDITS 10
 #define SPP_MFS_EXTRA_SIZE 14
 #define SDP_CLIENT_BUF_LEN 512
@@ -57,6 +58,7 @@ typedef struct {
     uint16_t scn;
     struct bt_uuid_128 uuid_128;
     bool discovered;
+    service_timer_t* sdp_timer;
 } sal_spp_client_t;
 
 typedef struct {
@@ -501,6 +503,14 @@ static void spp_rx_buf_free(void* data)
     }
 }
 
+static void spp_sdp_cancel_timer(sal_spp_client_t* spp_client)
+{
+    if (spp_client && spp_client->sdp_timer) {
+        service_loop_cancel_timer(spp_client->sdp_timer);
+        spp_client->sdp_timer = NULL;
+    }
+}
+
 static void spp_connection_free(void* data)
 {
     sal_spp_connection_t* spp_conn = (sal_spp_connection_t*)data;
@@ -523,6 +533,7 @@ static void spp_connection_free(void* data)
     }
 
     if (spp_conn->spp_client) {
+        spp_sdp_cancel_timer(spp_conn->spp_client);
         free(spp_conn->spp_client);
         spp_conn->spp_client = NULL;
     }
@@ -736,6 +747,29 @@ static int spp_connect_with_channel(sal_spp_connection_t* spp_conn, uint16_t scn
     return 0;
 }
 
+static void spp_sdp_timeout_handler(service_timer_t* timer, void* userdata)
+{
+    sal_spp_connection_t* spp_conn = (sal_spp_connection_t*)userdata;
+
+    if (!spp_conn || !spp_conn->spp_client) {
+        return;
+    }
+
+    spp_conn->spp_client->sdp_timer = NULL;
+    BT_LOGW("SPP SDP discover timeout, conn_port: %d", spp_conn->conn_port);
+
+    bt_sdp_discover_cancel(spp_conn->conn, &spp_conn->spp_client->sdp_discover);
+
+    spp_on_connection_state_changed(&spp_conn->addr, spp_conn->conn_port,
+        PROFILE_STATE_DISCONNECTED);
+    bt_sal_cm_profile_disconnected_callback(&spp_conn->addr, PROFILE_SPP,
+        spp_conn->conn_port);
+
+    spp_conn_lock();
+    bt_list_remove(g_spp_manager.connections, spp_conn);
+    spp_conn_unlock();
+}
+
 static uint8_t sdp_discovered_cb(struct bt_conn* conn, struct bt_sdp_client_result* result,
     const struct bt_sdp_discover_params* param)
 {
@@ -749,6 +783,8 @@ static uint8_t sdp_discovered_cb(struct bt_conn* conn, struct bt_sdp_client_resu
         BT_LOGE("SPP connection not found for conn");
         return BT_SDP_DISCOVER_UUID_STOP;
     }
+
+    spp_sdp_cancel_timer(spp_conn->spp_client);
 
     if (!result->resp_buf) {
         BT_LOGE("SPP SDP discover response buffer is null");
@@ -771,6 +807,8 @@ static uint8_t sdp_discovered_cb(struct bt_conn* conn, struct bt_sdp_client_resu
         /* RFCOMM connect failed, clean up resources directly */
         spp_on_connection_state_changed(&spp_conn->addr, spp_conn->conn_port,
             PROFILE_STATE_DISCONNECTED);
+        bt_sal_cm_profile_disconnected_callback(&spp_conn->addr, PROFILE_SPP,
+            spp_conn->conn_port);
         spp_conn_lock();
         bt_list_remove(g_spp_manager.connections, spp_conn);
         spp_conn_unlock();
@@ -802,6 +840,8 @@ static void sdp_disconnected_cb(struct bt_conn* conn, const struct bt_sdp_discov
         BT_LOGE("SPP client not found for conn");
         return;
     }
+
+    spp_sdp_cancel_timer(spp_client);
 
     if (spp_client->discovered == false) {
         spp_rfcomm_disconnected(&spp_conn->rfcomm_dlc);
@@ -844,6 +884,9 @@ static bt_status_t spp_connect_with_uuid(sal_spp_connection_t* spp_conn, bt_uuid
         BT_LOGE("Failed to discover service: %d", err);
         return err;
     }
+
+    spp_client->sdp_timer = service_loop_timer_no_repeating(
+        SPP_SDP_DISCOVER_TIMEOUT_MS, spp_sdp_timeout_handler, spp_conn);
 
     return 0;
 }
