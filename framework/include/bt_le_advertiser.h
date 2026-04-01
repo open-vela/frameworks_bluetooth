@@ -140,6 +140,46 @@ void on_advertising_stopped(bt_advertiser_t* adv, uint8_t adv_id)
 typedef void (*on_advertising_stopped_cb_t)(bt_advertiser_t* adv, uint8_t adv_id);
 
 /**
+ * @brief Callback for advertising terminated notification.
+ *
+ * This callback is used to notify the application that the Controller has
+ * automatically terminated the advertising set. This corresponds to the
+ * HCI LE Advertising Set Terminated event (Core Spec v6.2, Section 7.7.65.18).
+ *
+ * Unlike on_advertising_stopped which is triggered by Host-initiated stop,
+ * this callback is triggered when the Controller terminates advertising due to:
+ * 1. A new connection being established (addr != NULL)
+ * 2. Advertising duration timeout (addr == NULL)
+ * 3. Max advertising events reached (addr == NULL)
+ *
+ * If this callback is not registered (NULL), the behavior falls back to calling
+ * on_advertising_stopped for backward compatibility.
+ *
+ * @param adv - Advertiser handle.
+ * @param adv_id - Advertiser ID.
+ * @param addr - Peer BLE address (with address type) if terminated due to
+ *               connection establishment; NULL if terminated due to timeout
+ *               or max events reached.
+ *
+ * **Example:**
+ * @code
+ * void on_advertising_terminated(bt_advertiser_t* adv, uint8_t adv_id,
+ *     const bt_le_address_t* addr)
+ * {
+ *     if (addr) {
+ *         printf("adv_id:%d terminated by connection from "
+ *             "%02X:%02X:%02X:%02X:%02X:%02X type:%d\n",
+ *             adv_id, addr->addr[5], addr->addr[4], addr->addr[3],
+ *             addr->addr[2], addr->addr[1], addr->addr[0], addr->addr_type);
+ *     } else {
+ *         printf("adv_id:%d terminated by timeout or max events\n", adv_id);
+ *     }
+ * }
+ * @endcode
+ */
+typedef void (*on_advertising_terminated_cb_t)(bt_advertiser_t* adv, uint8_t adv_id, const bt_le_address_t* addr);
+
+/**
  * @cond
  */
 
@@ -151,6 +191,7 @@ typedef struct {
     uint32_t size;
     on_advertising_start_cb_t on_advertising_start;
     on_advertising_stopped_cb_t on_advertising_stopped;
+    on_advertising_terminated_cb_t on_advertising_terminated;
 } advertiser_callback_t;
 
 /* * BLE ADV Parameters */

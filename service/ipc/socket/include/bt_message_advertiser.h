@@ -47,7 +47,8 @@ BT_ADVERTISER_MESSAGE_START,
 #define BT_IPC_CODE_COMMAND_BLE_ADVERTISER_END BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_BLE_ADVERTISER, BT_IPC_CODE_SUBCODE_MAX_NUM)
 
 #define BT_IPC_CODE_CALLBACK_BLE_ADVERTISER_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_BLE_ADVERTISER, 0)
-// TODO: Add new BT IPC Code sequentially
+#define ADV_SUBCODE_CB_TERMINATED 1
+#define BT_LE_ON_ADVERTISER_TERMINATED BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_BLE_ADVERTISER, ADV_SUBCODE_CB_TERMINATED)
 #define BT_IPC_CODE_CALLBACK_BLE_ADVERTISER_END BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_BLE_ADVERTISER, BT_IPC_CODE_SUBCODE_MAX_NUM)
 
     typedef union {
@@ -96,6 +97,13 @@ BT_ADVERTISER_MESSAGE_START,
             uint64_t adver;
             uint8_t adv_id;
         } _on_advertising_stopped;
+
+        struct {
+            uint64_t adver;
+            uint8_t adv_id;
+            bool has_addr;
+            bt_le_address_t addr;
+        } _on_advertising_terminated;
     } bt_message_advertiser_callbacks_t;
 
 #ifdef __cplusplus

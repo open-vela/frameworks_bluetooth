@@ -59,6 +59,9 @@ typedef struct {
     uint8_t adv_id;
     advertising_info_t* adv_info;
     uint8_t state;
+    bt_le_address_t addr;
+    bool has_addr;
+    bool is_terminated;
 } adv_event_t;
 
 static adv_manager_t adv_manager;
@@ -121,7 +124,9 @@ static advertiser_t* alloc_new_advertiser(void* remote, const advertiser_callbac
     adver->remote = remote;
     adver->adv_id = 0;
     adver->adv_start = NULL;
-    memcpy(&adver->callbacks, cbs, sizeof(advertiser_callback_t));
+    memset(&adver->callbacks, 0, sizeof(advertiser_callback_t));
+    memcpy(&adver->callbacks, cbs,
+        cbs->size < sizeof(advertiser_callback_t) ? cbs->size : sizeof(advertiser_callback_t));
 
     return adver;
 }
@@ -265,7 +270,14 @@ static void advertiser_notify_state(void* data)
         adver->callbacks.on_advertising_start(get_adver(adver), advstate->adv_id, BT_ADV_STATUS_SUCCESS);
     } else if (advstate->state == LE_ADVERTISING_STOPPED) {
         delete_advertiser(adver);
-        adver->callbacks.on_advertising_stopped(get_adver(adver), advstate->adv_id);
+        if (advstate->is_terminated
+            && adver->callbacks.on_advertising_terminated) {
+            adver->callbacks.on_advertising_terminated(
+                get_adver(adver), advstate->adv_id,
+                advstate->has_addr ? &advstate->addr : NULL);
+        } else {
+            adver->callbacks.on_advertising_stopped(get_adver(adver), advstate->adv_id);
+        }
         destroy_advertiser(adver);
     }
 
@@ -306,6 +318,30 @@ void advertising_on_state_changed(uint8_t adv_id, uint8_t state)
 
     advstate->adv_id = adv_id;
     advstate->state = state;
+    advstate->has_addr = false;
+    advstate->is_terminated = false;
+    do_in_service_loop(advertiser_notify_state, advstate);
+}
+
+void advertising_on_terminated(uint8_t adv_id, const bt_le_address_t* addr)
+{
+    adv_event_t* advstate = malloc(sizeof(adv_event_t));
+
+    if (!advstate) {
+        BT_LOGE("adv_id: %d terminated malloc failed", adv_id);
+        return;
+    }
+
+    BT_LOGD("adv_id: %d terminated, has_addr: %d", adv_id, addr != NULL);
+    advstate->adv_id = adv_id;
+    advstate->state = LE_ADVERTISING_STOPPED;
+    advstate->is_terminated = true;
+    if (addr) {
+        memcpy(&advstate->addr, addr, sizeof(bt_le_address_t));
+        advstate->has_addr = true;
+    } else {
+        advstate->has_addr = false;
+    }
     do_in_service_loop(advertiser_notify_state, advstate);
 }
 

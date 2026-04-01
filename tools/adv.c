@@ -98,10 +98,24 @@ static void on_advertising_stopped_cb(bt_advertiser_t* adv, uint8_t adv_id)
     PRINT("%s, handle:%p, adv_id:%d", __func__, adv, adv_id);
 }
 
+static void on_advertising_terminated_cb(bt_advertiser_t* adv, uint8_t adv_id, const bt_le_address_t* addr)
+{
+    if (addr) {
+        PRINT("%s, handle:%p, adv_id:%d, peer:%02X:%02X:%02X:%02X:%02X:%02X, type:%d",
+            __func__, adv, adv_id,
+            addr->addr[5], addr->addr[4], addr->addr[3],
+            addr->addr[2], addr->addr[1], addr->addr[0],
+            addr->addr_type);
+    } else {
+        PRINT("%s, handle:%p, adv_id:%d, timeout/max_events", __func__, adv, adv_id);
+    }
+}
+
 static advertiser_callback_t adv_callback = {
     sizeof(adv_callback),
     on_advertising_start_cb,
-    on_advertising_stopped_cb
+    on_advertising_stopped_cb,
+    on_advertising_terminated_cb
 };
 
 static int data_check(const char* str)
