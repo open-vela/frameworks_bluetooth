@@ -31,6 +31,7 @@
 
 #include <errno.h>
 #include <inttypes.h>
+#include <pthread.h>
 #include <string.h>
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/classic/at.h>
@@ -44,11 +45,23 @@
 #define HFP_AG_INDICATOR_INVALID UINT8_MAX
 
 static bt_list_t* g_sal_ag_conn_list = NULL;
+static pthread_mutex_t g_sal_ag_conn_lock;
+
+static void conn_list_lock(void)
+{
+    pthread_mutex_lock(&g_sal_ag_conn_lock);
+}
+
+static void conn_list_unlock(void)
+{
+    pthread_mutex_unlock(&g_sal_ag_conn_lock);
+}
 
 extern struct net_buf_pool sdp_pool;
 
 static uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_result* result, const struct bt_sdp_discover_params* ignore);
 static void zblue_on_sdp_disconnected(struct bt_conn* conn, const struct bt_sdp_discover_params* params);
+static enum bt_at_cme hfp_at_result_to_cme(hfp_atcmd_result_t result);
 
 static struct bt_sdp_discover_params sdp_discover = {
     .func = zblue_on_sdp_done,
@@ -300,10 +313,13 @@ static bool sal_call_number_cmp(void* sal_context, void* data)
 static bt_hfp_ag_call_info_t* find_call_by_context(struct bt_hfp_ag_call* z_context,
     bt_hfp_ag_connection_t** sal_conn_out)
 {
-    if (!g_sal_ag_conn_list || !z_context) {
+    if (!z_context) {
         return NULL;
     }
 
+    if (!g_sal_ag_conn_list) {
+        return NULL;
+    }
     bt_list_node_t* node;
     for (node = bt_list_head(g_sal_ag_conn_list); node != NULL;
          node = bt_list_next(g_sal_ag_conn_list, node)) {
@@ -395,10 +411,12 @@ static bt_hfp_ag_call_info_t* update_sal_call(bt_hfp_ag_connection_t* sal_conn,
     hfp_call_direction_t dir, hfp_ag_call_state_t call, hfp_call_mode_t mode,
     hfp_call_mpty_type_t mpty, hfp_call_addrtype_t type, const char* number)
 {
+    conn_list_lock();
     bt_hfp_ag_call_info_t* sal_call = find_call_by_number(sal_conn, number);
     if (!sal_call) {
         sal_call = build_sal_call(dir, call, type, number);
         if (!sal_call) {
+            conn_list_unlock();
             return NULL;
         }
 
@@ -407,6 +425,7 @@ static bt_hfp_ag_call_info_t* update_sal_call(bt_hfp_ag_connection_t* sal_conn,
         }
 
         bt_list_add_head(sal_conn->calls, sal_call);
+        conn_list_unlock();
         return sal_call;
     }
 
@@ -416,11 +435,13 @@ static bt_hfp_ag_call_info_t* update_sal_call(bt_hfp_ag_connection_t* sal_conn,
         /* use sal_conn directly instead of find_call_by_context,
          * because context may be NULL for call_sync entries */
         bt_list_remove(sal_conn->calls, sal_call);
+        conn_list_unlock();
         return NULL;
     }
 
     sal_call->type = type;
 
+    conn_list_unlock();
     return sal_call;
 }
 
@@ -434,8 +455,10 @@ static bt_status_t do_ag_sdp_discover(bt_controller_id_t id, bt_address_t* addr,
         return BT_STATUS_PARM_INVALID;
     }
 
+    conn_list_lock();
     sal_conn = find_connection_by_addr(addr);
     if (sal_conn != NULL) {
+        conn_list_unlock();
         BT_LOGI("%s, Connection already exists, skip", __func__);
         return BT_STATUS_SUCCESS;
     }
@@ -443,6 +466,7 @@ static bt_status_t do_ag_sdp_discover(bt_controller_id_t id, bt_address_t* addr,
     conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
     /** Remember to unref @p conn once SLC is initiated or cancelled */
     if (!conn) {
+        conn_list_unlock();
         BT_LOGE("%s, Failed to lookup connection", __func__);
         hfp_ag_on_connection_state_changed(addr, PROFILE_STATE_DISCONNECTED, 0, 0);
         bt_sal_cm_profile_disconnected_callback(addr, PROFILE_HFP_AG, CONN_ID_DEFAULT);
@@ -451,12 +475,14 @@ static bt_status_t do_ag_sdp_discover(bt_controller_id_t id, bt_address_t* addr,
 
     sal_conn = new_sal_connection(conn, NULL);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, could not create new ag connection", __func__);
         hfp_ag_on_connection_state_changed(addr, PROFILE_STATE_DISCONNECTED, 0, 0);
         bt_sal_cm_profile_disconnected_callback(addr, PROFILE_HFP_AG, CONN_ID_DEFAULT);
         bt_conn_unref(conn);
         return BT_STATUS_NOMEM;
     }
+    conn_list_unlock();
 
     BT_LOGD("%s, do sdp discover", __func__);
     if (bt_sdp_discover(conn, &sdp_discover) < 0) {
@@ -464,7 +490,9 @@ static bt_status_t do_ag_sdp_discover(bt_controller_id_t id, bt_address_t* addr,
         hfp_ag_on_connection_state_changed(addr, PROFILE_STATE_DISCONNECTED, 0, 0);
         bt_sal_cm_profile_disconnected_callback(addr, PROFILE_HFP_AG, CONN_ID_DEFAULT);
         bt_conn_unref(conn);
+        conn_list_lock();
         bt_list_remove(g_sal_ag_conn_list, sal_conn);
+        conn_list_unlock();
         return BT_STATUS_FAIL;
     }
 
@@ -477,6 +505,7 @@ static void do_ag_slc_connect(service_work_t* work, void* userdata)
     bt_hfp_ag_slc_connect_param_t* params = (bt_hfp_ag_slc_connect_param_t*)userdata;
     bt_hfp_ag_connection_t* sal_conn;
     struct bt_hfp_ag* ag = NULL;
+    bt_address_t addr;
 
     if (!params) {
         BT_LOGE("%s, params is NULL", __func__);
@@ -489,8 +518,10 @@ static void do_ag_slc_connect(service_work_t* work, void* userdata)
         return;
     }
 
+    conn_list_lock();
     sal_conn = find_connection_by_context(params->conn);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGW("%s, no pending connection found for conn", __func__);
         bt_conn_unref(params->conn);
         free(params);
@@ -498,11 +529,14 @@ static void do_ag_slc_connect(service_work_t* work, void* userdata)
     }
 
     if (sal_conn->ag) {
+        conn_list_unlock();
         BT_LOGD("%s, already initiating SLC, skip SLC initiating", __func__);
         bt_conn_unref(params->conn);
         free(params);
         return;
     }
+    memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+    conn_list_unlock();
 
     BT_LOGD("%s, SLC initiating", __func__);
     if (Z_API(bt_hfp_ag_connect)(params->conn, &ag, params->channel)) {
@@ -510,11 +544,17 @@ static void do_ag_slc_connect(service_work_t* work, void* userdata)
         goto error;
     }
 
+    conn_list_lock();
+    sal_conn = find_connection_by_context(params->conn);
+    if (sal_conn) {
+        sal_conn->ag = ag;
+    }
+    conn_list_unlock();
+
     bt_conn_unref(params->conn);
-    sal_conn->ag = ag;
     free(params);
 
-    hfp_ag_on_connection_state_changed(&sal_conn->addr, PROFILE_STATE_CONNECTING, 0, 0);
+    hfp_ag_on_connection_state_changed(&addr, PROFILE_STATE_CONNECTING, 0, 0);
 
     BT_LOGD("%s, HFP AG connecting", __func__);
     return;
@@ -522,21 +562,27 @@ static void do_ag_slc_connect(service_work_t* work, void* userdata)
 error:
     bt_conn_unref(params->conn);
     free(params);
-    hfp_ag_on_connection_state_changed(&sal_conn->addr, PROFILE_STATE_DISCONNECTED, 0, 0);
-    bt_sal_cm_profile_disconnected_callback(&sal_conn->addr, PROFILE_HFP_AG, CONN_ID_DEFAULT);
+    hfp_ag_on_connection_state_changed(&addr, PROFILE_STATE_DISCONNECTED, 0, 0);
+    bt_sal_cm_profile_disconnected_callback(&addr, PROFILE_HFP_AG, CONN_ID_DEFAULT);
+    conn_list_lock();
     bt_list_remove(g_sal_ag_conn_list, sal_conn);
+    conn_list_unlock();
     return;
 }
 
 bt_status_t do_ag_disconnect(bt_controller_id_t id, bt_address_t* addr, void* userdata)
 {
+    struct bt_hfp_ag* ag;
+
     if (!addr) {
         BT_LOGE("%s, addr is NULL", __func__);
         return BT_STATUS_PARM_INVALID;
     }
 
+    conn_list_lock();
     bt_hfp_ag_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, Failed to find connection", __func__);
         return BT_STATUS_FAIL;
     }
@@ -544,10 +590,13 @@ bt_status_t do_ag_disconnect(bt_controller_id_t id, bt_address_t* addr, void* us
     if (!sal_conn->ag) {
         BT_LOGI("%s, HFP AG not connected", __func__);
         bt_list_remove(g_sal_ag_conn_list, sal_conn);
+        conn_list_unlock();
         return BT_STATUS_SUCCESS;
     }
+    ag = sal_conn->ag;
+    conn_list_unlock();
 
-    SAL_CHECK_RET(Z_API(bt_hfp_ag_disconnect)(sal_conn->ag), 0);
+    SAL_CHECK_RET(Z_API(bt_hfp_ag_disconnect)(ag), 0);
     return BT_STATUS_SUCCESS;
 }
 
@@ -579,6 +628,7 @@ static void do_ag_sco_connect(service_work_t* work, void* userdata)
     struct bt_hfp_ag* ag;
     uint8_t codec;
     bt_hfp_ag_connection_t* sal_conn;
+    bt_address_t addr;
     hfp_codec_config_t cfg = { 0 };
     int err;
 
@@ -598,31 +648,40 @@ static void do_ag_sco_connect(service_work_t* work, void* userdata)
     codec = params->codec;
     free(params);
 
+    conn_list_lock();
     sal_conn = find_connection_by_ag(ag);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGW("%s, connection not found for ag=%p", __func__, ag);
         return;
     }
+    memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+    conn_list_unlock();
 
-    hfp_ag_on_audio_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_CONNECTING, 0xFFFF); // sco conn handle not supported
+    hfp_ag_on_audio_state_changed(&addr, HFP_AUDIO_STATE_CONNECTING, 0xFFFF); // sco conn handle not supported
 
     err = Z_API(bt_hfp_ag_audio_connect)(ag, codec);
     if (err == -EALREADY) {
         BT_LOGW("%s, Audio already connected, notify CONNECTED", __func__);
-        hfp_ag_on_audio_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_CONNECTED, 0xFFFF);
+        hfp_ag_on_audio_state_changed(&addr, HFP_AUDIO_STATE_CONNECTED, 0xFFFF);
     } else if ((err == -ENOTSUP || err == -EINVAL) && codec != BT_HFP_AG_CODEC_CVSD) {
         BT_LOGW("%s, codec=%d not supported, fallback to CVSD", __func__, codec);
-        sal_conn->preferred_codec = BT_HFP_AG_CODEC_CVSD;
+        conn_list_lock();
+        sal_conn = find_connection_by_ag(ag);
+        if (sal_conn) {
+            sal_conn->preferred_codec = BT_HFP_AG_CODEC_CVSD;
+        }
+        conn_list_unlock();
         hfp_codec_to_service_cfg(BT_HFP_AG_CODEC_CVSD, &cfg);
-        hfp_ag_on_codec_changed(&sal_conn->addr, &cfg);
+        hfp_ag_on_codec_changed(&addr, &cfg);
         err = Z_API(bt_hfp_ag_audio_connect)(ag, BT_HFP_AG_CODEC_CVSD);
         if (err) {
             BT_LOGE("%s, Failed to connect HFP AG SCO with CVSD fallback, err=%d", __func__, err);
-            hfp_ag_on_audio_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_DISCONNECTED, 0xFFFF);
+            hfp_ag_on_audio_state_changed(&addr, HFP_AUDIO_STATE_DISCONNECTED, 0xFFFF);
         }
     } else if (err) {
         BT_LOGE("%s, Failed to connect HFP AG SCO, err=%d", __func__, err);
-        hfp_ag_on_audio_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_DISCONNECTED, 0xFFFF);
+        hfp_ag_on_audio_state_changed(&addr, HFP_AUDIO_STATE_DISCONNECTED, 0xFFFF);
     }
 }
 
@@ -631,6 +690,7 @@ static void do_ag_sco_disconnect(service_work_t* work, void* userdata)
     bt_hfp_ag_disconnect_sco_param_t* params;
     struct bt_conn* sco_context;
     bt_hfp_ag_connection_t* sal_conn;
+    bt_address_t addr;
     int err;
 
     params = (bt_hfp_ag_disconnect_sco_param_t*)userdata;
@@ -648,13 +708,17 @@ static void do_ag_sco_disconnect(service_work_t* work, void* userdata)
     sco_context = params->sco_context;
     free(params);
 
+    conn_list_lock();
     sal_conn = find_connection_by_sco_context(sco_context);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGW("%s, sco_context no longer tracked, skip disconnect", __func__);
         return;
     }
+    memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+    conn_list_unlock();
 
-    hfp_ag_on_audio_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_DISCONNECTING, 0xFFFF);
+    hfp_ag_on_audio_state_changed(&addr, HFP_AUDIO_STATE_DISCONNECTING, 0xFFFF);
 
     err = bt_conn_disconnect(sco_context, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
     if (err) {
@@ -665,8 +729,11 @@ static void do_ag_sco_disconnect(service_work_t* work, void* userdata)
 static void zblue_on_sdp_disconnected(struct bt_conn* conn, const struct bt_sdp_discover_params* params)
 {
     bt_address_t bd_addr;
+
+    conn_list_lock();
     bt_hfp_ag_connection_t* sal_conn = find_connection_by_context(conn);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGW("%s, no pending connection found", __func__);
         return;
     }
@@ -674,6 +741,8 @@ static void zblue_on_sdp_disconnected(struct bt_conn* conn, const struct bt_sdp_
 
     BT_LOGW("%s, SDP disconnected during discovery", __func__);
     bt_list_remove(g_sal_ag_conn_list, sal_conn);
+    conn_list_unlock();
+
     hfp_ag_on_connection_state_changed(&bd_addr, PROFILE_STATE_DISCONNECTED, 0, 0);
     bt_sal_cm_profile_disconnected_callback(&bd_addr, PROFILE_HFP_AG, CONN_ID_DEFAULT);
 }
@@ -682,6 +751,7 @@ static void do_ag_set_volume(service_work_t* work, void* userdata)
 {
     bt_hfp_ag_set_volume_param_t* params = (bt_hfp_ag_set_volume_param_t*)userdata;
     bt_hfp_ag_connection_t* sal_conn;
+    struct bt_hfp_ag* ag;
     int ret;
 
     if (!params) {
@@ -689,19 +759,23 @@ static void do_ag_set_volume(service_work_t* work, void* userdata)
         return;
     }
 
+    conn_list_lock();
     sal_conn = find_connection_by_addr(&params->addr);
     if (!sal_conn || !sal_conn->ag) {
+        conn_list_unlock();
         BT_LOGW("%s, connection no longer available, skip set volume", __func__);
         free(params);
         return;
     }
+    ag = sal_conn->ag;
+    conn_list_unlock();
 
     switch (params->type) {
     case HFP_VOLUME_TYPE_SPK:
-        ret = Z_API(bt_hfp_ag_vgs)(sal_conn->ag, params->gain);
+        ret = Z_API(bt_hfp_ag_vgs)(ag, params->gain);
         break;
     case HFP_VOLUME_TYPE_MIC:
-        ret = Z_API(bt_hfp_ag_vgm)(sal_conn->ag, params->gain);
+        ret = Z_API(bt_hfp_ag_vgm)(ag, params->gain);
         break;
     default:
         BT_LOGE("%s, Unknown volume type: %d", __func__, params->type);
@@ -741,20 +815,25 @@ static void do_ag_voice_recognition(service_work_t* work, void* userdata)
 {
     bt_hfp_ag_voice_recognition_param_t* params = (bt_hfp_ag_voice_recognition_param_t*)userdata;
     bt_hfp_ag_connection_t* sal_conn;
+    struct bt_hfp_ag* ag;
 
     if (!params) {
         BT_LOGE("%s, params is NULL", __func__);
         return;
     }
 
+    conn_list_lock();
     sal_conn = find_connection_by_addr(&params->addr);
     if (!sal_conn || !sal_conn->ag) {
+        conn_list_unlock();
         BT_LOGW("%s, connection no longer available", __func__);
         free(params);
         return;
     }
+    ag = sal_conn->ag;
+    conn_list_unlock();
 
-    int ret = Z_API(bt_hfp_ag_voice_recognition)(sal_conn->ag, params->activate);
+    int ret = Z_API(bt_hfp_ag_voice_recognition)(ag, params->activate);
     if (ret) {
         BT_LOGE("%s, Failed to %s voice recognition, ret=%d", __func__,
             params->activate ? "start" : "stop", ret);
@@ -767,6 +846,7 @@ static void do_ag_cind_response(service_work_t* work, void* userdata)
 {
     bt_hfp_ag_cind_response_param_t* params = (bt_hfp_ag_cind_response_param_t*)userdata;
     bt_hfp_ag_connection_t* sal_conn;
+    struct bt_hfp_ag* ag;
     struct bt_hfp_ag_ongoing_call calls[HFP_CALL_LIST_MAX];
     struct bt_hfp_ag_indicator_value indicators[4] = { 0 };
     size_t count = 0;
@@ -776,12 +856,16 @@ static void do_ag_cind_response(service_work_t* work, void* userdata)
         return;
     }
 
+    conn_list_lock();
     sal_conn = find_connection_by_addr(&params->addr);
     if (!sal_conn || !sal_conn->ag) {
+        conn_list_unlock();
         BT_LOGW("%s, connection no longer available", __func__);
         free(params);
         return;
     }
+
+    ag = sal_conn->ag;
 
     sal_conn->indicators.network = params->response.network ? 1 : 0;
     sal_conn->indicators.roam = params->response.roam ? 1 : 0;
@@ -807,12 +891,13 @@ static void do_ag_cind_response(service_work_t* work, void* userdata)
     if (sal_conn->calls) {
         bt_list_foreach(sal_conn->calls, fill_call_info, &ctx);
     }
+    conn_list_unlock();
 
     if (count > HFP_CALL_LIST_MAX) {
         BT_LOGW("%s, reached max call list size", __func__);
     }
 
-    int ret = Z_API(bt_hfp_ag_ongoing_calls)(sal_conn->ag, calls, count, indicators, 4);
+    int ret = Z_API(bt_hfp_ag_ongoing_calls)(ag, calls, count, indicators, 4);
     if (ret) {
         BT_LOGE("%s, bt_hfp_ag_ongoing_calls failed, ret=%d", __func__, ret);
     }
@@ -824,20 +909,25 @@ static void do_ag_dial_response(service_work_t* work, void* userdata)
 {
     bt_hfp_ag_dial_response_param_t* params = (bt_hfp_ag_dial_response_param_t*)userdata;
     bt_hfp_ag_connection_t* sal_conn;
+    struct bt_hfp_ag* ag;
 
     if (!params) {
         BT_LOGE("%s, params is NULL", __func__);
         return;
     }
 
+    conn_list_lock();
     sal_conn = find_connection_by_addr(&params->addr);
     if (!sal_conn || !sal_conn->ag) {
+        conn_list_unlock();
         BT_LOGW("%s, connection no longer available", __func__);
         free(params);
         return;
     }
+    ag = sal_conn->ag;
+    conn_list_unlock();
 
-    int ret = Z_API(bt_hfp_ag_send_vendor)(sal_conn->ag, NULL);
+    int ret = Z_API(bt_hfp_ag_send_vendor)(ag, NULL);
     if (ret) {
         BT_LOGE("%s, bt_hfp_ag_send_vendor failed, ret=%d", __func__, ret);
     }
@@ -849,20 +939,25 @@ static void do_ag_cops_response(service_work_t* work, void* userdata)
 {
     bt_hfp_ag_cops_response_param_t* params = (bt_hfp_ag_cops_response_param_t*)userdata;
     bt_hfp_ag_connection_t* sal_conn;
+    struct bt_hfp_ag* ag;
 
     if (!params) {
         BT_LOGE("%s, params is NULL", __func__);
         return;
     }
 
+    conn_list_lock();
     sal_conn = find_connection_by_addr(&params->addr);
     if (!sal_conn || !sal_conn->ag) {
+        conn_list_unlock();
         BT_LOGW("%s, connection no longer available", __func__);
         free(params);
         return;
     }
+    ag = sal_conn->ag;
+    conn_list_unlock();
 
-    int ret = Z_API(bt_hfp_ag_set_operator)(sal_conn->ag, 0, params->operator_name);
+    int ret = Z_API(bt_hfp_ag_set_operator)(ag, 0, params->operator_name);
     if (ret) {
         BT_LOGE("%s, bt_hfp_ag_set_operator failed, ret=%d", __func__, ret);
     }
@@ -874,58 +969,92 @@ static void do_ag_device_status(service_work_t* work, void* userdata)
 {
     bt_hfp_ag_device_status_param_t* params = (bt_hfp_ag_device_status_param_t*)userdata;
     bt_hfp_ag_connection_t* sal_conn;
+    struct bt_hfp_ag* ag;
     uint8_t net_val;
     uint8_t roam_val;
     uint8_t sig_val;
     uint8_t bat_val;
+    uint8_t old_network;
+    uint8_t old_roam;
+    uint8_t old_signal;
+    uint8_t old_battery;
 
     if (!params) {
         BT_LOGE("%s, params is NULL", __func__);
         return;
     }
 
+    conn_list_lock();
     sal_conn = find_connection_by_addr(&params->addr);
     if (!sal_conn || !sal_conn->ag) {
+        conn_list_unlock();
         BT_LOGW("%s, connection no longer available", __func__);
         free(params);
         return;
     }
+
+    ag = sal_conn->ag;
+    old_network = sal_conn->indicators.network;
+    old_roam = sal_conn->indicators.roam;
+    old_signal = sal_conn->indicators.signal;
+    old_battery = sal_conn->indicators.battery;
+    conn_list_unlock();
 
     net_val = params->network ? 1 : 0;
     roam_val = params->roam ? 1 : 0;
     sig_val = params->signal > 5 ? 5 : (uint8_t)params->signal;
     bat_val = params->battery > 5 ? 5 : (uint8_t)params->battery;
 
-    if (net_val != sal_conn->indicators.network) {
-        int ret = Z_API(bt_hfp_ag_service_availability)(sal_conn->ag, params->network ? true : false);
+    if (net_val != old_network) {
+        int ret = Z_API(bt_hfp_ag_service_availability)(ag, params->network ? true : false);
         if (ret) {
             BT_LOGE("%s, bt_hfp_ag_service_availability failed, ret=%d", __func__, ret);
         }
-        sal_conn->indicators.network = net_val;
+        conn_list_lock();
+        sal_conn = find_connection_by_addr(&params->addr);
+        if (sal_conn) {
+            sal_conn->indicators.network = net_val;
+        }
+        conn_list_unlock();
     }
 
-    if (roam_val != sal_conn->indicators.roam) {
-        int ret = Z_API(bt_hfp_ag_roaming_status)(sal_conn->ag, params->roam ? 1 : 0);
+    if (roam_val != old_roam) {
+        int ret = Z_API(bt_hfp_ag_roaming_status)(ag, params->roam ? 1 : 0);
         if (ret) {
             BT_LOGE("%s, bt_hfp_ag_roaming_status failed, ret=%d", __func__, ret);
         }
-        sal_conn->indicators.roam = roam_val;
+        conn_list_lock();
+        sal_conn = find_connection_by_addr(&params->addr);
+        if (sal_conn) {
+            sal_conn->indicators.roam = roam_val;
+        }
+        conn_list_unlock();
     }
 
-    if (sig_val != sal_conn->indicators.signal) {
-        int ret = Z_API(bt_hfp_ag_signal_strength)(sal_conn->ag, sig_val);
+    if (sig_val != old_signal) {
+        int ret = Z_API(bt_hfp_ag_signal_strength)(ag, sig_val);
         if (ret) {
             BT_LOGE("%s, bt_hfp_ag_signal_strength failed, ret=%d", __func__, ret);
         }
-        sal_conn->indicators.signal = sig_val;
+        conn_list_lock();
+        sal_conn = find_connection_by_addr(&params->addr);
+        if (sal_conn) {
+            sal_conn->indicators.signal = sig_val;
+        }
+        conn_list_unlock();
     }
 
-    if (bat_val != sal_conn->indicators.battery) {
-        int ret = Z_API(bt_hfp_ag_battery_level)(sal_conn->ag, bat_val);
+    if (bat_val != old_battery) {
+        int ret = Z_API(bt_hfp_ag_battery_level)(ag, bat_val);
         if (ret) {
             BT_LOGE("%s, bt_hfp_ag_battery_level failed, ret=%d", __func__, ret);
         }
-        sal_conn->indicators.battery = bat_val;
+        conn_list_lock();
+        sal_conn = find_connection_by_addr(&params->addr);
+        if (sal_conn) {
+            sal_conn->indicators.battery = bat_val;
+        }
+        conn_list_unlock();
     }
 
     free(params);
@@ -941,14 +1070,18 @@ static void do_ag_inband_ring(service_work_t* work, void* userdata)
         return;
     }
 
+    conn_list_lock();
     sal_conn = find_connection_by_addr(&params->addr);
     if (!sal_conn || !sal_conn->ag) {
+        conn_list_unlock();
         BT_LOGW("%s, connection no longer available", __func__);
         free(params);
         return;
     }
+    struct bt_hfp_ag* ag = sal_conn->ag;
+    conn_list_unlock();
 
-    int ret = Z_API(bt_hfp_ag_inband_ringtone)(sal_conn->ag, params->enable);
+    int ret = Z_API(bt_hfp_ag_inband_ringtone)(ag, params->enable);
     if (ret) {
         BT_LOGE("%s, bt_hfp_ag_inband_ringtone failed, ret=%d", __func__, ret);
     }
@@ -960,20 +1093,25 @@ static void do_ag_send_at_cmd(service_work_t* work, void* userdata)
 {
     bt_hfp_ag_send_at_cmd_param_t* params = (bt_hfp_ag_send_at_cmd_param_t*)userdata;
     bt_hfp_ag_connection_t* sal_conn;
+    struct bt_hfp_ag* ag;
 
     if (!params) {
         BT_LOGE("%s, params is NULL", __func__);
         return;
     }
 
+    conn_list_lock();
     sal_conn = find_connection_by_addr(&params->addr);
     if (!sal_conn || !sal_conn->ag) {
+        conn_list_unlock();
         BT_LOGW("%s, connection no longer available", __func__);
         free(params);
         return;
     }
+    ag = sal_conn->ag;
+    conn_list_unlock();
 
-    int ret = Z_API(bt_hfp_ag_send_vendor)(sal_conn->ag, params->line);
+    int ret = Z_API(bt_hfp_ag_send_vendor)(ag, params->line);
     if (ret) {
         BT_LOGE("%s, bt_hfp_ag_send_vendor failed, ret=%d", __func__, ret);
     }
@@ -985,6 +1123,7 @@ static void do_ag_error_response(service_work_t* work, void* userdata)
 {
     bt_hfp_ag_error_response_param_t* params = (bt_hfp_ag_error_response_param_t*)userdata;
     bt_hfp_ag_connection_t* sal_conn;
+    struct bt_hfp_ag* ag;
     const char* line;
     char buf[32] = { 0 };
 
@@ -993,12 +1132,16 @@ static void do_ag_error_response(service_work_t* work, void* userdata)
         return;
     }
 
+    conn_list_lock();
     sal_conn = find_connection_by_addr(&params->addr);
     if (!sal_conn || !sal_conn->ag) {
+        conn_list_unlock();
         BT_LOGW("%s, connection no longer available", __func__);
         free(params);
         return;
     }
+    ag = sal_conn->ag;
+    conn_list_unlock();
 
     if (params->result >= HFP_ATCMD_RESULT_CMEERR) {
         enum bt_at_cme cme = hfp_at_result_to_cme(params->result);
@@ -1010,7 +1153,7 @@ static void do_ag_error_response(service_work_t* work, void* userdata)
         line = "ERROR";
     }
 
-    int ret = Z_API(bt_hfp_ag_send_vendor)(sal_conn->ag, line);
+    int ret = Z_API(bt_hfp_ag_send_vendor)(ag, line);
     if (ret) {
         BT_LOGE("%s, bt_hfp_ag_send_vendor failed, ret=%d", __func__, ret);
     }
@@ -1025,12 +1168,16 @@ static uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_resu
     uint16_t port;
     bt_address_t bd_addr;
     bt_hfp_ag_slc_connect_param_t* params;
+
+    conn_list_lock();
     bt_hfp_ag_connection_t* sal_conn = find_connection_by_context(conn);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, could not find sal_conn", __func__);
         return BT_SDP_DISCOVER_UUID_STOP;
     }
     memcpy(&bd_addr, &sal_conn->addr, sizeof(bt_address_t));
+    conn_list_unlock();
 
     if (!result) {
         BT_LOGE("%s, remote device does not support HFP HF feature", __func__);
@@ -1070,7 +1217,9 @@ static uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_resu
     return BT_SDP_DISCOVER_UUID_STOP;
 
 error:
+    conn_list_lock();
     bt_list_remove(g_sal_ag_conn_list, sal_conn);
+    conn_list_unlock();
     hfp_ag_on_connection_state_changed(&bd_addr, PROFILE_STATE_DISCONNECTED, 0, 0);
     bt_sal_cm_profile_disconnected_callback(&bd_addr, PROFILE_HFP_AG, CONN_ID_DEFAULT);
     return BT_SDP_DISCOVER_UUID_STOP;
@@ -1079,12 +1228,15 @@ error:
 static void zblue_on_ag_connected(struct bt_conn* conn, struct bt_hfp_ag* ag)
 {
     bt_hfp_ag_connection_t* sal_conn;
+    bt_address_t addr;
 
+    conn_list_lock();
     sal_conn = find_connection_by_context(conn);
     if (!sal_conn) {
         BT_LOGD("%s, ag connection incoming", __func__);
         sal_conn = new_sal_connection(conn, ag);
         if (!sal_conn) {
+            conn_list_unlock();
             BT_LOGE("%s, Failed to create HFP AG connection", __func__);
             if (Z_API(bt_hfp_ag_disconnect)(ag)) {
                 BT_LOGE("%s, Failed to disconnect HFP AG connection", __func__);
@@ -1092,23 +1244,30 @@ static void zblue_on_ag_connected(struct bt_conn* conn, struct bt_hfp_ag* ag)
             return;
         }
 
-        hfp_ag_on_connection_state_changed(&sal_conn->addr, PROFILE_STATE_CONNECTING, 0, 0);
+        memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+        conn_list_unlock();
+
+        hfp_ag_on_connection_state_changed(&addr, PROFILE_STATE_CONNECTING, 0, 0);
     } else {
         /* Override conn if both sides attempt to connect at the same time */
         sal_conn->context = conn;
         sal_conn->ag = ag;
+        memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+        conn_list_unlock();
     }
 
-    bt_sal_cm_profile_connected_callback(&sal_conn->addr, PROFILE_HFP_AG, CONN_ID_DEFAULT);
-    bt_sal_profile_disconnect_register(&sal_conn->addr, PROFILE_HFP_AG, CONN_ID_DEFAULT, PRIMARY_ADAPTER, do_ag_disconnect, NULL);
+    bt_sal_cm_profile_connected_callback(&addr, PROFILE_HFP_AG, CONN_ID_DEFAULT);
+    bt_sal_profile_disconnect_register(&addr, PROFILE_HFP_AG, CONN_ID_DEFAULT, PRIMARY_ADAPTER, do_ag_disconnect, NULL);
 
-    hfp_ag_on_connection_state_changed(&sal_conn->addr, PROFILE_STATE_CONNECTED, 0, 0);
+    hfp_ag_on_connection_state_changed(&addr, PROFILE_STATE_CONNECTED, 0, 0);
 }
 
 static void zblue_on_ag_disconnected(struct bt_hfp_ag* ag)
 {
+    conn_list_lock();
     bt_hfp_ag_connection_t* sal_conn = find_connection_by_ag(ag);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, Failed to find connection", __func__);
         return;
     }
@@ -1118,39 +1277,55 @@ static void zblue_on_ag_disconnected(struct bt_hfp_ag* ag)
     bt_sal_cm_profile_disconnected_callback(&sal_conn->addr, PROFILE_HFP_AG, CONN_ID_DEFAULT);
 
     bt_list_remove(g_sal_ag_conn_list, sal_conn);
+    conn_list_unlock();
 }
 
 static void zblue_on_ag_sco_connected(struct bt_hfp_ag* ag, struct bt_conn* sco_conn)
 {
+    bt_address_t addr;
+
     BT_LOGD("%s, HFP AG SCO connected, ag=%p", __func__, ag);
+
+    conn_list_lock();
     bt_hfp_ag_connection_t* sal_conn = find_connection_by_ag(ag);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, Failed to find connection", __func__);
         return;
     }
 
     sal_conn->sco_context = sco_conn;
+    memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+    conn_list_unlock();
 
-    hfp_ag_on_audio_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_CONNECTED, 0xFFFF); // sco conn handle not supported
+    hfp_ag_on_audio_state_changed(&addr, HFP_AUDIO_STATE_CONNECTED, 0xFFFF); // sco conn handle not supported
 }
 
 static void zblue_on_ag_sco_disconnected(struct bt_conn* sco_conn, uint8_t reason)
 {
+    bt_address_t addr;
+
     BT_LOGD("%s, HFP AG SCO disconnected, reason=%d", __func__, reason);
+
+    conn_list_lock();
     bt_hfp_ag_connection_t* sal_conn = find_connection_by_sco_context(sco_conn);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, Failed to find connection", __func__);
         return;
     }
 
     sal_conn->sco_context = NULL;
+    memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+    conn_list_unlock();
 
-    hfp_ag_on_audio_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_DISCONNECTED, 0xFFFF); // sco conn handle not supported
+    hfp_ag_on_audio_state_changed(&addr, HFP_AUDIO_STATE_DISCONNECTED, 0xFFFF); // sco conn handle not supported
 }
 
 static int zblue_on_ag_vendor_at_cmd(struct bt_hfp_ag* ag, const char* cmd, uint8_t* cme_code)
 {
     bt_hfp_ag_connection_t* sal_conn;
+    bt_address_t addr;
 
     BT_LOGD("%s, cmd:%s", __func__, cmd ? cmd : "(null)");
 
@@ -1158,39 +1333,55 @@ static int zblue_on_ag_vendor_at_cmd(struct bt_hfp_ag* ag, const char* cmd, uint
         return -EINVAL;
     }
 
+    conn_list_lock();
     sal_conn = find_connection_by_ag(ag);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found for ag=%p", __func__, ag);
         return -ENOTCONN;
     }
+    memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+    conn_list_unlock();
 
-    hfp_ag_on_received_at_cmd(&sal_conn->addr, cmd, (uint16_t)strlen(cmd));
+    hfp_ag_on_received_at_cmd(&addr, cmd, (uint16_t)strlen(cmd));
 
     return -EINPROGRESS;
 }
 
 static int zblue_on_ag_get_ongoing_call(struct bt_hfp_ag* ag)
 {
-    bt_hfp_ag_connection_t* sal_conn = find_connection_by_ag(ag);
+    bt_hfp_ag_connection_t* sal_conn;
+    bt_address_t addr;
+
+    conn_list_lock();
+    sal_conn = find_connection_by_ag(ag);
 
     if (!sal_conn) {
+        conn_list_unlock();
         struct bt_conn* conn = Z_API(bt_hfp_ag_get_conn)(ag);
         if (!conn) {
             BT_LOGE("%s, failed to get conn for ag=%p", __func__, ag);
             return -EINVAL;
         }
         BT_LOGD("%s, connection not found for ag=%p, creating new", __func__, ag);
+        conn_list_lock();
         sal_conn = new_sal_connection(conn, ag);
         bt_conn_unref(conn);
         if (!sal_conn) {
+            conn_list_unlock();
             BT_LOGE("%s, failed to create new sal conn", __func__);
             return -EINVAL;
         }
-        hfp_ag_on_connection_state_changed(&sal_conn->addr, PROFILE_STATE_CONNECTING, 0, 0);
+        memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+        conn_list_unlock();
+        hfp_ag_on_connection_state_changed(&addr, PROFILE_STATE_CONNECTING, 0, 0);
+    } else {
+        memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+        conn_list_unlock();
     }
 
-    hfp_ag_on_call_sync(&sal_conn->addr);
-    hfp_ag_on_received_cind_request(&sal_conn->addr);
+    hfp_ag_on_call_sync(&addr);
+    hfp_ag_on_received_cind_request(&addr);
     return 0;
 }
 
@@ -1202,18 +1393,23 @@ static int zblue_on_ag_memory_dial(struct bt_hfp_ag* ag, const char* location, c
 static int zblue_on_ag_number_call(struct bt_hfp_ag* ag, const char* number)
 {
     bt_hfp_ag_connection_t* sal_conn;
+    bt_address_t addr;
 
     if (!ag || !number) {
         return -EINVAL;
     }
 
+    conn_list_lock();
     sal_conn = find_connection_by_ag(ag);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found for ag=%p", __func__, ag);
         return -EINVAL;
     }
+    memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+    conn_list_unlock();
 
-    hfp_ag_on_dial_number(&sal_conn->addr, (char*)number, strlen(number));
+    hfp_ag_on_dial_number(&addr, (char*)number, strlen(number));
 
     return -EINPROGRESS;
 }
@@ -1227,8 +1423,10 @@ static void zblue_on_ag_outgoing(struct bt_hfp_ag* ag, struct bt_hfp_ag_call* ca
         return;
     }
 
+    conn_list_lock();
     sal_conn = find_connection_by_ag(ag);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found for ag=%p", __func__, ag);
         return;
     }
@@ -1241,6 +1439,7 @@ static void zblue_on_ag_outgoing(struct bt_hfp_ag* ag, struct bt_hfp_ag_call* ca
         sal_call->state = tele_call_state_to_sal_status(HFP_AG_CALL_STATE_DIALING);
         sal_call->context = call;
     }
+    conn_list_unlock();
 }
 
 static void zblue_on_ag_incoming(struct bt_hfp_ag* ag, struct bt_hfp_ag_call* call, const char* number)
@@ -1252,8 +1451,10 @@ static void zblue_on_ag_incoming(struct bt_hfp_ag* ag, struct bt_hfp_ag_call* ca
         return;
     }
 
+    conn_list_lock();
     sal_conn = find_connection_by_ag(ag);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found for ag=%p", __func__, ag);
         return;
     }
@@ -1266,6 +1467,7 @@ static void zblue_on_ag_incoming(struct bt_hfp_ag* ag, struct bt_hfp_ag_call* ca
         sal_call->state = tele_call_state_to_sal_status(HFP_AG_CALL_STATE_INCOMING);
         sal_call->context = call;
     }
+    conn_list_unlock();
 }
 
 static void zblue_on_ag_incoming_held(struct bt_hfp_ag_call* call)
@@ -1273,8 +1475,10 @@ static void zblue_on_ag_incoming_held(struct bt_hfp_ag_call* call)
     bt_hfp_ag_connection_t* sal_conn = NULL;
     bt_hfp_ag_call_info_t* sal_call;
 
+    conn_list_lock();
     sal_call = find_call_by_context(call, &sal_conn);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found for call=%p", __func__, call);
         return;
     }
@@ -1285,161 +1489,202 @@ static void zblue_on_ag_incoming_held(struct bt_hfp_ag_call* call)
         sal_call->state = tele_call_state_to_sal_status(HFP_AG_CALL_STATE_WAITING);
         sal_call->context = call;
     }
+    conn_list_unlock();
 }
 
 static void zblue_on_ag_accept(struct bt_hfp_ag_call* call)
 {
     bt_hfp_ag_connection_t* sal_conn = NULL;
     bt_hfp_ag_call_info_t* sal_call;
+    bt_address_t addr;
 
     if (!call) {
         return;
     }
 
+    conn_list_lock();
     sal_call = find_call_by_context(call, &sal_conn);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found for call=%p", __func__, call);
         return;
     }
 
     if (!sal_call) {
+        conn_list_unlock();
         BT_LOGE("%s, call not tracked", __func__);
         return;
     }
 
     if (sal_call->state != BT_HFP_AG_CALL_STATUS_INCOMING && sal_call->state != BT_HFP_AG_CALL_STATUS_WAITING) {
+        conn_list_unlock();
         return;
     }
 
     sal_call->state = BT_HFP_AG_CALL_STATUS_ACTIVE;
+    memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+    conn_list_unlock();
 
-    hfp_ag_on_answer_call(&sal_conn->addr);
+    hfp_ag_on_answer_call(&addr);
 }
 
 static void zblue_on_ag_held(struct bt_hfp_ag_call* call)
 {
     bt_hfp_ag_connection_t* sal_conn = NULL;
     bt_hfp_ag_call_info_t* sal_call;
+    bt_address_t addr;
 
     if (!call) {
         return;
     }
 
+    conn_list_lock();
     sal_call = find_call_by_context(call, &sal_conn);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found for call=%p", __func__, call);
         return;
     }
 
     if (!sal_call) {
+        conn_list_unlock();
         BT_LOGE("%s, call not tracked", __func__);
         return;
     }
 
     if (sal_call->state != BT_HFP_AG_CALL_STATUS_ACTIVE) {
+        conn_list_unlock();
         return;
     }
 
     sal_call->state = BT_HFP_AG_CALL_STATUS_HELD;
+    memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+    conn_list_unlock();
 
-    hfp_ag_on_hangup_call(&sal_conn->addr);
+    hfp_ag_on_hangup_call(&addr);
 }
 
 static void zblue_on_ag_retrieve(struct bt_hfp_ag_call* call)
 {
     bt_hfp_ag_connection_t* sal_conn = NULL;
     bt_hfp_ag_call_info_t* sal_call;
+    bt_address_t addr;
 
     if (!call) {
         return;
     }
 
+    conn_list_lock();
     sal_call = find_call_by_context(call, &sal_conn);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found for call=%p", __func__, call);
         return;
     }
 
     if (!sal_call) {
+        conn_list_unlock();
         BT_LOGE("%s, call not tracked", __func__);
         return;
     }
 
     if (sal_call->state != BT_HFP_AG_CALL_STATUS_HELD) {
+        conn_list_unlock();
         return;
     }
 
     sal_call->state = BT_HFP_AG_CALL_STATUS_ACTIVE;
+    memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+    conn_list_unlock();
 
-    hfp_ag_on_call_control(&sal_conn->addr, HFP_HF_CALL_CONTROL_CHLD_2);
+    hfp_ag_on_call_control(&addr, HFP_HF_CALL_CONTROL_CHLD_2);
 }
 
 static void zblue_on_ag_reject(struct bt_hfp_ag_call* call)
 {
     bt_hfp_ag_connection_t* sal_conn = NULL;
     bt_hfp_ag_call_info_t* sal_call;
+    bt_address_t addr;
 
     if (!call) {
         return;
     }
 
+    conn_list_lock();
     sal_call = find_call_by_context(call, &sal_conn);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found for call=%p", __func__, call);
         return;
     }
 
     if (!sal_call) {
+        conn_list_unlock();
         BT_LOGE("%s, call not tracked", __func__);
         return;
     }
 
     if (sal_call->state != BT_HFP_AG_CALL_STATUS_INCOMING
         && sal_call->state != BT_HFP_AG_CALL_STATUS_WAITING) {
+        conn_list_unlock();
         return;
     }
 
     sal_call->state = BT_HFP_AG_CALL_STATUS_UNKNOWN;
+    memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+    conn_list_unlock();
 
-    hfp_ag_on_reject_call(&sal_conn->addr);
+    hfp_ag_on_reject_call(&addr);
 }
 
 static void zblue_on_ag_terminate(struct bt_hfp_ag_call* call)
 {
     bt_hfp_ag_connection_t* sal_conn = NULL;
     bt_hfp_ag_call_info_t* sal_call;
+    bt_address_t addr;
+    int call_count;
 
     if (!call) {
         return;
     }
 
+    conn_list_lock();
     sal_call = find_call_by_context(call, &sal_conn);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found for call=%p", __func__, call);
         return;
     }
 
     if (!sal_call) {
+        conn_list_unlock();
         BT_LOGE("%s, call not tracked", __func__);
         return;
     }
 
     if (sal_call->state != BT_HFP_AG_CALL_STATUS_ACTIVE
         && sal_call->state != BT_HFP_AG_CALL_STATUS_HELD) {
+        conn_list_unlock();
         return;
     }
 
     sal_call->state = BT_HFP_AG_CALL_STATUS_UNKNOWN;
 
     if (!sal_conn->calls) {
-        hfp_ag_on_hangup_call(&sal_conn->addr);
+        memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+        conn_list_unlock();
+        hfp_ag_on_hangup_call(&addr);
         return;
     }
 
-    if (bt_list_length(sal_conn->calls) == 1) {
-        hfp_ag_on_hangup_call(&sal_conn->addr);
+    call_count = bt_list_length(sal_conn->calls);
+    memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+    conn_list_unlock();
+
+    if (call_count == 1) {
+        hfp_ag_on_hangup_call(&addr);
     } else {
-        hfp_ag_on_call_control(&sal_conn->addr, HFP_HF_CALL_CONTROL_CHLD_1);
+        hfp_ag_on_call_control(&addr, HFP_HF_CALL_CONTROL_CHLD_1);
     }
 }
 
@@ -1447,28 +1692,45 @@ static void zblue_on_ag_available_codec(struct bt_hfp_ag* ag, uint32_t codec_ids
 {
     bt_hfp_ag_connection_t* sal_conn;
     hfp_codec_config_t cfg = { 0 };
+    bt_address_t addr;
+    uint8_t preferred_codec;
     int err;
 
     if (!ag) {
         return;
     }
 
+    conn_list_lock();
     sal_conn = find_connection_by_ag(ag);
     if (!sal_conn) {
+        conn_list_unlock();
         struct bt_conn* conn = Z_API(bt_hfp_ag_get_conn)(ag);
         if (!conn) {
             BT_LOGE("%s, failed to get conn for ag=%p", __func__, ag);
             return;
         }
         BT_LOGD("%s, connection not found for ag=%p, creating new", __func__, ag);
+        conn_list_lock();
         sal_conn = new_sal_connection(conn, ag);
         bt_conn_unref(conn);
         if (!sal_conn) {
+            conn_list_unlock();
             BT_LOGE("%s, failed to create new sal conn", __func__);
             return;
         }
 
-        hfp_ag_on_connection_state_changed(&sal_conn->addr, PROFILE_STATE_CONNECTING, 0, 0);
+        memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+        conn_list_unlock();
+
+        hfp_ag_on_connection_state_changed(&addr, PROFILE_STATE_CONNECTING, 0, 0);
+
+        conn_list_lock();
+        sal_conn = find_connection_by_ag(ag);
+        if (!sal_conn) {
+            conn_list_unlock();
+            BT_LOGE("%s, connection lost after creating", __func__);
+            return;
+        }
     }
 
     if (codec_ids & HFP_AG_CODEC_Z_BIT_MSBC) {
@@ -1483,17 +1745,21 @@ static void zblue_on_ag_available_codec(struct bt_hfp_ag* ag, uint32_t codec_ids
         sal_conn->preferred_codec = 0;
     }
 
-    err = hfp_codec_to_service_cfg(sal_conn->preferred_codec, &cfg);
+    preferred_codec = sal_conn->preferred_codec;
+    memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+    conn_list_unlock();
+
+    err = hfp_codec_to_service_cfg(preferred_codec, &cfg);
     if (err != 0) {
         if (err == -EINVAL) {
             BT_LOGE("%s, invalid cfg pointer", __func__);
         } else {
-            BT_LOGE("%s, unsupported codec id: %d", __func__, sal_conn->preferred_codec);
+            BT_LOGE("%s, unsupported codec id: %d", __func__, preferred_codec);
         }
         return;
     }
 
-    hfp_ag_on_codec_changed(&sal_conn->addr, &cfg);
+    hfp_ag_on_codec_changed(&addr, &cfg);
 }
 
 static void zblue_on_ag_audio_connect_req(struct bt_hfp_ag* ag)
@@ -1501,6 +1767,7 @@ static void zblue_on_ag_audio_connect_req(struct bt_hfp_ag* ag)
     bt_hfp_ag_connection_t* sal_conn;
     hfp_codec_config_t cfg = { 0 };
     bt_hfp_ag_connect_sco_param_t* params;
+    bt_address_t addr;
     uint8_t codec;
     int err;
 
@@ -1509,13 +1776,17 @@ static void zblue_on_ag_audio_connect_req(struct bt_hfp_ag* ag)
         return;
     }
 
+    conn_list_lock();
     sal_conn = find_connection_by_ag(ag);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found for ag=%p", __func__, ag);
         return;
     }
 
     codec = sal_conn->preferred_codec ? sal_conn->preferred_codec : BT_HFP_AG_CODEC_CVSD;
+    memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+    conn_list_unlock();
 
     BT_LOGD("%s, HF requested audio connect, using codec=%d", __func__, codec);
 
@@ -1531,7 +1802,7 @@ static void zblue_on_ag_audio_connect_req(struct bt_hfp_ag* ag)
     }
 
     /* Report the actual codec that will be used for this audio connection */
-    hfp_ag_on_codec_changed(&sal_conn->addr, &cfg);
+    hfp_ag_on_codec_changed(&addr, &cfg);
 
     params = (bt_hfp_ag_connect_sco_param_t*)zalloc(sizeof(bt_hfp_ag_connect_sco_param_t));
     if (!params) {
@@ -1553,94 +1824,122 @@ static void zblue_on_ag_codec_negotiation(struct bt_hfp_ag* ag, int zblue_err,
 {
     bt_hfp_ag_connection_t* sal_conn;
     hfp_codec_config_t cfg = { 0 };
+    bt_address_t addr;
+    uint8_t preferred_codec;
     int err;
 
     if (!ag) {
         return;
     }
 
+    conn_list_lock();
     sal_conn = find_connection_by_ag(ag);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found for ag=%p", __func__, ag);
         return;
     }
 
     BT_LOGD("%s, err=%d, codec_id=%u", __func__, zblue_err, codec_id);
     sal_conn->preferred_codec = zblue_err ? BT_HFP_AG_CODEC_CVSD : codec_id;
-    err = hfp_codec_to_service_cfg(sal_conn->preferred_codec, &cfg);
+    preferred_codec = sal_conn->preferred_codec;
+    memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+    conn_list_unlock();
+
+    err = hfp_codec_to_service_cfg(preferred_codec, &cfg);
     if (err != 0) {
         BT_LOGE("%s, codec config failed: %d", __func__, err);
         return;
     }
-    hfp_ag_on_codec_changed(&sal_conn->addr, &cfg);
+    hfp_ag_on_codec_changed(&addr, &cfg);
 }
 
 static void zblue_on_ag_vgm(struct bt_hfp_ag* ag, uint8_t gain)
 {
     bt_hfp_ag_connection_t* sal_conn;
+    bt_address_t addr;
 
     if (!ag) {
         return;
     }
 
+    conn_list_lock();
     sal_conn = find_connection_by_ag(ag);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found for ag=%p", __func__, ag);
         return;
     }
+    memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+    conn_list_unlock();
 
-    hfp_ag_on_volume_changed(&sal_conn->addr, HFP_VOLUME_TYPE_MIC, gain);
+    hfp_ag_on_volume_changed(&addr, HFP_VOLUME_TYPE_MIC, gain);
 }
 
 static void zblue_on_ag_vgs(struct bt_hfp_ag* ag, uint8_t gain)
 {
     bt_hfp_ag_connection_t* sal_conn;
+    bt_address_t addr;
 
     if (!ag) {
         return;
     }
 
+    conn_list_lock();
     sal_conn = find_connection_by_ag(ag);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found for ag=%p", __func__, ag);
         return;
     }
+    memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+    conn_list_unlock();
 
-    hfp_ag_on_volume_changed(&sal_conn->addr, HFP_VOLUME_TYPE_SPK, gain);
+    hfp_ag_on_volume_changed(&addr, HFP_VOLUME_TYPE_SPK, gain);
 }
 
 static void zblue_on_ag_voice_recognition(struct bt_hfp_ag* ag, bool activate)
 {
     bt_hfp_ag_connection_t* sal_conn;
+    bt_address_t addr;
 
     if (!ag) {
         return;
     }
 
+    conn_list_lock();
     sal_conn = find_connection_by_ag(ag);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found for ag=%p", __func__, ag);
         return;
     }
+    memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+    conn_list_unlock();
 
-    hfp_ag_on_voice_recognition_state_changed(&sal_conn->addr, activate);
+    hfp_ag_on_voice_recognition_state_changed(&addr, activate);
 }
 
 static void zblue_on_ag_transmit_dtmf_code(struct bt_hfp_ag* ag, char code)
 {
     bt_hfp_ag_connection_t* sal_conn;
+    bt_address_t addr;
 
     if (!ag) {
         return;
     }
 
+    conn_list_lock();
     sal_conn = find_connection_by_ag(ag);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found for ag=%p", __func__, ag);
         return;
     }
+    memcpy(&addr, &sal_conn->addr, sizeof(bt_address_t));
+    conn_list_unlock();
 
-    hfp_ag_on_received_dtmf(&sal_conn->addr, code);
+    hfp_ag_on_received_dtmf(&addr, code);
 }
 
 static struct bt_hfp_ag_cb g_hfp_ag_cb = {
@@ -1678,21 +1977,36 @@ static struct bt_hfp_ag_cb g_hfp_ag_cb = {
 
 bt_status_t bt_sal_hfp_ag_init(uint32_t features, uint8_t max_connection)
 {
+    pthread_mutexattr_t attr;
+
     (void)features;
     (void)max_connection;
     BT_LOGD("%s, HFP AG init", __func__);
     g_sal_ag_conn_list = bt_list_new(free_connection);
 
-    SAL_CHECK_RET(Z_API(bt_hfp_ag_register)(&g_hfp_ag_cb), 0);
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(&g_sal_ag_conn_lock, &attr);
+    pthread_mutexattr_destroy(&attr);
+
+    if (Z_API(bt_hfp_ag_register)(&g_hfp_ag_cb) != 0) {
+        bt_list_free(g_sal_ag_conn_list);
+        g_sal_ag_conn_list = NULL;
+        pthread_mutex_destroy(&g_sal_ag_conn_lock);
+        return BT_STATUS_FAIL;
+    }
     return BT_STATUS_SUCCESS;
 }
 
 void bt_sal_hfp_ag_cleanup(void)
 {
+    conn_list_lock();
     if (g_sal_ag_conn_list) {
         bt_list_free(g_sal_ag_conn_list);
         g_sal_ag_conn_list = NULL;
     }
+    conn_list_unlock();
+    pthread_mutex_destroy(&g_sal_ag_conn_lock);
 
     if (Z_API(bt_hfp_ag_unregister)()) {
         BT_LOGE("%s, Failed to unregister HFP AG", __func__);
@@ -1706,22 +2020,28 @@ bt_status_t bt_sal_hfp_ag_connect(bt_address_t* addr)
         return BT_STATUS_PARM_INVALID;
     }
 
+    conn_list_lock();
     bt_hfp_ag_connection_t* sal_conn = find_connection_by_addr(addr);
     if (sal_conn) {
+        conn_list_unlock();
         BT_LOGW("%s, Connection already exists or in progress", __func__);
         return BT_STATUS_BUSY;
     }
+    conn_list_unlock();
 
     return bt_sal_profile_connect_request(addr, PROFILE_HFP_AG, CONN_ID_DEFAULT, 0, do_ag_sdp_discover, NULL);
 }
 
 bt_status_t bt_sal_hfp_ag_disconnect(bt_address_t* addr)
 {
+    conn_list_lock();
     bt_hfp_ag_connection_t* conn = find_connection_by_addr(addr);
     if (!conn) {
+        conn_list_unlock();
         BT_LOGE("%s, Failed to find connection", __func__);
         return BT_STATUS_PARM_INVALID;
     }
+    conn_list_unlock();
 
     bt_sal_profile_disconnect_request(addr, PROFILE_HFP_AG, CONN_ID_DEFAULT, 0, do_ag_disconnect, NULL);
     return BT_STATUS_SUCCESS;
@@ -1729,20 +2049,24 @@ bt_status_t bt_sal_hfp_ag_disconnect(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_ag_connect_audio(bt_address_t* addr)
 {
+    conn_list_lock();
     bt_hfp_ag_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, Failed to find connection", __func__);
         return BT_STATUS_PARM_INVALID;
     }
 
     bt_hfp_ag_connect_sco_param_t* params = (bt_hfp_ag_connect_sco_param_t*)zalloc(sizeof(bt_hfp_ag_connect_sco_param_t));
     if (!params) {
+        conn_list_unlock();
         BT_LOGE("%s, Failed to allocate memory", __func__);
         return BT_STATUS_NOMEM;
     }
 
     params->ag = sal_conn->ag;
     params->codec = sal_conn->preferred_codec ? sal_conn->preferred_codec : BT_HFP_AG_CODEC_CVSD;
+    conn_list_unlock();
 
     if (!service_loop_work(params, do_ag_sco_connect, NULL)) {
         free(params);
@@ -1754,29 +2078,35 @@ bt_status_t bt_sal_hfp_ag_connect_audio(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_ag_disconnect_audio(bt_address_t* addr)
 {
+    conn_list_lock();
     bt_hfp_ag_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, Failed to find connection", __func__);
         return BT_STATUS_PARM_INVALID;
     }
 
     if (!sal_conn->context) {
+        conn_list_unlock();
         BT_LOGE("%s, ACL conn context not initiated", __func__);
         return BT_STATUS_FAIL;
     }
 
     if (!sal_conn->sco_context) {
+        conn_list_unlock();
         BT_LOGE("%s, SCO connection not initiated", __func__);
         return BT_STATUS_FAIL;
     }
 
     bt_hfp_ag_disconnect_sco_param_t* params = (bt_hfp_ag_disconnect_sco_param_t*)zalloc(sizeof(bt_hfp_ag_disconnect_sco_param_t));
     if (!params) {
+        conn_list_unlock();
         BT_LOGE("%s, Failed to allocate memory", __func__);
         return BT_STATUS_NOMEM;
     }
 
     params->sco_context = sal_conn->sco_context;
+    conn_list_unlock();
 
     if (!service_loop_work(params, do_ag_sco_disconnect, NULL)) {
         free(params);
@@ -1788,11 +2118,14 @@ bt_status_t bt_sal_hfp_ag_disconnect_audio(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_ag_start_voice_recognition(bt_address_t* addr)
 {
+    conn_list_lock();
     bt_hfp_ag_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, Failed to find connection", __func__);
         return BT_STATUS_PARM_INVALID;
     }
+    conn_list_unlock();
 
     bt_hfp_ag_voice_recognition_param_t* params = zalloc(sizeof(bt_hfp_ag_voice_recognition_param_t));
     if (!params) {
@@ -1814,11 +2147,14 @@ bt_status_t bt_sal_hfp_ag_start_voice_recognition(bt_address_t* addr)
 
 bt_status_t bt_sal_hfp_ag_stop_voice_recognition(bt_address_t* addr)
 {
+    conn_list_lock();
     bt_hfp_ag_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGE("%s, Failed to find connection", __func__);
         return BT_STATUS_PARM_INVALID;
     }
+    conn_list_unlock();
 
     bt_hfp_ag_voice_recognition_param_t* params = zalloc(sizeof(bt_hfp_ag_voice_recognition_param_t));
     if (!params) {
@@ -1877,8 +2213,10 @@ static void do_ag_call_op(service_work_t* work, void* userdata)
         return;
     }
 
+    conn_list_lock();
     bt_hfp_ag_connection_t* sal_conn = find_connection_by_addr(&params->addr);
     if (!sal_conn) {
+        conn_list_unlock();
         BT_LOGW("%s, connection no longer valid, skip", __func__);
         free(params);
         return;
@@ -1891,6 +2229,7 @@ static void do_ag_call_op(service_work_t* work, void* userdata)
         /* new call path */
         const new_call_entry_t* entry = find_new_call_entry(new_state);
         if (!entry) {
+            conn_list_unlock();
             BT_LOGE("%s, no new_call_entry for state %d, number: %s",
                 __func__, params->call_state, params->number);
             free(params);
@@ -1900,12 +2239,14 @@ static void do_ag_call_op(service_work_t* work, void* userdata)
         call_info = build_sal_call(HFP_CALL_DIRECTION_INCOMING, params->call_state,
             params->type, params->number);
         if (!call_info) {
+            conn_list_unlock();
             BT_LOGE("%s, failed to build sal call", __func__);
             free(params);
             return;
         }
 
         bt_list_add_head(sal_conn->calls, call_info);
+        conn_list_unlock();
 
         hfp_ag_operation_context_t context = {
             .call_info = call_info,
@@ -1915,7 +2256,9 @@ static void do_ag_call_op(service_work_t* work, void* userdata)
         int ret = entry->op(&context);
         if (ret) {
             BT_LOGE("%s, new call op failed, err=%d, rolling back", __func__, ret);
+            conn_list_lock();
             bt_list_remove(sal_conn->calls, call_info);
+            conn_list_unlock();
         }
 
         free(params);
@@ -1935,9 +2278,11 @@ static void do_ag_call_op(service_work_t* work, void* userdata)
             BT_LOGE("%s, no valid transition from %d to %d",
                 __func__, call_info->state, params->call_state);
         }
+        conn_list_unlock();
         free(params);
         return;
     }
+    conn_list_unlock();
 
     hfp_ag_operation_context_t context = {
         .call_info = call_info,
@@ -1951,11 +2296,13 @@ static void do_ag_call_op(service_work_t* work, void* userdata)
         return;
     }
 
+    conn_list_lock();
     if (new_state == BT_HFP_AG_CALL_STATUS_UNKNOWN) {
         bt_list_remove(sal_conn->calls, call_info);
     } else {
         call_info->state = new_state;
     }
+    conn_list_unlock();
 
     free(params);
 }
@@ -2147,12 +2494,15 @@ bt_status_t bt_sal_hfp_ag_call_sync(bt_address_t* bd_addr,
     hfp_call_mode_t mode, hfp_call_mpty_type_t mpty,
     hfp_call_addrtype_t type, const char* number)
 {
+    conn_list_lock();
     bt_hfp_ag_connection_t* conn = find_connection_by_addr(bd_addr);
 
     if (!conn) {
+        conn_list_unlock();
         BT_LOGW("%s, no sync connection set, ignore", __func__);
         return BT_STATUS_PARM_INVALID;
     }
+    conn_list_unlock();
 
     update_sal_call(conn, dir, call, mode, mpty, type, number);
     return BT_STATUS_SUCCESS;
@@ -2164,11 +2514,14 @@ bt_status_t bt_sal_hfp_ag_cind_response(bt_address_t* addr, hfp_ag_cind_resopnse
         return BT_STATUS_PARM_INVALID;
     }
 
+    conn_list_lock();
     bt_hfp_ag_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn || !sal_conn->ag) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found", __func__);
         return BT_STATUS_FAIL;
     }
+    conn_list_unlock();
 
     bt_hfp_ag_cind_response_param_t* params = zalloc(sizeof(bt_hfp_ag_cind_response_param_t));
     if (!params) {
@@ -2209,11 +2562,14 @@ bt_status_t bt_sal_hfp_ag_dial_response(bt_address_t* addr, hfp_atcmd_result_t r
         return BT_STATUS_PARM_INVALID;
     }
 
+    conn_list_lock();
     bt_hfp_ag_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn || !sal_conn->ag) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found", __func__);
         return BT_STATUS_PARM_INVALID;
     }
+    conn_list_unlock();
 
     bt_hfp_ag_dial_response_param_t* params = zalloc(sizeof(bt_hfp_ag_dial_response_param_t));
     if (!params) {
@@ -2240,11 +2596,14 @@ bt_status_t bt_sal_hfp_ag_cops_response(bt_address_t* addr, const char* operator
         return BT_STATUS_PARM_INVALID;
     }
 
+    conn_list_lock();
     bt_hfp_ag_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn || !sal_conn->ag) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found", __func__);
         return BT_STATUS_PARM_INVALID;
     }
+    conn_list_unlock();
 
     bt_hfp_ag_cops_response_param_t* params = zalloc(sizeof(bt_hfp_ag_cops_response_param_t));
     if (!params) {
@@ -2271,11 +2630,14 @@ bt_status_t bt_sal_hfp_ag_notify_device_status_changed(bt_address_t* addr, hfp_n
         return BT_STATUS_PARM_INVALID;
     }
 
+    conn_list_lock();
     bt_hfp_ag_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn || !sal_conn->ag) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found", __func__);
         return BT_STATUS_PARM_INVALID;
     }
+    conn_list_unlock();
 
     bt_hfp_ag_device_status_param_t* params = zalloc(sizeof(bt_hfp_ag_device_status_param_t));
     if (!params) {
@@ -2304,11 +2666,14 @@ bt_status_t bt_sal_hfp_ag_set_inband_ring_enable(bt_address_t* addr, bool enable
         return BT_STATUS_PARM_INVALID;
     }
 
+    conn_list_lock();
     bt_hfp_ag_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn || !sal_conn->ag) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found", __func__);
         return BT_STATUS_PARM_INVALID;
     }
+    conn_list_unlock();
 
     bt_hfp_ag_inband_ring_param_t* params = zalloc(sizeof(bt_hfp_ag_inband_ring_param_t));
     if (!params) {
@@ -2336,11 +2701,14 @@ bt_status_t bt_sal_hfp_ag_set_volume(bt_address_t* addr, hfp_volume_type_t type,
         return BT_STATUS_PARM_INVALID;
     }
 
+    conn_list_lock();
     sal_conn = find_connection_by_addr(addr);
     if (!sal_conn || !sal_conn->ag) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found", __func__);
         return BT_STATUS_PARM_INVALID;
     }
+    conn_list_unlock();
 
     bt_hfp_ag_set_volume_param_t* params = zalloc(sizeof(bt_hfp_ag_set_volume_param_t));
     if (!params) {
@@ -2425,11 +2793,14 @@ bt_status_t bt_sal_hfp_ag_send_at_cmd(bt_address_t* addr, const char* atcmd, uin
         return BT_STATUS_PARM_INVALID;
     }
 
+    conn_list_lock();
     bt_hfp_ag_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn || !sal_conn->ag) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found", __func__);
         return BT_STATUS_PARM_INVALID;
     }
+    conn_list_unlock();
 
     start = atcmd;
     end = atcmd + length;
@@ -2496,11 +2867,14 @@ bt_status_t bt_sal_hfp_ag_error_response(bt_address_t* addr, hfp_atcmd_result_t 
         return BT_STATUS_PARM_INVALID;
     }
 
+    conn_list_lock();
     bt_hfp_ag_connection_t* sal_conn = find_connection_by_addr(addr);
     if (!sal_conn || !sal_conn->ag) {
+        conn_list_unlock();
         BT_LOGE("%s, connection not found", __func__);
         return BT_STATUS_PARM_INVALID;
     }
+    conn_list_unlock();
 
     bt_hfp_ag_error_response_param_t* params = zalloc(sizeof(bt_hfp_ag_error_response_param_t));
     if (!params) {
