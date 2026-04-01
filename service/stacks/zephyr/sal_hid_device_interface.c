@@ -62,6 +62,7 @@ typedef struct sal_hid_connection {
     bt_address_t addr;
     struct bt_conn* conn;
     bool le_hid;
+    uint8_t protocol;
 } sal_hid_connection_t;
 
 typedef struct sal_bt_hid_device_mgr {
@@ -251,6 +252,7 @@ static sal_hid_connection_t* hid_connection_new(bt_address_t* addr, struct bt_co
 
     memcpy(&hid_conn->addr, addr, sizeof(bt_address_t));
     hid_conn->conn = conn;
+    hid_conn->protocol = BT_HID_PROTOCOL_REPORT_MODE;
     bt_conn_ref(conn);
 
     return hid_conn;
@@ -549,7 +551,16 @@ void hid_get_report_callback(struct bt_hid_device* hid, const uint8_t* data, uin
 
 void hid_set_protocol_callback(struct bt_hid_device* hid, uint8_t protocol)
 {
+    sal_hid_connection_t* hid_conn;
+
     BT_LOGD("hid:%p set protocol:%d, ", hid, protocol);
+
+    hid_conn_lock();
+    hid_conn = hid_find_connections_by_device(hid);
+    if (hid_conn) {
+        hid_conn->protocol = protocol;
+    }
+    hid_conn_unlock();
 }
 
 typedef struct {
@@ -693,6 +704,7 @@ void hid_get_protocol_callback(struct bt_hid_device* hid)
 {
     hid_send_data_param_t* params;
     sal_hid_connection_t* hid_conn;
+    uint8_t protocol;
 
     BT_LOGD("hid:%p get protocol", hid);
 
@@ -704,6 +716,8 @@ void hid_get_protocol_callback(struct bt_hid_device* hid)
         return;
     }
 
+    protocol = hid_conn->protocol;
+
     params = zalloc(sizeof(hid_send_data_param_t));
     if (!params) {
         hid_conn_unlock();
@@ -713,7 +727,7 @@ void hid_get_protocol_callback(struct bt_hid_device* hid)
 
     memcpy(&params->addr, &hid_conn->addr, sizeof(bt_address_t));
     params->type = BT_HID_REPORT_TYPE_OTHER;
-    params->data[0] = BT_HID_PROTOCOL_REPORT_MODE;
+    params->data[0] = protocol;
     params->len = sizeof(uint8_t);
     hid_conn_unlock();
 
