@@ -190,6 +190,7 @@ static const char* stack_event_to_string(hfp_hf_event_t event)
         CASE_RETURN_STR(HF_VOICE_RECOGNITION_START)
         CASE_RETURN_STR(HF_VOICE_RECOGNITION_STOP)
         CASE_RETURN_STR(HF_SET_VOLUME)
+        CASE_RETURN_STR(HF_MEDIA_VOLUME_CHANGED)
         CASE_RETURN_STR(HF_DIAL_NUMBER)
         CASE_RETURN_STR(HF_DIAL_MEMORY)
         CASE_RETURN_STR(HF_DIAL_LAST)
@@ -1117,6 +1118,12 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, hfp_hf_da
         hf_service_notify_volume_changed(&hfsm->addr, type, hf_vol);
         break;
     }
+    case HF_MEDIA_VOLUME_CHANGED:
+        hfsm->media_volume = data->valueint2;
+        if (hfsm->set_volume_cnt) {
+            hfsm->set_volume_cnt--;
+        }
+        break;
     case HF_STACK_EVENT_CMD_RESPONSE: {
         const char* resp = data->string1;
 
@@ -1207,13 +1214,7 @@ static void hfp_hf_voice_volume_change_callback(void* cookie, int volume)
     hf_state_machine_t* hfsm = (hf_state_machine_t*)cookie;
     hfp_hf_msg_t* msg;
 
-    hfsm->media_volume = volume;
-    if (hfsm->set_volume_cnt) {
-        hfsm->set_volume_cnt--;
-        return;
-    }
-
-    msg = hfp_hf_msg_new(HF_SET_VOLUME, &hfsm->addr);
+    msg = hfp_hf_msg_new(HF_MEDIA_VOLUME_CHANGED, &hfsm->addr);
     if (!msg) {
         BT_LOGE("New hf message alloc failed");
         return;
@@ -1476,6 +1477,13 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
             }
         }
         break;
+    case HF_MEDIA_VOLUME_CHANGED:
+        hfsm->media_volume = data->valueint2;
+        if (hfsm->set_volume_cnt) {
+            hfsm->set_volume_cnt--;
+            break;
+        }
+        /* fall through */
     case HF_SET_VOLUME: {
         hfp_volume_type_t type;
         uint8_t hf_vol;
