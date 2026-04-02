@@ -233,8 +233,8 @@ static struct bt_a2dp_codec_ie snk_sbc_ie_default[] = {
     {
         .len = 4,
         .codec_ie = {
-            0x28, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
-            0x15, /* Block length: 4/8/12/16, subbands:4/8, Allocation Method: SNR, Londness */
+            0x21, /* 44100 | Joint Stereo */
+            0x15, /* Block length: 16, subbands: 8, Allocation Method: Loudness */
             0x02, /* min bitpool */
             CONFIG_ZBLUE_A2DP_SBC_MAX_BIT_POOL, /* max bitpool */
         },
@@ -242,8 +242,8 @@ static struct bt_a2dp_codec_ie snk_sbc_ie_default[] = {
     {
         .len = 4,
         .codec_ie = {
-            0x24, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
-            0x15, /* Block length: 4/8/12/16, subbands:4/8, Allocation Method: SNR, Londness */
+            0x11, /* 48000 | Joint Stereo */
+            0x15, /* Block length: 16, subbands: 8, Allocation Method: Loudness */
             0x02, /* min bitpool */
             CONFIG_ZBLUE_A2DP_SBC_MAX_BIT_POOL, /* max bitpool */
         },
@@ -251,8 +251,8 @@ static struct bt_a2dp_codec_ie snk_sbc_ie_default[] = {
     {
         .len = 4,
         .codec_ie = {
-            0x22, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
-            0x15, /* Block length: 4/8/12/16, subbands:4/8, Allocation Method: SNR, Londness */
+            0x22, /* 44100 | Stereo */
+            0x15, /* Block length: 16, subbands: 8, Allocation Method: Loudness */
             0x02, /* min bitpool */
             CONFIG_ZBLUE_A2DP_SBC_MAX_BIT_POOL, /* max bitpool */
         },
@@ -260,8 +260,8 @@ static struct bt_a2dp_codec_ie snk_sbc_ie_default[] = {
     {
         .len = 4,
         .codec_ie = {
-            0x21, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
-            0x15, /* Block length: 4/8/12/16, subbands:4/8, Allocation Method: SNR, Londness */
+            0x12, /* 48000 | Stereo */
+            0x15, /* Block length: 16, subbands: 8, Allocation Method: Loudness */
             0x02, /* min bitpool */
             CONFIG_ZBLUE_A2DP_SBC_MAX_BIT_POOL, /* max bitpool */
         },
@@ -269,8 +269,8 @@ static struct bt_a2dp_codec_ie snk_sbc_ie_default[] = {
     {
         .len = 4,
         .codec_ie = {
-            0x18, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
-            0x15, /* Block length: 4/8/12/16, subbands:4/8, Allocation Method: SNR, Londness */
+            0x24, /* 44100 | Dual Channel */
+            0x15, /* Block length: 16, subbands: 8, Allocation Method: Loudness */
             0x02, /* min bitpool */
             CONFIG_ZBLUE_A2DP_SBC_MAX_BIT_POOL, /* max bitpool */
         },
@@ -278,8 +278,8 @@ static struct bt_a2dp_codec_ie snk_sbc_ie_default[] = {
     {
         .len = 4,
         .codec_ie = {
-            0x14, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
-            0x15, /* Block length: 4/8/12/16, subbands:4/8, Allocation Method: SNR, Londness */
+            0x14, /* 48000 | Dual Channel */
+            0x15, /* Block length: 16, subbands: 8, Allocation Method: Loudness */
             0x02, /* min bitpool */
             CONFIG_ZBLUE_A2DP_SBC_MAX_BIT_POOL, /* max bitpool */
         },
@@ -287,8 +287,8 @@ static struct bt_a2dp_codec_ie snk_sbc_ie_default[] = {
     {
         .len = 4,
         .codec_ie = {
-            0x12, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
-            0x15, /* Block length: 4/8/12/16, subbands:4/8, Allocation Method: SNR, Londness */
+            0x28, /* 44100 | Mono */
+            0x15, /* Block length: 16, subbands: 8, Allocation Method: Loudness */
             0x02, /* min bitpool */
             CONFIG_ZBLUE_A2DP_SBC_MAX_BIT_POOL, /* max bitpool */
         },
@@ -296,8 +296,8 @@ static struct bt_a2dp_codec_ie snk_sbc_ie_default[] = {
     {
         .len = 4,
         .codec_ie = {
-            0x11, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
-            0x15, /* Block length: 4/8/12/16, subbands:4/8, Allocation Method: SNR, Londness */
+            0x18, /* 48000 | Mono */
+            0x15, /* Block length: 16, subbands: 8, Allocation Method: Loudness */
             0x02, /* min bitpool */
             CONFIG_ZBLUE_A2DP_SBC_MAX_BIT_POOL, /* max bitpool */
         },
@@ -1242,6 +1242,7 @@ static void a2dp_acp_discover_timeout(service_timer_t* timer, void* data)
     }
 
     bt_a2dp_discover(a2dp_info->a2dp, &bt_discover_param);
+    a2dp_info->int_acp = A2DP_INT;
 }
 
 #define SAL_A2DP_SBC_PTS_MAX_BIT_POOL 53
