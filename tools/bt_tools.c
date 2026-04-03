@@ -1887,6 +1887,11 @@ static void on_connection_state_changed_cb(void* cookie, bt_address_t* addr, bt_
     PRINT_ADDR("Device [%s][%s] connection state: %d", addr, LINK_TYPE(transport), state);
 }
 
+static void on_acl_disconnected_cb(void* cookie, bt_address_t* addr, bt_transport_t transport, uint8_t reason)
+{
+    PRINT_ADDR("Device [%s][%s] disconnected, reason: 0x%02x", addr, LINK_TYPE(transport), reason);
+}
+
 static void on_bond_state_changed_cb(void* cookie, bt_address_t* addr, bt_transport_t transport,
     bond_state_t previous_state, bond_state_t current_state, bool is_ctkd)
 {
@@ -1952,6 +1957,7 @@ const static adapter_callbacks_t g_adapter_cbs = {
     .on_pair_display = on_pair_display_cb,
     .on_connect_request = on_connect_request_cb,
     .on_connection_state_changed = on_connection_state_changed_cb,
+    .on_acl_disconnected = on_acl_disconnected_cb,
     .on_bond_state_changed_extra = on_bond_state_changed_cb,
     .on_le_sc_local_oob_data_got = on_le_sc_local_oob_data_got_cb,
     .on_remote_name_changed = on_remote_name_changed_cb,

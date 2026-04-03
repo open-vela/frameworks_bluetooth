@@ -159,6 +159,19 @@ static void on_connection_state_changed_cb(void* cookie, bt_address_t* addr,
     bt_socket_server_send(ins, &packet, BT_ADAPTER_ON_CONNECTION_STATE_CHANGED);
 }
 
+static void on_acl_disconnected_cb(void* cookie, bt_address_t* addr,
+    bt_transport_t transport, uint8_t reason)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_instance_t* ins = cookie;
+
+    memcpy(&packet.adpt_cb._on_acl_disconnected.addr, addr, sizeof(bt_address_t));
+    packet.adpt_cb._on_acl_disconnected.transport = transport;
+    packet.adpt_cb._on_acl_disconnected.reason = reason;
+
+    bt_socket_server_send(ins, &packet, BT_ADAPTER_ON_ACL_DISCONNECTED);
+}
+
 static void on_bond_state_changed_cb(void* cookie, bt_address_t* addr,
     bt_transport_t transport, bond_state_t previous_state, bond_state_t current_state, bool is_ctkd)
 {
@@ -248,6 +261,7 @@ const static adapter_callbacks_t g_adapter_socket_cbs = {
     .on_pair_display = on_pair_display_cb,
     .on_connect_request = on_connect_request_cb,
     .on_connection_state_changed = on_connection_state_changed_cb,
+    .on_acl_disconnected = on_acl_disconnected_cb,
     .on_bond_state_changed_extra = on_bond_state_changed_cb,
     .on_le_sc_local_oob_data_got = on_le_sc_local_oob_data_got_cb,
     .on_remote_name_changed = on_remote_name_changed_cb,
@@ -661,7 +675,18 @@ int bt_socket_client_adapter_callback(service_poll_t* poll,
         break;
     }
     default:
-        return BT_STATUS_PARM_INVALID;
+        switch (BT_IPC_GET_SUBCODE(packet->code)) {
+        case ADAPTER_SUBCODE_ON_ACL_DISCONNECTED: {
+            CALLBACK_FOREACH(CBLIST, adapter_callbacks_t,
+                on_acl_disconnected,
+                &packet->adpt_cb._on_acl_disconnected.addr,
+                packet->adpt_cb._on_acl_disconnected.transport,
+                packet->adpt_cb._on_acl_disconnected.reason);
+            break;
+        }
+        default:
+            return BT_STATUS_PARM_INVALID;
+        }
     }
 
     return BT_STATUS_SUCCESS;
