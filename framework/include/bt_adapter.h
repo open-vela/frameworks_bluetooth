@@ -340,6 +340,33 @@ void on_connection_state_changed(void* cookie, bt_address_t* addr, bt_transport_
 typedef void (*on_connection_state_changed_callback)(void* cookie, bt_address_t* addr, bt_transport_t transport, connection_state_t state);
 
 /**
+ * @brief ACL disconnection callback with HCI reason code.
+ *
+ * Callback function invoked when the ACL connection is disconnected,
+ * providing the HCI reason code for the disconnection.
+ *
+ * @param cookie - User-defined context:
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is enabled, it's a `bt_instance_t*`.
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is disabled, it's a dynamically allocated `remote_callback_t*`.
+ *                 See `bt_adapter_register_callback` and `bt_remote_callbacks_register` for details.
+ * @param addr - Address of the remote device, see @ref bt_address_t.
+ * @param addr_type - Address type of the remote device, see @ref ble_addr_type_t.
+ *                    Only valid when transport is BT_TRANSPORT_BLE.
+ * @param transport - Transport type, see @ref bt_transport_t (0: LE, 1: BR/EDR).
+ * @param reason - HCI reason code for the disconnection.
+ *
+ * **Example:**
+ * @code
+void on_acl_disconnected(void* cookie, bt_address_t* addr, ble_addr_type_t addr_type,
+    bt_transport_t transport, uint8_t reason)
+{
+    // Handle disconnection with reason
+}
+ * @endcode
+ */
+typedef void (*on_acl_disconnected_callback)(void* cookie, bt_address_t* addr, ble_addr_type_t addr_type, bt_transport_t transport, uint8_t reason);
+
+/**
  * @brief Bond state changed callback.
  *
  * Callback function invoked when the bond state changes.
@@ -543,6 +570,7 @@ typedef struct {
     on_remote_cod_changed_callback on_remote_cod_changed;
     on_remote_uuids_changed_callback on_remote_uuids_changed;
     on_remote_link_mode_changed_callback on_remote_link_mode_changed;
+    on_acl_disconnected_callback on_acl_disconnected;
 } adapter_callbacks_t;
 
 /**

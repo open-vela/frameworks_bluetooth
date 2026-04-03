@@ -265,6 +265,7 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
     if (err) {
         state.connection_state = CONNECTION_STATE_DISCONNECTED;
         state.status = err;
+        state.hci_reason_code = err;
         slot = bt_conn_find(&state.addr, BT_TRANSPORT_BREDR);
         if (slot) {
             bt_conn_remove(&state.addr, BT_TRANSPORT_BREDR);

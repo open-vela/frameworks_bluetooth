@@ -1131,6 +1131,11 @@ static void process_connection_state_changed_evt(bt_address_t* addr, acl_state_p
     CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_connection_state_changed, addr,
         acl_params->transport, acl_params->connection_state);
 
+    if (acl_params->connection_state == CONNECTION_STATE_DISCONNECTED) {
+        CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_acl_disconnected, addr,
+            acl_params->addr_type, acl_params->transport, acl_params->hci_reason_code);
+    }
+
     /* check acls connection is all disconnected in safe disable mode */
     if (acl_params->connection_state == CONNECTION_STATE_DISCONNECTED) {
         bt_list_t* list = NULL;

@@ -436,6 +436,7 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
     if (err) {
         state.connection_state = CONNECTION_STATE_DISCONNECTED;
         state.status = err;
+        state.hci_reason_code = err;
 #if defined(CONFIG_BLUETOOTH_GATT_CLIENT) || defined(CONFIG_BLUETOOTH_GATT_SERVER)
         profile_state = PROFILE_STATE_DISCONNECTED;
 #endif

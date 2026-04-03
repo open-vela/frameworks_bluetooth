@@ -104,6 +104,8 @@ BT_ADAPTER_MESSAGE_START,
 
 #define BT_IPC_CODE_CALLBACK_ADAPTER_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_ADAPTER, 0)
 // TODO: Add new BT IPC Code sequentially
+#define ADAPTER_SUBCODE_ON_ACL_DISCONNECTED 1
+#define BT_ADAPTER_ON_ACL_DISCONNECTED BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_ADAPTER, ADAPTER_SUBCODE_ON_ACL_DISCONNECTED)
 #define BT_IPC_CODE_CALLBACK_ADAPTER_END BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_ADAPTER, BT_IPC_CODE_SUBCODE_MAX_NUM)
 
     typedef union {
@@ -277,6 +279,13 @@ BT_ADAPTER_MESSAGE_START,
             uint16_t size;
             bt_uuid_t uuids[BT_UUID_MAX_NUM];
         } _on_remote_uuids_changed;
+
+        struct {
+            bt_address_t addr;
+            uint8_t addr_type; /* ble_addr_type_t */
+            uint8_t transport; /* bt_transport_t */
+            uint8_t reason; /* hci_reason_code */
+        } _on_acl_disconnected;
     } bt_message_adapter_callbacks_t;
 
 #ifdef __cplusplus
