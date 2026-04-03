@@ -640,6 +640,9 @@ static void a2dp_info_destroy(void* data)
     if (!a2dp_info)
         return;
 
+    BT_LOGD("%s, a2dp:%p, stream:%p, state:0x%02x",
+        __func__, a2dp_info->a2dp, a2dp_info->stream, a2dp_info->state);
+
     if (a2dp_info->discover_timer) {
         BT_LOGD("ACP discover timer cancelled (destroy)");
         service_loop_cancel_timer(a2dp_info->discover_timer);
@@ -882,6 +885,8 @@ static void zblue_on_stream_configured(struct bt_a2dp_stream* stream)
     struct bt_a2dp_codec_ie* codec_cfg; /* zblue codec */
     struct zblue_a2dp_info_t* a2dp_info;
 
+    BT_LOGD("%s, stream:%p, stream->a2dp:%p", __func__, stream, stream ? stream->a2dp : NULL);
+
     a2dp_info = (struct zblue_a2dp_info_t*)bt_list_find(bt_a2dp_conn, bt_a2dp_info_find_a2dp, stream->a2dp);
     if (!a2dp_info) {
         BT_LOGE("%s, a2dp info not found", __func__);
@@ -991,7 +996,7 @@ static void bt_sal_a2dp_notify_disconnected(struct zblue_a2dp_info_t* a2dp_info)
 
 static void zblue_on_stream_released(struct bt_a2dp_stream* stream)
 {
-    BT_LOGI("%s, stream released", __func__);
+    BT_LOGI("%s, stream:%p, stream->a2dp:%p", __func__, stream, stream ? stream->a2dp : NULL);
     struct zblue_a2dp_info_t* a2dp_info;
 
     if (bt_a2dp_conn == NULL) {
@@ -1005,16 +1010,22 @@ static void zblue_on_stream_released(struct bt_a2dp_stream* stream)
         return;
     }
 
-    flag_clear(a2dp_info, A2DP_STATE_BIT_MEDIA_CONN);
+    /* Only send DISCONNECTED_EVT if media channel was actually established.
+     * When signal channel disconnects during CONFIGURED state (before establish),
+     * zblue_on_disconnected() already sent DISCONNECTED_EVT and deferred cleanup here.
+     */
+    if (flag_isset(a2dp_info, A2DP_STATE_BIT_MEDIA_CONN)) {
+        flag_clear(a2dp_info, A2DP_STATE_BIT_MEDIA_CONN);
 
-    if (a2dp_info->role == SEP_SRC) {
+        if (a2dp_info->role == SEP_SRC) {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-        bt_sal_a2dp_source_event_callback(a2dp_event_new(DISCONNECTED_EVT, &a2dp_info->bd_addr));
+            bt_sal_a2dp_source_event_callback(a2dp_event_new(DISCONNECTED_EVT, &a2dp_info->bd_addr));
 #endif /* CONFIG_BLUETOOTH_A2DP_SOURCE */
-    } else { /* SEP_SNK */
+        } else { /* SEP_SNK */
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
-        bt_sal_a2dp_sink_event_callback(a2dp_event_new(DISCONNECTED_EVT, &a2dp_info->bd_addr));
+            bt_sal_a2dp_sink_event_callback(a2dp_event_new(DISCONNECTED_EVT, &a2dp_info->bd_addr));
 #endif /* CONFIG_BLUETOOTH_A2DP_SINK */
+        }
     }
 
     free(a2dp_info->stream);
@@ -1347,7 +1358,6 @@ static void bt_list_remove_a2dp_info(struct zblue_a2dp_info_t* a2dp_info)
 static void zblue_on_disconnected(struct bt_a2dp* a2dp)
 {
     struct zblue_a2dp_info_t* a2dp_info;
-    BT_LOGI("%s", __func__);
 
     if (bt_a2dp_conn == NULL) {
         BT_LOGE("%s, bt_a2dp_conn is null", __func__);
@@ -1359,6 +1369,9 @@ static void zblue_on_disconnected(struct bt_a2dp* a2dp)
         BT_LOGW("a2dp_info not found");
         return;
     }
+
+    BT_LOGD("%s, state:0x%02x, stream:%p, disconnecting:%d",
+        __func__, a2dp_info->state, a2dp_info->stream, a2dp_info->disconnecting);
 
     flag_clear(a2dp_info, A2DP_STATE_BIT_SIG_CONN);
 
@@ -1373,6 +1386,20 @@ static void zblue_on_disconnected(struct bt_a2dp* a2dp)
     }
 
     if (flag_is_conn_none(a2dp_info)) {
+        /* If stream is still alive, the zblue layer (ep->stream) still holds a reference
+         * to it. avdtp_release_work() will run asynchronously after this function returns
+         * and call a2dp_endpoint_released() -> zblue_on_stream_released(stream).
+         * If we destroy a2dp_info now (which frees a2dp_info->stream), the zblue layer
+         * will access freed memory (use-after-free).
+         *
+         * Defer the cleanup: zblue_on_stream_released() will handle both freeing the
+         * stream and removing a2dp_info from the list.
+         */
+        if (a2dp_info->stream) {
+            BT_LOGD("%s, stream %p still alive, defer cleanup to stream_released",
+                __func__, a2dp_info->stream);
+            return;
+        }
         bt_sal_a2dp_notify_disconnected(a2dp_info);
         bt_list_remove_a2dp_info(a2dp_info);
     }
