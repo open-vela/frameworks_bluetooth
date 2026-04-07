@@ -233,11 +233,6 @@ choice
 		bool "Not support BLE Stack"
 endchoice
 
-config BLUETOOTH_LE_CS
-	bool "Bluetooth LE Channel Sounding supported"
-	depends on BLUETOOTH_STACK_LE_ZBLUE
-	default n
-
 config BLUETOOTH_LE_SCANNER_MAX_NUM
 	int "LE Scanner max register number"
 	default 2
@@ -720,14 +715,6 @@ config GATT_CLIENT_CHAR_PER_SERVICE_MAX
 	help
 		The maximum number of characteristics that can be discovered and stored
 		under a single GATT service when using the ZBLUE stack.
-
-config BLUETOOTH_GATT_CLIENT_DEBUG
-	bool "Enable GATT Client debug"
-	default y
-	help
-		Enable debug logging for GATT Client service discovery and dump.
-		Disabling this option reduces code size by removing log strings.
-
 endif # BLUETOOTH_GATT_CLIENT
 
 menuconfig BLUETOOTH_GATT_SERVER
@@ -824,6 +811,84 @@ config BLUETOOTH_TRACE_BUFFER_SIZE
 	default 512
 
 endif #BLUETOOTH_DEBUG_TRACE
+
+config BLUETOOTH_EVENT_TRACE
+	bool "Enable Bluetooth event trace"
+	default n
+	select SCHED_INSTRUMENTATION_DUMP
+	help
+		Lightweight per-layer event trace using NuttX system trace
+		(sched_note_event). Each event is written as a binary blob
+		containing a 2-byte event ID and variable-length payload.
+		Timestamps and buffer management are provided by noteram.
+		All decoding is done offline.
+
+if BLUETOOTH_EVENT_TRACE
+
+config BT_TRACE_SYSTRACE_TAG
+	int "note_tag value for BT trace events"
+	default 25
+	help
+		The NOTE_TAG value passed to sched_note_event().
+		Should be >= NOTE_TAG_LAST to avoid collision with
+		system tags. Used to filter BT events in noteram.
+
+config BT_TRACE_TOOL
+	tristate "Standalone bt_trace CLI tool"
+	default n
+	help
+		Build the standalone bt_trace command-line tool.
+		Provides start/stop/status/clock-test/spp commands
+		without requiring the full bttool (CONFIG_BLUETOOTH_TOOLS).
+
+if BT_TRACE_TOOL
+
+config BT_TRACE_TOOL_PROGNAME
+	string "Program name"
+	default "bt_trace"
+
+config BT_TRACE_TOOL_STACKSIZE
+	int "Stack size"
+	default 2048
+
+config BT_TRACE_TOOL_PRIORITY
+	int "Task priority"
+	default 100
+
+endif # BT_TRACE_TOOL
+
+# trace specifications (user-facing)
+config BT_TRACE_SPP
+	bool "Enable SPP trace (HCI + RFCOMM + SPP)"
+	default n
+	select BT_PROBE_HCI
+	select BT_PROBE_RFCOMM
+	select BT_PROBE_SPP
+
+config BT_TRACE_SPP_LOG
+	bool "Enable verbose debug logging in SPP trace probes"
+	depends on BT_TRACE_SPP
+	default n
+	help
+		When enabled, each probe call emits a BT_LOGD line (e.g.
+		"acl_record written", "RFCOMM_TX", etc.).  Disable this
+		(default) for production / throughput testing — the log
+		calls add measurable latency on every traced packet.
+
+# probe layers (selected by trace specs, not set directly)
+config BT_PROBE_HCI
+	bool
+	default n
+
+config BT_PROBE_RFCOMM
+	bool
+	default n
+
+config BT_PROBE_SPP
+	bool
+	default n
+
+endif #BLUETOOTH_EVENT_TRACE
 
 config MAX_SNOOP_FILE_SIZE
 	int "Maximum size of the snoop log file"
