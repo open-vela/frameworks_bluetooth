@@ -31,6 +31,7 @@
 #include "sal_zblue.h"
 #include "service_loop.h"
 
+#define BT_HID_PROFILE_VERSION 0x0100
 #define BT_HID_DEVICE_VERSION 0x0101
 #define BT_HID_PARSER_VERSION 0x0111
 #define BT_HID_DEVICE_SUBCLASS 0xc0
@@ -103,7 +104,7 @@ static struct bt_sdp_attribute hid_attrs_template[] = {
                     { BT_SDP_TYPE_SIZE(BT_SDP_UUID16),
                         BT_SDP_ARRAY_16(BT_SDP_HID_SVCLASS) },
                     { BT_SDP_TYPE_SIZE(BT_SDP_UINT16),
-                        BT_SDP_ARRAY_16(BT_HID_DEVICE_VERSION) }) })),
+                        BT_SDP_ARRAY_16(BT_HID_PROFILE_VERSION) }) })),
     BT_SDP_LIST(
         BT_SDP_ATTR_ADD_PROTO_DESC_LIST,
         BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 15),
@@ -121,6 +122,9 @@ static struct bt_sdp_attribute hid_attrs_template[] = {
                             { BT_SDP_TYPE_SIZE(BT_SDP_UUID16),
                                 BT_SDP_ARRAY_16(BT_SDP_PROTO_HID) }) }) })),
     BT_SDP_SERVICE_NAME("HID CONTROL"),
+    { BT_SDP_ATTR_HID_DEVICE_RELEASE_NUMBER,
+        { BT_SDP_TYPE_SIZE(BT_SDP_UINT16),
+            BT_SDP_ARRAY_16(BT_HID_DEVICE_VERSION) } },
     { BT_SDP_ATTR_HID_PARSER_VERSION,
         { BT_SDP_TYPE_SIZE(BT_SDP_UINT16),
             BT_SDP_ARRAY_16(BT_HID_PARSER_VERSION) } },
@@ -170,6 +174,9 @@ static struct bt_sdp_attribute hid_attrs_template[] = {
     { BT_SDP_ATTR_HID_NORMALLY_CONNECTABLE,
         { BT_SDP_TYPE_SIZE(BT_SDP_BOOL),
             BT_SDP_ARRAY_8(0x01) } },
+    { BT_SDP_ATTR_HID_PROFILE_VERSION,
+        { BT_SDP_TYPE_SIZE(BT_SDP_UINT16),
+            BT_SDP_ARRAY_16(BT_HID_PROFILE_VERSION) } },
     { BT_SDP_ATTR_HID_BOOT_DEVICE,
         { BT_SDP_TYPE_SIZE(BT_SDP_BOOL),
             BT_SDP_ARRAY_8(0x01) } },
