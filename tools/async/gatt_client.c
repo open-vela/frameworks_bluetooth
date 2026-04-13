@@ -92,7 +92,7 @@ static bt_command_t g_gattc_async_tables[] = {
     { "write_cmd", write_cmd, 0, "\"write cmd :<conn id><char id><type>(str or hex)<playload>\n"
                                  "\t\t\t  e.g., write_cmd 0 0001 str HelloWorld!\n"
                                  "\t\t\t  e.g., write_cmd 0 0001 hex 00 01 02 03\"" },
-    { "write_request", write_request_cmd, 0, "\"write request with response : <conn id><har id><type>(str or hex)<payload>\"\n"
+    { "write_request", write_request_cmd, 0, "\"write request with response : <conn id><char id><type>(str or hex)<payload>\"\n"
                                              "\t\t\t  e.g., write_request 0 0001 str HelloACK\n"
                                              "\t\t\t  e.g., write_request 0 0001 hex 0A 0B 0C 0D\"" },
     { "enable_cccd", enable_cccd_cmd, 0, "\"enable cccd(1: NOTIFY, 2: INDICATE) :<conn id><char id><ccc value>\"" },

@@ -80,10 +80,10 @@ static bt_command_t g_gattc_tables[] = {
     { "write_cmd", write_cmd, 0, "\"write cmd :<conn id><char id><type>(str or hex)<playload>\n"
                                  "\t\t\t  e.g., write_cmd 0 0001 str HelloWorld!\n"
                                  "\t\t\t  e.g., write_cmd 0 0001 hex 00 01 02 03\"" },
-    { "write_request", write_request_cmd, 0, "\"write request with response : <conn id><har id><type>(str or hex)<payload>\"\n"
+    { "write_request", write_request_cmd, 0, "\"write request with response : <conn id><char id><type>(str or hex)<payload>\"\n"
                                              "\t\t\t  e.g., write_request 0 0001 str HelloACK\n"
                                              "\t\t\t  e.g., write_request 0 0001 hex 0A 0B 0C 0D\"" },
-    { "write_signed", write_signed_cmd, 0, "\"signed write without response : <conn id><har id><type>(str or hex)<payload>\"\n"
+    { "write_signed", write_signed_cmd, 0, "\"signed write without response : <conn id><char id><type>(str or hex)<payload>\"\n"
                                            "\t\t\t  e.g., write_signed 0 0001 str HelloACK\n"
                                            "\t\t\t  e.g., write_signed 0 0001 hex 0A 0B 0C 0D\"" },
     { "enable_cccd", enable_cccd_cmd, 0, "\"enable cccd(1: NOTIFY, 2: INDICATE) :<conn id><char id><ccc value>\"" },
@@ -603,6 +603,7 @@ static void discover_callback(void* conn_handle, gatt_status_t status, bt_uuid_t
         }
         printf("]");
 
+        bt_uuid_to_uuid128(&attr_desc.uuid, &attr_desc.uuid);
         uint8_t* b_uuid = attr_desc.uuid.val.u128;
         printf("[0x%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x]\r\n",
             b_uuid[15], b_uuid[14], b_uuid[13], b_uuid[12],

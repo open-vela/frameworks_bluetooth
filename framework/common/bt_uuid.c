@@ -37,9 +37,9 @@ static void bt_uuid16_to_uuid128(const bt_uuid_t* uuid16, bt_uuid_t* uuid128)
     uint8_t uuid[2];
     uint8_t* p = uuid;
 
-    *uuid128 = bt_uuid128_base;
+    /* Read u16 into temp buffer first, so that src and dst may point to the same object */
     UINT16_TO_STREAM(p, uuid16->val.u16);
-
+    *uuid128 = bt_uuid128_base;
     memcpy(&uuid128->val.u128[BASE_UUID16_OFFSET], uuid, sizeof(uuid));
 }
 
@@ -54,8 +54,9 @@ static void bt_uuid32_to_uuid128(const bt_uuid_t* uuid32, bt_uuid_t* uuid128)
     uint8_t uuid[4];
     uint8_t* p = uuid;
 
-    *uuid128 = bt_uuid128_base;
+    /* Read u32 into temp buffer first, so that src and dst may point to the same object */
     UINT32_TO_STREAM(p, uuid32->val.u32);
+    *uuid128 = bt_uuid128_base;
     memcpy(&uuid128->val.u128[BASE_UUID32_OFFSET], uuid, sizeof(uuid));
 }
 
