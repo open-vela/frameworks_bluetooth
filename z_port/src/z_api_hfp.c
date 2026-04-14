@@ -16,43 +16,45 @@
  *
  ***********************************************************************/
 
+#include <debug.h>
+#include <errno.h>
 #include <nuttx/config.h>
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <stdio.h>
-#include <debug.h>
 #include <syslog.h>
 
-#include "z_api.h"
-#include "z_api_manager.h"
+#include "bluetooth.h"
+#include "bt_device.h"
 #include "bt_hfp.h"
 #include "bt_hfp_hf.h"
-#include "bt_device.h"
-#include "bluetooth.h"
 #include "utils/log.h"
+#include "z_api.h"
+#include "z_api_manager.h"
 
-typedef int (*z_api_func_t)(void *arg);
-extern int z_api_dispatch(z_api_func_t func, void *arg);
-extern bt_instance_t *local_bt_ins;
+typedef int (*z_api_func_t)(void* arg);
+extern int z_api_dispatch(z_api_func_t func, void* arg);
+extern bt_instance_t* local_bt_ins;
+extern int z_bt_conn_create(const void* peer, void** ret_conn);
 
-static bt_instance_t *get_ins(void)
+static bt_instance_t* get_ins(void)
 {
-    if (local_bt_ins) return local_bt_ins;
-    return (bt_instance_t *)z_api(bt_svc_ins_get)();
+    if (local_bt_ins)
+        return local_bt_ins;
+    return (bt_instance_t*)z_api(bt_svc_ins_get)();
 }
 
 /* ---- Address conversion helpers ---- */
 
-static void zephyr_addr_to_fw(const uint8_t *z_addr, bt_address_t *fw)
+static void zephyr_addr_to_fw(const uint8_t* z_addr, bt_address_t* fw)
 {
     memcpy(fw->addr, &z_addr[1], 6);
 }
 
-static void fw_addr_to_zephyr(const bt_address_t *fw, uint8_t addr_type,
-                               uint8_t *z_addr)
+static void fw_addr_to_zephyr(const bt_address_t* fw, uint8_t addr_type,
+    uint8_t* z_addr)
 {
     z_addr[0] = addr_type;
     memcpy(&z_addr[1], fw->addr, 6);
@@ -60,16 +62,16 @@ static void fw_addr_to_zephyr(const bt_address_t *fw, uint8_t addr_type,
 
 /* ---- HFP state management ---- */
 
-static void *hfp_handle;
+static void* hfp_handle;
 static bool hfp_initialized;
 
 /* BTP HFP callback declarations */
-extern void btp_hfp_connected_cb(const uint8_t *addr);
-extern void btp_hfp_disconnected_cb(const uint8_t *addr);
+extern void btp_hfp_connected_cb(const uint8_t* addr);
+extern void btp_hfp_disconnected_cb(const uint8_t* addr);
 
 /* ---- HFP Framework callbacks ---- */
 
-static void hfp_connection_state_cb(void *cookie, bt_address_t *addr,
+static void hfp_connection_state_cb(void* cookie, bt_address_t* addr,
     profile_connection_state_t state)
 {
     uint8_t z_addr[7];
@@ -92,13 +94,15 @@ static const hfp_hf_callbacks_t hfp_cbs = {
 
 /* ---- IPC dispatch functions ---- */
 
-static int hfp_init_in_ipc(void *arg)
+static int hfp_init_in_ipc(void* arg)
 {
     (void)arg;
-    bt_instance_t *ins = get_ins();
-    if (!ins) return -EIO;
+    bt_instance_t* ins = get_ins();
+    if (!ins)
+        return -EIO;
 
-    if (hfp_initialized) return 0;
+    if (hfp_initialized)
+        return 0;
 
     hfp_handle = bt_hfp_hf_register_callbacks(ins, &hfp_cbs);
     if (!hfp_handle) {
@@ -115,11 +119,12 @@ typedef struct {
     uint8_t z_addr[7];
 } hfp_addr_args_t;
 
-static int hfp_connect_in_ipc(void *arg)
+static int hfp_connect_in_ipc(void* arg)
 {
-    hfp_addr_args_t *a = (hfp_addr_args_t *)arg;
-    bt_instance_t *ins = get_ins();
-    if (!ins) return -EIO;
+    hfp_addr_args_t* a = (hfp_addr_args_t*)arg;
+    bt_instance_t* ins = get_ins();
+    if (!ins)
+        return -EIO;
 
     if (!hfp_initialized) {
         hfp_init_in_ipc(NULL);
@@ -138,11 +143,12 @@ static int hfp_connect_in_ipc(void *arg)
     return 0;
 }
 
-static int hfp_disconnect_in_ipc(void *arg)
+static int hfp_disconnect_in_ipc(void* arg)
 {
-    hfp_addr_args_t *a = (hfp_addr_args_t *)arg;
-    bt_instance_t *ins = get_ins();
-    if (!ins) return -EIO;
+    hfp_addr_args_t* a = (hfp_addr_args_t*)arg;
+    bt_instance_t* ins = get_ins();
+    if (!ins)
+        return -EIO;
 
     bt_address_t fw_addr;
     zephyr_addr_to_fw(a->z_addr, &fw_addr);
@@ -157,11 +163,12 @@ static int hfp_disconnect_in_ipc(void *arg)
     return 0;
 }
 
-static int hfp_answer_in_ipc(void *arg)
+static int hfp_answer_in_ipc(void* arg)
 {
-    hfp_addr_args_t *a = (hfp_addr_args_t *)arg;
-    bt_instance_t *ins = get_ins();
-    if (!ins) return -EIO;
+    hfp_addr_args_t* a = (hfp_addr_args_t*)arg;
+    bt_instance_t* ins = get_ins();
+    if (!ins)
+        return -EIO;
 
     bt_address_t fw_addr;
     zephyr_addr_to_fw(a->z_addr, &fw_addr);
@@ -176,11 +183,12 @@ static int hfp_answer_in_ipc(void *arg)
     return 0;
 }
 
-static int hfp_reject_in_ipc(void *arg)
+static int hfp_reject_in_ipc(void* arg)
 {
-    hfp_addr_args_t *a = (hfp_addr_args_t *)arg;
-    bt_instance_t *ins = get_ins();
-    if (!ins) return -EIO;
+    hfp_addr_args_t* a = (hfp_addr_args_t*)arg;
+    bt_instance_t* ins = get_ins();
+    if (!ins)
+        return -EIO;
 
     bt_address_t fw_addr;
     zephyr_addr_to_fw(a->z_addr, &fw_addr);
@@ -200,11 +208,12 @@ typedef struct {
     char number[33];
 } hfp_dial_args_t;
 
-static int hfp_dial_in_ipc(void *arg)
+static int hfp_dial_in_ipc(void* arg)
 {
-    hfp_dial_args_t *a = (hfp_dial_args_t *)arg;
-    bt_instance_t *ins = get_ins();
-    if (!ins) return -EIO;
+    hfp_dial_args_t* a = (hfp_dial_args_t*)arg;
+    bt_instance_t* ins = get_ins();
+    if (!ins)
+        return -EIO;
 
     bt_address_t fw_addr;
     zephyr_addr_to_fw(a->z_addr, &fw_addr);
@@ -225,11 +234,12 @@ typedef struct {
     uint8_t volume;
 } hfp_volume_args_t;
 
-static int hfp_set_volume_in_ipc(void *arg)
+static int hfp_set_volume_in_ipc(void* arg)
 {
-    hfp_volume_args_t *a = (hfp_volume_args_t *)arg;
-    bt_instance_t *ins = get_ins();
-    if (!ins) return -EIO;
+    hfp_volume_args_t* a = (hfp_volume_args_t*)arg;
+    bt_instance_t* ins = get_ins();
+    if (!ins)
+        return -EIO;
 
     bt_address_t fw_addr;
     zephyr_addr_to_fw(a->z_addr, &fw_addr);
@@ -250,11 +260,12 @@ typedef struct {
     uint8_t code;
 } hfp_dtmf_args_t;
 
-static int hfp_send_dtmf_in_ipc(void *arg)
+static int hfp_send_dtmf_in_ipc(void* arg)
 {
-    hfp_dtmf_args_t *a = (hfp_dtmf_args_t *)arg;
-    bt_instance_t *ins = get_ins();
-    if (!ins) return -EIO;
+    hfp_dtmf_args_t* a = (hfp_dtmf_args_t*)arg;
+    bt_instance_t* ins = get_ins();
+    if (!ins)
+        return -EIO;
 
     bt_address_t fw_addr;
     zephyr_addr_to_fw(a->z_addr, &fw_addr);
@@ -271,50 +282,61 @@ static int hfp_send_dtmf_in_ipc(void *arg)
 
 /* ---- Public z_api HFP functions ---- */
 
-int z_bt_hfp_connect(const uint8_t *addr)
+int z_bt_hfp_init(void)
+{
+    _info("[z_api] >>> z_bt_hfp_init\n");
+    return z_api_dispatch(hfp_init_in_ipc, NULL);
+}
+
+int z_bt_hfp_connect(const uint8_t* addr)
 {
     _info("[z_api] >>> z_bt_hfp_connect\n");
-    if (!addr) return -EINVAL;
+    if (!addr)
+        return -EINVAL;
 
     hfp_addr_args_t args;
     memcpy(args.z_addr, addr, 7);
     return z_api_dispatch(hfp_connect_in_ipc, &args);
 }
 
-int z_bt_hfp_disconnect(const uint8_t *addr)
+int z_bt_hfp_disconnect(const uint8_t* addr)
 {
     _info("[z_api] >>> z_bt_hfp_disconnect\n");
-    if (!addr) return -EINVAL;
+    if (!addr)
+        return -EINVAL;
 
     hfp_addr_args_t args;
     memcpy(args.z_addr, addr, 7);
     return z_api_dispatch(hfp_disconnect_in_ipc, &args);
 }
 
-int z_bt_hfp_answer(const uint8_t *addr)
+int z_bt_hfp_answer(const uint8_t* addr)
 {
     _info("[z_api] >>> z_bt_hfp_answer\n");
-    if (!addr) return -EINVAL;
+    if (!addr)
+        return -EINVAL;
 
     hfp_addr_args_t args;
     memcpy(args.z_addr, addr, 7);
     return z_api_dispatch(hfp_answer_in_ipc, &args);
 }
 
-int z_bt_hfp_reject(const uint8_t *addr)
+int z_bt_hfp_reject(const uint8_t* addr)
 {
     _info("[z_api] >>> z_bt_hfp_reject\n");
-    if (!addr) return -EINVAL;
+    if (!addr)
+        return -EINVAL;
 
     hfp_addr_args_t args;
     memcpy(args.z_addr, addr, 7);
     return z_api_dispatch(hfp_reject_in_ipc, &args);
 }
 
-int z_bt_hfp_dial(const uint8_t *addr, const char *number)
+int z_bt_hfp_dial(const uint8_t* addr, const char* number)
 {
     _info("[z_api] >>> z_bt_hfp_dial\n");
-    if (!addr || !number) return -EINVAL;
+    if (!addr || !number)
+        return -EINVAL;
 
     hfp_dial_args_t args;
     memcpy(args.z_addr, addr, 7);
@@ -323,10 +345,11 @@ int z_bt_hfp_dial(const uint8_t *addr, const char *number)
     return z_api_dispatch(hfp_dial_in_ipc, &args);
 }
 
-int z_bt_hfp_set_volume(const uint8_t *addr, uint8_t type, uint8_t volume)
+int z_bt_hfp_set_volume(const uint8_t* addr, uint8_t type, uint8_t volume)
 {
     _info("[z_api] >>> z_bt_hfp_set_volume\n");
-    if (!addr) return -EINVAL;
+    if (!addr)
+        return -EINVAL;
 
     hfp_volume_args_t args;
     memcpy(args.z_addr, addr, 7);
@@ -335,13 +358,29 @@ int z_bt_hfp_set_volume(const uint8_t *addr, uint8_t type, uint8_t volume)
     return z_api_dispatch(hfp_set_volume_in_ipc, &args);
 }
 
-int z_bt_hfp_send_dtmf(const uint8_t *addr, uint8_t code)
+int z_bt_hfp_send_dtmf(const uint8_t* addr, uint8_t code)
 {
     _info("[z_api] >>> z_bt_hfp_send_dtmf\n");
-    if (!addr) return -EINVAL;
+    if (!addr)
+        return -EINVAL;
 
     hfp_dtmf_args_t args;
     memcpy(args.z_addr, addr, 7);
     args.code = code;
     return z_api_dispatch(hfp_send_dtmf_in_ipc, &args);
+}
+
+int z_bt_hfp_connect_acl(const uint8_t* addr)
+{
+    _info("[z_api] >>> z_bt_hfp_connect_acl (ACL only)\n");
+    if (!addr)
+        return -EINVAL;
+
+    if (!hfp_initialized) {
+        z_bt_hfp_init();
+    }
+
+    /* Use z_bt_conn_create to establish ACL connection only,
+     * without initiating RFCOMM/SLC. PTS will initiate RFCOMM. */
+    return z_bt_conn_create(addr, NULL);
 }
