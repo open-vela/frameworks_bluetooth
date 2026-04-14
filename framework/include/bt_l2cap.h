@@ -173,6 +173,40 @@ bt_status_t BTSYMBOLS(bt_l2cap_stop_listen)(bt_instance_t* ins, void* handle, ui
  */
 bt_status_t BTSYMBOLS(bt_l2cap_stop_listen_with_transport)(bt_instance_t* ins, void* handle, bt_transport_t transport, uint16_t psm);
 
+/**
+ * @brief Send L2CAP Echo Request over BR/EDR connection.
+ *
+ * @param ins - bluetooth client instance.
+ * @param handle - callbacks cookie, the return value of bt_l2cap_register_callbacks.
+ * @param addr - remote device address.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_l2cap_send_echo_req)(bt_instance_t* ins, void* handle, bt_address_t* addr);
+
+/**
+ * @brief Send L2CAP Configuration Request on BR/EDR channel.
+ *
+ * @param ins - bluetooth client instance.
+ * @param handle - callbacks cookie.
+ * @param addr - remote device address.
+ * @param cid - local channel CID.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_l2cap_send_conf_req)(bt_instance_t* ins, void* handle, bt_address_t* addr, uint16_t cid);
+
+/**
+ * @brief Send data on BR/EDR L2CAP channel by CID.
+ *
+ * @param ins - bluetooth client instance.
+ * @param handle - callbacks cookie.
+ * @param addr - remote device address.
+ * @param cid - remote channel CID (tx cid).
+ * @param data - data buffer to send.
+ * @param len - data length.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_l2cap_send_br_data)(bt_instance_t* ins, void* handle, bt_address_t* addr, uint16_t cid, uint8_t* data, uint16_t len);
+
 #ifdef __cplusplus
 }
 #endif

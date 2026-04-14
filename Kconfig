@@ -111,7 +111,7 @@ config BLUETOOTH_HCI_FILTER
 
 config BLUETOOTH_L2CAP
 	bool "L2CAP dynamic channel support"
-	default n
+	default y
 
 if BLUETOOTH_L2CAP
 config BLUETOOTH_L2CAP_OUTGOING_MTU
@@ -121,6 +121,14 @@ config BLUETOOTH_L2CAP_OUTGOING_MTU
 		config L2CAP Outgoing MTU
 
 endif #BLUETOOTH_L2CAP
+
+config BLUETOOTH_PTS_TEST
+	bool "Bluetooth PTS test support"
+	default n
+	depends on BLUETOOTH_L2CAP
+	help
+		Enable BR/EDR L2CAP interfaces for PTS certification testing.
+		This should only be enabled in PTS test builds.
 
 choice
 	prompt "Select BT vendor"

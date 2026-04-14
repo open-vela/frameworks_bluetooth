@@ -751,10 +751,15 @@ static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* p
         return;
     }
 
-    if (!channel->proxy_connected) {
-        BT_LOGE("L2CAP channel(id:%" PRIu16 "/cid:0x %" PRIx16 ") data path is not prepared", channel->id, channel->local_cid);
-        l2cap_abort_channel(channel);
-        return;
+#ifdef CONFIG_BLUETOOTH_PTS_TEST
+    if (channel->transport != BT_TRANSPORT_BREDR)
+#endif
+    {
+        if (!channel->proxy_connected) {
+            BT_LOGE("L2CAP channel(id:%" PRIu16 "/cid:0x %" PRIx16 ") data path is not prepared", channel->id, channel->local_cid);
+            l2cap_abort_channel(channel);
+            return;
+        }
     }
 
     if (role == L2CAP_CHANNEL_ROLE_SERVER_LISTEN) {
@@ -767,10 +772,15 @@ static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* p
             return;
         }
 
-        if (!prepare_data_path(new_listen_channel)) {
-            BT_LOGE("%s, prepare data path failed", __func__);
-            bt_list_remove(g_l2cap_manager.channel_list, new_listen_channel);
-            return;
+#ifdef CONFIG_BLUETOOTH_PTS_TEST
+        if (channel->transport != BT_TRANSPORT_BREDR)
+#endif
+        {
+            if (!prepare_data_path(new_listen_channel)) {
+                BT_LOGE("%s, prepare data path failed", __func__);
+                bt_list_remove(g_l2cap_manager.channel_list, new_listen_channel);
+                return;
+            }
         }
     }
 
@@ -788,18 +798,23 @@ static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* p
     }
 
     // restart read pipe to adjust mtu
-    ret = euv_pipe_read_stop(channel->pipe);
-    if (ret != 0) {
-        BT_LOGE("L2CAP channel(id: %" PRIu16 "/cid: 0x%" PRIx16 ") read stop failed!", channel->id, channel->local_cid);
-        l2cap_abort_channel(channel);
-        return;
-    }
+#ifdef CONFIG_BLUETOOTH_PTS_TEST
+    if (channel->transport != BT_TRANSPORT_BREDR)
+#endif
+    {
+        ret = euv_pipe_read_stop(channel->pipe);
+        if (ret != 0) {
+            BT_LOGE("L2CAP channel(id: %" PRIu16 "/cid: 0x%" PRIx16 ") read stop failed!", channel->id, channel->local_cid);
+            l2cap_abort_channel(channel);
+            return;
+        }
 
-    ret = euv_pipe_read_start(channel->pipe, channel->tx_mtu, l2cap_receive_data_from_app, NULL);
-    if (ret != 0) {
-        BT_LOGE("L2CAP channel(id: %" PRIu16 "/cid: 0x%" PRIx16 ") read start failed!", channel->id, channel->local_cid);
-        l2cap_abort_channel(channel);
-        return;
+        ret = euv_pipe_read_start(channel->pipe, channel->tx_mtu, l2cap_receive_data_from_app, NULL);
+        if (ret != 0) {
+            BT_LOGE("L2CAP channel(id: %" PRIu16 "/cid: 0x%" PRIx16 ") read start failed!", channel->id, channel->local_cid);
+            l2cap_abort_channel(channel);
+            return;
+        }
     }
 
     BT_LOGI("L2CAP channel(id: %" PRIu16 "/cid: 0x%" PRIx16 ") connected", channel->id, channel->local_cid);
@@ -835,9 +850,26 @@ static void handle_channel_disconneted(bt_address_t* addr, uint16_t cid, uint32_
 
     bt_addr_ba2str(addr, addr_str);
     BT_LOGD("L2CAP channel(cid:0x%" PRIx16 ") disconnected, remote addr:%s, reason: %" PRIu32, cid, addr_str, reason);
-    // Note:
-    // If clinet get cid fail during connecing, it won't be removed in this callback.
     channel = find_l2cap_channel_by_cid(cid);
+    if (!channel && cid == 0) {
+        /* Connection failed before CID was allocated — find the
+         * pending CLIENT channel by addr to avoid channel/pipe leak.
+         */
+        bt_list_node_t* node;
+        bt_list_t* list = g_l2cap_manager.channel_list;
+
+        for (node = bt_list_head(list); node != NULL;
+             node = bt_list_next(list, node)) {
+            l2cap_channel_t* ch = (l2cap_channel_t*)bt_list_node(node);
+
+            if (ch->role == L2CAP_CHANNEL_ROLE_CLIENT
+                && !ch->channel_connected
+                && !bt_addr_compare(&ch->addr, addr)) {
+                channel = ch;
+                break;
+            }
+        }
+    }
     if (!channel) {
         BT_LOGE("%s, find L2CAP channel null, local cid: 0x%" PRIx16, __func__, cid);
         return;
@@ -1163,9 +1195,16 @@ bt_status_t l2cap_listen_channel(void* handle, l2cap_config_option_t* option)
     CHECK_ADAPTER_ENABLED(BT_STATUS_NOT_ENABLED);
 
     if (option->transport != BT_TRANSPORT_BLE) {
+#ifdef CONFIG_BLUETOOTH_PTS_TEST
+        if (option->transport != BT_TRANSPORT_BREDR) {
+            BT_LOGW("%s, unsupported transport %d", __func__, option->transport);
+            return BT_STATUS_UNSUPPORTED;
+        }
+#else
         // TBD: support BR/EDR later
         BT_LOGW("%s, only support LE transport", __func__);
         return BT_STATUS_UNSUPPORTED;
+#endif
     }
 
     if (l2cap_config_param(option) == false) {
@@ -1173,19 +1212,28 @@ bt_status_t l2cap_listen_channel(void* handle, l2cap_config_option_t* option)
     }
 
     pthread_mutex_lock(&g_l2cap_manager.l2cap_lock);
-    if (option->psm == 0) {
-        option->psm = alloc_le_dynamic_psm();
+    if (option->transport == BT_TRANSPORT_BLE) {
         if (option->psm == 0) {
-            BT_LOGW("%s, allocate psm failed", __func__);
-            status = BT_STATUS_NOMEM;
-            goto out;
+            option->psm = alloc_le_dynamic_psm();
+            if (option->psm == 0) {
+                BT_LOGW("%s, allocate psm failed", __func__);
+                status = BT_STATUS_NOMEM;
+                goto out;
+            }
+        } else {
+            if (check_psm_available(option->psm)) {
+                g_l2cap_manager.psm_map |= PSM_BIT_MASK(option->psm);
+            } else {
+                BT_LOGE("%s, psm: 0x%" PRIx16 " is not available", __func__, option->psm);
+                status = BT_STATUS_NOMEM;
+                goto out;
+            }
         }
     } else {
-        if (check_psm_available(option->psm)) {
-            g_l2cap_manager.psm_map |= PSM_BIT_MASK(option->psm);
-        } else {
-            BT_LOGE("%s, psm: 0x%" PRIx16 " is not available", __func__, option->psm);
-            status = BT_STATUS_NOMEM;
+        /* BR/EDR: PSM must be specified by caller */
+        if (option->psm == 0) {
+            BT_LOGE("%s, BR PSM must be specified", __func__);
+            status = BT_STATUS_PARM_INVALID;
             goto out;
         }
     }
@@ -1196,10 +1244,17 @@ bt_status_t l2cap_listen_channel(void* handle, l2cap_config_option_t* option)
         goto out;
     }
 
-    if (!prepare_data_path(channel)) {
-        bt_list_remove(g_l2cap_manager.channel_list, (void*)channel);
-        status = BT_STATUS_NOMEM; // maybe use other status
-        goto out;
+    channel->transport = option->transport;
+
+#ifdef CONFIG_BLUETOOTH_PTS_TEST
+    if (option->transport != BT_TRANSPORT_BREDR)
+#endif
+    {
+        if (!prepare_data_path(channel)) {
+            bt_list_remove(g_l2cap_manager.channel_list, (void*)channel);
+            status = BT_STATUS_NOMEM;
+            goto out;
+        }
     }
 
     BT_LOGI("%s, L2CAP(id: %" PRIu16 ", psm: 0x%" PRIx16 ") listen", __func__, channel->id, channel->psm);
@@ -1240,10 +1295,17 @@ bt_status_t l2cap_connect_channel(void* handle, bt_address_t* addr, l2cap_config
         goto out;
     }
 
-    if (!prepare_data_path(channel)) {
-        bt_list_remove(g_l2cap_manager.channel_list, (void*)channel);
-        status = BT_STATUS_NOMEM; // maybe use other status
-        goto out;
+    channel->transport = option->transport;
+
+#ifdef CONFIG_BLUETOOTH_PTS_TEST
+    if (option->transport != BT_TRANSPORT_BREDR)
+#endif
+    {
+        if (!prepare_data_path(channel)) {
+            bt_list_remove(g_l2cap_manager.channel_list, (void*)channel);
+            status = BT_STATUS_NOMEM;
+            goto out;
+        }
     }
 
     bt_addr_ba2str(addr, addr_str);
@@ -1309,9 +1371,16 @@ bt_status_t l2cap_stop_listen_channel(void* handle, bt_transport_t transport, ui
     CHECK_ADAPTER_ENABLED(BT_STATUS_NOT_ENABLED);
 
     if (transport != BT_TRANSPORT_BLE) {
+#ifdef CONFIG_BLUETOOTH_PTS_TEST
+        if (transport != BT_TRANSPORT_BREDR) {
+            BT_LOGW("%s, unsupported transport %d", __func__, transport);
+            return BT_STATUS_UNSUPPORTED;
+        }
+#else
         // TBD: support BR/EDR later
         BT_LOGW("%s, only support LE transport", __func__);
         return BT_STATUS_UNSUPPORTED;
+#endif
     }
 
     pthread_mutex_lock(&g_l2cap_manager.l2cap_lock);
@@ -1334,6 +1403,40 @@ bt_status_t l2cap_stop_listen_channel(void* handle, bt_transport_t transport, ui
 exit:
     pthread_mutex_unlock(&g_l2cap_manager.l2cap_lock);
     return status;
+}
+
+bt_status_t l2cap_send_echo_req(bt_address_t* addr)
+{
+    CHECK_ADAPTER_ENABLED(BT_STATUS_NOT_ENABLED);
+
+    if (!addr) {
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    return bt_sal_l2cap_send_echo_req(addr);
+}
+
+bt_status_t l2cap_send_conf_req(bt_address_t* addr, uint16_t cid)
+{
+    CHECK_ADAPTER_ENABLED(BT_STATUS_NOT_ENABLED);
+
+    if (!addr) {
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    return bt_sal_l2cap_send_conf_req(addr, cid);
+}
+
+bt_status_t l2cap_send_br_data(bt_address_t* addr, uint16_t cid,
+    uint8_t* data, uint16_t len)
+{
+    CHECK_ADAPTER_ENABLED(BT_STATUS_NOT_ENABLED);
+
+    if (!addr || !data || !len) {
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    return bt_sal_l2cap_send_br_data(addr, cid, data, len);
 }
 
 // TBD: managed by service_manager

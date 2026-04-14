@@ -56,3 +56,18 @@ bt_status_t BTSYMBOLS(bt_l2cap_stop_listen_with_transport)(bt_instance_t* ins, v
 {
     return l2cap_stop_listen_channel(handle, transport, psm);
 }
+
+bt_status_t BTSYMBOLS(bt_l2cap_send_echo_req)(bt_instance_t* ins, void* handle, bt_address_t* addr)
+{
+    return l2cap_send_echo_req(addr);
+}
+
+bt_status_t BTSYMBOLS(bt_l2cap_send_conf_req)(bt_instance_t* ins, void* handle, bt_address_t* addr, uint16_t cid)
+{
+    return l2cap_send_conf_req(addr, cid);
+}
+
+bt_status_t BTSYMBOLS(bt_l2cap_send_br_data)(bt_instance_t* ins, void* handle, bt_address_t* addr, uint16_t cid, uint8_t* data, uint16_t len)
+{
+    return l2cap_send_br_data(addr, cid, data, len);
+}

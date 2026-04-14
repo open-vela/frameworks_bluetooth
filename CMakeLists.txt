@@ -338,6 +338,10 @@ if(CONFIG_BLUETOOTH)
       if(CONFIG_BLUETOOTH_LE_CS)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_le_cs_interface.c)
       endif()
+
+      if(CONFIG_BLUETOOTH_L2CAP)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_l2cap_interface.c)
+      endif()
     endif()
 
     if(NOT CONFIG_BLUETOOTH_BLE_AUDIO)
