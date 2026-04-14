@@ -137,6 +137,25 @@ void bt_socket_server_l2cap_process(service_poll_t* poll, int fd,
                 packet->l2cap_pl._bt_l2cap_stop_listen.transport,
                 packet->l2cap_pl._bt_l2cap_stop_listen.psm);
             break;
+        case L2CAP_SUBCODE_SEND_ECHO_REQ:
+            packet->l2cap_r.status = BTSYMBOLS(bt_l2cap_send_echo_req)(ins,
+                ins->l2cap_cookie,
+                &packet->l2cap_pl._bt_l2cap_send_echo_req.addr);
+            break;
+        case L2CAP_SUBCODE_SEND_CONF_REQ:
+            packet->l2cap_r.status = BTSYMBOLS(bt_l2cap_send_conf_req)(ins,
+                ins->l2cap_cookie,
+                &packet->l2cap_pl._bt_l2cap_send_conf_req.addr,
+                packet->l2cap_pl._bt_l2cap_send_conf_req.cid);
+            break;
+        case L2CAP_SUBCODE_SEND_BR_DATA:
+            packet->l2cap_r.status = BTSYMBOLS(bt_l2cap_send_br_data)(ins,
+                ins->l2cap_cookie,
+                &packet->l2cap_pl._bt_l2cap_send_br_data.addr,
+                packet->l2cap_pl._bt_l2cap_send_br_data.cid,
+                packet->l2cap_pl._bt_l2cap_send_br_data.data,
+                packet->l2cap_pl._bt_l2cap_send_br_data.len);
+            break;
         default:
             break;
         }

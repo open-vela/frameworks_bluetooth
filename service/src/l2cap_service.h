@@ -49,6 +49,9 @@ bt_status_t l2cap_listen_channel(void* handle, l2cap_config_option_t* option);
 bt_status_t l2cap_connect_channel(void* handle, bt_address_t* addr, l2cap_config_option_t* option);
 bt_status_t l2cap_disconnect_channel(void* handle, uint16_t id);
 bt_status_t l2cap_stop_listen_channel(void* handle, bt_transport_t transport, uint16_t psm);
+bt_status_t l2cap_send_echo_req(bt_address_t* addr);
+bt_status_t l2cap_send_conf_req(bt_address_t* addr, uint16_t cid);
+bt_status_t l2cap_send_br_data(bt_address_t* addr, uint16_t cid, uint8_t* data, uint16_t len);
 
 bt_status_t l2cap_service_init(void);
 void l2cap_service_cleanup(void);

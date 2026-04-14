@@ -45,7 +45,13 @@ BT_L2CAP_MESSAGE_START,
 #define BT_IPC_CODE_COMMAND_L2CAP_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_L2CAP, 0)
 // TODO: Add new BT IPC Code sequentially
 #define L2CAP_SUBCODE_STOP_LISTEN 1
+#define L2CAP_SUBCODE_SEND_ECHO_REQ 2
+#define L2CAP_SUBCODE_SEND_CONF_REQ 3
+#define L2CAP_SUBCODE_SEND_BR_DATA 4
 #define BT_L2CAP_STOP_LISTEN BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_L2CAP, L2CAP_SUBCODE_STOP_LISTEN)
+#define BT_L2CAP_SEND_ECHO_REQ BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_L2CAP, L2CAP_SUBCODE_SEND_ECHO_REQ)
+#define BT_L2CAP_SEND_CONF_REQ BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_L2CAP, L2CAP_SUBCODE_SEND_CONF_REQ)
+#define BT_L2CAP_SEND_BR_DATA BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_L2CAP, L2CAP_SUBCODE_SEND_BR_DATA)
 
 #define BT_IPC_CODE_COMMAND_L2CAP_END BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_L2CAP, BT_IPC_CODE_SUBCODE_MAX_NUM)
 
@@ -77,6 +83,22 @@ BT_L2CAP_MESSAGE_START,
             uint8_t transport; /* bt_transport_t */
             uint16_t psm;
         } _bt_l2cap_stop_listen;
+
+        struct {
+            bt_address_t addr;
+        } _bt_l2cap_send_echo_req;
+
+        struct {
+            bt_address_t addr;
+            uint16_t cid;
+        } _bt_l2cap_send_conf_req;
+
+        struct {
+            bt_address_t addr;
+            uint16_t cid;
+            uint16_t len;
+            uint8_t data[48];
+        } _bt_l2cap_send_br_data;
 
     } bt_message_l2cap_t;
 

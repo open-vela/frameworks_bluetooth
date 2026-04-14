@@ -166,3 +166,56 @@ bt_status_t bt_l2cap_stop_listen_with_transport(bt_instance_t* ins, void* handle
 
     return packet.l2cap_r.status;
 }
+
+bt_status_t bt_l2cap_send_echo_req(bt_instance_t* ins, void* handle, bt_address_t* addr)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    memcpy(&packet.l2cap_pl._bt_l2cap_send_echo_req.addr, addr, sizeof(bt_address_t));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_L2CAP_SEND_ECHO_REQ);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.l2cap_r.status;
+}
+
+bt_status_t bt_l2cap_send_conf_req(bt_instance_t* ins, void* handle, bt_address_t* addr, uint16_t cid)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    memcpy(&packet.l2cap_pl._bt_l2cap_send_conf_req.addr, addr, sizeof(bt_address_t));
+    packet.l2cap_pl._bt_l2cap_send_conf_req.cid = cid;
+    status = bt_socket_client_sendrecv(ins, &packet, BT_L2CAP_SEND_CONF_REQ);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.l2cap_r.status;
+}
+
+bt_status_t bt_l2cap_send_br_data(bt_instance_t* ins, void* handle,
+    bt_address_t* addr, uint16_t cid, uint8_t* data, uint16_t len)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    if (len > sizeof(packet.l2cap_pl._bt_l2cap_send_br_data.data))
+        return BT_STATUS_PARM_INVALID;
+
+    memcpy(&packet.l2cap_pl._bt_l2cap_send_br_data.addr, addr, sizeof(bt_address_t));
+    packet.l2cap_pl._bt_l2cap_send_br_data.cid = cid;
+    packet.l2cap_pl._bt_l2cap_send_br_data.len = len;
+    memcpy(packet.l2cap_pl._bt_l2cap_send_br_data.data, data, len);
+    status = bt_socket_client_sendrecv(ins, &packet, BT_L2CAP_SEND_BR_DATA);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.l2cap_r.status;
+}

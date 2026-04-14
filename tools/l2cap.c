@@ -38,6 +38,7 @@ typedef struct {
     uint16_t cid;
     uint16_t id;
     bool is_listening;
+    uint8_t transport;
 } l2cap_chnl_t;
 
 typedef struct {
@@ -47,6 +48,7 @@ typedef struct {
     uint16_t cid;
     uint16_t listen_id; // for server listen
     bool is_listening;
+    uint8_t transport;
     char* proxy_name;
     uint8_t* buf;
     uint16_t len;
@@ -260,6 +262,7 @@ static void add_l2cap_channel(void* data)
     channel->id = msg->id;
     channel->psm = msg->psm;
     channel->is_listening = msg->is_listening;
+    channel->transport = msg->transport;
     channel->pipe = euv_pipe_connect(&g_l2cap_thread, msg->proxy_name, data_path_connected_cb, channel);
     if (!channel->pipe) {
         PRINT("connect pipe failed");
@@ -287,15 +290,18 @@ static void l2cap_channel_connected_process(void* data)
     }
 
     channel->cid = msg->cid;
+    channel->transport = msg->transport;
     PRINT("L2cap channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") connected", msg->id, msg->cid);
-    ret = euv_pipe_read_start(channel->pipe, 2048, read_complete_cb, NULL);
-    if (ret) {
-        PRINT("start read pipe failed");
-        // disconnect data path, l2cap service will disconnect l2cap channel
-        euv_pipe_disconnect(channel->pipe);
-        list_delete(&channel->node);
-        free(channel);
-        goto free_msg;
+    if (msg->transport != BT_TRANSPORT_BREDR) {
+        ret = euv_pipe_read_start(channel->pipe, 2048, read_complete_cb, NULL);
+        if (ret) {
+            PRINT("start read pipe failed");
+            // disconnect data path, l2cap service will disconnect l2cap channel
+            euv_pipe_disconnect(channel->pipe);
+            list_delete(&channel->node);
+            free(channel);
+            goto free_msg;
+        }
     }
 
     if (msg->listen_id != INVALID_L2CAP_LISTEN_ID) {
@@ -472,6 +478,7 @@ static void on_connected(void* handle, l2cap_connect_params_t* params)
     msg->id = params->id;
     msg->psm = params->psm;
     msg->cid = params->cid;
+    msg->transport = params->transport;
     msg->listen_id = params->listen_id;
     if (params->listen_id != INVALID_L2CAP_LISTEN_ID) {
         PRINT("new listen(id: %" PRIu16 "/ proxy_name: %s) for listen psm: 0x%" PRIx16,
@@ -589,6 +596,7 @@ static int connect_cmd(void* handle, int argc, char* argv[])
     msg->psm = conn_option.psm;
     msg->proxy_name = strdup(conn_option.proxy_name);
     msg->is_listening = false;
+    msg->transport = BT_TRANSPORT_BLE;
     memcpy(&msg->addr, &addr, sizeof(bt_address_t));
     do_in_thread_loop(&g_l2cap_thread, add_l2cap_channel, msg);
 
@@ -636,6 +644,7 @@ static int listen_cmd(void* handle, int argc, char* argv[])
     msg->id = conn_option.id;
     msg->psm = conn_option.psm;
     msg->is_listening = true;
+    msg->transport = BT_TRANSPORT_BLE;
     msg->proxy_name = strdup(conn_option.proxy_name);
     do_in_thread_loop(&g_l2cap_thread, add_l2cap_channel, msg);
 
@@ -823,6 +832,219 @@ static int start_receive_cmd(void* handle, int argc, char* argv[])
     return CMD_OK;
 }
 
+#ifdef CONFIG_BLUETOOTH_PTS_TEST
+static int br_connect_cmd(void* handle, int argc, char* argv[])
+{
+    bt_address_t addr;
+    l2cap_config_option_t conn_option = { 0 };
+    l2cap_msg_t* msg;
+
+    if (!handle || !g_l2cap_handle) {
+        PRINT("L2CAP tool not ready!\n");
+        return CMD_ERROR;
+    }
+
+    if (argc < 2)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    msg = (l2cap_msg_t*)zalloc(sizeof(l2cap_msg_t));
+    if (!msg) {
+        PRINT("allocate msg failed");
+        return CMD_ERROR;
+    }
+
+    conn_option.psm = strtoul(argv[1], NULL, 0);
+    conn_option.transport = BT_TRANSPORT_BREDR;
+    conn_option.mode = L2CAP_CHANNEL_MODE_BASIC;
+    conn_option.mtu = (argc > 2) ? strtoul(argv[2], NULL, 0) : 672;
+
+    if (bt_l2cap_connect(handle, g_l2cap_handle, &addr, &conn_option) != BT_STATUS_SUCCESS) {
+        PRINT("BR connect %s failed", argv[0]);
+        free(msg);
+        return CMD_ERROR;
+    }
+
+    PRINT("BR L2cap channel(id:%" PRIu16 ") connecting, psm:0x%" PRIx16, conn_option.id, conn_option.psm);
+
+    msg->id = conn_option.id;
+    msg->psm = conn_option.psm;
+    msg->proxy_name = strdup(conn_option.proxy_name);
+    msg->is_listening = false;
+    msg->transport = BT_TRANSPORT_BREDR;
+    memcpy(&msg->addr, &addr, sizeof(bt_address_t));
+    do_in_thread_loop(&g_l2cap_thread, add_l2cap_channel, msg);
+
+    return CMD_OK;
+}
+
+static int br_listen_cmd(void* handle, int argc, char* argv[])
+{
+    l2cap_config_option_t conn_option = { 0 };
+    l2cap_msg_t* msg;
+
+    if (!handle || !g_l2cap_handle) {
+        PRINT("L2CAP tool not ready!\n");
+        return CMD_ERROR;
+    }
+
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    msg = (l2cap_msg_t*)zalloc(sizeof(l2cap_msg_t));
+    if (!msg) {
+        PRINT("allocate msg failed");
+        return CMD_ERROR;
+    }
+
+    conn_option.psm = strtoul(argv[0], NULL, 0);
+    conn_option.transport = BT_TRANSPORT_BREDR;
+    conn_option.mode = L2CAP_CHANNEL_MODE_BASIC;
+    conn_option.mtu = (argc > 1) ? strtoul(argv[1], NULL, 0) : 672;
+
+    if (bt_l2cap_listen(handle, g_l2cap_handle, &conn_option) != BT_STATUS_SUCCESS) {
+        PRINT("BR listen 0x%" PRIx16 " failed", conn_option.psm);
+        free(msg);
+        return CMD_ERROR;
+    }
+
+    PRINT("BR L2cap channel(id:%" PRIu16 "/psm:0x%" PRIx16 ") start listen", conn_option.id, conn_option.psm);
+    msg->id = conn_option.id;
+    msg->psm = conn_option.psm;
+    msg->is_listening = true;
+    msg->transport = BT_TRANSPORT_BREDR;
+    msg->proxy_name = strdup(conn_option.proxy_name);
+    do_in_thread_loop(&g_l2cap_thread, add_l2cap_channel, msg);
+
+    return CMD_OK;
+}
+
+static int br_stop_listen_cmd(void* handle, int argc, char* argv[])
+{
+    uint16_t psm;
+    l2cap_msg_t* msg;
+
+    if (!handle || !g_l2cap_handle) {
+        PRINT("L2CAP tool not ready!");
+        return CMD_ERROR;
+    }
+
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    msg = (l2cap_msg_t*)zalloc(sizeof(l2cap_msg_t));
+    if (!msg) {
+        PRINT("allocate msg failed");
+        return CMD_ERROR;
+    }
+
+    psm = strtoul(argv[0], NULL, 0);
+    if (bt_l2cap_stop_listen_with_transport(handle, g_l2cap_handle, BT_TRANSPORT_BREDR, psm) != BT_STATUS_SUCCESS) {
+        PRINT("BR stop listen 0x%" PRIX16 " failed", psm);
+        free(msg);
+        return CMD_ERROR;
+    }
+
+    PRINT("BR L2cap stop listen psm:0x%" PRIx16, psm);
+    msg->psm = psm;
+    do_in_thread_loop(&g_l2cap_thread, do_l2cap_stop_listen, msg);
+
+    return CMD_OK;
+}
+
+static int echo_cmd(void* handle, int argc, char* argv[])
+{
+    bt_address_t addr;
+
+    if (!handle || !g_l2cap_handle) {
+        PRINT("L2CAP tool not ready!");
+        return CMD_ERROR;
+    }
+
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    if (bt_l2cap_send_echo_req(handle, g_l2cap_handle, &addr) != BT_STATUS_SUCCESS) {
+        PRINT("send echo request to %s failed", argv[0]);
+        return CMD_ERROR;
+    }
+
+    PRINT("L2CAP Echo Request sent to %s", argv[0]);
+
+    return CMD_OK;
+}
+
+static int brconfig_cmd(void* handle, int argc, char* argv[])
+{
+    bt_address_t addr;
+    uint16_t cid;
+
+    if (!handle || !g_l2cap_handle) {
+        PRINT("L2CAP tool not ready!");
+        return CMD_ERROR;
+    }
+
+    if (argc < 2)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    cid = strtoul(argv[1], NULL, 0);
+
+    if (bt_l2cap_send_conf_req(handle, g_l2cap_handle, &addr, cid) != BT_STATUS_SUCCESS) {
+        PRINT("send config request to %s cid 0x%04x failed", argv[0], cid);
+        return CMD_ERROR;
+    }
+
+    PRINT("L2CAP Config Request sent to %s cid 0x%04x", argv[0], cid);
+
+    return CMD_OK;
+}
+
+static int brwrite_cmd(void* handle, int argc, char* argv[])
+{
+    bt_address_t addr;
+    uint16_t cid;
+    uint8_t* data;
+    uint16_t len;
+
+    if (!handle || !g_l2cap_handle) {
+        PRINT("L2CAP tool not ready!");
+        return CMD_ERROR;
+    }
+
+    if (argc < 3)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    cid = strtoul(argv[1], NULL, 0);
+    data = (uint8_t*)argv[2];
+    len = strlen(argv[2]);
+
+    if (len > 48) {
+        PRINT("data too long, max 48 bytes");
+        return CMD_ERROR;
+    }
+
+    if (bt_l2cap_send_br_data(handle, g_l2cap_handle, &addr, cid, data, len) != BT_STATUS_SUCCESS) {
+        PRINT("send data to %s cid 0x%04x failed", argv[0], cid);
+        return CMD_ERROR;
+    }
+
+    PRINT("L2CAP data (%d bytes) sent to %s cid 0x%04x", len, argv[0], cid);
+
+    return CMD_OK;
+}
+#endif /* CONFIG_BLUETOOTH_PTS_TEST */
+
 static bt_command_t g_l2cap_commands[] = {
     { "connect", connect_cmd, 0, "\"connect l2cap channel      param: <address> <psm> [mtu] [mps] [credits]\"" },
     { "listen", listen_cmd, 0, "\"listen l2cap channel        param: <psm> [mtu] [mps] [credits]\"" },
@@ -832,6 +1054,14 @@ static bt_command_t g_l2cap_commands[] = {
     { "speed", speed_test_cmd, 0, "\"speed test l2cap channel    param: <id> <iteration>\"" },
     { "stoprecv", stop_receive_cmd, 0, "\"stop receive data from specified L2CAP channel  param: <id>\"" },
     { "startrecv", start_receive_cmd, 0, "\"start receive data from specified L2CAP channel  param: <id>\"" },
+#ifdef CONFIG_BLUETOOTH_PTS_TEST
+    { "brconnect", br_connect_cmd, 0, "\"BR connect l2cap channel   param: <address> <psm> [mtu]\"" },
+    { "brlisten", br_listen_cmd, 0, "\"BR listen l2cap channel    param: <psm> [mtu]\"" },
+    { "brstoplisten", br_stop_listen_cmd, 0, "\"BR stop listen l2cap       param: <psm>\"" },
+    { "echo", echo_cmd, 0, "\"Send L2CAP Echo Request     param: <address>\"" },
+    { "brconfig", brconfig_cmd, 0, "\"Send L2CAP Config Request   param: <address> <cid>\"" },
+    { "brwrite", brwrite_cmd, 0, "\"Send data on BR/EDR channel param: <address> <cid> <data>\"" },
+#endif
 };
 
 static void usage(void)

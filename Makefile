@@ -275,6 +275,9 @@ endif #CONFIG_BLUETOOTH_GATT_SERVER
 ifeq ($(CONFIG_BLUETOOTH_LE_CS), y)
 	CSRCS += service/stacks/zephyr/sal_le_cs_interface.c
 endif #CONFIG_BLUETOOTH_LE_CS
+ifeq ($(CONFIG_BLUETOOTH_L2CAP), y)
+	CSRCS += service/stacks/zephyr/sal_l2cap_interface.c
+endif #CONFIG_BLUETOOTH_L2CAP
 endif #CONFIG_BLUETOOTH_STACK_LE_ZBLUE
 
 endif
