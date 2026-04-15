@@ -254,6 +254,9 @@ static int hfp_set_volume_in_ipc(void* arg)
     if (!ins)
         return -EIO;
 
+    _info("[z_api_hfp] set_volume: ins=%p local_bt_ins=%p type=%d vol=%d\n",
+        ins, local_bt_ins, a->type, a->volume);
+
     bt_address_t fw_addr;
     zephyr_addr_to_fw(a->z_addr, &fw_addr);
 
@@ -458,4 +461,205 @@ int z_bt_hfp_disconnect_audio(const uint8_t* addr)
     hfp_addr_args_t args;
     memcpy(args.z_addr, addr, 7);
     return z_api_dispatch(hfp_disconnect_audio_in_ipc, &args);
+}
+
+static int hfp_terminate_call_in_ipc(void* arg)
+{
+    hfp_addr_args_t* a = (hfp_addr_args_t*)arg;
+    bt_instance_t* ins = get_ins();
+    if (!ins)
+        return -EIO;
+
+    bt_address_t fw_addr;
+    zephyr_addr_to_fw(a->z_addr, &fw_addr);
+
+    bt_status_t ret = bt_hfp_hf_terminate_call(ins, &fw_addr);
+    if (ret != BT_STATUS_SUCCESS) {
+        _info("[z_api_hfp] terminate_call failed: %d\n", ret);
+        return -EIO;
+    }
+
+    _info("[z_api_hfp] terminate call\n");
+    return 0;
+}
+
+int z_bt_hfp_terminate_call(const uint8_t* addr)
+{
+    _info("[z_api] >>> z_bt_hfp_terminate_call\n");
+    if (!addr)
+        return -EINVAL;
+
+    hfp_addr_args_t args;
+    memcpy(args.z_addr, addr, 7);
+    return z_api_dispatch(hfp_terminate_call_in_ipc, &args);
+}
+
+static int hfp_get_subscriber_number_in_ipc(void* arg)
+{
+    hfp_addr_args_t* a = (hfp_addr_args_t*)arg;
+    bt_instance_t* ins = get_ins();
+    if (!ins)
+        return -EIO;
+
+    bt_address_t fw_addr;
+    zephyr_addr_to_fw(a->z_addr, &fw_addr);
+
+    bt_status_t ret = bt_hfp_hf_get_subscriber_number(ins, &fw_addr);
+    if (ret != BT_STATUS_SUCCESS) {
+        _info("[z_api_hfp] get_subscriber_number failed: %d\n", ret);
+        return -EIO;
+    }
+
+    _info("[z_api_hfp] get_subscriber_number initiated\n");
+    return 0;
+}
+
+int z_bt_hfp_get_subscriber_number(const uint8_t* addr)
+{
+    _info("[z_api] >>> z_bt_hfp_get_subscriber_number\n");
+    if (!addr)
+        return -EINVAL;
+
+    hfp_addr_args_t args;
+    memcpy(args.z_addr, addr, 7);
+    return z_api_dispatch(hfp_get_subscriber_number_in_ipc, &args);
+}
+
+static int hfp_start_vr_in_ipc(void* arg)
+{
+    hfp_addr_args_t* a = (hfp_addr_args_t*)arg;
+    bt_instance_t* ins = get_ins();
+    if (!ins)
+        return -EIO;
+
+    bt_address_t fw_addr;
+    zephyr_addr_to_fw(a->z_addr, &fw_addr);
+
+    bt_status_t ret = bt_hfp_hf_start_voice_recognition(ins, &fw_addr);
+    if (ret != BT_STATUS_SUCCESS) {
+        _info("[z_api_hfp] start_vr failed: %d\n", ret);
+        return -EIO;
+    }
+
+    _info("[z_api_hfp] start voice recognition\n");
+    return 0;
+}
+
+static int hfp_stop_vr_in_ipc(void* arg)
+{
+    hfp_addr_args_t* a = (hfp_addr_args_t*)arg;
+    bt_instance_t* ins = get_ins();
+    if (!ins)
+        return -EIO;
+
+    bt_address_t fw_addr;
+    zephyr_addr_to_fw(a->z_addr, &fw_addr);
+
+    bt_status_t ret = bt_hfp_hf_stop_voice_recognition(ins, &fw_addr);
+    if (ret != BT_STATUS_SUCCESS) {
+        _info("[z_api_hfp] stop_vr failed: %d\n", ret);
+        return -EIO;
+    }
+
+    _info("[z_api_hfp] stop voice recognition\n");
+    return 0;
+}
+
+int z_bt_hfp_start_voice_recognition(const uint8_t* addr)
+{
+    _info("[z_api] >>> z_bt_hfp_start_voice_recognition\n");
+    if (!addr)
+        return -EINVAL;
+
+    hfp_addr_args_t args;
+    memcpy(args.z_addr, addr, 7);
+    return z_api_dispatch(hfp_start_vr_in_ipc, &args);
+}
+
+int z_bt_hfp_stop_voice_recognition(const uint8_t* addr)
+{
+    _info("[z_api] >>> z_bt_hfp_stop_voice_recognition\n");
+    if (!addr)
+        return -EINVAL;
+
+    hfp_addr_args_t args;
+    memcpy(args.z_addr, addr, 7);
+    return z_api_dispatch(hfp_stop_vr_in_ipc, &args);
+}
+
+typedef struct {
+    uint8_t z_addr[7];
+    uint8_t chld;
+    uint8_t index;
+} hfp_call_control_args_t;
+
+static int hfp_call_control_in_ipc(void* arg)
+{
+    hfp_call_control_args_t* a = (hfp_call_control_args_t*)arg;
+    bt_instance_t* ins = get_ins();
+    if (!ins)
+        return -EIO;
+
+    bt_address_t fw_addr;
+    zephyr_addr_to_fw(a->z_addr, &fw_addr);
+
+    bt_status_t ret = bt_hfp_hf_control_call(ins, &fw_addr,
+        (hfp_call_control_t)a->chld, a->index);
+    if (ret != BT_STATUS_SUCCESS) {
+        _info("[z_api_hfp] call_control failed: %d\n", ret);
+        return -EIO;
+    }
+
+    _info("[z_api_hfp] call_control: chld=%d index=%d\n", a->chld, a->index);
+    return 0;
+}
+
+int z_bt_hfp_call_control(const uint8_t* addr, uint8_t chld, uint8_t index)
+{
+    _info("[z_api] >>> z_bt_hfp_call_control chld=%d\n", chld);
+    if (!addr)
+        return -EINVAL;
+
+    hfp_call_control_args_t args;
+    memcpy(args.z_addr, addr, 7);
+    args.chld = chld;
+    args.index = index;
+    return z_api_dispatch(hfp_call_control_in_ipc, &args);
+}
+
+typedef struct {
+    uint8_t z_addr[7];
+    uint8_t level;
+} hfp_battery_args_t;
+
+static int hfp_update_battery_in_ipc(void* arg)
+{
+    hfp_battery_args_t* a = (hfp_battery_args_t*)arg;
+    bt_instance_t* ins = get_ins();
+    if (!ins)
+        return -EIO;
+
+    bt_address_t fw_addr;
+    zephyr_addr_to_fw(a->z_addr, &fw_addr);
+
+    bt_status_t ret = bt_hfp_hf_update_battery_level(ins, &fw_addr, a->level);
+    if (ret != BT_STATUS_SUCCESS) {
+        _info("[z_api_hfp] update_battery failed: %d\n", ret);
+        return -EIO;
+    }
+
+    _info("[z_api_hfp] update battery level: %d\n", a->level);
+    return 0;
+}
+
+int z_bt_hfp_update_battery_level(const uint8_t* addr, uint8_t level)
+{
+    _info("[z_api] >>> z_bt_hfp_update_battery_level level=%d\n", level);
+    if (!addr)
+        return -EINVAL;
+
+    hfp_battery_args_t args;
+    memcpy(args.z_addr, addr, 7);
+    args.level = level;
+    return z_api_dispatch(hfp_update_battery_in_ipc, &args);
 }
