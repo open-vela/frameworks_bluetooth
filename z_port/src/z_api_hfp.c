@@ -68,6 +68,7 @@ static bool hfp_initialized;
 /* BTP HFP callback declarations */
 extern void btp_hfp_connected_cb(const uint8_t* addr);
 extern void btp_hfp_disconnected_cb(const uint8_t* addr);
+extern void btp_hfp_audio_state_cb(const uint8_t* addr, uint8_t state);
 
 /* ---- HFP Framework callbacks ---- */
 
@@ -87,9 +88,21 @@ static void hfp_connection_state_cb(void* cookie, bt_address_t* addr,
     }
 }
 
+static void hfp_audio_state_cb(void* cookie, bt_address_t* addr,
+    hfp_audio_state_t state)
+{
+    uint8_t z_addr[7];
+
+    _info("[z_api_hfp] audio_state_cb: state=%d\n", state);
+
+    fw_addr_to_zephyr(addr, 0x00, z_addr);
+    btp_hfp_audio_state_cb(z_addr, (uint8_t)state);
+}
+
 static const hfp_hf_callbacks_t hfp_cbs = {
     .size = sizeof(hfp_hf_callbacks_t),
     .connection_state_cb = hfp_connection_state_cb,
+    .audio_state_cb = hfp_audio_state_cb,
 };
 
 /* ---- IPC dispatch functions ---- */
@@ -383,4 +396,66 @@ int z_bt_hfp_connect_acl(const uint8_t* addr)
     /* Use z_bt_conn_create to establish ACL connection only,
      * without initiating RFCOMM/SLC. PTS will initiate RFCOMM. */
     return z_bt_conn_create(addr, NULL);
+}
+
+static int hfp_connect_audio_in_ipc(void* arg)
+{
+    hfp_addr_args_t* a = (hfp_addr_args_t*)arg;
+    bt_instance_t* ins = get_ins();
+    if (!ins)
+        return -EIO;
+
+    bt_address_t fw_addr;
+    zephyr_addr_to_fw(a->z_addr, &fw_addr);
+
+    bt_status_t ret = bt_hfp_hf_connect_audio(ins, &fw_addr);
+    if (ret != BT_STATUS_SUCCESS) {
+        _info("[z_api_hfp] connect_audio failed: %d\n", ret);
+        return -EIO;
+    }
+
+    _info("[z_api_hfp] connect_audio initiated\n");
+    return 0;
+}
+
+static int hfp_disconnect_audio_in_ipc(void* arg)
+{
+    hfp_addr_args_t* a = (hfp_addr_args_t*)arg;
+    bt_instance_t* ins = get_ins();
+    if (!ins)
+        return -EIO;
+
+    bt_address_t fw_addr;
+    zephyr_addr_to_fw(a->z_addr, &fw_addr);
+
+    bt_status_t ret = bt_hfp_hf_disconnect_audio(ins, &fw_addr);
+    if (ret != BT_STATUS_SUCCESS) {
+        _info("[z_api_hfp] disconnect_audio failed: %d\n", ret);
+        return -EIO;
+    }
+
+    _info("[z_api_hfp] disconnect_audio initiated\n");
+    return 0;
+}
+
+int z_bt_hfp_connect_audio(const uint8_t* addr)
+{
+    _info("[z_api] >>> z_bt_hfp_connect_audio\n");
+    if (!addr)
+        return -EINVAL;
+
+    hfp_addr_args_t args;
+    memcpy(args.z_addr, addr, 7);
+    return z_api_dispatch(hfp_connect_audio_in_ipc, &args);
+}
+
+int z_bt_hfp_disconnect_audio(const uint8_t* addr)
+{
+    _info("[z_api] >>> z_bt_hfp_disconnect_audio\n");
+    if (!addr)
+        return -EINVAL;
+
+    hfp_addr_args_t args;
+    memcpy(args.z_addr, addr, 7);
+    return z_api_dispatch(hfp_disconnect_audio_in_ipc, &args);
 }
