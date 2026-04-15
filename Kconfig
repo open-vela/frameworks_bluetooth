@@ -854,6 +854,20 @@ config BT_TRACE_SYSTRACE_TAG
 		Should be >= NOTE_TAG_LAST to avoid collision with
 		system tags. Used to filter BT events in noteram.
 
+# probe layers — compile-time guards for probe header declarations.
+# Selected by trace specs (e.g., BT_TRACE_SPP selects all three).
+config BT_PROBE_HCI
+	bool
+	default n
+
+config BT_PROBE_RFCOMM
+	bool
+	default n
+
+config BT_PROBE_SPP
+	bool
+	default n
+
 endif #BLUETOOTH_EVENT_TRACE
 
 config MAX_SNOOP_FILE_SIZE
