@@ -252,6 +252,9 @@ static bt_command_t g_cmd_tables[] = {
 #ifdef CONFIG_BLUETOOTH_LOG
     { "log", log_command, 0, "log control command" },
 #endif
+#ifdef CONFIG_BLUETOOTH_EVENT_TRACE
+    { "trace", trace_command_exec, 0, "event trace cmd, input 'trace' show usage" },
+#endif
     { "help", usage_cmd, 0, "Usage for bttools" },
     { "quit", quit_cmd, 0, "Quit" },
     { "q", quit_cmd, 0, "Quit" },

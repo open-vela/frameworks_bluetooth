@@ -854,6 +854,30 @@ config BT_TRACE_SYSTRACE_TAG
 		Should be >= NOTE_TAG_LAST to avoid collision with
 		system tags. Used to filter BT events in noteram.
 
+config BT_TRACE_TOOL
+	tristate "Standalone bt_trace CLI tool"
+	default n
+	help
+		Build the standalone bt_trace command-line tool.
+		Provides clock-test and spp filter commands
+		without requiring the full bttool (CONFIG_BLUETOOTH_TOOLS).
+
+if BT_TRACE_TOOL
+
+config BT_TRACE_TOOL_PROGNAME
+	string "Program name"
+	default "bt_trace"
+
+config BT_TRACE_TOOL_STACKSIZE
+	int "Stack size"
+	default 2048
+
+config BT_TRACE_TOOL_PRIORITY
+	int "Task priority"
+	default 100
+
+endif # BT_TRACE_TOOL
+
 # trace specifications (user-facing)
 config BT_TRACE_SPP
 	bool "Enable SPP trace (HCI + RFCOMM + SPP)"

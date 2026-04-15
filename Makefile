@@ -196,6 +196,10 @@ ifeq ($(CONFIG_BLUETOOTH_DEBUG_MEMORY),y)
 CSRCS += debug/bt_memory.c
 endif
 
+ifeq ($(CONFIG_BLUETOOTH_MONITOR),y)
+CSRCS += debug/bt_monitor.c
+endif
+
 ifeq ($(CONFIG_BLUETOOTH_EVENT_TRACE),y)
 CSRCS += debug/trace/bt_event_trace.c
 endif
@@ -538,6 +542,13 @@ ifeq ($(CONFIG_BLUETOOTH_LE_CS), y)
 	CSRCS += tools/le_cs.c
 endif
 
+ifeq ($(CONFIG_BLUETOOTH_EVENT_TRACE), y)
+	CSRCS += debug/trace/bt_trace_cmd.c
+ifeq ($(CONFIG_BT_TRACE_SPP), y)
+	CSRCS += debug/trace/spp/bt_trace_spp_cmd.c
+endif
+endif
+
 endif
 
 # framework/service/stack/tools dependence
@@ -670,6 +681,14 @@ ifeq ($(CONFIG_BLUETOOTH_STORAGE_UPDATE), y)
 	PROGNAME += bt_storage_update
 	MAINSRC  += tools/storage_update/storage_update.c
 endif #CONFIG_BLUETOOTH_STORAGE_UPDATE
+
+ifeq ($(CONFIG_BT_TRACE_TOOL), y)
+	PROGNAME += $(CONFIG_BT_TRACE_TOOL_PROGNAME)
+	MAINSRC  += debug/trace/bt_trace_tool.c
+	STACKSIZE += $(CONFIG_BT_TRACE_TOOL_STACKSIZE)
+	PRIORITY  += $(CONFIG_BT_TRACE_TOOL_PRIORITY)
+endif
+
 endif
 
 ASRCS := $(wildcard $(ASRCS))

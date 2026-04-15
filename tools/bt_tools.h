@@ -196,4 +196,7 @@ int storage_command_exec(void* handle, int argc, char* argv[]);
 int le_cs_command_init(void* handle);
 void le_cs_command_uninit(void* handle);
 int le_cs_command_exec(void* handle, int argc, char* argv[]);
+
+int trace_command_exec(void* handle, int argc, char* argv[]);
+
 #endif /* __BT_TOOLS_H__ */

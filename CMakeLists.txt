@@ -531,6 +531,10 @@ if(CONFIG_BLUETOOTH)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/bt_memory.c)
   endif()
 
+  if(CONFIG_BLUETOOTH_MONITOR)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/bt_monitor.c)
+  endif()
+
   if(CONFIG_BLUETOOTH_EVENT_TRACE)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/trace/bt_event_trace.c)
   endif()
@@ -679,6 +683,13 @@ if(CONFIG_BLUETOOTH)
 
     if(CONFIG_BLUETOOTH_LE_CS)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/le_cs.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_EVENT_TRACE)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/trace/bt_trace_cmd.c)
+      if(CONFIG_BT_TRACE_SPP)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/trace/spp/bt_trace_spp_cmd.c)
+      endif()
     endif()
   endif()
 
@@ -954,6 +965,26 @@ if(CONFIG_BLUETOOTH)
         8192
         PRIORITY
         ${SCHED_PRIORITY_DEFAULT}
+        COMPILE_FLAGS
+        ${CFLAGS}
+        DEPENDS
+        libbluetooth)
+  endif()
+
+  if(CONFIG_BT_TRACE_TOOL)
+    nuttx_add_application(
+        NAME
+        ${CONFIG_BT_TRACE_TOOL_PROGNAME}
+        SRCS
+        ${BLUETOOTH_DIR}/debug/trace/bt_trace_tool.c
+        INCLUDE_DIRECTORIES
+        ${INCDIR}
+        ${BLUETOOTH_DIR}/debug
+        ${BLUETOOTH_DIR}/debug/trace
+        STACKSIZE
+        ${CONFIG_BT_TRACE_TOOL_STACKSIZE}
+        PRIORITY
+        ${CONFIG_BT_TRACE_TOOL_PRIORITY}
         COMPILE_FLAGS
         ${CFLAGS}
         DEPENDS
