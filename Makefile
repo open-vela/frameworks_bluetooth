@@ -196,6 +196,10 @@ ifeq ($(CONFIG_BLUETOOTH_DEBUG_MEMORY),y)
 CSRCS += debug/bt_memory.c
 endif
 
+ifeq ($(CONFIG_BLUETOOTH_EVENT_TRACE),y)
+CSRCS += debug/trace/bt_event_trace.c
+endif
+
 ifeq ($(CONFIG_BLUETOOTH_DEBUG_TRACE), y)
 CSRCS += service/debug/bt_trace.c
 endif
@@ -554,6 +558,8 @@ CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/st
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/stacks/include
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/vendor
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/dfx
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/debug
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/debug/trace
 
 ifeq ($(CONFIG_BLUETOOTH_SERVICE), y)
 ifneq ($(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET)$(CONFIG_BLUETOOTH_STACK_LE_BLUELET),)

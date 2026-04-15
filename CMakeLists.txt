@@ -531,6 +531,10 @@ if(CONFIG_BLUETOOTH)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/bt_memory.c)
   endif()
 
+  if(CONFIG_BLUETOOTH_EVENT_TRACE)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/trace/bt_event_trace.c)
+  endif()
+
   if(CONFIG_APP_BT_SAMPLE_CODE)
   if(CONFIG_APP_BT_SAMPLE_CODE_BASIC)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/basic/app_bt_gap.c)
@@ -708,6 +712,10 @@ if(CONFIG_BLUETOOTH)
   list(APPEND INCDIR ${BLUETOOTH_DIR}/service/vendor)
 
   list(APPEND INCDIR ${BLUETOOTH_DIR}/dfx)
+
+  list(APPEND INCDIR ${BLUETOOTH_DIR}/debug)
+
+  list(APPEND INCDIR ${BLUETOOTH_DIR}/debug/trace)
 
   if(CONFIG_BLUETOOTH_SERVICE)
     if(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET
@@ -1015,7 +1023,9 @@ if(CONFIG_BLUETOOTH)
     TARGET nuttx
     APPEND
     PROPERTY NUTTX_INCLUDE_DIRECTORIES ${BLUETOOTH_DIR}/include
-             ${BLUETOOTH_DIR}/framework/include)
+             ${BLUETOOTH_DIR}/framework/include
+             ${BLUETOOTH_DIR}/debug
+             ${BLUETOOTH_DIR}/debug/trace)
 
   # Library Configuration
   target_compile_options(libbluetooth PRIVATE ${CFLAGS})

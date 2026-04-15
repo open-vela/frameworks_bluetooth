@@ -830,6 +830,32 @@ config BLUETOOTH_TRACE_BUFFER_SIZE
 
 endif #BLUETOOTH_DEBUG_TRACE
 
+config BLUETOOTH_EVENT_TRACE
+	bool "Enable Bluetooth event trace"
+	default n
+	depends on SCHED_INSTRUMENTATION_DUMP
+	depends on DRIVERS_NOTE
+	help
+		Lightweight per-layer event trace using NuttX system trace
+		(sched_note_event). Each event is written as a binary blob
+		containing a 2-byte event ID and variable-length payload.
+		Timestamps and buffer management are provided by noteram.
+		All decoding is done offline.
+		Requires CONFIG_SCHED_INSTRUMENTATION_DUMP and a note driver
+		(e.g. CONFIG_DRIVERS_NOTERAM) to be enabled.
+
+if BLUETOOTH_EVENT_TRACE
+
+config BT_TRACE_SYSTRACE_TAG
+	int "note_tag value for BT trace events"
+	default 25
+	help
+		The NOTE_TAG value passed to sched_note_event().
+		Should be >= NOTE_TAG_LAST to avoid collision with
+		system tags. Used to filter BT events in noteram.
+
+endif #BLUETOOTH_EVENT_TRACE
+
 config MAX_SNOOP_FILE_SIZE
 	int "Maximum size of the snoop log file"
 	default 1048576
