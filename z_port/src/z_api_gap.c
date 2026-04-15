@@ -577,11 +577,20 @@ static void on_ssp_request_cb(void *cookie, bt_address_t *addr,
     }
 }
 
+static void on_connect_request_cb(void *cookie, bt_address_t *addr)
+{
+    _info("[z_api] on_connect_request_cb: auto-accepting incoming BR/EDR connection\n");
+    extern bt_status_t bt_sal_acl_connection_reply(bt_controller_id_t id,
+                                                   bt_address_t *addr, bool accept);
+    bt_sal_acl_connection_reply(PRIMARY_ADAPTER, addr, true);
+}
+
 static adapter_callbacks_t gap_cbs = {
     .on_connection_state_changed = on_conn_state_changed_cb,
     .on_bond_state_changed = on_bond_state_changed_cb,
     .on_pair_request = on_pair_request_cb,
     .on_pair_display = on_ssp_request_cb,
+    .on_connect_request = on_connect_request_cb,
 };
 
 /* ---- Advertising callbacks ---- */
@@ -773,6 +782,34 @@ int z_api(bt_enable)(void *cb)
         _info("[z_api] z_bt_enable: auto-calling gap_init\n");
         int gap_err = z_api_dispatch(gap_init_in_ipc, NULL);
         _info("[z_api] z_bt_enable: gap_init returned %d\n", gap_err);
+    }
+
+    /* Enable the adapter through Framework API */
+    bt_instance_t *ins = get_ins();
+    if (ins) {
+        bt_adapter_state_t state = bt_adapter_get_state(ins);
+        _info("[z_api] z_bt_enable: adapter state=%d\n", state);
+        if (state < BT_ADAPTER_STATE_ON) {
+            _info("[z_api] z_bt_enable: calling bt_adapter_enable\n");
+            bt_status_t ret = bt_adapter_enable(ins);
+            _info("[z_api] z_bt_enable: bt_adapter_enable returned %d\n", ret);
+
+            /* Wait for adapter to reach ON state (up to 10 seconds) */
+            for (int i = 0; i < 100; i++) {
+                usleep(100000); /* 100ms */
+                state = bt_adapter_get_state(ins);
+                if (state >= BT_ADAPTER_STATE_ON) break;
+            }
+            _info("[z_api] z_bt_enable: adapter state after wait=%d\n", state);
+        }
+
+        /* Set BR/EDR connectable + discoverable for PTS testing */
+        state = bt_adapter_get_state(ins);
+        if (state >= BT_ADAPTER_STATE_ON) {
+            bt_status_t sm = bt_adapter_set_scan_mode(ins,
+                BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE, true);
+            _info("[z_api] z_bt_enable: set_scan_mode returned %d\n", sm);
+        }
     }
 
     is_enabled = true;
