@@ -200,6 +200,10 @@ ifeq ($(CONFIG_BLUETOOTH_EVENT_TRACE),y)
 CSRCS += debug/trace/bt_event_trace.c
 endif
 
+ifeq ($(CONFIG_BT_TRACE_SPP),y)
+CSRCS += debug/trace/spp/bt_trace_spp.c
+endif
+
 ifeq ($(CONFIG_BLUETOOTH_DEBUG_TRACE), y)
 CSRCS += service/debug/bt_trace.c
 endif

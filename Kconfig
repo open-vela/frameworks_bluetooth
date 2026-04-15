@@ -854,6 +854,15 @@ config BT_TRACE_SYSTRACE_TAG
 		Should be >= NOTE_TAG_LAST to avoid collision with
 		system tags. Used to filter BT events in noteram.
 
+# trace specifications (user-facing)
+config BT_TRACE_SPP
+	bool "Enable SPP trace (HCI + RFCOMM + SPP)"
+	default n
+	depends on BLUETOOTH_SPP
+	select BT_PROBE_HCI
+	select BT_PROBE_RFCOMM
+	select BT_PROBE_SPP
+
 # probe layers — compile-time guards for probe header declarations.
 # Selected by trace specs (e.g., BT_TRACE_SPP selects all three).
 config BT_PROBE_HCI

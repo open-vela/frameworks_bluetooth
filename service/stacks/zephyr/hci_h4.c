@@ -48,6 +48,7 @@
 #define DT_DRV_COMPAT zephyr_bt_hci_ttyHCI
 
 #include "hci_h4.h"
+#include "probe/bt_probe_hci.h"
 #include "vhal/bt_vhal.h"
 
 #define LOG_TAG "h4"
@@ -288,6 +289,7 @@ static void bt_sal_hci_transport_recv(void)
         net_buf_add_mem(buf, buf_add, buf_add_len);
 
         h4_data_dump("BT RX", packet_type, buf->data, buf_add_len);
+        bt_probe_hci_h4_rx(frame_start - decoded_len, decoded_len);
         h4->recv(bt_dev, buf, h4->hci_data);
     }
 }
@@ -407,6 +409,7 @@ static int h4_send(const struct device* dev, struct net_buf* buf)
         BT_LOGE("H4: Failed to send %u bytes: %d", len, ret);
         ret = -EINVAL;
     }
+    bt_probe_hci_h4_tx_done(buf->data, buf->len);
 
     net_buf_unref(buf);
 

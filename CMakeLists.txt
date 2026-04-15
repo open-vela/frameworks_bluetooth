@@ -535,6 +535,10 @@ if(CONFIG_BLUETOOTH)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/trace/bt_event_trace.c)
   endif()
 
+  if(CONFIG_BT_TRACE_SPP)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/trace/spp/bt_trace_spp.c)
+  endif()
+
   if(CONFIG_APP_BT_SAMPLE_CODE)
   if(CONFIG_APP_BT_SAMPLE_CODE_BASIC)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/basic/app_bt_gap.c)

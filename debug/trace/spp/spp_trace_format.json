@@ -1,0 +1,242 @@
+{
+  "_comment": "SPP Trace decode format. Each entry maps an event_id to a name and payload field list.",
+  "_comment2": "field types: u8, u16le, u8bool. All multi-byte fields are little-endian.",
+  "_comment3": "Variable-length records: each event has its own payload_size (no padding).",
+  "_comment4": "IRQ events (0x8000, 0x8005) are recorded by uart_bth4 driver in IRQ context. H4 events (0x8001, 0x8006) are recorded by hci_h4.c in task context. Both use standard 9B payloads.",
+
+  "record_header_size": 7,
+
+  "execution_contexts": {
+    "IRQ":        {"display": "IRQ (H4 UART)",  "sort_index": 0},
+    "BLUETOOTHD": {"display": "bluetoothd",      "sort_index": 1},
+    "BT_STACK":   {"display": "BT Stack Thread", "sort_index": 2}
+  },
+
+  "event_id_encoding": {
+    "dir_bit":    15,
+    "layer_bits": "14:8",
+    "seq_bits":   "7:0",
+    "layers": {
+      "0": "HCI",
+      "2": "RFCOMM",
+      "3": "SDP",
+      "4": "SPP"
+    }
+  },
+
+  "events": [
+    {
+      "event_id": "0x0000",
+      "name": "HCI_STACK_TX_ACL",
+      "dir": "TX", "layer": "HCI",
+      "context": "BT_STACK",
+      "payload_size": 9,
+      "fields": [
+        {"name": "pkt_len",    "type": "u16le", "offset": 0},
+        {"name": "acl_handle", "type": "u16le", "offset": 2},
+        {"name": "dlci",       "type": "u8",    "offset": 4},
+        {"name": "info_len",   "type": "u16le", "offset": 5},
+        {"name": "credits",    "type": "u8",    "offset": 7},
+        {"name": "acl_quota",  "type": "u8",    "offset": 8}
+      ]
+    },
+    {
+      "event_id": "0x0003",
+      "name": "HCI_H4_TX_DONE",
+      "dir": "TX", "layer": "HCI",
+      "context": "BT_STACK",
+      "payload_size": 9,
+      "fields": [
+        {"name": "pkt_len",    "type": "u16le", "offset": 0},
+        {"name": "acl_handle", "type": "u16le", "offset": 2},
+        {"name": "dlci",       "type": "u8",    "offset": 4},
+        {"name": "info_len",   "type": "u16le", "offset": 5},
+        {"name": "credits",    "type": "u8",    "offset": 7},
+        {"name": "acl_quota",  "type": "u8",    "offset": 8, "note": "always 0 at H4 layer"}
+      ]
+    },
+    {
+      "event_id": "0x0004",
+      "name": "HCI_NOCP",
+      "dir": "TX", "layer": "HCI",
+      "context": "BT_STACK",
+      "payload_size": 6,
+      "fields": [
+        {"name": "acl_handle",    "type": "u16le", "offset": 0},
+        {"name": "num_completed", "type": "u16le", "offset": 2},
+        {"name": "acl_quota",     "type": "u16le", "offset": 4}
+      ]
+    },
+    {
+      "event_id": "0x8000",
+      "name": "HCI_H4_RX_IRQ_ACL",
+      "dir": "RX", "layer": "HCI",
+      "context": "IRQ",
+      "payload_size": 9,
+      "fields": [
+        {"name": "pkt_len",    "type": "u16le", "offset": 0},
+        {"name": "acl_handle", "type": "u16le", "offset": 2},
+        {"name": "dlci",       "type": "u8",    "offset": 4},
+        {"name": "info_len",   "type": "u16le", "offset": 5},
+        {"name": "credits",    "type": "u8",    "offset": 7},
+        {"name": "acl_quota",  "type": "u8",    "offset": 8, "note": "always 0 at IRQ layer"}
+      ]
+    },
+    {
+      "event_id": "0x8001",
+      "name": "HCI_H4_RX_ACL",
+      "dir": "RX", "layer": "HCI",
+      "context": "BLUETOOTHD",
+      "payload_size": 9,
+      "fields": [
+        {"name": "pkt_len",    "type": "u16le", "offset": 0},
+        {"name": "acl_handle", "type": "u16le", "offset": 2},
+        {"name": "dlci",       "type": "u8",    "offset": 4},
+        {"name": "info_len",   "type": "u16le", "offset": 5},
+        {"name": "credits",    "type": "u8",    "offset": 7},
+        {"name": "acl_quota",  "type": "u8",    "offset": 8, "note": "always 0 at H4 layer"}
+      ]
+    },
+    {
+      "event_id": "0x8002",
+      "name": "HCI_STACK_RX_ACL",
+      "dir": "RX", "layer": "HCI",
+      "context": "BT_STACK",
+      "payload_size": 9,
+      "fields": [
+        {"name": "pkt_len",    "type": "u16le", "offset": 0},
+        {"name": "acl_handle", "type": "u16le", "offset": 2},
+        {"name": "dlci",       "type": "u8",    "offset": 4},
+        {"name": "info_len",   "type": "u16le", "offset": 5},
+        {"name": "credits",    "type": "u8",    "offset": 7},
+        {"name": "acl_quota",  "type": "u8",    "offset": 8, "note": "always 0 for RX"}
+      ]
+    },
+    {
+      "event_id": "0x8003",
+      "name": "HCI_STACK_RX_EVT",
+      "dir": "RX", "layer": "HCI",
+      "context": "BT_STACK",
+      "payload_size": 9,
+      "fields": [
+        {"name": "pkt_len",      "type": "u16le", "offset": 0},
+        {"name": "evt_code",     "type": "u8",    "offset": 2},
+        {"name": "param_len",    "type": "u8",    "offset": 3},
+        {"name": "num_handles",  "type": "u8",    "offset": 4},
+        {"name": "handle_0",     "type": "u16le", "offset": 5},
+        {"name": "completed_0",  "type": "u16le", "offset": 7}
+      ]
+    },
+    {
+      "event_id": "0x8005",
+      "name": "HCI_H4_RX_IRQ_EVT",
+      "dir": "RX", "layer": "HCI",
+      "context": "IRQ",
+      "payload_size": 9,
+      "fields": [
+        {"name": "pkt_len",      "type": "u16le", "offset": 0},
+        {"name": "evt_code",     "type": "u8",    "offset": 2},
+        {"name": "param_len",    "type": "u8",    "offset": 3},
+        {"name": "num_handles",  "type": "u8",    "offset": 4},
+        {"name": "handle_0",     "type": "u16le", "offset": 5},
+        {"name": "completed_0",  "type": "u16le", "offset": 7}
+      ]
+    },
+    {
+      "event_id": "0x8006",
+      "name": "HCI_H4_RX_EVT",
+      "dir": "RX", "layer": "HCI",
+      "context": "BLUETOOTHD",
+      "payload_size": 9,
+      "fields": [
+        {"name": "pkt_len",      "type": "u16le", "offset": 0},
+        {"name": "evt_code",     "type": "u8",    "offset": 2},
+        {"name": "param_len",    "type": "u8",    "offset": 3},
+        {"name": "num_handles",  "type": "u8",    "offset": 4},
+        {"name": "handle_0",     "type": "u16le", "offset": 5},
+        {"name": "completed_0",  "type": "u16le", "offset": 7}
+      ]
+    },
+    {
+      "event_id": "0x0200",
+      "name": "RFCOMM_TX",
+      "dir": "TX", "layer": "RFCOMM",
+      "context": "BT_STACK",
+      "payload_size": 5,
+      "fields": [
+        {"name": "dlci",                "type": "u8",    "offset": 0},
+        {"name": "data_len",            "type": "u16le", "offset": 1},
+        {"name": "peer_credits",        "type": "u8",    "offset": 3},
+        {"name": "local_credits_given", "type": "u8",    "offset": 4}
+      ]
+    },
+    {
+      "event_id": "0x8200",
+      "name": "RFCOMM_RX",
+      "dir": "RX", "layer": "RFCOMM",
+      "context": "BT_STACK",
+      "payload_size": 5,
+      "fields": [
+        {"name": "dlci",               "type": "u8",    "offset": 0},
+        {"name": "data_len",           "type": "u16le", "offset": 1},
+        {"name": "local_credits",      "type": "u8",    "offset": 3},
+        {"name": "peer_credits_given", "type": "u8",    "offset": 4}
+      ]
+    },
+    {
+      "event_id": "0x0400",
+      "name": "SPP_TX_START",
+      "dir": "TX", "layer": "SPP",
+      "context": "BLUETOOTHD",
+      "payload_size": 4,
+      "fields": [
+        {"name": "port",     "type": "u16le", "offset": 0},
+        {"name": "data_len", "type": "u16le", "offset": 2}
+      ]
+    },
+    {
+      "event_id": "0x0401",
+      "name": "SPP_TX_SEND",
+      "dir": "TX", "layer": "SPP",
+      "context": "BLUETOOTHD",
+      "payload_size": 5,
+      "fields": [
+        {"name": "port",     "type": "u16le", "offset": 0},
+        {"name": "data_len", "type": "u16le", "offset": 2},
+        {"name": "quota",    "type": "u8",    "offset": 4}
+      ]
+    },
+    {
+      "event_id": "0x0402",
+      "name": "SPP_TX_DONE",
+      "dir": "TX", "layer": "SPP",
+      "context": "BLUETOOTHD",
+      "payload_size": 3,
+      "fields": [
+        {"name": "port",  "type": "u16le", "offset": 0},
+        {"name": "quota", "type": "u8",    "offset": 2}
+      ]
+    },
+    {
+      "event_id": "0x8400",
+      "name": "SPP_RX_START",
+      "dir": "RX", "layer": "SPP",
+      "context": "BLUETOOTHD",
+      "payload_size": 4,
+      "fields": [
+        {"name": "port",     "type": "u16le", "offset": 0},
+        {"name": "data_len", "type": "u16le", "offset": 2}
+      ]
+    },
+    {
+      "event_id": "0x8401",
+      "name": "SPP_RX_DONE",
+      "dir": "RX", "layer": "SPP",
+      "context": "BLUETOOTHD",
+      "payload_size": 2,
+      "fields": [
+        {"name": "port", "type": "u16le", "offset": 0}
+      ]
+    }
+  ]
+}

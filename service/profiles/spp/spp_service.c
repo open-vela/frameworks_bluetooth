@@ -36,6 +36,7 @@
 #include "service_manager.h"
 #include "spp_service.h"
 #include "utils/log.h"
+#include "probe/bt_probe_spp.h"
 #include "uv.h"
 
 /****************************************************************************
@@ -574,6 +575,7 @@ static void euv_read_complete(euv_pipe_t* handle, const uint8_t* buf, ssize_t si
     }
 
     spp_dumpbuffer("master read:", buf, size);
+    bt_probe_spp_tx_start(device->conn_id, size);
     do_spp_write(device, (uint8_t*)buf, size);
 }
 
@@ -585,6 +587,7 @@ static void euv_write_complete(euv_pipe_t* handle, uint8_t* buf, int status)
     if (!device || buf == NULL)
         return;
 
+    bt_probe_spp_rx_done(device->conn_id);
     bt_sal_spp_data_received_response(device->conn_port, buf);
     if (status != 0)
         spp_device_close(device);
@@ -761,6 +764,7 @@ static int do_spp_write(spp_device_t* device, uint8_t* buffer, uint16_t length)
             return length - remaining;
         }
         device->tx_bytes += size;
+        bt_probe_spp_tx_send(device->conn_id, size, device->remaining_quota);
 
         if (!(--device->remaining_quota)) {
             euv_pipe_read_stop(device->handle);
@@ -847,6 +851,7 @@ static void spp_on_incoming_data_received(bt_address_t* addr, uint16_t port,
 
     spp_dumpbuffer("master write:", buffer, length);
     device->rx_bytes += length;
+    bt_probe_spp_rx_start(device->conn_id, length);
     ret = euv_pipe_write(device->handle, buffer, length, euv_write_complete);
     if (ret != 0) {
         BT_LOGE("Spp write to slave port %d failed", device->conn_port);
@@ -870,6 +875,7 @@ static void spp_on_outgoing_complete(uint16_t port, uint8_t* buffer, uint16_t le
         return;
 
     device->remaining_quota++;
+    bt_probe_spp_tx_done(SERVICE_CONN_ID(port), device->remaining_quota);
 
     if (device->remaining_quota == 1 && device->handle != NULL) {
         if (device->cache_buf.length > 0) {
