@@ -1666,8 +1666,14 @@ static void zblue_conn_send_indication(void* args)
 
 bt_status_t bt_sal_gatt_server_send_notification(bt_controller_id_t id, bt_address_t* addr, gatt_element_t* element, uint8_t* value, uint16_t length)
 {
-    sal_gatts_notify_req_t* req = malloc(sizeof(sal_gatts_notify_req_t) + length);
+    sal_gatts_notify_req_t* req;
 
+    if (!addr || !element || !value || !length) {
+        BT_LOGE("%s, invalid params", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    req = malloc(sizeof(sal_gatts_notify_req_t) + length);
     if (!req) {
         BT_LOGE("%s, malloc fail", __func__);
         return BT_STATUS_NOMEM;
@@ -1692,6 +1698,7 @@ bt_status_t bt_sal_gatt_server_send_notification(bt_controller_id_t id, bt_addre
 static void send_indication_destory(struct bt_gatt_indicate_params* params)
 {
     BT_LOGD("%s", __func__);
+    free((void*)params->data);
     free(params);
 }
 
@@ -1730,6 +1737,7 @@ static uint8_t gatt_send_indication(const struct bt_gatt_attr* attr, uint16_t ha
     struct gatt_server_context* context = user_data;
     union uuid u;
     struct bt_gatt_indicate_params* params;
+    void* data_copy;
     int ret;
 
     if (!bt_uuid_create(&u.uuid, (uint8_t*)&context->uuid->val, context->uuid->type)) {
@@ -1747,14 +1755,28 @@ static uint8_t gatt_send_indication(const struct bt_gatt_attr* attr, uint16_t ha
         return BT_GATT_ITER_STOP;
     }
 
+    /* Copy indication data: bt_gatt_indicate is async (waits for confirm),
+     * but the source buffer (req->value) is freed after this function returns.
+     */
+    data_copy = malloc(context->length);
+    if (!data_copy) {
+        BT_LOGE("%s, malloc data fail", __func__);
+        free(params);
+        return BT_GATT_ITER_STOP;
+    }
+
+    memcpy(data_copy, context->value, context->length);
+
     params->attr = attr;
-    params->data = context->value;
+    params->data = data_copy;
     params->len = context->length;
     params->func = send_indication_result;
     params->destroy = send_indication_destory;
     ret = bt_gatt_indicate(context->conn, params);
     if (ret) {
         BT_LOGE("%s, indicate fail err:%d", __func__, ret);
+        free(data_copy);
+        free(params);
     }
 
     return BT_GATT_ITER_STOP;
@@ -1762,8 +1784,14 @@ static uint8_t gatt_send_indication(const struct bt_gatt_attr* attr, uint16_t ha
 
 bt_status_t bt_sal_gatt_server_send_indication(bt_controller_id_t id, bt_address_t* addr, gatt_element_t* element, uint8_t* value, uint16_t length)
 {
-    sal_gatts_notify_req_t* req = malloc(sizeof(sal_gatts_notify_req_t) + length);
+    sal_gatts_notify_req_t* req;
 
+    if (!addr || !element || !value || !length) {
+        BT_LOGE("%s, invalid params", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    req = malloc(sizeof(sal_gatts_notify_req_t) + length);
     if (!req) {
         BT_LOGE("%s, malloc fail", __func__);
         return BT_STATUS_NOMEM;
