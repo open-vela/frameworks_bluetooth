@@ -23,7 +23,13 @@ if(CONFIG_BLUETOOTH_Z_PORT)
     ${Z_PORT_DIR}/src/z_api_gap.c
     ${Z_PORT_DIR}/src/z_api_gatt.c
     ${Z_PORT_DIR}/src/z_api_ext_adv.c
-    ${Z_PORT_DIR}/src/z_api_l2cap.c)
+    ${Z_PORT_DIR}/src/z_api_l2cap.c
+    ${Z_PORT_DIR}/src/z_api_a2dp.c
+    ${Z_PORT_DIR}/src/z_api_avrcp.c
+    ${Z_PORT_DIR}/src/z_api_hfp.c
+    ${Z_PORT_DIR}/src/z_api_pan.c
+    ${Z_PORT_DIR}/src/z_api_spp.c
+    ${Z_PORT_DIR}/src/z_api_hid.c)
 
   set(INCDIR
     ${Z_PORT_DIR}/include
@@ -41,5 +47,10 @@ if(CONFIG_BLUETOOTH_Z_PORT)
 
   target_sources(libz_port PRIVATE ${CSRCS})
   target_include_directories(libz_port PRIVATE ${INCDIR})
+
+  # Link zblue headers for Zephyr BT type definitions
+  if(TARGET zblue::headers)
+    target_link_libraries(libz_port PRIVATE zblue::headers)
+  endif()
 
 endif()
