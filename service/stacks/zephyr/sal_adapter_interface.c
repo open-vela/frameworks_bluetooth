@@ -304,6 +304,7 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
     };
 
     zblue_conn_get_addr(conn, &state.addr);
+    BT_LOGI("%s, reason: 0x%02x", __func__, reason);
     adapter_on_connection_state_changed(&state);
     slot = bt_conn_find(&state.addr, BT_TRANSPORT_BREDR);
     if (slot) {
@@ -476,7 +477,9 @@ static int zblue_on_link_key_notify(uint8_t dev_id, bt_addr_le_t* addr, const ch
 
     memcpy(br_addr.addr, addr->a.val, sizeof(br_addr.addr));
     if (!key_value) {
-        BT_LOGD("%s delete key_value", __func__);
+        BT_LOGD("%s delete key_value, addr: %02x:%02x:%02x:%02x:%02x:%02x",
+            __func__, br_addr.addr[0], br_addr.addr[1], br_addr.addr[2],
+            br_addr.addr[3], br_addr.addr[4], br_addr.addr[5]);
         return 0;
     }
 
@@ -540,12 +543,15 @@ static int zblue_on_link_key_load(bt_addr_le_t* addr, uint8_t* key_value, uint8_
 static void zblue_on_br_pairing_complete(struct bt_conn* conn, bool bonding_flag)
 {
     bt_address_t addr;
+    struct bt_conn_info info;
 
     if (!bt_conn_get_dst_br(conn)) {
         return;
     }
 
-    BT_LOGD("%s bonding_flag: %s", __func__, bonding_flag ? "true" : "false");
+    bt_conn_get_info(conn, &info);
+    BT_LOGD("%s bonding_flag: %s, conn state: %d, security level: %d",
+        __func__, bonding_flag ? "true" : "false", info.state, info.security.level);
 
     zblue_conn_get_addr(conn, &addr);
     adapter_on_bond_state_changed(&addr, BOND_STATE_BONDED, BT_TRANSPORT_BREDR, BT_STATUS_SUCCESS, false);

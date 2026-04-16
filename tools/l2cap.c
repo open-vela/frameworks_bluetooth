@@ -263,11 +263,14 @@ static void add_l2cap_channel(void* data)
     channel->psm = msg->psm;
     channel->is_listening = msg->is_listening;
     channel->transport = msg->transport;
-    channel->pipe = euv_pipe_connect(&g_l2cap_thread, msg->proxy_name, data_path_connected_cb, channel);
-    if (!channel->pipe) {
-        PRINT("connect pipe failed");
-        free(channel);
-        goto free_msg;
+
+    if (msg->transport != BT_TRANSPORT_BREDR) {
+        channel->pipe = euv_pipe_connect(&g_l2cap_thread, msg->proxy_name, data_path_connected_cb, channel);
+        if (!channel->pipe) {
+            PRINT("connect pipe failed");
+            free(channel);
+            goto free_msg;
+        }
     }
 
     list_add_tail(&channel_list, &channel->node);
@@ -542,11 +545,6 @@ static int validate_l2cap_params(uint16_t mtu, uint16_t mps, uint16_t credits)
         return -1;
     }
 
-    if (mps > mtu) {
-        PRINT("invalid params: mps(%" PRIu16 ") > mtu(%" PRIu16 ")", mps, mtu);
-        return -1;
-    }
-
     return 0;
 }
 
@@ -629,6 +627,7 @@ static int listen_cmd(void* handle, int argc, char* argv[])
     conn_option.mtu = (argc > 1) ? strtoul(argv[1], NULL, 0) : L2CAP_TRANS_MTU_CFG;
     conn_option.le_mps = (argc > 2) ? strtoul(argv[2], NULL, 0) : L2CAP_TRANS_MPS_CFG;
     conn_option.init_credits = (argc > 3) ? strtoul(argv[3], NULL, 0) : L2CAP_TRANS_CREDIT_CFG;
+    conn_option.sec_level = (argc > 4) ? strtoul(argv[4], NULL, 0) : 0;
     if (validate_l2cap_params(conn_option.mtu, conn_option.le_mps, conn_option.init_credits) < 0) {
         free(msg);
         return CMD_INVALID_PARAM;
@@ -1029,11 +1028,6 @@ static int brwrite_cmd(void* handle, int argc, char* argv[])
     data = (uint8_t*)argv[2];
     len = strlen(argv[2]);
 
-    if (len > 48) {
-        PRINT("data too long, max 48 bytes");
-        return CMD_ERROR;
-    }
-
     if (bt_l2cap_send_br_data(handle, g_l2cap_handle, &addr, cid, data, len) != BT_STATUS_SUCCESS) {
         PRINT("send data to %s cid 0x%04x failed", argv[0], cid);
         return CMD_ERROR;
@@ -1043,11 +1037,39 @@ static int brwrite_cmd(void* handle, int argc, char* argv[])
 
     return CMD_OK;
 }
+
+static int brdisconnect_cmd(void* handle, int argc, char* argv[])
+{
+    bt_address_t addr;
+    uint16_t cid;
+
+    if (!handle || !g_l2cap_handle) {
+        PRINT("L2CAP tool not ready!");
+        return CMD_ERROR;
+    }
+
+    if (argc < 2)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    cid = strtoul(argv[1], NULL, 0);
+
+    if (bt_l2cap_br_disconnect_channel(handle, g_l2cap_handle, &addr, cid) != BT_STATUS_SUCCESS) {
+        PRINT("disconnect %s cid 0x%04x failed", argv[0], cid);
+        return CMD_ERROR;
+    }
+
+    PRINT("L2CAP Disconnect Request sent to %s cid 0x%04x", argv[0], cid);
+
+    return CMD_OK;
+}
 #endif /* CONFIG_BLUETOOTH_PTS_TEST */
 
 static bt_command_t g_l2cap_commands[] = {
     { "connect", connect_cmd, 0, "\"connect l2cap channel      param: <address> <psm> [mtu] [mps] [credits]\"" },
-    { "listen", listen_cmd, 0, "\"listen l2cap channel        param: <psm> [mtu] [mps] [credits]\"" },
+    { "listen", listen_cmd, 0, "\"listen l2cap channel        param: <psm> [mtu] [mps] [credits] [sec_level]\"" },
     { "disconnect", disconnect_cmd, 0, "\"disconnect l2cap channel  param: <id>\"" },
     { "stoplisten", stop_listen_cmd, 0, "\"stop listen l2cap channel  param: <psm>\"" },
     { "write", write_cmd, 0, "\"write data to peer   param: <id> <data>\"" },
@@ -1061,6 +1083,7 @@ static bt_command_t g_l2cap_commands[] = {
     { "echo", echo_cmd, 0, "\"Send L2CAP Echo Request     param: <address>\"" },
     { "brconfig", brconfig_cmd, 0, "\"Send L2CAP Config Request   param: <address> <cid>\"" },
     { "brwrite", brwrite_cmd, 0, "\"Send data on BR/EDR channel param: <address> <cid> <data>\"" },
+    { "brdisconnect", brdisconnect_cmd, 0, "\"BR disconnect L2CAP channel param: <address> <cid>\"" },
 #endif
 };
 

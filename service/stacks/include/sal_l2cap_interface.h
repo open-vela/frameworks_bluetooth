@@ -29,6 +29,7 @@ bt_status_t bt_sal_l2cap_send_packet(uint16_t cid, uint8_t* packet_data, uint16_
 bt_status_t bt_sal_l2cap_give_incoming_credits(bt_address_t* addr, uint16_t cid, uint16_t credits);
 bt_status_t bt_sal_l2cap_send_echo_req(bt_address_t* addr);
 bt_status_t bt_sal_l2cap_send_conf_req(bt_address_t* addr, uint16_t cid);
+bt_status_t bt_sal_l2cap_br_disconnect(bt_address_t* addr, uint16_t cid);
 bt_status_t bt_sal_l2cap_send_br_data(bt_address_t* addr, uint16_t cid, uint8_t* data, uint16_t len);
 
 #endif /* __SAL_L2CAP_INTERFACE_H_ */

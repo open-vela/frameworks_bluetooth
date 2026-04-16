@@ -837,8 +837,10 @@ static void process_bond_state_change_evt(bt_address_t* addr, bond_state_t state
             /* update bonded device info */
             adapter_update_bonded_device();
             // device_set_connection_state(device, CONNECTION_STATE_ENCRYPTED_BREDR);
+#ifndef CONFIG_BLUETOOTH_PTS_TEST
             if (device_is_connected(device))
                 bt_sal_start_service_discovery(PRIMARY_ADAPTER, addr, NULL);
+#endif
         }
     } else {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT

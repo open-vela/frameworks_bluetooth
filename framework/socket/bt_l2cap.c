@@ -219,3 +219,20 @@ bt_status_t bt_l2cap_send_br_data(bt_instance_t* ins, void* handle,
 
     return packet.l2cap_r.status;
 }
+
+bt_status_t bt_l2cap_br_disconnect_channel(bt_instance_t* ins, void* handle,
+    bt_address_t* addr, uint16_t cid)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    memcpy(&packet.l2cap_pl._bt_l2cap_br_disconnect.addr, addr, sizeof(bt_address_t));
+    packet.l2cap_pl._bt_l2cap_br_disconnect.cid = cid;
+    status = bt_socket_client_sendrecv(ins, &packet, BT_L2CAP_BR_DISCONNECT);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.l2cap_r.status;
+}
