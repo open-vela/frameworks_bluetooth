@@ -156,6 +156,12 @@ void bt_socket_server_l2cap_process(service_poll_t* poll, int fd,
                 packet->l2cap_pl._bt_l2cap_send_br_data.data,
                 packet->l2cap_pl._bt_l2cap_send_br_data.len);
             break;
+        case L2CAP_SUBCODE_BR_DISCONNECT:
+            packet->l2cap_r.status = BTSYMBOLS(bt_l2cap_br_disconnect_channel)(ins,
+                ins->l2cap_cookie,
+                &packet->l2cap_pl._bt_l2cap_br_disconnect.addr,
+                packet->l2cap_pl._bt_l2cap_br_disconnect.cid);
+            break;
         default:
             break;
         }

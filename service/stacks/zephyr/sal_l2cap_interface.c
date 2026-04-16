@@ -269,6 +269,48 @@ static void sal_l2cap_disconnected_cb(struct bt_l2cap_chan* chan)
     l2cap_on_channel_disconnected(&addr, cid, 0);
 }
 
+static void sal_l2cap_sent_cb(struct bt_l2cap_chan* chan)
+{
+    struct bt_l2cap_le_chan* le_chan = BT_L2CAP_LE_CHAN(chan);
+    sal_l2cap_channel_t* sal_ch;
+    bt_address_t addr;
+
+    sal_l2cap_lock();
+    sal_ch = find_channel_by_le_chan(le_chan);
+    if (!sal_ch) {
+        sal_l2cap_unlock();
+        return;
+    }
+    memcpy(&addr, &sal_ch->addr, sizeof(bt_address_t));
+    sal_l2cap_unlock();
+
+    l2cap_on_packet_sent(&addr, le_chan->rx.cid);
+}
+
+#if defined(CONFIG_BT_L2CAP_SEG_RECV)
+static void sal_l2cap_seg_recv_cb(struct bt_l2cap_chan* chan, size_t sdu_len,
+    off_t seg_offset, struct net_buf_simple* seg)
+{
+    struct bt_l2cap_le_chan* le_chan = BT_L2CAP_LE_CHAN(chan);
+    sal_l2cap_channel_t* sal_ch;
+    bt_address_t addr;
+
+    sal_l2cap_lock();
+    sal_ch = find_channel_by_le_chan(le_chan);
+    if (!sal_ch) {
+        sal_l2cap_unlock();
+        BT_LOGE("%s, channel not found", __func__);
+        return;
+    }
+    memcpy(&addr, &sal_ch->addr, sizeof(bt_address_t));
+    sal_l2cap_unlock();
+
+    if (!l2cap_on_segment_received(&addr, le_chan->rx.cid,
+            seg->data, seg->len, sdu_len, seg_offset)) {
+        BT_LOGE("%s, segment received failed", __func__);
+    }
+}
+#else
 static int sal_l2cap_recv_cb(struct bt_l2cap_chan* chan, struct net_buf* buf)
 {
     struct bt_l2cap_le_chan* le_chan = BT_L2CAP_LE_CHAN(chan);
@@ -289,35 +331,22 @@ static int sal_l2cap_recv_cb(struct bt_l2cap_chan* chan, struct net_buf* buf)
     return 0;
 }
 
-static void sal_l2cap_sent_cb(struct bt_l2cap_chan* chan)
-{
-    struct bt_l2cap_le_chan* le_chan = BT_L2CAP_LE_CHAN(chan);
-    sal_l2cap_channel_t* sal_ch;
-    bt_address_t addr;
-
-    sal_l2cap_lock();
-    sal_ch = find_channel_by_le_chan(le_chan);
-    if (!sal_ch) {
-        sal_l2cap_unlock();
-        return;
-    }
-    memcpy(&addr, &sal_ch->addr, sizeof(bt_address_t));
-    sal_l2cap_unlock();
-
-    l2cap_on_packet_sent(&addr, le_chan->rx.cid);
-}
-
 static struct net_buf* sal_l2cap_alloc_buf_cb(struct bt_l2cap_chan* chan)
 {
     return net_buf_alloc(&l2cap_tx_pool, K_NO_WAIT);
 }
+#endif /* CONFIG_BT_L2CAP_SEG_RECV */
 
 static const struct bt_l2cap_chan_ops g_l2cap_chan_ops = {
     .connected = sal_l2cap_connected_cb,
     .disconnected = sal_l2cap_disconnected_cb,
+#if defined(CONFIG_BT_L2CAP_SEG_RECV)
+    .seg_recv = sal_l2cap_seg_recv_cb,
+#else
     .recv = sal_l2cap_recv_cb,
-    .sent = sal_l2cap_sent_cb,
     .alloc_buf = sal_l2cap_alloc_buf_cb,
+#endif
+    .sent = sal_l2cap_sent_cb,
 };
 
 static int sal_l2cap_server_accept_cb(struct bt_conn* conn,
@@ -334,6 +363,36 @@ static int sal_l2cap_server_accept_cb(struct bt_conn* conn,
 
     sal_l2cap_lock();
     sal_srv = CONTAINER_OF(server, sal_l2cap_server_t, server);
+
+    /* BV-15-C: reject if encryption key size insufficient.
+     * Use sec_level=2 for listen so l2cap_check_security passes,
+     * then check key size here in accept callback.
+     */
+    /* Reject if encryption key size is insufficient */
+    if (sal_srv->config.sec_level >= BT_SECURITY_L2) {
+        uint8_t key_size = bt_conn_enc_key_size(conn);
+        if (key_size > 0 && key_size < 16) {
+            sal_l2cap_unlock();
+            return -EPERM; /* → ERR_KEY_SIZE */
+        }
+    }
+
+#ifdef CONFIG_BLUETOOTH_PTS_TEST
+    /* BV-17-C: refuse second channel on same PSM with no resources */
+    {
+        int count = 0;
+        for (int i = 0; i < L2CAP_MAX_CHANNELS; i++) {
+            if (g_l2cap_mgr.channels[i].in_use &&
+                g_l2cap_mgr.channels[i].psm == server->psm) {
+                count++;
+            }
+        }
+        if (count >= 1) {
+            sal_l2cap_unlock();
+            return -ENOMEM;
+        }
+    }
+#endif
 
     sal_ch = alloc_channel();
     if (!sal_ch) {
@@ -352,6 +411,10 @@ static int sal_l2cap_server_accept_cb(struct bt_conn* conn,
     if (sal_srv->config.le_mps) {
         sal_ch->le_chan.rx.mps = sal_srv->config.le_mps;
     }
+#if defined(CONFIG_BT_L2CAP_SEG_RECV)
+    atomic_set(&sal_ch->le_chan.rx.credits,
+        sal_srv->config.init_credits ? sal_srv->config.init_credits : 1);
+#endif
 
     *chan = &sal_ch->le_chan.chan;
     sal_l2cap_unlock();
@@ -636,6 +699,7 @@ bt_status_t bt_sal_l2cap_listen_channel(l2cap_config_option_t* option)
 
         memcpy(&sal_srv->config, option, sizeof(l2cap_config_option_t));
         sal_srv->server.psm = option->psm;
+        sal_srv->server.sec_level = option->sec_level;
         sal_srv->server.accept = sal_l2cap_server_accept_cb;
 
         err = bt_l2cap_server_register(&sal_srv->server);
@@ -804,6 +868,12 @@ bt_status_t bt_sal_l2cap_connect_channel(bt_address_t* addr, l2cap_config_option
         if (option->le_mps) {
             sal_ch->le_chan.rx.mps = option->le_mps;
         }
+#if defined(CONFIG_BT_L2CAP_SEG_RECV)
+        /* seg_recv: application manages credits, set initial credits
+         * so connect req carries a non-zero value for the remote.
+         */
+        atomic_set(&sal_ch->le_chan.rx.credits, option->init_credits ? option->init_credits : 1);
+#endif
 
         err = bt_l2cap_chan_connect(conn, &sal_ch->le_chan.chan, option->psm);
         if (err) {
@@ -984,7 +1054,6 @@ bt_status_t bt_sal_l2cap_give_incoming_credits(bt_address_t* addr, uint16_t cid,
 
     return BT_STATUS_SUCCESS;
 #else
-    /* Credits are managed automatically by zblue when SEG_RECV is not enabled */
     return BT_STATUS_SUCCESS;
 #endif
 }
@@ -1031,6 +1100,30 @@ bt_status_t bt_sal_l2cap_send_conf_req(bt_address_t* addr, uint16_t cid)
 
     if (err) {
         BT_LOGE("%s, send conf req failed: %d", __func__, err);
+        return BT_STATUS_FAIL;
+    }
+
+    return BT_STATUS_SUCCESS;
+}
+
+bt_status_t bt_sal_l2cap_br_disconnect(bt_address_t* addr, uint16_t cid)
+{
+    struct bt_conn* conn;
+    int err;
+
+    SAL_CHECK_PARAM(addr);
+
+    conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
+    if (!conn) {
+        BT_LOGE("%s, connection not found", __func__);
+        return BT_STATUS_NOT_FOUND;
+    }
+
+    err = bt_l2cap_br_send_disconn_req(conn, cid);
+    bt_conn_unref(conn);
+
+    if (err) {
+        BT_LOGE("%s, send disconn req failed: %d", __func__, err);
         return BT_STATUS_FAIL;
     }
 

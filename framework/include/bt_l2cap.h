@@ -54,6 +54,7 @@ typedef struct {
     uint16_t init_credits; /* initial credits for LE */
     uint16_t id; /* L2CAP Service socket id */
     char proxy_name[16]; /* Proxy name */
+    uint8_t sec_level; /* security level (0=default, 1=L1, 2=L2, 3=L3, 4=L4) */
 } l2cap_config_option_t;
 
 typedef struct {
@@ -206,6 +207,17 @@ bt_status_t BTSYMBOLS(bt_l2cap_send_conf_req)(bt_instance_t* ins, void* handle, 
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
 bt_status_t BTSYMBOLS(bt_l2cap_send_br_data)(bt_instance_t* ins, void* handle, bt_address_t* addr, uint16_t cid, uint8_t* data, uint16_t len);
+
+/**
+ * @brief Disconnect BR/EDR L2CAP channel by CID.
+ *
+ * @param ins - bluetooth client instance.
+ * @param handle - callbacks cookie.
+ * @param addr - remote device address.
+ * @param cid - local channel CID.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_l2cap_br_disconnect_channel)(bt_instance_t* ins, void* handle, bt_address_t* addr, uint16_t cid);
 
 #ifdef __cplusplus
 }

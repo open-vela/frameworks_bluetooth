@@ -851,9 +851,9 @@ static void handle_channel_disconneted(bt_address_t* addr, uint16_t cid, uint32_
     bt_addr_ba2str(addr, addr_str);
     BT_LOGD("L2CAP channel(cid:0x%" PRIx16 ") disconnected, remote addr:%s, reason: %" PRIu32, cid, addr_str, reason);
     channel = find_l2cap_channel_by_cid(cid);
-    if (!channel && cid == 0) {
-        /* Connection failed before CID was allocated — find the
-         * pending CLIENT channel by addr to avoid channel/pipe leak.
+    if (!channel) {
+        /* Connection failed or CID mismatch — find the
+         * pending CLIENT channel by addr to avoid channel/id leak.
          */
         bt_list_node_t* node;
         bt_list_t* list = g_l2cap_manager.channel_list;
@@ -1425,6 +1425,17 @@ bt_status_t l2cap_send_conf_req(bt_address_t* addr, uint16_t cid)
     }
 
     return bt_sal_l2cap_send_conf_req(addr, cid);
+}
+
+bt_status_t l2cap_br_disconnect(bt_address_t* addr, uint16_t cid)
+{
+    CHECK_ADAPTER_ENABLED(BT_STATUS_NOT_ENABLED);
+
+    if (!addr) {
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    return bt_sal_l2cap_br_disconnect(addr, cid);
 }
 
 bt_status_t l2cap_send_br_data(bt_address_t* addr, uint16_t cid,

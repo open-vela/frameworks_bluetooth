@@ -71,3 +71,8 @@ bt_status_t BTSYMBOLS(bt_l2cap_send_br_data)(bt_instance_t* ins, void* handle, b
 {
     return l2cap_send_br_data(addr, cid, data, len);
 }
+
+bt_status_t BTSYMBOLS(bt_l2cap_br_disconnect_channel)(bt_instance_t* ins, void* handle, bt_address_t* addr, uint16_t cid)
+{
+    return l2cap_br_disconnect(addr, cid);
+}
