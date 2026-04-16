@@ -1030,11 +1030,12 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, hfp_hf_da
         break;
     case HF_CONTROL_CALL: {
         hfp_call_control_t chld = data->valueint1;
+        uint8_t index = data->valueint2;
         if (chld > 4) {
             BT_LOGE("Call control error code:%d, line:%d", chld, __LINE__);
             return false;
         }
-        status = bt_sal_hfp_hf_call_control(&hfsm->addr, chld, 0);
+        status = bt_sal_hfp_hf_call_control(&hfsm->addr, chld, index);
         if (status != BT_STATUS_SUCCESS)
             BT_LOGE("Call control error:%d, line:%d", status, __LINE__);
         break;
