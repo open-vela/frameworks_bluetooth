@@ -909,6 +909,26 @@ config MAX_SNOOP_FILE_SIZE
 	help
 		Maximum size of the snoop log file
 
+config BLUETOOTH_MONITOR
+	bool "Enable Bluetooth latency monitor"
+	default y
+	help
+		Enable async-operation latency monitor. Uses a lock-free ring
+		buffer to record push/pop timestamps and warns when the elapsed
+		time exceeds a configurable threshold.
+
+if BLUETOOTH_MONITOR
+config BLUETOOTH_MONITOR_DEPTH
+	int "Monitor ring buffer depth"
+	default 8
+	range 2 64
+	help
+		Number of timestamp slots in each bt_monitor_t ring buffer.
+		Must be large enough to cover the maximum number of
+		outstanding (pushed but not yet popped) operations.
+
+endif #BLUETOOTH_MONITOR
+
 config BLUETOOTH_DUMPBUFFER
 	bool "Bluetooth dumpbuffer"
 	default n

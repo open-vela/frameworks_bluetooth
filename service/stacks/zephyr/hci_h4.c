@@ -48,6 +48,7 @@
 #define DT_DRV_COMPAT zephyr_bt_hci_ttyHCI
 
 #include "hci_h4.h"
+#include "bt_monitor.h"
 #include "probe/bt_probe_hci.h"
 #include "vhal/bt_vhal.h"
 
@@ -72,6 +73,8 @@ struct h4_data {
 
 static const struct device* bt_dev;
 static service_poll_t* hci_handle;
+
+BT_MONITOR_DEFINE(g_hci_rx_mon, "hci_rx", 10000);
 
 static void hci_remove_recv(void* data);
 
@@ -269,6 +272,8 @@ static void bt_sal_hci_transport_recv(void)
         buf_add_len = decoded_len - sizeof(packet_type);
 
         buf = get_rx(frame_start);
+
+        bt_monitor_pop(&g_hci_rx_mon);
 
         frame_size -= decoded_len;
         frame_start += decoded_len;

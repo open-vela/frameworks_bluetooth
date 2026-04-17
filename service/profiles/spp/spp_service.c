@@ -36,6 +36,7 @@
 #include "service_manager.h"
 #include "spp_service.h"
 #include "utils/log.h"
+#include "bt_monitor.h"
 #include "probe/bt_probe_spp.h"
 #include "uv.h"
 
@@ -130,6 +131,7 @@ typedef struct {
     /* connection state */
     profile_connection_state_t state;
     spp_proxy_state_t proxy_state;
+    BT_MONITOR_FIELD(pipe_mon);
 } spp_device_t;
 
 typedef struct {
@@ -304,6 +306,7 @@ static spp_device_t* alloc_new_device(bt_address_t* addr, int16_t scn,
     }
 
     memset(device, 0, sizeof(spp_device_t));
+    BT_MONITOR_INIT(&device->pipe_mon, "spp_pipe", 50000);
     device->conn_id = conn_id;
     device->scn = scn;
     device->app_handle = handle;
@@ -587,6 +590,7 @@ static void euv_write_complete(euv_pipe_t* handle, uint8_t* buf, int status)
     if (!device || buf == NULL)
         return;
 
+    bt_monitor_pop(&device->pipe_mon);
     bt_probe_spp_rx_done(device->conn_id);
     bt_sal_spp_data_received_response(device->conn_port, buf);
     if (status != 0)
@@ -851,6 +855,7 @@ static void spp_on_incoming_data_received(bt_address_t* addr, uint16_t port,
 
     spp_dumpbuffer("master write:", buffer, length);
     device->rx_bytes += length;
+    bt_monitor_push(&device->pipe_mon);
     bt_probe_spp_rx_start(device->conn_id, length);
     ret = euv_pipe_write(device->handle, buffer, length, euv_write_complete);
     if (ret != 0) {
