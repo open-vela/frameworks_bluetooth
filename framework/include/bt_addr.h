@@ -210,6 +210,25 @@ void bt_addr_set(bt_address_t* addr, const uint8_t* bd);
  */
 void bt_addr_swap(const bt_address_t* src, bt_address_t* dest);
 
+/**
+ * @brief Enable or disable address privacy in logging.
+ *
+ * When enabled, bt_addr_ba2str() and bt_addr_bastr() return masked addresses
+ * in the format "xx:xx:xx:xx:XX:XX" (only last 2 octets visible).
+ * Privacy is enabled by default.
+ *
+ * @param enable - true to enable privacy (masked), false to show full address.
+ */
+void bt_addr_set_privacy(bool enable);
+
+/**
+ * @brief Get current address privacy state.
+ *
+ * @return true - Privacy is enabled (addresses are masked).
+ * @return false - Privacy is disabled (full addresses shown).
+ */
+bool bt_addr_get_privacy(void);
+
 #ifdef __cplusplus
 }
 #endif

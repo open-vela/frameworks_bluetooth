@@ -49,6 +49,7 @@ static int filter_cmd(void* handle, int argc, char* argv[]);
 static int unfilter_cmd(void* handle, int argc, char* argv[]);
 static int unmask_cmd(void* handle, int argc, char* argv[]);
 static int level_cmd(void* handle, int argc, char* argv[]);
+static int privacy_cmd(void* handle, int argc, char* argv[]);
 
 static bt_command_t g_log_tables[] = {
     { "enable", enable_cmd, 0, "\"Enable param: (\"snoop\" or \"stack\")\"" },
@@ -77,6 +78,11 @@ static bt_command_t g_log_tables[] = {
                                "\t\t\tSPP data:                 3\n" },
     { "unfilter", unfilter_cmd, 0, "\"Disable Stack Profile & Protocol Log <bit>\"" },
     { "level", level_cmd, 0, "\"Set framework log level, (OFF:0,ERR:3,WARN:4,INFO:6,DBG:7)\"" },
+    { "privacy", privacy_cmd, 0, "\"Set log privacy bit, usage: privacy <bit> <0|1>\"\n"
+                                 "\t\t\tExample enable addr privacy: \"bttool> log privacy 0 1\"\n"
+                                 "\t\t\tExample disable addr privacy: \"bttool> log privacy 0 0\"\n"
+                                 "\t\t\tPrivacy Bit Enum:\n"
+                                 "\t\t\t  ADDR: 0\n" },
 };
 
 static void usage(void)
@@ -231,6 +237,36 @@ static int level_cmd(void* handle, int argc, char* argv[])
 #ifdef CONFIG_KVDB
     property_set_int32("persist.bluetooth.log.level", level);
     property_change_commit(0);
+
+    return CMD_OK;
+#else
+    return CMD_ERROR;
+#endif
+}
+
+static int privacy_cmd(void* handle, int argc, char* argv[])
+{
+    if (argc < 2)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    int bit = atoi(argv[0]);
+    int enable = atoi(argv[1]);
+
+    if (bit < 0 || bit > 31)
+        return CMD_INVALID_PARAM;
+
+    if (enable != 0 && enable != 1)
+        return CMD_INVALID_PARAM;
+
+#ifdef CONFIG_KVDB
+    int mask = property_get_int32("persist.bluetooth.log.addr_privacy", 0x0);
+    if (enable)
+        mask |= (1 << bit);
+    else
+        mask &= ~(1 << bit);
+
+    property_set_int32("persist.bluetooth.log.addr_privacy", mask);
+    property_change_commit(4);
 
     return CMD_OK;
 #else

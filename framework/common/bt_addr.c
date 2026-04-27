@@ -26,6 +26,7 @@ static const bt_address_t bt_addr_empty = {
 };
 
 static char g_bdaddr_str[18];
+static bool g_addr_privacy = false;
 
 static int bachk(const char* str)
 {
@@ -71,6 +72,10 @@ int bt_addr_compare(const bt_address_t* a, const bt_address_t* b)
 
 int bt_addr_ba2str(const bt_address_t* addr, char* str)
 {
+    if (g_addr_privacy)
+        return sprintf(str, "XX:XX:XX:XX:%2.2X:%2.2X",
+            addr->addr[1], addr->addr[0]);
+
     return sprintf(str, "%2.2X:%2.2X:%2.2X:%2.2X:%2.2X:%2.2X",
         addr->addr[5], addr->addr[4], addr->addr[3],
         addr->addr[2], addr->addr[1], addr->addr[0]);
@@ -112,4 +117,14 @@ void bt_addr_swap(const bt_address_t* src, bt_address_t* dest)
 {
     for (int i = 0; i < 6; i++)
         dest->addr[5 - i] = src->addr[i];
+}
+
+void bt_addr_set_privacy(bool enable)
+{
+    g_addr_privacy = enable;
+}
+
+bool bt_addr_get_privacy(void)
+{
+    return g_addr_privacy;
 }

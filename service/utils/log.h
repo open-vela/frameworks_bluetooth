@@ -36,6 +36,11 @@
 #define LOG_ID_STACK 1
 #define LOG_ID_FRAMEWORK 2
 
+enum bt_log_privacy_ {
+    BT_LOG_PRIVACY_NONE = 0,
+    BT_LOG_PRIVACY_ADDR = (1 << 0),
+};
+
 enum bt_log_level_ {
     BT_LOG_LEVEL_OFF = 0x0,
     BT_LOG_LEVEL_ERROR = LOG_ERR,
@@ -43,6 +48,12 @@ enum bt_log_level_ {
     BT_LOG_LEVEL_INFO = LOG_INFO,
     BT_LOG_LEVEL_DEBUG = LOG_DEBUG,
 };
+
+#ifdef CONFIG_BLUETOOTH_LOG_PRIVACY
+#define DEFAULT_BT_LOG_PRIVACY CONFIG_BLUETOOTH_LOG_PRIVACY
+#else
+#define DEFAULT_BT_LOG_PRIVACY BT_LOG_PRIVACY_NONE
+#endif
 
 #ifndef CONFIG_BLUETOOTH_SERVICE_LOG_LEVEL
 #define DEFAULT_BT_LOG_LEVEL BT_LOG_LEVEL_OFF
@@ -100,4 +111,5 @@ void bt_log_server_init(void);
 void bt_log_server_cleanup(void);
 void bt_log_module_enable(int id, bool changed);
 void bt_log_module_disable(int id, bool changed);
+void bt_log_set_privacy(uint32_t flags);
 #endif
