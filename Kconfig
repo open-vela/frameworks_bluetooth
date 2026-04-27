@@ -855,6 +855,16 @@ config BLUETOOTH_SERVICE_LOG_LEVEL
 	depends on BLUETOOTH_SERVICE
 	help
 		Set BT Service log level <0~7>
+
+config BLUETOOTH_LOG_PRIVACY
+	int "Default log privacy mask"
+	default 0
+	help
+		Bitmask for log privacy. Can be changed at runtime via
+		bttool log privacy <bit> <0|1>.
+		Privacy Bit Enum:
+		  ADDR: 0
+
 endif #BLUETOOTH_LOG
 
 endmenu #Debug

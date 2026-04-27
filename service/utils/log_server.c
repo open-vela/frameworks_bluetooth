@@ -23,6 +23,7 @@
 #include <kvdb.h>
 #endif
 
+#include "bt_addr.h"
 #include "bt_status.h"
 #include "btsnoop_log.h"
 #include "log.h"
@@ -34,6 +35,7 @@ enum {
     STACK_LOG_EN_CHANGED,
     STACK_LOG_MASK_CHANGED,
     SNOOP_LOG_EN_CHANGED,
+    ADDR_PRIVACY_CHANGED,
 };
 
 #define PERSIST_BT_LOG_CHANGED "persist.bluetooth.log.changed"
@@ -42,6 +44,7 @@ enum {
 #define PERSIST_BT_STACK_LOG_MASK "persist.bluetooth.log.stack_mask"
 #define PERSIST_BT_SNOOP_LOG_EN "persist.bluetooth.log.snoop_enable"
 #define PERSIST_BT_SNOOP_FILE_PATH "persist.bluetooth.log.snoop_path"
+#define PERSIST_BT_ADDR_PRIVACY "persist.bluetooth.log.addr_privacy"
 
 // #define PERSIST_BT_SNOOP_LOG_CID_MASK "persist.bluetooth.log.snoop_cid_mask"
 // #define PERSIST_BT_SNOOP_LOG_PKT_MASK "persist.bluetooth.log.snoop_pkt_mask"
@@ -54,6 +57,7 @@ struct bt_logger {
     int stack_mask;
     int snoop_cid_mask;
     int snoop_pkt_mask;
+    int privacy_flags;
 
     int monitor_fd;
     service_poll_t* poll;
@@ -238,6 +242,14 @@ static void property_monitor_cb(service_poll_t* poll,
                     bt_log_module_disable(LOG_ID_SNOOP, true);
             }
         }
+
+        if (changed & (1 << ADDR_PRIVACY_CHANGED)) {
+            new = property_get_int32(PERSIST_BT_ADDR_PRIVACY, DEFAULT_BT_LOG_PRIVACY);
+            if (new != g_logger.privacy_flags) {
+                bt_log_set_privacy(new);
+                syslog(LOG_INFO, "log privacy flags: 0x%x\n", new);
+            }
+        }
     }
 }
 #endif
@@ -249,6 +261,9 @@ void bt_log_server_init(void)
 
     /** framework log init */
     g_logger.framework_level = property_get_int32(PERSIST_BT_FRAMEWORK_LOG_LEVEL, DEFAULT_BT_LOG_LEVEL);
+
+    /** log privacy init */
+    bt_log_set_privacy(property_get_int32(PERSIST_BT_ADDR_PRIVACY, DEFAULT_BT_LOG_PRIVACY));
 
     /** stack log init */
     bt_sal_debug_init();
@@ -308,6 +323,16 @@ void bt_log_server_cleanup(void)
     if (g_logger.stack_enable)
         bt_sal_debug_disable();
     bt_sal_debug_cleanup();
+}
+
+void bt_log_set_privacy(int flags)
+{
+    int changed = g_logger.privacy_flags ^ flags;
+
+    g_logger.privacy_flags = flags;
+
+    if (changed & BT_LOG_PRIVACY_ADDR)
+        bt_addr_set_privacy((flags & BT_LOG_PRIVACY_ADDR) != 0);
 }
 
 bool bt_log_print_check(uint8_t level)
