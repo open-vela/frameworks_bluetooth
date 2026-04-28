@@ -56,13 +56,39 @@
 
 static void on_distance_measure_started_cb(void* cookie, bt_address_t* addr, uint8_t method)
 {
+    bt_instance_t* ins = (bt_instance_t*)cookie;
+    bt_message_packet_t packet = { 0 };
+    memcpy(&packet.cs_cb._on_distance_measure_started.addr, addr, sizeof(bt_address_t));
+    packet.cs_cb._on_distance_measure_started.method = method;
+    bt_socket_server_send(ins, &packet, BT_CS_ON_DISTANCE_MEASURE_STARTED);
 }
 
 static void on_distance_measure_stopped_cb(void* cookie, bt_address_t* addr, uint8_t reason, uint8_t method)
 {
+    bt_instance_t* ins = (bt_instance_t*)cookie;
+    bt_message_packet_t packet = { 0 };
+    memcpy(&packet.cs_cb._on_distance_measure_stopped.addr, addr, sizeof(bt_address_t));
+    packet.cs_cb._on_distance_measure_stopped.reason = reason;
+    packet.cs_cb._on_distance_measure_stopped.method = method;
+    bt_socket_server_send(ins, &packet, BT_CS_ON_DISTANCE_MEASURE_STOPPED);
 }
+
 static void on_distance_measure_result_cb(void* cookie, bt_address_t* addr, bt_distance_measurement_result_t* result)
 {
+    bt_instance_t* ins = (bt_instance_t*)cookie;
+    bt_message_packet_t packet = { 0 };
+    memcpy(&packet.cs_cb._on_distance_measure_result.addr, addr, sizeof(bt_address_t));
+    memcpy(&packet.cs_cb._on_distance_measure_result.result, result, sizeof(bt_distance_measurement_result_t));
+    bt_socket_server_send(ins, &packet, BT_CS_ON_DISTANCE_MEASURE_RESULT);
+}
+
+static void on_rap_distance_result_cb(void* cookie, bt_address_t* addr, cs_rap_distance_result_t* result)
+{
+    bt_instance_t* ins = (bt_instance_t*)cookie;
+    bt_message_packet_t packet = { 0 };
+    memcpy(&packet.cs_cb._on_rap_distance_result.addr, addr, sizeof(bt_address_t));
+    memcpy(&packet.cs_cb._on_rap_distance_result.result, result, sizeof(cs_rap_distance_result_t));
+    bt_socket_server_send(ins, &packet, BT_CS_ON_RAP_DISTANCE_RESULT);
 }
 
 const static cs_callbacks_t g_cs_cbs = {
@@ -70,6 +96,7 @@ const static cs_callbacks_t g_cs_cbs = {
     .cs_distance_measure_started_cb = on_distance_measure_started_cb,
     .cs_distance_measure_stopped_cb = on_distance_measure_stopped_cb,
     .cs_distance_measure_result_cb = on_distance_measure_result_cb,
+    .rap_distance_result_cb = on_rap_distance_result_cb,
 };
 /****************************************************************************
  * Public Functions
@@ -141,7 +168,34 @@ void bt_socket_server_cs_process(service_poll_t* poll,
 int bt_socket_client_cs_callback(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async)
 {
-    switch (packet->code) {
+    bt_socket_async_client_t* __async = NULL;
+
+    if (is_async) {
+        __async = ins->priv;
+    }
+
+    switch (BT_IPC_GET_SUBCODE(packet->code)) {
+    case CS_CB_SUBCODE_DISTANCE_MEASURE_STARTED:
+        CALLBACK_FOREACH(CBLIST, cs_callbacks_t, cs_distance_measure_started_cb,
+            &packet->cs_cb._on_distance_measure_started.addr,
+            packet->cs_cb._on_distance_measure_started.method);
+        break;
+    case CS_CB_SUBCODE_DISTANCE_MEASURE_STOPPED:
+        CALLBACK_FOREACH(CBLIST, cs_callbacks_t, cs_distance_measure_stopped_cb,
+            &packet->cs_cb._on_distance_measure_stopped.addr,
+            packet->cs_cb._on_distance_measure_stopped.reason,
+            packet->cs_cb._on_distance_measure_stopped.method);
+        break;
+    case CS_CB_SUBCODE_DISTANCE_MEASURE_RESULT:
+        CALLBACK_FOREACH(CBLIST, cs_callbacks_t, cs_distance_measure_result_cb,
+            &packet->cs_cb._on_distance_measure_result.addr,
+            &packet->cs_cb._on_distance_measure_result.result);
+        break;
+    case CS_CB_SUBCODE_RAP_DISTANCE_RESULT:
+        CALLBACK_FOREACH(CBLIST, cs_callbacks_t, rap_distance_result_cb,
+            &packet->cs_cb._on_rap_distance_result.addr,
+            &packet->cs_cb._on_rap_distance_result.result);
+        break;
     default:
         return BT_STATUS_PARM_INVALID;
     }

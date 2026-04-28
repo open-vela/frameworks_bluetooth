@@ -136,6 +136,7 @@ typedef struct
 
         bt_message_avrcp_target_t avrcp_target_pl;
         bt_message_cs_t cs_pl;
+        bt_message_cs_callbacks_t cs_cb;
         bt_message_avrcp_target_callbacks_t avrcp_target_cb;
         bt_message_avrcp_control_t avrcp_control_pl;
         bt_message_avrcp_control_callbacks_t avrcp_control_cb;

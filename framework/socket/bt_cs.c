@@ -144,3 +144,51 @@ bt_status_t bt_cs_test(bt_instance_t* ins, const void* data, uint16_t len)
     return packet.cs_r.status;
 }
 #endif /* CONFIG_BT_CS_RAS_TEST */
+
+bt_status_t bt_cs_rap_connect(bt_instance_t* ins, bt_address_t* addr)
+{
+    /* TODO: Implement RAP connect via socket IPC */
+    return BT_STATUS_NOT_SUPPORTED;
+}
+
+bt_status_t bt_cs_rap_disconnect(bt_instance_t* ins, bt_address_t* addr)
+{
+    /* TODO: Implement RAP disconnect via socket IPC */
+    return BT_STATUS_NOT_SUPPORTED;
+}
+
+bt_status_t bt_cs_rap_enable_ranging_mode(bt_instance_t* ins, bt_address_t* addr, cs_ranging_mode_t mode)
+{
+    /* TODO: Implement RAP enable ranging mode via socket IPC */
+    return BT_STATUS_NOT_SUPPORTED;
+}
+
+bt_status_t bt_cs_rap_disable_ranging_mode(bt_instance_t* ins, bt_address_t* addr)
+{
+    /* TODO: Implement RAP disable ranging mode via socket IPC */
+    return BT_STATUS_NOT_SUPPORTED;
+}
+
+bt_status_t bt_cs_rap_get_ranging_data(bt_instance_t* ins, bt_address_t* addr, uint16_t ranging_counter)
+{
+    /* TODO: Implement RAP get ranging data via socket IPC */
+    return BT_STATUS_NOT_SUPPORTED;
+}
+
+bt_status_t bt_cs_rap_abort_operation(bt_instance_t* ins, bt_address_t* addr)
+{
+    /* TODO: Implement RAP abort operation via socket IPC */
+    return BT_STATUS_NOT_SUPPORTED;
+}
+
+bt_status_t bt_cs_rap_set_filter(bt_instance_t* ins, bt_address_t* addr, const cs_filter_config_t* config)
+{
+    /* TODO: Implement RAP set filter via socket IPC */
+    return BT_STATUS_NOT_SUPPORTED;
+}
+
+cs_rap_state_t bt_cs_rap_get_state(bt_instance_t* ins, bt_address_t* addr)
+{
+    /* TODO: Implement RAP get state via socket IPC */
+    return CS_RAP_STATE_DISCONNECTED;
+}

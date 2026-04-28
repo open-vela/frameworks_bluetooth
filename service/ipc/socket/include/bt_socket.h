@@ -242,6 +242,8 @@ void bt_socket_server_log_process(service_poll_t* poll,
 /* Channel Sounding */
 void bt_socket_server_cs_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+int bt_socket_client_cs_callback(service_poll_t* poll,
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async);
 #ifdef __cplusplus
 }
 #endif

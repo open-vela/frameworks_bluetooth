@@ -31,30 +31,46 @@ static int cs_test_cmd(void* handle, int argc, char* argv[]);
 
 static void* cs_callbacks = NULL;
 
+
+static struct option cs_set_options[] = {
+    { "feature", required_argument, 0, 'f' },
+    { "role", required_argument, 0, 'r' },
+    { "antenna", required_argument, 0, 'a' },
+    { "power", required_argument, 0, 'p' },
+    { "mode", required_argument, 0, 'm' },
+    { 0, 0, 0, 0 }
+};
+
 static bt_command_t g_cs_tables[] = {
-    { "start", cs_start_distance_measurement_cmd, 0, "\"start distance measurement :\"" },
-    { "stop", cs_stop_distance_measurement_cmd, 0, "\"stop distance measurement :\"" },
+    { "start", cs_start_distance_measurement_cmd, 0, "start distance measurement, params: <addr>" },
+    { "stop", cs_stop_distance_measurement_cmd, 0, "stop distance measurement, params: <addr>" },
     { "config", cs_set_config_cmd, 1, "set CS parameters\n"
-                                      "\t  -f or --feature, RAS feature bits (hex or decimal)\n"
-                                      "\t      Bit 0 (0x01): Real-time Ranging Data\n"
-                                      "\t      Bit 1 (0x02): Retrieve Lost Ranging Data Segments\n"
-                                      "\t      Bit 2 (0x04): Abort Operation\n"
-                                      "\t      Bit 3 (0x08): Filter Ranging Data\n"
-                                      "\t  -r or --role, CS role bits (hex or decimal)\n"
-                                      "\t      Bit 0 (0x01): Initiator\n"
-                                      "\t      Bit 1 (0x02): Reflector\n"
-                                      "\t  -a or --antenna, CS_SYNC antenna selection (hex or decimal)\n"
-                                      "\t      0x01 (1): antenna identifier 1\n"
-                                      "\t      0x02 (2): antenna identifier 2\n"
-                                      "\t      0x03 (3): antenna identifier 3\n"
-                                      "\t      0x04 (4): antenna identifier 4\n"
-                                      "\t      0xFD (253): repetitive order 0x01 to Num_Antennae_Supported\n"
-                                      "\t      0xFE (254): repetitive order 0x01 to 0x04\n"
-                                      "\t      0xFF (255): no recommendation\n"
-                                      "\t  -p or --power, max TX power in dBm (-127 to 20)\n"
-                                      "\t  Examples:\n"
-                                      "\t    set -f 0x07\n"
-                                      "\t    set -f 0x07 -r 0x01 -a 2 -p 10\n" },
+
+                                   "\t  -m or --mode, ras or rap (default: ras)\n"
+                                   "\t      ras: RAS server mode (initiator/reflector)\n"
+                                   "\t      rap: RAP client mode\n"
+                                   "\t  -f or --feature, RAS feature bits (hex or decimal)\n"
+                                   "\t      Bit 0 (0x01): Real-time Ranging Data\n"
+                                   "\t      Bit 1 (0x02): Retrieve Lost Ranging Data Segments\n"
+                                   "\t      Bit 2 (0x04): Abort Operation\n"
+                                   "\t      Bit 3 (0x08): Filter Ranging Data\n"
+                                   "\t  -r or --role, CS role bits (hex or decimal)\n"
+                                   "\t      Bit 0 (0x01): Initiator\n"
+                                   "\t      Bit 1 (0x02): Reflector\n"
+                                   "\t  -a or --antenna, CS_SYNC antenna selection (hex or decimal)\n"
+                                   "\t      0x01 (1): antenna identifier 1\n"
+                                   "\t      0x02 (2): antenna identifier 2\n"
+                                   "\t      0x03 (3): antenna identifier 3\n"
+                                   "\t      0x04 (4): antenna identifier 4\n"
+                                   "\t      0xFD (253): repetitive order 0x01 to Num_Antennae_Supported\n"
+                                   "\t      0xFE (254): repetitive order 0x01 to 0x04\n"
+                                   "\t      0xFF (255): no recommendation\n"
+                                   "\t  -p or --power, max TX power in dBm (-127 to 20)\n"
+                                   "\t  Examples:\n"
+                                   "\t    config -m ras -r 0x01          (RAS initiator)\n"
+                                   "\t    config -m ras -r 0x02          (RAS reflector)\n"
+                                   "\t    config -m rap -r 0x01          (RAP client)\n"
+                                   "\t    config -m ras -f 0x07 -r 0x01 -a 2 -p 10\n"},
 #ifdef CONFIG_BT_CS_RAS_TEST
     { "test", cs_test_cmd, 0, "\"Channel Sounding test mode :\"" },
 #endif
@@ -84,6 +100,9 @@ static void le_cs_distance_measure_stopped_cb(void* cookie, bt_address_t* addr, 
 
 static void le_cs_distance_measure_result_cb(void* cookie, bt_address_t* addr, bt_distance_measurement_result_t* result)
 {
+    PRINT("cs distance result: addr:%s, distance:%d cm, error:%d cm, confidence:%d, method:%d",
+        bt_addr_bastr(addr), result->centimeter, result->error_centimeter,
+        result->confidence_level, result->method);
 }
 
 static const cs_callbacks_t le_cs_cbs = {
@@ -121,17 +140,34 @@ int le_cs_command_exec(void* handle, int argc, char* argv[])
 
 static int cs_start_distance_measurement_cmd(void* handle, int argc, char* argv[])
 {
-    bt_distance_measurement_params_t params;
+    if (argc < 2)
+        return CMD_PARAM_NOT_ENOUGH;
 
+    bt_distance_measurement_params_t params;
     memset(&params, 0, sizeof(bt_distance_measurement_params_t));
     params.method = METHOD_CS;
+
+    if (bt_addr_str2ba(argv[1], &params.addr) < 0) {
+        PRINT("Invalid addr:%s", argv[1]);
+        return CMD_INVALID_ADDR;
+    }
+
+    PRINT("Starting CS distance measurement to %s", argv[1]);
     bt_cs_start_distance_measurement(handle, &params);
     return 0;
 }
 
 static int cs_stop_distance_measurement_cmd(void* handle, int argc, char* argv[])
 {
-    bt_address_t addr = { 0 };
+    if (argc < 2)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[1], &addr) < 0) {
+        PRINT("Invalid addr:%s", argv[1]);
+        return CMD_INVALID_ADDR;
+    }
+
     bt_cs_stop_distance_measurement(handle, &addr, METHOD_CS, false);
     return 0;
 }
@@ -141,25 +177,39 @@ static int cs_set_config_cmd(void* handle, int argc, char* argv[])
     bt_cs_set_params_t params;
     bt_address_t addr = { 0 };
     memset(&params, 0, sizeof(params));
+    params.is_ras = true; /* default to RAS mode */
+    params.cs_sync_antenna_selection = 0xFF; /* default: no recommendation */
+    int opt;
 
-    for (int i = 0; i < argc; i++) {
-        if ((strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--feature") == 0) && i + 1 < argc) {
-            params.ras_feature = strtoul(argv[++i], NULL, 0);
-        } else if ((strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--role") == 0) && i + 1 < argc) {
-            params.role = (uint8_t)strtoul(argv[++i], NULL, 0);
-        } else if ((strcmp(argv[i], "-a") == 0 || strcmp(argv[i], "--antenna") == 0) && i + 1 < argc) {
-            params.cs_sync_antenna_selection = (uint8_t)strtoul(argv[++i], NULL, 0);
-        } else if ((strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--power") == 0) && i + 1 < argc) {
-            int power = atoi(argv[++i]);
-            if (power < -127 || power > 20) {
-                PRINT("error tx power, range must in -127~20");
-                return CMD_INVALID_PARAM;
+    optind = 0;
+    while ((opt = getopt_long(argc, argv, "+f:r:a:p:m:", cs_set_options, NULL)) != -1) {
+        switch (opt) {
+        case 'f':
+            params.ras_feature = strtoul(optarg, NULL, 0);
+            break;
+        case 'r':
+            params.role = (uint8_t)strtoul(optarg, NULL, 0);
+            break;
+        case 'a':
+            params.cs_sync_antenna_selection = (uint8_t)strtoul(optarg, NULL, 0);
+            break;
+        case 'p':
+            params.max_tx_power = (int8_t)atoi(optarg);
+            break;
+        case 'm':
+            if (strcmp(optarg, "rap") == 0) {
+                params.is_ras = false;
+            } else {
+                params.is_ras = true;
             }
-            params.max_tx_power = (int8_t)power;
+            break;
+        default:
+            return CMD_USAGE_FAULT;
         }
     }
 
     PRINT("Setting CS parameters:");
+    PRINT("  Mode:                 %s", params.is_ras ? "RAS (server)" : "RAP (client)");
     PRINT("  Feature:              0x%08" PRIx32, params.ras_feature);
     PRINT("    Real-time Ranging Data:              %s", (params.ras_feature & 0x01) ? "Enabled" : "Disabled");
     PRINT("    Retrieve Lost Ranging Data Segments: %s", (params.ras_feature & 0x02) ? "Enabled" : "Disabled");

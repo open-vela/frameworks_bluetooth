@@ -24,6 +24,7 @@
 #include "bt_list.h"
 #include "callbacks_list.h"
 #include "cs_msg.h"
+#include "cs_rap.h"
 #include "cs_ras.h"
 #include "cs_ras_gatts.h"
 #include "cs_ras_test.h"
@@ -36,17 +37,15 @@
 
 #ifdef CONFIG_BLUETOOTH_LE_CS
 
-#define CS_CALLBACK_FOREACH(_list, _cback, ...) \
-    BT_CALLBACK_FOREACH(_list, cs_callbacks_t, _cback, ##__VA_ARGS__)
-
-typedef void (*subevent_result_cb_t)(bt_address_t* addr, bt_srv_conn_le_cs_subevent_result_t* result);
+#define CS_CALLBACK_FOREACH(_list, _cback, ...) BT_CALLBACK_FOREACH(_list, cs_callbacks_t, _cback, ##__VA_ARGS__)
 
 typedef struct {
-    struct list_node list;
     callbacks_list_t* callbacks;
+    struct list_node list;
 } cs_service_t;
 
-static cs_service_t g_cs_service = { 0 };
+static cs_service_t g_cs_service;
+
 static subevent_result_cb_t result_cb = NULL;
 
 static void service_startup(profile_on_startup_t cb);
@@ -113,10 +112,57 @@ static cs_state_machine_t* get_state_machine(bt_address_t* bd_addr)
     return device->cs_sm;
 }
 
+static void cs_rap_distance_result_handler(bt_address_t* addr, cs_rap_internal_distance_result_t* result)
+{
+    if (!addr || !result) {
+        return;
+    }
+
+    bt_distance_measurement_result_t app_result = { 0 };
+
+    /* Convert internal result to application-facing result */
+    if (result->rtt_valid) {
+        app_result.centimeter = (uint32_t)(result->rtt_distance * 100.0f);
+        app_result.method = METHOD_CS;
+    } else if (result->phase_valid) {
+        app_result.centimeter = (uint32_t)(result->phase_distance * 100.0f);
+        app_result.method = METHOD_CS;
+    }
+
+    app_result.confidence_level = (result->rtt_valid || result->phase_valid) ? 100 : 0;
+
+    CS_CALLBACK_FOREACH(g_cs_service.callbacks, cs_distance_measure_result_cb, addr, &app_result);
+
+    /* Also fire RAP-specific distance callback if registered */
+    cs_rap_distance_result_t rap_result;
+    rap_result.ranging_counter = result->ranging_counter;
+    rap_result.rtt_distance = result->rtt_distance;
+    rap_result.phase_distance = result->phase_distance;
+    rap_result.mode1_samples = result->mode1_samples;
+    rap_result.mode2_samples = result->mode2_samples;
+    rap_result.rtt_valid = result->rtt_valid;
+    rap_result.phase_valid = result->phase_valid;
+
+    CS_CALLBACK_FOREACH(g_cs_service.callbacks, rap_distance_result_cb, addr, &rap_result);
+
+    BT_LOGD("cs_rap_distance_result_handler: rtt=%.2f phase=%.2f",
+        rap_result.rtt_distance, rap_result.phase_distance);
+}
+
+void cs_notify_distance_measure_started(bt_address_t* addr)
+{
+    CS_CALLBACK_FOREACH(g_cs_service.callbacks, cs_distance_measure_started_cb, addr, METHOD_CS);
+}
+
+void cs_notify_distance_measure_stopped(bt_address_t* addr, uint8_t reason)
+{
+    CS_CALLBACK_FOREACH(g_cs_service.callbacks, cs_distance_measure_stopped_cb, addr, reason, METHOD_CS);
+}
+
 static bt_status_t cs_subevent_result_callbacks(bt_address_t* addr, void* data)
 {
     if (result_cb == NULL) {
-        BT_LOGW("The subevent result callbacks haven't been registered.");
+        BT_LOGD("The subevent result callbacks haven't been registered.");
         return BT_STATUS_PARM_INVALID;
     }
 
@@ -148,8 +194,12 @@ static void cs_service_handle_event(void* data)
         break;
     default: {
         cs_state_machine_t* cs_sm;
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+        bt_addr_ba2str(&msg->cs_data.bd_addr, addr_str);
+        BT_LOGD("cs_service_handle_event: dispatching event %d to state machine, addr=%s", msg->id, addr_str);
         cs_sm = get_state_machine(&msg->cs_data.bd_addr);
         if (!cs_sm) {
+            BT_LOGE("cs_service_handle_event: get_state_machine returned NULL for addr=%s", addr_str);
             break;
         }
 
@@ -194,13 +244,24 @@ static void cs_cleanup(void)
 
 static void service_startup(profile_on_startup_t cb)
 {
-    bt_cs_ras_enable();
+    BT_LOGD("CS service startup, is_ras=%d", cs_get_is_ras());
+
+    if (cs_get_is_ras()) {
+        bt_cs_ras_enable();
+    }
+    /* RAP init is deferred to cs_set_config when is_ras=false */
+
     cb(PROFILE_CS, true);
 }
 
 static void service_shutdown(profile_on_shutdown_t cb)
 {
-    bt_cs_ras_disable();
+    if (cs_get_is_ras()) {
+        bt_cs_ras_disable();
+    }
+    /* Always try to deinit RAP in case it was initialized */
+    cs_rap_deinit();
+
     cb(PROFILE_CS, true);
 }
 
@@ -234,18 +295,24 @@ static bool cs_unregister_callbacks(void** remote, void* cookie)
 
 static bt_status_t cs_start_distance_measurement(bt_distance_measurement_params_t* params)
 {
-    BT_LOGD("cs_start_distance_measurement");
+    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+    bt_addr_ba2str(&params->addr, addr_str);
+    BT_LOGD("cs_start_distance_measurement: addr=%s, method=%d", addr_str, params->method);
+
     switch (params->method) {
     case METHOD_AUTO:
     case METHOD_RSSI:
-        BT_LOGD("not supported method");
+        BT_LOGD("cs_start_distance_measurement: method %d not supported", params->method);
         break;
     case METHOD_CS: {
+        cs_msg_t* conn_msg = cs_msg_new(CONNECTED_EVT, &params->addr);
+        do_in_cs_service(conn_msg);
+
         cs_msg_t* msg = cs_msg_new(START_REQ, &params->addr);
         bt_distance_measurement_params_t* cs_params = (bt_distance_measurement_params_t*)zalloc(sizeof(bt_distance_measurement_params_t));
 
         if (!cs_params) {
-            BT_LOGE("malloc failed");
+            BT_LOGE("cs_start_distance_measurement: malloc failed");
             return BT_STATUS_FAIL;
         }
 
@@ -256,6 +323,7 @@ static bt_status_t cs_start_distance_measurement(bt_distance_measurement_params_
     }
 
     default:
+        BT_LOGD("cs_start_distance_measurement: unknown method %d", params->method);
         break;
     }
 
@@ -285,21 +353,39 @@ static bt_status_t cs_stop_distance_measurement(bt_address_t* addr, int method, 
 
 static bt_status_t cs_set_config(bt_address_t* addr, const bt_cs_set_params_t* params)
 {
-    BT_LOGD("cs_set_config: addr=%s, ras_feature=0x%08" PRIx32 ", role=0x%02x, antenna=0x%02x, max_tx_power=%d",
-        bt_addr_str(addr), params->ras_feature, params->role,
+    BT_LOGD("cs_set_config: addr=%s, is_ras=%d, ras_feature=0x%08" PRIx32 ", role=0x%02x, antenna=0x%02x, max_tx_power=%d",
+        bt_addr_str(addr), params->is_ras, params->ras_feature, params->role,
         params->cs_sync_antenna_selection, params->max_tx_power);
 
-    bt_status_t ret = bt_cs_ras_set_feature(params->ras_feature);
-    if (ret != BT_STATUS_SUCCESS) {
-        return ret;
-    }
-
-    ret = bt_cs_ras_set_role(params->role);
-    if (ret != BT_STATUS_SUCCESS) {
-        return ret;
-    }
-
     cs_update_default_settings(params);
+
+    if (params->is_ras) {
+        /* RAS server mode — ensure RAS is enabled first */
+        bt_cs_ras_enable();
+
+        bt_status_t ret = bt_cs_ras_set_feature(params->ras_feature);
+        if (ret != BT_STATUS_SUCCESS) {
+            return ret;
+        }
+
+        ret = bt_cs_ras_set_role(params->role);
+        if (ret != BT_STATUS_SUCCESS) {
+            return ret;
+        }
+
+        /* RAS Initiator also needs RAP GATTC to discover Reflector's RAS
+         * GATT Server and write CCC to enable notifications. Without this,
+         * the Reflector reports "No mode have been set" because CCC is
+         * never written and char_notify_state is not configured.
+         */
+        if (params->role == CS_ROLE_REFLECTOR) {
+            cs_rap_init(cs_rap_distance_result_handler);
+        }
+    } else {
+        /* RAP client mode — initialize RAP if not already done */
+        cs_rap_init(cs_rap_distance_result_handler);
+    }
+
     return BT_STATUS_SUCCESS;
 }
 

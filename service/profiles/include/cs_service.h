@@ -355,6 +355,8 @@ typedef struct {
      *  Value range is -127 to 20.
      */
     int8_t max_tx_power;
+    /** true: RAS (server side), false: RAP (client side) */
+    bool is_ras;
 } bt_le_srv_cs_set_default_settings_param_t;
 
 /** Remote channel sounding capabilities for LE connections supporting CS */
@@ -687,5 +689,8 @@ void register_cs_service(void);
 void bt_sal_cs_event_callback(cs_msg_t* msg);
 
 void bt_cs_register_subevent_cb(subevent_result_cb_t cb);
+
+void cs_notify_distance_measure_started(bt_address_t* addr);
+void cs_notify_distance_measure_stopped(bt_address_t* addr, uint8_t reason);
 
 #endif /* __CS_SERVICE_H__ */

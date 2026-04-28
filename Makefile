@@ -528,6 +528,7 @@ endif #CONFIG_BLUETOOTH_STORAGE_UPDATE
 
 ifeq ($(CONFIG_BLUETOOTH_LE_CS), y)
 	CSRCS += tools/le_cs.c
+	CSRCS += tools/le_rap.c
 endif
 
 endif

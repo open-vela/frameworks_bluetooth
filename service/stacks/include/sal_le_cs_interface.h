@@ -105,6 +105,7 @@ typedef struct {
     uint8_t* step_data_buf;
 } sal_cs_subevent_result_t;
 
+bt_status_t bt_sal_cs_set_link_security(bt_controller_id_t id, bt_address_t* addr);
 bt_status_t bt_sal_cs_read_remote_supported_capabilities(bt_controller_id_t id, bt_address_t* addr);
 bt_status_t bt_sal_cs_set_default_settings(bt_controller_id_t id, bt_address_t* addr,
     bt_le_srv_cs_set_default_settings_param_t* params);

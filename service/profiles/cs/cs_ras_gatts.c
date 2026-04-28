@@ -15,6 +15,7 @@
  ***************************************************************************/
 
 #include "cs_ras_gatts.h"
+#include "bt_addr.h"
 #include "bt_gatts.h"
 #include "bt_profile.h"
 #include "bt_status.h"
@@ -224,7 +225,7 @@ static void ras_gatts_register(void)
 {
     const gatts_interface_t* interface = gatts_info->ras_gatts_interface;
 
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, interface=%p", __func__, interface);
 
     if (gatts_info->ras_gatts_handle) {
         BT_LOGW("The RAS gatt Server has been register.");
@@ -233,9 +234,11 @@ static void ras_gatts_register(void)
 
     interface->register_service(NULL, &gatts_info->ras_gatts_handle, &ras_gatts_callbacks);
     if (!gatts_info->ras_gatts_handle) {
-        BT_LOGE("%s, failed to register service", __func__);
+        BT_LOGE("%s, failed to register service, handle is NULL", __func__);
         return;
     }
+
+    BT_LOGD("%s, registered service, handle=%p", __func__, gatts_info->ras_gatts_handle);
 
     if (interface->add_attr_table(gatts_info->ras_gatts_handle, (gatt_srv_db_t*)&ras_service_db)
         != BT_STATUS_SUCCESS) {
@@ -244,7 +247,7 @@ static void ras_gatts_register(void)
         return;
     }
 
-    BT_LOGD("%s, wait for service registered", __func__);
+    BT_LOGD("%s, attribute table added successfully", __func__);
 }
 
 static void cs_ras_gatts_unregister(void)
@@ -303,6 +306,10 @@ void ras_gatts_deinit(void)
 
 void cs_ras_gatts_connected_cb(gatts_handle_t srv_handle, bt_address_t* addr)
 {
+    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+    bt_addr_ba2str(addr, addr_str);
+    BT_LOGD("cs_ras_gatts_connected_cb: srv_handle=%p, addr=%s", srv_handle, addr_str);
+
     cs_msg_t* msg = cs_msg_new(CONNECTED_EVT, addr);
     bt_sal_cs_event_callback(msg);
 

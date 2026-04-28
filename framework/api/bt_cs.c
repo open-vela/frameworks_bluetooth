@@ -28,6 +28,7 @@ static bt_cs_interface_t* get_profile_service(void)
 {
     return (bt_cs_interface_t*)service_manager_get_profile(PROFILE_CS);
 }
+
 void* BTSYMBOLS(bt_cs_register_callbacks)(bt_instance_t* ins, const cs_callbacks_t* callbacks)
 {
     bt_cs_interface_t* profile = get_profile_service();
@@ -61,6 +62,54 @@ bt_status_t BTSYMBOLS(bt_cs_set_config)(bt_instance_t* ins, bt_address_t* addr, 
     bt_cs_interface_t* profile = get_profile_service();
 
     return profile->set_config(addr, params);
+}
+
+bt_status_t BTSYMBOLS(bt_cs_rap_connect)(bt_instance_t* ins, bt_address_t* addr)
+{
+    /* TODO: Implement RAP connect via CS service */
+    return BT_STATUS_NOT_SUPPORTED;
+}
+
+bt_status_t BTSYMBOLS(bt_cs_rap_disconnect)(bt_instance_t* ins, bt_address_t* addr)
+{
+    /* TODO: Implement RAP disconnect via CS service */
+    return BT_STATUS_NOT_SUPPORTED;
+}
+
+bt_status_t BTSYMBOLS(bt_cs_rap_enable_ranging_mode)(bt_instance_t* ins, bt_address_t* addr, cs_ranging_mode_t mode)
+{
+    /* TODO: Implement RAP enable ranging mode via CS service */
+    return BT_STATUS_NOT_SUPPORTED;
+}
+
+bt_status_t BTSYMBOLS(bt_cs_rap_disable_ranging_mode)(bt_instance_t* ins, bt_address_t* addr)
+{
+    /* TODO: Implement RAP disable ranging mode via CS service */
+    return BT_STATUS_NOT_SUPPORTED;
+}
+
+bt_status_t BTSYMBOLS(bt_cs_rap_get_ranging_data)(bt_instance_t* ins, bt_address_t* addr, uint16_t ranging_counter)
+{
+    /* TODO: Implement RAP get ranging data via CS service */
+    return BT_STATUS_NOT_SUPPORTED;
+}
+
+bt_status_t BTSYMBOLS(bt_cs_rap_abort_operation)(bt_instance_t* ins, bt_address_t* addr)
+{
+    /* TODO: Implement RAP abort operation via CS service */
+    return BT_STATUS_NOT_SUPPORTED;
+}
+
+bt_status_t BTSYMBOLS(bt_cs_rap_set_filter)(bt_instance_t* ins, bt_address_t* addr, const cs_filter_config_t* config)
+{
+    /* TODO: Implement RAP set filter via CS service */
+    return BT_STATUS_NOT_SUPPORTED;
+}
+
+cs_rap_state_t BTSYMBOLS(bt_cs_rap_get_state)(bt_instance_t* ins, bt_address_t* addr)
+{
+    /* TODO: Implement RAP get state via CS service */
+    return CS_RAP_STATE_DISCONNECTED;
 }
 
 #ifdef CONFIG_BT_CS_RAS_TEST

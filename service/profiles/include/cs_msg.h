@@ -50,6 +50,7 @@ typedef enum {
     PROCEDURE_DONE_EVT,
     SUBEVENT_RESULT_EVT,
     LOCAL_SUPPORTED_CAPABILITIES_EVT,
+    ENCRYPTED_EVT,
 } cs_msg_id_t;
 
 typedef struct {
