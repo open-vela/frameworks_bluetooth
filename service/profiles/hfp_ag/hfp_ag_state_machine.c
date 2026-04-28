@@ -78,7 +78,7 @@ static const vendor_specific_at_prefix_t company_id_map[] = {
     { "+ANDROID", BLUETOOTH_COMPANY_ID_GOOGLE },
 };
 
-#define AG_TIMEOUT 10000
+#define AG_TIMEOUT 30000
 #define AG_OFFLOAD_TIMEOUT 500
 #define AG_STM_DEBUG 1
 #if AG_STM_DEBUG
@@ -93,6 +93,16 @@ static const char* stack_event_to_string(hfp_ag_event_t event);
 #define AG_DBG_ENTER(__sm, __addr)
 #define AG_DBG_EXIT(__sm, __addr)
 #define AG_DBG_EVENT(__sm, __addr, __event)
+#endif
+
+#ifndef CONFIG_PHONE_SERVICE
+uint8_t g_ag_device_network = 1;
+uint8_t g_ag_device_roam = 0;
+uint8_t g_ag_device_signal = 5;
+uint8_t g_ag_device_battery = 5;
+uint8_t g_ag_device_call = 0;
+uint8_t g_ag_device_callsetup = 0;
+uint8_t g_ag_device_callheld = 0;
 #endif
 
 extern bt_status_t hfp_ag_send_event(bt_address_t* addr, hfp_ag_event_t evt);
@@ -326,8 +336,17 @@ static void process_cind_request(ag_state_machine_t* agsm)
     resp.call_setup = callstate_to_callsetup(call_state);
 #else
     memset(&resp, 0, sizeof(resp));
+    resp.network = g_ag_device_network;
+    resp.roam = g_ag_device_roam;
+    resp.signal = g_ag_device_signal;
+    resp.battery = g_ag_device_battery;
+    resp.call = g_ag_device_call;
+    resp.call_setup = g_ag_device_callsetup;
+    resp.call_held = g_ag_device_callheld;
 #endif
-    BT_LOGD("AT+CIND=? response");
+    BT_LOGD("CIND resp: net=%d call=%d setup=%d held=%d sig=%d roam=%d bat=%d",
+        resp.network, resp.call, resp.call_setup, resp.call_held,
+        resp.signal, resp.roam, resp.battery);
     bt_sal_hfp_ag_cind_response(&agsm->addr, &resp);
 }
 #endif

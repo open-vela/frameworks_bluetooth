@@ -27,6 +27,7 @@ if(CONFIG_BLUETOOTH_Z_PORT)
     ${Z_PORT_DIR}/src/z_api_a2dp.c
     ${Z_PORT_DIR}/src/z_api_avrcp.c
     ${Z_PORT_DIR}/src/z_api_hfp.c
+    ${Z_PORT_DIR}/src/z_api_hfp_ag.c
     ${Z_PORT_DIR}/src/z_api_pan.c
     ${Z_PORT_DIR}/src/z_api_spp.c
     ${Z_PORT_DIR}/src/z_api_hid.c)

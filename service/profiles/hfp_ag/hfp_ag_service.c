@@ -618,6 +618,34 @@ bt_status_t hfp_ag_phone_state_change(bt_address_t* addr, uint8_t num_active, ui
     hfp_ag_call_state_t call_state, hfp_call_addrtype_t type,
     const char* number, const char* name)
 {
+#ifndef CONFIG_PHONE_SERVICE
+    extern uint8_t g_ag_device_call;
+    extern uint8_t g_ag_device_callsetup;
+    extern uint8_t g_ag_device_callheld;
+    g_ag_device_call = num_active > 0 ? 1 : 0;
+    switch (call_state) {
+    case HFP_AG_CALL_STATE_INCOMING:
+    case HFP_AG_CALL_STATE_WAITING:
+        g_ag_device_callsetup = 1;
+        break;
+    case HFP_AG_CALL_STATE_DIALING:
+        g_ag_device_callsetup = 2;
+        break;
+    case HFP_AG_CALL_STATE_ALERTING:
+        g_ag_device_callsetup = 3;
+        break;
+    default:
+        g_ag_device_callsetup = 0;
+        break;
+    }
+    if (num_held > 0 && num_active > 0)
+        g_ag_device_callheld = 1;
+    else if (num_held > 0)
+        g_ag_device_callheld = 2;
+    else
+        g_ag_device_callheld = 0;
+#endif
+
     hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_PHONE_STATE_CHANGE, addr);
     if (!msg)
         return BT_STATUS_NOMEM;
@@ -635,6 +663,17 @@ bt_status_t hfp_ag_phone_state_change(bt_address_t* addr, uint8_t num_active, ui
 bt_status_t hfp_ag_device_status_changed(bt_address_t* addr, hfp_network_state_t network,
     hfp_roaming_state_t roam, uint8_t signal, uint8_t battery)
 {
+#ifndef CONFIG_PHONE_SERVICE
+    extern uint8_t g_ag_device_network;
+    extern uint8_t g_ag_device_roam;
+    extern uint8_t g_ag_device_signal;
+    extern uint8_t g_ag_device_battery;
+    g_ag_device_network = network ? 1 : 0;
+    g_ag_device_roam = roam ? 1 : 0;
+    g_ag_device_signal = signal > 5 ? 5 : (uint8_t)signal;
+    g_ag_device_battery = battery > 5 ? 5 : (uint8_t)battery;
+#endif
+
     hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_DEVICE_STATUS_CHANGED, addr);
     if (!msg)
         return BT_STATUS_NOMEM;

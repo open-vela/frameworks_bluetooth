@@ -42,6 +42,7 @@ CSRCS += src/z_api_spp.c
 CSRCS += src/z_api_a2dp.c
 CSRCS += src/z_api_avrcp.c
 CSRCS += src/z_api_hfp.c
+CSRCS += src/z_api_hfp_ag.c
 CSRCS += src/z_api_pan.c
 CSRCS += src/z_api_hid.c
 

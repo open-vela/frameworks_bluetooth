@@ -1475,6 +1475,19 @@ static void do_ag_call_op(service_work_t* work, void* userdata)
         /* new call path */
         const new_call_entry_t* entry = find_new_call_entry(new_state);
         if (!entry) {
+            /* Fallback: terminating a pre-SLC call not tracked in SAL.
+             * The call was reported via CIND indicators but never added
+             * to SAL's call list. Clear indicators directly. */
+            if (params->call_state == HFP_AG_CALL_STATE_DISCONNECTED ||
+                params->call_state == HFP_AG_CALL_STATE_IDLE) {
+                BT_LOGD("%s, untracked call terminate for number: %s",
+                    __func__, params->number);
+                if (sal_conn->ag) {
+                    Z_API(bt_hfp_ag_clear_call_indicator)(sal_conn->ag);
+                }
+                free(params);
+                return;
+            }
             BT_LOGE("%s, no new_call_entry for state %d, number: %s",
                 __func__, params->call_state, params->number);
             free(params);
@@ -1767,7 +1780,7 @@ bt_status_t bt_sal_hfp_ag_cind_response(bt_address_t* addr, hfp_ag_cind_resopnse
 {
     bt_hfp_ag_connection_t* sal_conn;
     struct bt_hfp_ag_ongoing_call calls[HFP_CALL_LIST_MAX];
-    struct bt_hfp_ag_indicator_value indicators[4] = { 0 };
+    struct bt_hfp_ag_indicator_value indicators[7] = { 0 };
     size_t count = 0;
 
     if (!addr || !response) {
@@ -1793,6 +1806,12 @@ bt_status_t bt_sal_hfp_ag_cind_response(bt_address_t* addr, hfp_ag_cind_resopnse
     indicators[2].value = sal_conn->indicators.signal;
     indicators[3].indicator = BT_HFP_AG_BATTERY_IND;
     indicators[3].value = sal_conn->indicators.battery;
+    indicators[4].indicator = BT_HFP_AG_CALL_IND;
+    indicators[4].value = response->call;
+    indicators[5].indicator = BT_HFP_AG_CALL_SETUP_IND;
+    indicators[5].value = response->call_setup;
+    indicators[6].indicator = BT_HFP_AG_CALL_HELD_IND;
+    indicators[6].value = response->call_held;
 
     memset(calls, 0, sizeof(calls));
 
@@ -1809,7 +1828,7 @@ bt_status_t bt_sal_hfp_ag_cind_response(bt_address_t* addr, hfp_ag_cind_resopnse
         BT_LOGW("%s, reached max call list size", __func__);
     }
 
-    SAL_CHECK_RET(Z_API(bt_hfp_ag_ongoing_calls)(sal_conn->ag, calls, count, indicators, 4), 0);
+    SAL_CHECK_RET(Z_API(bt_hfp_ag_ongoing_calls)(sal_conn->ag, calls, count, indicators, 7), 0);
 
     return BT_STATUS_SUCCESS;
 }
