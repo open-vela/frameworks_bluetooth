@@ -555,7 +555,9 @@ static bt_status_t if_gattc_connect(void* conn_handle, bt_address_t* addr, ble_a
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
     gattc_log(addr, "GATTC-CONNECT-REQUEST");
+    BT_LOGW("if_gattc_connect: addr_type=%d (0=public, 1=random)", addr_type);
     bt_status_t status = bt_sal_gatt_client_connect(PRIMARY_ADAPTER, addr, addr_type);
+    BT_LOGW("if_gattc_connect: bt_sal_gatt_client_connect returned %d", status);
     if (status == BT_STATUS_SUCCESS) {
         connection->state = PROFILE_STATE_CONNECTING;
         memcpy(&connection->remote_addr, addr, sizeof(connection->remote_addr));

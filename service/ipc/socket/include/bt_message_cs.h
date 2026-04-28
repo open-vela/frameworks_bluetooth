@@ -43,6 +43,15 @@
 #define BT_IPC_CODE_CALLBACK_CS_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_CS, 0)
 // TODO: Add new BT IPC Code sequentially
 
+#define CS_CB_SUBCODE_DISTANCE_MEASURE_STARTED 1
+#define BT_CS_ON_DISTANCE_MEASURE_STARTED BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_CS, CS_CB_SUBCODE_DISTANCE_MEASURE_STARTED)
+#define CS_CB_SUBCODE_DISTANCE_MEASURE_STOPPED 2
+#define BT_CS_ON_DISTANCE_MEASURE_STOPPED BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_CS, CS_CB_SUBCODE_DISTANCE_MEASURE_STOPPED)
+#define CS_CB_SUBCODE_DISTANCE_MEASURE_RESULT 3
+#define BT_CS_ON_DISTANCE_MEASURE_RESULT BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_CS, CS_CB_SUBCODE_DISTANCE_MEASURE_RESULT)
+#define CS_CB_SUBCODE_RAP_DISTANCE_RESULT 4
+#define BT_CS_ON_RAP_DISTANCE_RESULT BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_CS, CS_CB_SUBCODE_RAP_DISTANCE_RESULT)
+
 #define BT_IPC_CODE_CALLBACK_CS_END BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_CS, BT_IPC_CODE_SUBCODE_MAX_NUM)
 
 typedef union {
@@ -80,6 +89,27 @@ typedef union {
         bt_address_t addr;
         uint8_t state; /* profile_connection_state_t */
     } _on_connection_state_changed;
+
+    struct {
+        bt_address_t addr;
+        uint8_t method;
+    } _on_distance_measure_started;
+
+    struct {
+        bt_address_t addr;
+        uint8_t reason;
+        uint8_t method;
+    } _on_distance_measure_stopped;
+
+    struct {
+        bt_address_t addr;
+        bt_distance_measurement_result_t result;
+    } _on_distance_measure_result;
+
+    struct {
+        bt_address_t addr;
+        cs_rap_distance_result_t result;
+    } _on_rap_distance_result;
 } bt_message_cs_callbacks_t;
 
 #endif /* _BT_MESSAGE_CS_H__ */

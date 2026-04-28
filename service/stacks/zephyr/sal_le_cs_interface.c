@@ -93,11 +93,47 @@ static bt_status_t sal_send_req(sal_cs_req_t* req)
     return BT_STATUS_SUCCESS;
 }
 
+static bt_status_t STACK_CALL(set_link_security)(void* args)
+{
+    sal_cs_req_t* req = args;
+    bt_conn_info_t* info = bt_conn_find(&req->addr, BT_TRANSPORT_BLE);
+    if (!info || !info->conn) {
+        BT_LOGE("cs set link security, doesn't find connection");
+        return BT_STATUS_FAIL;
+    }
+
+    BT_LOGW("cs set_link_security: calling bt_conn_set_security(BT_SECURITY_L2)");
+    int err = bt_conn_set_security(info->conn, BT_SECURITY_L2);
+    if (err) {
+        BT_LOGE("set_link_security err: %d", err);
+        return BT_STATUS_FAIL;
+    }
+
+    BT_LOGW("cs set_link_security: bt_conn_set_security returned 0 (SMP pairing initiated)");
+    return BT_STATUS_SUCCESS;
+}
+
+bt_status_t bt_sal_cs_set_link_security(bt_controller_id_t id, bt_address_t* addr)
+{
+    if (!addr) {
+        BT_LOGW("sal cs set link security, invalid addr.");
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    sal_cs_req_t* req = sal_cs_req(id, addr, STACK_CALL(set_link_security));
+    if (!req) {
+        BT_LOGE("%s, req null", __func__);
+        return BT_STATUS_NOMEM;
+    }
+
+    return sal_send_req(req);
+}
+
 static bt_status_t STACK_CALL(read_remote_supported_capabilities)(void* args)
 {
     sal_cs_req_t* req = args;
     bt_conn_info_t* info = bt_conn_find(&req->addr, BT_TRANSPORT_BLE);
-    if (!info->conn) {
+    if (!info || !info->conn) {
         BT_LOGE("cs read remote capabilities, doesn't find connection for addr");
         return BT_STATUS_FAIL;
     }
@@ -131,7 +167,7 @@ static bt_status_t STACK_CALL(set_default_settings)(void* args)
 {
     sal_cs_req_t* req = args;
     bt_conn_info_t* info = bt_conn_find(&req->addr, BT_TRANSPORT_BLE);
-    if (!info->conn) {
+    if (!info || !info->conn) {
         BT_LOGE("sal cs set default settings, doesn't find connection");
         return BT_STATUS_FAIL;
     }
@@ -174,7 +210,7 @@ static bt_status_t STACK_CALL(read_remote_fae_table)(void* args)
 {
     sal_cs_req_t* req = args;
     bt_conn_info_t* info = bt_conn_find(&req->addr, BT_TRANSPORT_BLE);
-    if (!info->conn) {
+    if (!info || !info->conn) {
         BT_LOGE("sal cs read remote fae table, doesn't find connection");
         return BT_STATUS_FAIL;
     }
@@ -353,7 +389,7 @@ static bt_status_t STACK_CALL(create_config)(void* args)
 {
     sal_cs_req_t* req = args;
     bt_conn_info_t* info = bt_conn_find(&req->addr, BT_TRANSPORT_BLE);
-    if (!info->conn) {
+    if (!info || !info->conn) {
         BT_LOGE("cs create config, doesn't find connection");
         return BT_STATUS_FAIL;
     }
@@ -414,7 +450,7 @@ static bt_status_t STACK_CALL(security_enable)(void* args)
 {
     sal_cs_req_t* req = args;
     bt_conn_info_t* info = bt_conn_find(&req->addr, BT_TRANSPORT_BLE);
-    if (!info->conn) {
+    if (!info || !info->conn) {
         BT_LOGE("cs security enable, doesn't find connection");
         return BT_STATUS_FAIL;
     }
@@ -448,7 +484,7 @@ static bt_status_t STACK_CALL(procedure_enable)(void* args)
 {
     sal_cs_req_t* req = args;
     bt_conn_info_t* info = bt_conn_find(&req->addr, BT_TRANSPORT_BLE);
-    if (!info->conn) {
+    if (!info || !info->conn) {
         BT_LOGE("cs procedure enable, doesn't find the connection");
         return BT_STATUS_FAIL;
     }
@@ -494,7 +530,7 @@ static bt_status_t STACK_CALL(remove_config)(void* args)
 {
     sal_cs_req_t* req = args;
     bt_conn_info_t* info = bt_conn_find(&req->addr, BT_TRANSPORT_BLE);
-    if (!info->conn) {
+    if (!info || !info->conn) {
         BT_LOGE("cs remove config, doesn't find the connection");
         return BT_STATUS_FAIL;
     }
@@ -661,7 +697,7 @@ static bt_status_t STACK_CALL(set_procedure_parameters)(void* args)
     sal_cs_req_t* req = args;
     struct bt_le_cs_set_procedure_parameters_param* parameters;
     bt_conn_info_t* info = bt_conn_find(&req->addr, BT_TRANSPORT_BLE);
-    if (!info->conn) {
+    if (!info || !info->conn) {
         BT_LOGE("cs set procedure parameters, doesn't find connection");
         return BT_STATUS_FAIL;
     }
@@ -711,7 +747,7 @@ static bt_status_t STACK_CALL(set_channel_classification)(void* args)
 {
     sal_cs_req_t* req = args;
     bt_conn_info_t* info = bt_conn_find(&req->addr, BT_TRANSPORT_BLE);
-    if (!info->conn) {
+    if (!info || !info->conn) {
         BT_LOGE("cs set channel classificaition, doesn't find connection.");
         return BT_STATUS_FAIL;
     }

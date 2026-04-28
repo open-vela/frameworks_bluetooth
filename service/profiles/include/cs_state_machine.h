@@ -40,6 +40,7 @@
 typedef enum {
     CS_STATE_STOPPED,
     CS_STATE_CONNECTED,
+    CS_STATE_WAIT_FOR_ENCRYPTION,
     CS_STATE_WAIT_FOR_CONFIG_COMPLETE,
     CS_STATE_WAIT_FOR_SECURITY_COMPLETE,
     CS_STATE_WAIT_FOR_PROCEDURE_COMPLETE,
@@ -57,4 +58,5 @@ typedef struct {
 cs_state_machine_t* cs_state_machine_new(void* context, bt_address_t* bd_addr);
 void cs_state_machine_handle_event(cs_state_machine_t* sm, cs_msg_t* msg);
 void cs_update_default_settings(const bt_cs_set_params_t* params);
+bool cs_get_is_ras(void);
 #endif

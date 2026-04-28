@@ -571,6 +571,7 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
     bt_address_t* remote_addr;
     bool encrypted = false;
 
+    BT_LOGW("%s, level=%d, err=%d", __func__, level, err);
     bt_conn_get_info(conn, &info);
 
     if (info.type != BT_CONN_TYPE_LE) {
@@ -590,6 +591,14 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
 
     if (level >= g_security_level && err == BT_SECURITY_ERR_SUCCESS) {
         encrypted = true;
+#ifdef CONFIG_BLUETOOTH_LE_CS
+        /* Notify CS service that link encryption is complete */
+        BT_LOGW("%s, SMP encryption SUCCESS, level=%d, dispatching ENCRYPTED_EVT", __func__, level);
+        cs_msg_t* cs_msg = cs_msg_new(ENCRYPTED_EVT, &addr);
+        if (cs_msg) {
+            bt_sal_cs_event_callback(cs_msg);
+        }
+#endif
         adapter_on_encryption_state_changed(&addr, encrypted, BT_TRANSPORT_BLE);
         return;
     }
@@ -604,6 +613,20 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
     } else if (level < g_security_level) {
         BT_LOGW("%s, security level insufficient: achieved %d, required %d",
             __func__, level, g_security_level);
+    }
+
+    if (level >= BT_SECURITY_L2 && err == BT_SECURITY_ERR_SUCCESS) {
+        encrypted = true;
+        BT_LOGW("%s, SMP encryption SUCCESS, level=%d, dispatching ENCRYPTED_EVT", __func__, level);
+#ifdef CONFIG_BLUETOOTH_LE_CS
+        /* Notify CS service that link encryption is complete */
+        cs_msg_t* cs_msg = cs_msg_new(ENCRYPTED_EVT, &addr);
+        if (cs_msg) {
+            bt_sal_cs_event_callback(cs_msg);
+        }
+#endif
+    } else {
+        BT_LOGW("%s, SMP encryption NOT complete, level=%d, err=%d", __func__, level, err);
     }
 
     adapter_on_encryption_state_changed(&addr, encrypted, BT_TRANSPORT_BLE);
@@ -1389,6 +1412,7 @@ static void zblue_on_pairing_complete(struct bt_conn* conn, bool bonding_flag)
     }
 
     BT_LOGD("%s bonding_flag: %s", __func__, bonding_flag ? "true" : "false");
+    BT_LOGW("LE pairing COMPLETE, bonding=%s", bonding_flag ? "true" : "false");
 
     adapter_on_bond_state_changed(&addr, BOND_STATE_BONDED, BT_TRANSPORT_BLE, BT_STATUS_SUCCESS, false);
 }
@@ -1397,7 +1421,7 @@ static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err r
 {
     bt_address_t addr;
 
-    BT_LOGD("%s", __func__);
+    BT_LOGW("%s, reason=%d", __func__, reason);
 
     if (get_le_addr_from_conn(conn, &addr) != BT_STATUS_SUCCESS) {
         BT_LOGE("%s, get_le_addr_from_conn failed", __func__);
@@ -1800,7 +1824,9 @@ bt_status_t bt_sal_le_get_address(bt_controller_id_t id, bt_address_t* addr)
     bt_id_get(&got, &count);
     bt_addr_set(addr, (uint8_t*)&got.a);
 
-    SAL_ASSERT(got.type == BT_ADDR_LE_PUBLIC);
+    if (got.type != BT_ADDR_LE_PUBLIC) {
+        BT_LOGW("LE address type is not public: %d", got.type);
+    }
     return BT_STATUS_SUCCESS;
 }
 

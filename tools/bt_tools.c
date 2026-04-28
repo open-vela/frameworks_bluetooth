@@ -247,6 +247,7 @@ static bt_command_t g_cmd_tables[] = {
 #endif
 #ifdef CONFIG_BLUETOOTH_LE_CS
     { "cs", le_cs_command_exec, 0, "le cs cmd, input \'cs\' show usage" },
+    { "rap", le_rap_command_exec, 0, "le rap cmd, input \'rap\' show usage" },
 #endif
     { "dump", dump_cmd, 0, "dump adapter state" },
 #ifdef CONFIG_BLUETOOTH_LOG
@@ -380,6 +381,7 @@ static void bt_tool_init(void* handle)
 #endif
 #ifdef CONFIG_BLUETOOTH_LE_CS
     le_cs_command_init(handle);
+    le_rap_command_init(handle);
 #endif
     g_cmd_had_inited = true;
 }
@@ -451,6 +453,7 @@ static void bt_tool_uninit(void* handle)
 #endif
 #ifdef CONFIG_BLUETOOTH_LE_CS
     le_cs_command_uninit(handle);
+    le_rap_command_uninit(handle);
 #endif
     g_cmd_had_inited = false;
 }

@@ -140,6 +140,9 @@ static void bt_socket_client_callback_process(bt_instance_t* ins, bt_message_pac
         { BT_L2CAP_CALLBACK_START, BT_L2CAP_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_l2cap_callback },
         { BT_IPC_CODE_CALLBACK_L2CAP_BEGIN, BT_IPC_CODE_CALLBACK_L2CAP_END, (bt_socket_callback_t)bt_socket_client_l2cap_callback },
 #endif
+#ifdef CONFIG_BLUETOOTH_LE_CS
+        { BT_IPC_CODE_CALLBACK_CS_BEGIN, BT_IPC_CODE_CALLBACK_CS_END, (bt_socket_callback_t)bt_socket_client_cs_callback },
+#endif
     };
 
     for (size_t i = 0; i < sizeof(callback_map) / sizeof(callback_map[0]); ++i) {
@@ -502,6 +505,11 @@ static void bt_socket_sync_close(void* data)
 
 void bt_socket_client_free_callbacks(bt_instance_t* ins, callbacks_list_t* cbsl)
 {
+    if (ins->peer_fd <= 0) {
+        bt_callbacks_list_free(cbsl);
+        return;
+    }
+
     do_in_thread_loop(ins->client_loop, bt_callbacks_list_free, cbsl);
 }
 

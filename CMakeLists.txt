@@ -99,6 +99,10 @@ if(CONFIG_BLUETOOTH)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/api/bt_pan.c)
   endif()
 
+  if(CONFIG_BLUETOOTH_LE_CS)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/api/bt_cs.c)
+  endif()
+
   if(CONFIG_BLUETOOTH_BLE_AUDIO)
     file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/framework/api/bt_lea*.c)
     list(APPEND CSRCS ${APPEND_FILES})
@@ -504,6 +508,12 @@ if(CONFIG_BLUETOOTH)
       list(APPEND CSRCS ${APPEND_FILES})
     endif()
 
+    if(CONFIG_BLUETOOTH_LE_CS)
+      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/cs/*.c)
+      list(APPEND CSRCS ${APPEND_FILES})
+      list(APPEND INCDIR ${BLUETOOTH_DIR}/service/profiles/cs)
+    endif()
+
     if(CONFIG_BLUETOOTH_LOG)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/utils/log_server.c)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/utils/btsnoop_log.c)
@@ -671,6 +681,7 @@ if(CONFIG_BLUETOOTH)
 
     if(CONFIG_BLUETOOTH_LE_CS)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/le_cs.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/le_rap.c)
     endif()
   endif()
 

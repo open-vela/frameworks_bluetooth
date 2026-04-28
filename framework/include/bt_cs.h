@@ -28,9 +28,68 @@
 
 #define MAX_TEST_DATA 128
 
+/**
+ * @brief CS Role definitions
+ */
+typedef enum {
+    CS_ROLE_INITIATOR = 0,  /**< CS Initiator role */
+    CS_ROLE_REFLECTOR = 1,  /**< CS Reflector role */
+} cs_role_t;
+
+/**
+ * @brief CS Ranging Mode
+ */
+typedef enum {
+    CS_RANGING_MODE_REAL_TIME = 0x01,  /**< Real-time ranging data mode */
+    CS_RANGING_MODE_ON_DEMAND = 0x02,  /**< On-demand ranging data mode */
+} cs_ranging_mode_t;
+
+/**
+ * @brief CS RAP Connection State
+ */
+typedef enum {
+    CS_RAP_STATE_DISCONNECTED = 0,
+    CS_RAP_STATE_CONNECTING,
+    CS_RAP_STATE_CONNECTED,
+    CS_RAP_STATE_DISCOVERING,
+    CS_RAP_STATE_READY,
+    CS_RAP_STATE_RANGING,
+} cs_rap_state_t;
+
+/**
+ * @brief CS Filter Configuration
+ */
 typedef struct {
-    uint8_t centimeter;
-    uint8_t error_centimeter;
+    uint8_t mode;           /**< CS mode (0-3) */
+    uint16_t filter_mask;   /**< Filter bit mask */
+} cs_filter_config_t;
+
+/**
+ * @brief CS Configuration Parameters
+ */
+typedef struct {
+    cs_role_t role;                 /**< Local CS role */
+    cs_ranging_mode_t ranging_mode; /**< Ranging mode (real-time/on-demand) */
+    uint16_t interval_ms;           /**< Ranging interval in milliseconds */
+    uint8_t antenna_paths_mask;     /**< Antenna paths bitmask */
+} cs_config_t;
+
+/**
+ * @brief CS RAP Distance Measurement Result
+ */
+typedef struct {
+    uint16_t ranging_counter;   /**< Ranging counter */
+    float rtt_distance;         /**< RTT-based distance in meters */
+    float phase_distance;       /**< Phase-based distance in meters */
+    uint8_t mode1_samples;      /**< Number of Mode 1 samples used */
+    uint8_t mode2_samples;      /**< Number of Mode 2 samples used */
+    bool rtt_valid;             /**< RTT result validity */
+    bool phase_valid;           /**< Phase result validity */
+} cs_rap_distance_result_t;
+
+typedef struct {
+    uint32_t centimeter;
+    uint32_t error_centimeter;
     uint8_t azimuth_angle;
     uint8_t error_azimuthAngle;
     uint8_t altitude_angle;
@@ -48,12 +107,20 @@ typedef void (*cs_distance_measure_stopped_cb)(void* cookie, bt_address_t* addr,
 typedef void (*cs_distance_measure_result_cb)(void* cookie, bt_address_t* addr, bt_distance_measurement_result_t* result);
 
 /**
+ * @brief CS RAP callback function types
+ */
+typedef void (*cs_rap_connection_state_cb)(void* cookie, bt_address_t* addr, cs_rap_state_t state);
+typedef void (*cs_rap_features_cb)(void* cookie, bt_address_t* addr, uint32_t features);
+typedef void (*cs_rap_ranging_data_ready_cb)(void* cookie, bt_address_t* addr, uint16_t ranging_counter);
+typedef void (*cs_rap_distance_result_cb)(void* cookie, bt_address_t* addr, cs_rap_distance_result_t* result);
+
+/**
  * @cond
  */
 typedef struct {
     bt_address_t addr;
     uint8_t method;
-    uint8_t role;
+    cs_role_t role;
     uint16_t interval_ms;
     uint16_t duration_ms;
     uint8_t submode;
@@ -72,6 +139,11 @@ typedef struct {
     cs_distance_measure_started_cb cs_distance_measure_started_cb;
     cs_distance_measure_stopped_cb cs_distance_measure_stopped_cb;
     cs_distance_measure_result_cb cs_distance_measure_result_cb;
+    /* RAP callbacks */
+    cs_rap_connection_state_cb rap_connection_state_cb;
+    cs_rap_features_cb rap_features_cb;
+    cs_rap_ranging_data_ready_cb rap_ranging_data_ready_cb;
+    cs_rap_distance_result_cb rap_distance_result_cb;
 } cs_callbacks_t;
 
 typedef enum {
@@ -168,9 +240,10 @@ typedef struct {
                                Bit 1 (0x02): Retrieve Lost Ranging Data Segments,
                                Bit 2 (0x04): Abort Operation,
                                Bit 3 (0x08): Filter Ranging Data */
-    uint8_t role; /**< CS role bits: Bit 0 (0x01): initiator, Bit 1 (0x02): reflector */
+    cs_role_t role; /**< CS role: CS_ROLE_INITIATOR or CS_ROLE_REFLECTOR */
     uint8_t cs_sync_antenna_selection; /**< Antenna selection for CS_SYNC packets, see BT_CS_ANTENNA_SEL_* macros */
     int8_t max_tx_power; /**< Maximum TX power in dBm (-127 to 20) */
+    bool is_ras; /**< true: RAS (server side), false: RAP (client side). RAS and RAP are mutually exclusive */
 } bt_cs_set_params_t;
 
 /**
@@ -184,6 +257,92 @@ typedef struct {
  * @return        bt_status_t.
  */
 bt_status_t BTSYMBOLS(bt_cs_set_config)(bt_instance_t* ins, bt_address_t* addr, const bt_cs_set_params_t* params);
+
+/**
+ * @brief Connect to a remote RAS server via RAP (Ranging Application Profile).
+ *
+ * Initiates a BLE connection and discovers the RAS service on the remote device.
+ * The connection state is reported via cs_rap_connection_state_cb.
+ *
+ * @param ins   bt instance.
+ * @param addr  remote device address.
+ * @return      bt_status_t BT_STATUS_SUCCESS on success.
+ */
+bt_status_t BTSYMBOLS(bt_cs_rap_connect)(bt_instance_t* ins, bt_address_t* addr);
+
+/**
+ * @brief Disconnect from a remote RAS server.
+ *
+ * @param ins   bt instance.
+ * @param addr  remote device address.
+ * @return      bt_status_t BT_STATUS_SUCCESS on success.
+ */
+bt_status_t BTSYMBOLS(bt_cs_rap_disconnect)(bt_instance_t* ins, bt_address_t* addr);
+
+/**
+ * @brief Enable a ranging mode on the remote RAS server.
+ *
+ * Subscribes to the corresponding RAS characteristic (Real-time or On-demand)
+ * via CCCD. Only one mode can be active at a time.
+ *
+ * @param ins   bt instance.
+ * @param addr  remote device address.
+ * @param mode  ranging mode to enable, see @ref cs_ranging_mode_t.
+ * @return      bt_status_t BT_STATUS_SUCCESS on success.
+ */
+bt_status_t BTSYMBOLS(bt_cs_rap_enable_ranging_mode)(bt_instance_t* ins, bt_address_t* addr, cs_ranging_mode_t mode);
+
+/**
+ * @brief Disable the current ranging mode.
+ *
+ * Unsubscribes from the active RAS characteristic notifications.
+ *
+ * @param ins   bt instance.
+ * @param addr  remote device address.
+ * @return      bt_status_t BT_STATUS_SUCCESS on success.
+ */
+bt_status_t BTSYMBOLS(bt_cs_rap_disable_ranging_mode)(bt_instance_t* ins, bt_address_t* addr);
+
+/**
+ * @brief Request on-demand ranging data from the remote RAS server.
+ *
+ * Writes a Get_Ranging_Data command to the RAS Control Point.
+ * The data is delivered via cs_rap_ranging_data_ready_cb.
+ *
+ * @param ins              bt instance.
+ * @param addr             remote device address.
+ * @param ranging_counter  the ranging counter to retrieve.
+ * @return                 bt_status_t BT_STATUS_SUCCESS on success.
+ */
+bt_status_t BTSYMBOLS(bt_cs_rap_get_ranging_data)(bt_instance_t* ins, bt_address_t* addr, uint16_t ranging_counter);
+
+/**
+ * @brief Abort the current ranging operation on the remote RAS server.
+ *
+ * @param ins   bt instance.
+ * @param addr  remote device address.
+ * @return      bt_status_t BT_STATUS_SUCCESS on success.
+ */
+bt_status_t BTSYMBOLS(bt_cs_rap_abort_operation)(bt_instance_t* ins, bt_address_t* addr);
+
+/**
+ * @brief Set a ranging data filter on the remote RAS server.
+ *
+ * @param ins     bt instance.
+ * @param addr    remote device address.
+ * @param config  filter configuration, see @ref cs_filter_config_t.
+ * @return        bt_status_t BT_STATUS_SUCCESS on success.
+ */
+bt_status_t BTSYMBOLS(bt_cs_rap_set_filter)(bt_instance_t* ins, bt_address_t* addr, const cs_filter_config_t* config);
+
+/**
+ * @brief Get the current RAP connection state.
+ *
+ * @param ins   bt instance.
+ * @param addr  remote device address.
+ * @return      current RAP connection state, see @ref cs_rap_state_t.
+ */
+cs_rap_state_t BTSYMBOLS(bt_cs_rap_get_state)(bt_instance_t* ins, bt_address_t* addr);
 
 #ifdef CONFIG_BT_CS_RAS_TEST
 /**

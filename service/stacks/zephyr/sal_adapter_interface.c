@@ -843,7 +843,9 @@ bt_status_t bt_sal_get_address(bt_controller_id_t id, bt_address_t* addr)
     bt_id_get(&got, &count);
     bt_addr_set(addr, (uint8_t*)&got.a);
 
-    SAL_ASSERT(got.type == BT_ADDR_LE_PUBLIC);
+    if (got.type != BT_ADDR_LE_PUBLIC) {
+        BT_LOGW("BR/EDR address type is not public: %d", got.type);
+    }
     return BT_STATUS_SUCCESS;
 #else
     return BT_STATUS_NOT_SUPPORTED;
