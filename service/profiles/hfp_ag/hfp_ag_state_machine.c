@@ -533,7 +533,8 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
 
     switch (event) {
     case AG_DISCONNECT:
-        /* handle ? */
+        bt_sal_hfp_ag_disconnect(&agsm->addr);
+        hsm_transition_to(sm, &disconnected_state);
         break;
     case AG_CONNECT_TIMEOUT:
         bt_sal_hfp_ag_disconnect(&agsm->addr);
