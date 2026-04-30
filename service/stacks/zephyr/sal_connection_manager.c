@@ -283,15 +283,18 @@ static bt_status_t bt_sal_trigger_profile_conn_act(bt_profile_connection_manager
             continue;
 
         if (handler_node->is_busy) {
+            BT_LOGI("%s, profile_id=%u already busy, skip", __func__, handler_node->profile_id);
             continue;
         }
+
+        BT_LOGI("%s, dispatching profile_id=%u handler", __func__, handler_node->profile_id);
 
         /* async invoke to service_worker thread */
         req = sal_async_profile_req(addr, handler_node->handler, handler_node->profile_id, handler_node->conn_id,
             handler_node->id, manager_list, handler_node->user_data);
 
         if (sal_send_async_req(req) != BT_STATUS_SUCCESS) {
-            BT_LOGE("%s, profile_id: %u", __func__, handler_node->profile_id);
+            BT_LOGE("%s, sal_send_async_req failed for profile_id=%u", __func__, handler_node->profile_id);
             free(req);
             continue;
         }
@@ -522,28 +525,36 @@ static bt_status_t bt_sal_try_profile_connect(bt_address_t* addr)
 
     conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
     if (!conn) {
+        BT_LOGI("%s, no ACL conn found, initiating new ACL connection", __func__);
         return bt_sal_connect(PRIMARY_ADAPTER, addr);
     }
 
     if (bt_conn_get_info(conn, &info) < 0) {
+        BT_LOGE("%s, bt_conn_get_info failed", __func__);
         bt_conn_unref(conn);
         return BT_STATUS_FAIL;
     }
 
     bt_conn_unref(conn);
 
+    BT_LOGI("%s, ACL conn state=%d (0=disconnected,1=connecting,2=connected,3=disconnecting)", __func__, info.state);
+
     switch (info.state) {
     case BT_CONN_STATE_CONNECTING:
+        BT_LOGI("%s, ACL still connecting, will trigger handler when ACL completes", __func__);
         return BT_STATUS_SUCCESS;
     case BT_CONN_STATE_DISCONNECTED:
+        BT_LOGI("%s, ACL disconnected, initiating new ACL connection", __func__);
         return bt_sal_connect(PRIMARY_ADAPTER, addr);
     case BT_CONN_STATE_DISCONNECTING:
+        BT_LOGW("%s, ACL disconnecting, returning BUSY", __func__);
         return BT_STATUS_BUSY;
     case BT_CONN_STATE_CONNECTED:
     default:
         break;
     }
 
+    BT_LOGI("%s, ACL connected, triggering profile conn handler", __func__);
     return bt_sal_trigger_profile_conn_act(manager, bt_sal_connecting_list);
 }
 
