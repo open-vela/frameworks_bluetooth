@@ -21,6 +21,10 @@
 extern "C" {
 #endif
 
+#ifndef BIT
+#define BIT(x) (1UL << (x))
+#endif
+
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #endif

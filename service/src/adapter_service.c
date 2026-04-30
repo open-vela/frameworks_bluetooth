@@ -3674,6 +3674,13 @@ void adapter_dump_profile(enum profile_id id)
 {
 }
 
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
+bt_list_t* adapter_get_le_device_list(void)
+{
+    return g_adapter_service.le_devices;
+}
+#endif
+
 void adapter_dump_all_device(void)
 {
     bt_list_node_t* node;

@@ -99,6 +99,34 @@ typedef struct {
     uint8_t adv_data[1];
 } ble_scan_result_t;
 
+#ifndef BIT
+#define BIT(x) (1UL << (x))
+#endif
+
+#define BT_LE_SCAN_FILTER_POLICY_MASK_FILTERED BIT(0)
+#define BT_LE_SCAN_FILTER_POLICY_SHIFT_FILTERED 0
+#define BT_LE_SCAN_FILTER_POLICY_MASK_EXTENDED BIT(1)
+#define BT_LE_SCAN_FILTER_POLICY_SHIFT_EXTENDED 1
+#define BT_LE_SCAN_FILTER_POLICY_MASK_DECISION (BIT(2) | BIT(3))
+#define BT_LE_SCAN_FILTER_POLICY_SHIFT_DECISION 2
+
+/** Filtered */
+#define BT_LE_SCAN_UNFILTERED_SCANNING_POLICY 0
+#define BT_LE_SCAN_FILTERED_SCANNING_POLICY 1
+
+/** Extended */
+#define BT_LE_SCAN_BASIC_FILTER_POLICY 0
+#define BT_LE_SCAN_EXTENDED_FILTER_POLICY 1
+
+/** Decision */
+#define BT_LE_SCAN_NON_DECISION_MODE 0
+#define BT_LE_SCAN_ALL_PDUS_MODE 1
+#define BT_LE_SCAN_DECISIONS_ONLY_MODE 3
+
+#define BT_LE_SCAN_FILTER_POLICY(_policy, _field)                    \
+    ((((uint8_t)(_policy)) & BT_LE_SCAN_FILTER_POLICY_MASK_##_field) \
+        >> BT_LE_SCAN_FILTER_POLICY_SHIFT_##_field)
+
 /**
  * @brief Scan filter policy structure
  *

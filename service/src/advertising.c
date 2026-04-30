@@ -15,13 +15,18 @@
  ***************************************************************************/
 #define LOG_TAG "adver"
 
+#include <debug.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "adapter_internel.h"
 #include "advertising.h"
+#include "advertising_debug.h"
+#include "advertising_internal.h"
 #include "bluetooth.h"
 #include "bt_list.h"
+#include "bt_time.h"
+#include "bt_utils.h"
 #include "index_allocator.h"
 #include "sal_interface.h"
 #include "sal_le_advertise_interface.h"
@@ -33,28 +38,6 @@
 #endif
 
 typedef struct {
-    uint8_t* adv_data;
-    uint16_t adv_len;
-    uint8_t* scan_rsp_data;
-    uint16_t scan_rsp_len;
-    ble_adv_params_t params;
-} advertising_info_t;
-
-typedef struct advertiser {
-    struct list_node adver_node;
-    void* remote;
-    uint8_t adv_id;
-    advertiser_callback_t callbacks;
-    service_timer_t* adv_start;
-} advertiser_t;
-
-typedef struct {
-    bool started;
-    index_allocator_t* adv_allocator;
-    struct list_node advertiser_list;
-} adv_manager_t;
-
-typedef struct {
     advertiser_t* adver;
     uint8_t adv_id;
     advertising_info_t* adv_info;
@@ -62,6 +45,11 @@ typedef struct {
 } adv_event_t;
 
 static adv_manager_t adv_manager;
+
+adv_manager_t* adv_manager_get_interface(void)
+{
+    return &adv_manager;
+}
 
 static void* get_adver(advertiser_t* adver)
 {
@@ -171,39 +159,53 @@ static void start_advertising_timeout(service_timer_t* timer, void* userdata)
 {
     advertiser_t* adver = (advertiser_t*)userdata;
 
+    BT_LOGW("%s", __func__);
+
     if (!is_advertiser_exist(adver)) {
-        BT_LOGE("%s, timer expeared, adver not found", __func__);
+        BT_LOGE("%s, timer expired, adver not found", __func__);
         return;
     }
 
     delete_advertiser(adver);
     adver->callbacks.on_advertising_start(get_adver(adver), 0, BT_ADV_STATUS_START_TIMEOUT);
     destroy_advertiser(adver);
+
+    adv_dump_advertiser();
 }
 
 static void advertiser_start_event(void* data)
 {
     assert(data);
+    bt_status_t status;
     adv_event_t* start = (adv_event_t*)data;
     advertiser_t* adver = start->adver;
     advertising_info_t* adv_info = start->adv_info;
     int adv_id;
 
+    BT_LOGD("%s", __func__);
+
     free(start);
-    if (!adv_manager.started)
+    if (!adv_manager.started) {
+        BT_LOGW("not initiated");
         return;
+    }
 
     adv_id = index_alloc(adv_manager.adv_allocator);
     if (adv_id < 0) {
+        BT_LOGE("failed to allocate adv id");
         adver->callbacks.on_advertising_start(get_adver(adver), 0, BT_ADV_STATUS_START_NOMEM);
+        status = BT_STATUS_NOMEM;
         goto fail;
     }
 
     adver->adv_id = adv_id + 1;
-    if (bt_sal_le_start_adv(PRIMARY_ADAPTER, adver->adv_id, &adv_info->params, adv_info->adv_data,
-            adv_info->adv_len, adv_info->scan_rsp_data,
-            adv_info->scan_rsp_len)
-        != BT_STATUS_SUCCESS) {
+
+    adv_dump_info(adver->adv_id, adv_info);
+
+    status = bt_sal_le_start_adv(PRIMARY_ADAPTER, adver->adv_id, &adv_info->params,
+        adv_info->adv_data, adv_info->adv_len, adv_info->scan_rsp_data, adv_info->scan_rsp_len);
+    if (status != BT_STATUS_SUCCESS) {
+        BT_LOGE("failed to start advertising, status = %d", status);
         adver->callbacks.on_advertising_start(get_adver(adver), 0, BT_ADV_STATUS_STACK_ERR);
         goto fail;
     }
@@ -224,6 +226,8 @@ static void advertiser_stop_event(void* data)
     adv_event_t* stop = (adv_event_t*)data;
     advertiser_t* adver = stop->adver;
     uint8_t adv_id = stop->adv_id;
+
+    BT_LOGD("%s", __func__);
 
     free(stop);
     if (!adv_manager.started)
@@ -268,6 +272,8 @@ static void advertiser_notify_state(void* data)
         adver->callbacks.on_advertising_stopped(get_adver(adver), advstate->adv_id);
         destroy_advertiser(adver);
     }
+
+    adv_dump_advertiser();
 
 exit:
     free(advstate);
@@ -317,6 +323,8 @@ bt_advertiser_t* start_advertising(void* remote,
     uint16_t scan_rsp_len,
     const advertiser_callback_t* cbs)
 {
+    BT_LOGD("%s", __func__);
+
     if (!adapter_is_le_enabled())
         return NULL;
 
@@ -340,6 +348,8 @@ bt_advertiser_t* start_advertising(void* remote,
 
 void stop_advertising(bt_advertiser_t* adver)
 {
+    BT_LOGD("%s", __func__);
+
     if (!adapter_is_le_enabled())
         return;
 
