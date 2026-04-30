@@ -310,6 +310,10 @@ if(CONFIG_BLUETOOTH)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_hid_device_interface.c)
       endif()
 
+      if(CONFIG_BLUETOOTH_HOGP_DEVICE)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_hogp_device_interface.c)
+      endif()
+
       if(CONFIG_BLUETOOTH_HFP_HF)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_hfp_hf_interface.c)
       endif()
@@ -442,8 +446,7 @@ if(CONFIG_BLUETOOTH)
     endif()
 
     if(CONFIG_BLUETOOTH_HID_DEVICE)
-      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/hid/*.c)
-      list(APPEND CSRCS ${APPEND_FILES})
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/profiles/hid/hid_device_service.c)
     endif()
 
     if(CONFIG_BLUETOOTH_PAN)

@@ -31,6 +31,10 @@
 #include "sal_zblue.h"
 #include "service_loop.h"
 
+#ifdef CONFIG_BLUETOOTH_HOGP_DEVICE
+#include "sal_hogp_device_interface.h"
+#endif
+
 #define BT_HID_DEVICE_VERSION 0x0101
 #define BT_HID_PARSER_VERSION 0x0111
 #define BT_HID_DEVICE_SUBCLASS 0xc0
@@ -56,6 +60,7 @@ typedef struct sal_hid_connection {
 
 typedef struct sal_bt_hid_device_mgr {
     bool registered;
+    bool le_hid_mode;
     pthread_mutex_t mutex;
     bt_list_t* connections;
     struct bt_sdp_record* record;
@@ -739,6 +744,10 @@ bt_status_t bt_sal_hid_device_init()
         return BT_STATUS_NO_RESOURCES;
     }
 
+#ifdef CONFIG_BLUETOOTH_HOGP_DEVICE
+    bt_sal_hogp_device_init();
+#endif
+
     return BT_STATUS_SUCCESS;
 }
 
@@ -747,6 +756,17 @@ bt_status_t bt_sal_hid_device_register_app(hid_device_sdp_settings_t* sdp, bool 
     sal_bt_hid_device_mgr_t* hid_mgr = &g_hid_device_mgr;
     int err;
     struct bt_sdp_record* record;
+
+    BT_LOGD("HID register_app, le_hid:%d", le_hid);
+
+#ifdef CONFIG_BLUETOOTH_HOGP_DEVICE
+    if (le_hid) {
+        bt_status_t status = bt_sal_hogp_device_register_app(sdp);
+        if (status == BT_STATUS_SUCCESS)
+            g_hid_device_mgr.le_hid_mode = true;
+        return status;
+    }
+#endif
 
     if (hid_mgr->registered) {
         BT_LOGE("HID already registered");
@@ -775,6 +795,13 @@ bt_status_t bt_sal_hid_device_register_app(hid_device_sdp_settings_t* sdp, bool 
 bt_status_t bt_sal_hid_device_unregister_app(void)
 {
     sal_bt_hid_device_mgr_t* hid_mgr = &g_hid_device_mgr;
+
+#ifdef CONFIG_BLUETOOTH_HOGP_DEVICE
+    if (g_hid_device_mgr.le_hid_mode) {
+        g_hid_device_mgr.le_hid_mode = false;
+        return bt_sal_hogp_device_unregister_app();
+    }
+#endif
 
     if (!hid_mgr->registered) {
         BT_LOGE("HID not registered");
@@ -848,6 +875,12 @@ bt_status_t bt_sal_hid_device_connect(bt_address_t* addr)
     bt_status_t status;
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
+#ifdef CONFIG_BLUETOOTH_HOGP_DEVICE
+    if (g_hid_device_mgr.le_hid_mode) {
+        return bt_sal_hogp_device_connect(addr);
+    }
+#endif
+
     bt_addr_ba2str(addr, addr_str);
     BT_LOGD("%s, addr:%s", __func__, addr_str);
 
@@ -896,6 +929,12 @@ bt_status_t bt_sal_hid_device_disconnect(bt_address_t* addr)
 {
     sal_hid_connection_t* hid_conn;
 
+#ifdef CONFIG_BLUETOOTH_HOGP_DEVICE
+    if (g_hid_device_mgr.le_hid_mode) {
+        return bt_sal_hogp_device_disconnect(addr);
+    }
+#endif
+
     hid_conn_lock();
     hid_conn = hid_find_connection_by_address(addr);
     if (!hid_conn) {
@@ -913,6 +952,11 @@ void bt_sal_hid_device_cleanup()
 {
     sal_bt_hid_device_mgr_t* hid_mgr = &g_hid_device_mgr;
     bt_list_node_t* node;
+
+#ifdef CONFIG_BLUETOOTH_HOGP_DEVICE
+    bt_sal_hogp_device_cleanup();
+    g_hid_device_mgr.le_hid_mode = false;
+#endif
 
     hid_conn_lock();
     for (node = bt_list_head(hid_mgr->connections); node != NULL; node = bt_list_next(hid_mgr->connections, node)) {
@@ -954,6 +998,12 @@ bt_status_t bt_sal_hid_device_get_report_response(bt_address_t* addr, uint8_t rp
         return BT_STATUS_PARM_INVALID;
     }
 
+#ifdef CONFIG_BLUETOOTH_HOGP_DEVICE
+    if (g_hid_device_mgr.le_hid_mode) {
+        return bt_sal_hogp_device_get_report_response(addr, rpt_type, rpt_data, rpt_size);
+    }
+#endif
+
     hid_conn_lock();
     hid_conn = hid_find_connection_by_address(addr);
     if (!hid_conn) {
@@ -991,6 +1041,12 @@ bt_status_t bt_sal_hid_device_report_error(bt_address_t* addr, hid_status_error_
 {
     sal_hid_connection_t* hid_conn;
     hid_device_cmd_param_t* params;
+
+#ifdef CONFIG_BLUETOOTH_HOGP_DEVICE
+    if (g_hid_device_mgr.le_hid_mode) {
+        return bt_sal_hogp_device_report_error(addr, error);
+    }
+#endif
 
     hid_conn_lock();
     hid_conn = hid_find_connection_by_address(addr);
@@ -1036,6 +1092,12 @@ bt_status_t bt_sal_hid_device_send_report(bt_address_t* addr, uint8_t rpt_id, ui
         return BT_STATUS_PARM_INVALID;
     }
 
+#ifdef CONFIG_BLUETOOTH_HOGP_DEVICE
+    if (g_hid_device_mgr.le_hid_mode) {
+        return bt_sal_hogp_device_send_report(addr, rpt_id, rpt_data, rpt_size);
+    }
+#endif
+
     hid_conn_lock();
     hid_conn = hid_find_connection_by_address(addr);
     if (!hid_conn) {
@@ -1073,6 +1135,12 @@ bt_status_t bt_sal_hid_device_virtual_unplug(bt_address_t* addr)
 {
     sal_hid_connection_t* hid_conn;
     hid_device_cmd_param_t* params;
+
+#ifdef CONFIG_BLUETOOTH_HOGP_DEVICE
+    if (g_hid_device_mgr.le_hid_mode) {
+        return bt_sal_hogp_device_virtual_unplug(addr);
+    }
+#endif
 
     hid_conn_lock();
     hid_conn = hid_find_connection_by_address(addr);

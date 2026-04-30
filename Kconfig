@@ -785,6 +785,11 @@ config BLUETOOTH_HID_DEVICE
 	bool "Human Interface Device Profile (HID)"
 	default n
 
+config BLUETOOTH_HOGP_DEVICE
+	bool "HID over GATT Profile Device (HOGP)"
+	default n
+	depends on BLUETOOTH_HID_DEVICE
+
 config BLUETOOTH_PAN
 	bool "Personal Area Network Profile (PAN)"
 	default n

@@ -42,6 +42,8 @@ void hid_device_on_get_report(bt_address_t* addr, uint8_t rpt_type, uint8_t rpt_
 void hid_device_on_set_report(bt_address_t* addr, uint8_t rpt_type, uint16_t rpt_size, uint8_t* rpt_data);
 void hid_device_on_receive_report(bt_address_t* addr, uint8_t rpt_type, uint16_t rpt_size, uint8_t* rpt_data);
 void hid_device_on_virtual_cable_unplug(bt_address_t* addr);
+void hid_device_on_mode_changed(bt_address_t* addr, uint8_t mode);
+void hid_device_on_suspend(bt_address_t* addr, bool suspend);
 
 /*
  * register profile to service manager

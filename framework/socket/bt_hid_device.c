@@ -72,7 +72,7 @@ void* bt_hid_device_register_callbacks(bt_instance_t* ins, const hid_device_call
 
     ins->hidd_callbacks = bt_callbacks_list_new(1);
 
-    cookie = bt_remote_callbacks_register(ins->hidd_callbacks, NULL, (void*)callbacks);
+    cookie = bt_remote_callbacks_register(ins->hidd_callbacks, ins, (void*)callbacks);
     if (cookie == NULL) {
         bt_callbacks_list_free(ins->hidd_callbacks);
         ins->hidd_callbacks = NULL;

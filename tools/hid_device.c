@@ -14,8 +14,12 @@
  * limitations under the License.
  ***************************************************************************/
 
+#include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <time.h>
+#include <unistd.h>
 
 #include "bt_hid_device.h"
 #include "bt_tools.h"
@@ -30,6 +34,7 @@ static int send_mouse_cmd(void* handle, int argc, char* argv[]);
 static int send_consumer_cmd(void* handle, int argc, char* argv[]);
 static int unplug_cmd(void* handle, int argc, char* argv[]);
 static int dump_cmd(void* handle, int argc, char* argv[]);
+static int mouse_test_cmd(void* handle, int argc, char* argv[]);
 
 static bt_command_t g_hidd_tables[] = {
     { "register", register_cmd, 0, "\"register HID app: <type>(1:KEYBOARD, 2:MOUSE, 3:KBMS_COMBO) <transport>(0:BLE, 1:BREDR)\"" },
@@ -42,9 +47,11 @@ static bt_command_t g_hidd_tables[] = {
     { "send_consumer", send_consumer_cmd, 0, "\"send consumer report: <address> <consumer key>\"" },
     { "unplug", unplug_cmd, 0, "\"virtual unplug param: <address> \"" },
     { "dump", dump_cmd, 0, "\"dump HID device current state\"" },
+    { "mouse_test", mouse_test_cmd, 0, "\"mouse test: <address> <count> <interval_ms>\"" },
 };
 
 static void* hidd_callbacks = NULL;
+static int g_app_type = 0;
 
 const static uint8_t s_hid_KB_report_desc[] = {
     0x05, 0x01,
@@ -309,10 +316,12 @@ static int register_cmd(void* handle, int argc, char* argv[])
         if (ret == BT_STATUS_NO_RESOURCES) {
             PRINT("HID app has registed, please unregister then try again");
         }
+
         return CMD_ERROR;
     }
 
     PRINT("HID device register app, type:%s", argv[0]);
+    g_app_type = app_type;
 
     return CMD_OK;
 }
@@ -324,6 +333,7 @@ static int unregister_cmd(void* handle, int argc, char* argv[])
         if (ret == BT_STATUS_NOT_FOUND) {
             PRINT("HID app isn't registed, please register then try again");
         }
+
         return CMD_ERROR;
     }
 
@@ -442,6 +452,9 @@ static int send_keyboard_cmd(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
     uint8_t rpt_data[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+    /* KB report_id: 0 for single keyboard (no Report ID in descriptor),
+     * 1 for combo (Report ID=1 is keyboard in combo descriptor) */
+    uint8_t kb_rpt_id = (g_app_type == APP_HID_DEVICE_KBMS_COMBO) ? 1 : 0;
 
     if (argc < 3)
         return CMD_PARAM_NOT_ENOUGH;
@@ -454,11 +467,11 @@ static int send_keyboard_cmd(void* handle, int argc, char* argv[])
     rpt_data[2] = strtol(argv[2], NULL, 16);
 
     PRINT("modifier key: 0x%02X, normal key: 0x%02X", rpt_data[0], rpt_data[2]);
-    if (bt_hid_device_send_report(handle, &addr, 0, rpt_data, sizeof(rpt_data)) != BT_STATUS_SUCCESS)
+    if (bt_hid_device_send_report(handle, &addr, kb_rpt_id, rpt_data, sizeof(rpt_data)) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     memset(rpt_data, 0, sizeof(rpt_data));
-    if (bt_hid_device_send_report(handle, &addr, 0, rpt_data, sizeof(rpt_data)) != BT_STATUS_SUCCESS)
+    if (bt_hid_device_send_report(handle, &addr, kb_rpt_id, rpt_data, sizeof(rpt_data)) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -468,6 +481,9 @@ static int send_mouse_cmd(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
     int8_t rpt_data[4] = { 0x00, 0x00, 0x00, 0x00 };
+    /* Mouse report_id: 0 for single mouse (no Report ID in descriptor),
+     * 2 for combo (Report ID=2 is mouse in combo descriptor) */
+    uint8_t ms_rpt_id = (g_app_type == APP_HID_DEVICE_KBMS_COMBO) ? 2 : 0;
 
     if (argc < 3)
         return CMD_PARAM_NOT_ENOUGH;
@@ -480,11 +496,11 @@ static int send_mouse_cmd(void* handle, int argc, char* argv[])
     rpt_data[2] = atoi(argv[2]);
 
     PRINT("X axises: %d, Y axises: %d", rpt_data[0], rpt_data[2]);
-    if (bt_hid_device_send_report(handle, &addr, 0, (uint8_t*)rpt_data, sizeof(rpt_data)) != BT_STATUS_SUCCESS)
+    if (bt_hid_device_send_report(handle, &addr, ms_rpt_id, (uint8_t*)rpt_data, sizeof(rpt_data)) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     memset(rpt_data, 0, sizeof(rpt_data));
-    if (bt_hid_device_send_report(handle, &addr, 0, (uint8_t*)rpt_data, sizeof(rpt_data)) != BT_STATUS_SUCCESS)
+    if (bt_hid_device_send_report(handle, &addr, ms_rpt_id, (uint8_t*)rpt_data, sizeof(rpt_data)) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -538,6 +554,69 @@ static int dump_cmd(void* handle, int argc, char* argv[])
     return CMD_OK;
 }
 
+static int mouse_test_cmd(void* handle, int argc, char* argv[])
+{
+    bt_address_t addr;
+    int count;
+    int interval_ms;
+    int8_t rpt_data[4] = { 0, 0, 0, 0 };
+    struct timespec start;
+    struct timespec end;
+    int i;
+    uint32_t elapsed_ms;
+    uint32_t actual_rate;
+    uint8_t ms_rpt_id = (g_app_type == APP_HID_DEVICE_KBMS_COMBO) ? 2 : 0;
+
+    if (argc < 3)
+        return CMD_PARAM_NOT_ENOUGH;
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    count = atoi(argv[1]);
+    interval_ms = atoi(argv[2]);
+
+    if (interval_ms < 0)
+        return CMD_INVALID_PARAM;
+
+    PRINT("mouse_test: %s count=%d interval=%dms", argv[0], count, interval_ms);
+
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
+    for (i = 0; i < count; i++) {
+        rpt_data[1] = 1; /* X = 1 */
+        rpt_data[2] = 0; /* Y = 0 */
+        rpt_data[3] = (int8_t)(i & 0xFF); /* seq_num in Wheel field */
+
+        if (bt_hid_device_send_report(handle, &addr, ms_rpt_id,
+                (uint8_t*)rpt_data, sizeof(rpt_data))
+            != BT_STATUS_SUCCESS) {
+            PRINT("mouse_test: send failed at %d", i);
+            break;
+        }
+
+        if (interval_ms > 0) {
+            usleep(interval_ms * 1000);
+        }
+    }
+
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    elapsed_ms = (uint32_t)((end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000);
+    actual_rate = elapsed_ms > 0 ? (uint32_t)((uint64_t)i * 1000 / elapsed_ms) : 0;
+
+    PRINT("mouse_test done: sent=%d elapsed=%" PRIu32 "ms rate=%" PRIu32 "Hz", i, elapsed_ms, actual_rate);
+    return CMD_OK;
+}
+
+static void hidd_mode_changed_cb(void* cookie, bt_address_t* addr, uint8_t mode)
+{
+    PRINT_ADDR("HIDD mode changed: %s mode=0x%02x", addr, mode);
+}
+
+static void hidd_suspend_cb(void* cookie, bt_address_t* addr, bool suspend)
+{
+    PRINT_ADDR("HIDD %s: %s", addr, suspend ? "SUSPEND" : "EXIT_SUSPEND");
+}
+
 static const hid_device_callbacks_t hidd_test_cbs = {
     sizeof(hid_device_callbacks_t),
     hidd_app_state_cb,
@@ -546,6 +625,8 @@ static const hid_device_callbacks_t hidd_test_cbs = {
     hidd_set_report_cb,
     hidd_receive_report_cb,
     hidd_virtual_unplug_cb,
+    hidd_mode_changed_cb,
+    hidd_suspend_cb,
 };
 
 int hidd_command_init(void* handle)

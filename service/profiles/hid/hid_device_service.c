@@ -48,6 +48,7 @@
 
 typedef struct {
     bool started;
+    bool le_hid;
     hid_app_state_t app_state;
     bt_address_t peer_addr;
     profile_connection_state_t conn_state;
@@ -63,6 +64,8 @@ typedef struct {
         SET_REPORT_EVT,
         RECEIVE_REPORT_EVT,
         VIRTUAL_UNPLUG_EVT,
+        MODE_CHANGED_EVT,
+        SUSPEND_EVT,
     } event;
 
     union {
@@ -118,6 +121,16 @@ typedef struct {
         struct virtual_unplug_evt_param {
             bt_address_t addr;
         } unplug;
+
+        struct mode_changed_evt_param {
+            bt_address_t addr;
+            uint8_t mode;
+        } mode_changed;
+
+        struct suspend_evt_param {
+            bt_address_t addr;
+            bool suspend;
+        } suspend;
     };
 
 } hidd_msg_t;
@@ -136,7 +149,7 @@ static bool hid_device_unregister_callbacks(void** remote, void* cookie);
  * Private Functions
  ****************************************************************************/
 
-static void hid_device_handle_connection_event(bt_address_t* addr, profile_connection_state_t state)
+static void hid_device_handle_connection_event(bt_address_t* addr, bool le_hid, profile_connection_state_t state)
 {
     hid_device_handle_t* handle = &g_hidd_handle;
 
@@ -144,13 +157,20 @@ static void hid_device_handle_connection_event(bt_address_t* addr, profile_conne
     switch (state) {
     case PROFILE_STATE_CONNECTING:
         memcpy(&handle->peer_addr, addr, sizeof(bt_address_t));
+        handle->le_hid = le_hid;
         break;
     case PROFILE_STATE_CONNECTED:
-        bt_pm_conn_open(PROFILE_HID_DEV, addr);
+        handle->le_hid = le_hid;
+        if (!le_hid)
+            bt_pm_conn_open(PROFILE_HID_DEV, addr);
+
         break;
     case PROFILE_STATE_DISCONNECTED:
-        bt_pm_conn_close(PROFILE_HID_DEV, addr);
+        if (!handle->le_hid)
+            bt_pm_conn_close(PROFILE_HID_DEV, addr);
+
         bt_addr_set_empty(&handle->peer_addr);
+        handle->le_hid = false;
         break;
     default:
         break;
@@ -173,11 +193,12 @@ static void hid_device_event_process(void* data)
     case APP_REGISTER_EVT:
         if (msg->app_register.state == HID_APP_STATE_NOT_REGISTERED)
             g_hidd_handle.app_state = HID_APP_STATE_NOT_REGISTERED;
+
         HIDD_CALLBACK_FOREACH(g_hidd_handle.callbacks, app_state_cb, msg->app_register.state);
         break;
     case CONNECT_CHANGE_EVT: {
         BT_ADDR_LOG("HID-DEVICE-CONNECTION-STATE-EVENT from:%s, state:%d", &msg->connect_change.addr, msg->connect_change.state);
-        hid_device_handle_connection_event(&msg->connect_change.addr, msg->connect_change.state);
+        hid_device_handle_connection_event(&msg->connect_change.addr, msg->connect_change.le_hid, msg->connect_change.state);
         HIDD_CALLBACK_FOREACH(g_hidd_handle.callbacks, connection_state_cb, &msg->connect_change.addr, msg->connect_change.le_hid, msg->connect_change.state);
     } break;
     case GET_REPORT_EVT:
@@ -191,6 +212,12 @@ static void hid_device_event_process(void* data)
         break;
     case VIRTUAL_UNPLUG_EVT:
         HIDD_CALLBACK_FOREACH(g_hidd_handle.callbacks, virtual_unplug_cb, &msg->unplug.addr);
+        break;
+    case MODE_CHANGED_EVT:
+        HIDD_CALLBACK_FOREACH(g_hidd_handle.callbacks, mode_changed_cb, &msg->mode_changed.addr, msg->mode_changed.mode);
+        break;
+    case SUSPEND_EVT:
+        HIDD_CALLBACK_FOREACH(g_hidd_handle.callbacks, suspend_cb, &msg->suspend.addr, msg->suspend.suspend);
         break;
     default:
         break;
@@ -462,9 +489,12 @@ static bt_status_t hid_device_send_report(bt_address_t* addr, uint8_t rpt_id, ui
         goto exit;
     }
 
-    bt_pm_busy(PROFILE_HID_DEV, addr);
+    if (!g_hidd_handle.le_hid)
+        bt_pm_busy(PROFILE_HID_DEV, addr);
+
     status = bt_sal_hid_device_send_report(addr, rpt_id, rpt_data, rpt_size);
-    bt_pm_idle(PROFILE_HID_DEV, addr);
+    if (!g_hidd_handle.le_hid)
+        bt_pm_idle(PROFILE_HID_DEV, addr);
 
 exit:
     pthread_mutex_unlock(&g_hidd_handle.hid_lock);
@@ -660,6 +690,36 @@ void hid_device_on_virtual_cable_unplug(bt_address_t* addr)
 
     msg->event = VIRTUAL_UNPLUG_EVT;
     memcpy(&msg->unplug.addr, addr, sizeof(bt_address_t));
+
+    do_in_service_loop(hid_device_event_process, msg);
+}
+
+void hid_device_on_mode_changed(bt_address_t* addr, uint8_t mode)
+{
+    hidd_msg_t* msg = malloc(sizeof(hidd_msg_t));
+    if (!msg) {
+        BT_LOGE("%s malloc failed", __func__);
+        return;
+    }
+
+    msg->event = MODE_CHANGED_EVT;
+    memcpy(&msg->mode_changed.addr, addr, sizeof(bt_address_t));
+    msg->mode_changed.mode = mode;
+
+    do_in_service_loop(hid_device_event_process, msg);
+}
+
+void hid_device_on_suspend(bt_address_t* addr, bool suspend)
+{
+    hidd_msg_t* msg = malloc(sizeof(hidd_msg_t));
+    if (!msg) {
+        BT_LOGE("%s malloc failed", __func__);
+        return;
+    }
+
+    msg->event = SUSPEND_EVT;
+    memcpy(&msg->suspend.addr, addr, sizeof(bt_address_t));
+    msg->suspend.suspend = suspend;
 
     do_in_service_loop(hid_device_event_process, msg);
 }

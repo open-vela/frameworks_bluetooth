@@ -258,6 +258,10 @@ ifeq ($(CONFIG_BLUETOOTH_HID_DEVICE), y)
 	CSRCS += service/stacks/zephyr/sal_hid_device_interface.c
 endif #CONFIG_BLUETOOTH_HID_DEVICE
 
+ifeq ($(CONFIG_BLUETOOTH_HOGP_DEVICE), y)
+	CSRCS += service/stacks/zephyr/sal_hogp_device_interface.c
+endif #CONFIG_BLUETOOTH_HOGP_DEVICE
+
 ifeq ($(CONFIG_BLUETOOTH_STACK_LE_ZBLUE), y)
 	CSRCS += service/stacks/zephyr/sal_adapter_le_interface.c
 ifeq ($(CONFIG_BLUETOOTH_BLE_ADV), y)
@@ -344,7 +348,7 @@ ifeq ($(CONFIG_BLUETOOTH_SPP), y)
 endif #CONFIG_BLUETOOTH_SPP
 
 ifeq ($(CONFIG_BLUETOOTH_HID_DEVICE), y)
-	CSRCS += service/profiles/hid/*.c
+	CSRCS += service/profiles/hid/hid_device_service.c
 endif #CONFIG_BLUETOOTH_HID_DEVICE
 
 ifeq ($(CONFIG_BLUETOOTH_PAN), y)
