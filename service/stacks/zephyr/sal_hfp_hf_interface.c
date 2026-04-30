@@ -360,6 +360,12 @@ static bt_status_t do_hf_sdp_discover(bt_controller_id_t id, bt_address_t* addr,
         return BT_STATUS_NOT_FOUND;
     }
 
+    /* Request bonding/encryption before SDP to avoid ACL disconnect/reconnect
+     * when RFCOMM later triggers pairing */
+    if (bt_conn_set_security(conn, BT_SECURITY_L2) < 0) {
+        BT_LOGW("%s, bt_conn_set_security failed, proceeding anyway", __func__);
+    }
+
     sal_conn = new_hf_connection(conn, NULL);
     if (!sal_conn) {
         BT_LOGE("%s, could not create new hf connection", __func__);
@@ -408,61 +414,103 @@ bt_status_t do_hf_disconnect(bt_controller_id_t id, bt_address_t* addr, void* us
     return BT_STATUS_SUCCESS;
 }
 
-static void do_hf_sco_disconnect(service_work_t* work, void* userdata)
+/* ============================================================
+ * Param structs for do_in_service_loop dispatch
+ * ============================================================ */
+
+/* HF + conn (used by connected callback) */
+typedef struct {
+    struct bt_conn* conn;
+    struct bt_hfp_hf* hf;
+} hf_connected_params_t;
+
+/* HF only (used by disconnected, ring_indication, etc.) */
+typedef struct {
+    struct bt_hfp_hf* hf;
+} hf_hf_params_t;
+
+/* HF + SCO conn (used by sco_connected) */
+typedef struct {
+    struct bt_hfp_hf* hf;
+    struct bt_conn* sco_conn;
+} hf_sco_connected_params_t;
+
+/* SCO conn + reason (used by sco_disconnected) */
+typedef struct {
+    struct bt_conn* sco_conn;
+    uint8_t reason;
+} hf_sco_disconnected_params_t;
+
+/* HF + call (used by outgoing, incoming) */
+typedef struct {
+    struct bt_hfp_hf* hf;
+    struct bt_hfp_hf_call* call;
+} hf_hf_call_params_t;
+
+/* call only (used by remote_ringing, accept, reject, terminate, held, retrieve) */
+typedef struct {
+    struct bt_hfp_hf_call* call;
+} hf_call_event_params_t;
+
+/* HF + uint8_t (used by vgm, vgs, codec_negotiate) */
+typedef struct {
+    struct bt_hfp_hf* hf;
+    uint8_t value;
+} hf_u8_event_params_t;
+
+/* HF + bool (used by voice_recognition) */
+typedef struct {
+    struct bt_hfp_hf* hf;
+    bool activate;
+} hf_bool_event_params_t;
+
+/* HF + string (used by subscriber_number) */
+typedef struct {
+    struct bt_hfp_hf* hf;
+    char number[HFP_PHONENUM_DIGITS_MAX + 1];
+    uint8_t type;
+    uint8_t service;
+} hf_subscriber_number_params_t;
+
+/* call + string (used by clip) */
+typedef struct {
+    struct bt_hfp_hf_call* call;
+    char number[HFP_PHONENUM_DIGITS_MAX + 1];
+    uint8_t type;
+} hf_clip_params_t;
+
+/* HF + vendor specific (cmd + value) */
+typedef struct {
+    struct bt_hfp_hf* hf;
+    char cmd[128];
+    char value[256];
+} hf_vendor_specific_params_t;
+
+/* HF + AT cmd complete */
+typedef struct {
+    struct bt_hfp_hf* hf;
+    enum bt_hfp_hf_at_cmd cmd;
+    enum bt_at_result result;
+    enum bt_at_cme err;
+} hf_at_cmd_complete_params_t;
+
+/* HF + current call */
+typedef struct {
+    struct bt_hfp_hf* hf;
+    bool has_call;
+    struct bt_hfp_hf_current_call call_data;
+} hf_current_call_params_t;
+
+/* SDP disconnected */
+typedef struct {
+    struct bt_conn* conn;
+} hf_sdp_disconnected_params_t;
+
+/* call + ring indication (uses call event) - reuse hf_call_event_params_t */
+
+static void hf_slc_connect_handler(void* data)
 {
-    struct bt_conn* sco_conn = (struct bt_conn*)userdata;
-    bt_hfp_hf_connection_t* sal_conn;
-    int err;
-
-    if (!sco_conn) {
-        BT_LOGE("%s, Invalid parameters", __func__);
-        return;
-    }
-
-    sal_conn = find_connection_by_sco(sco_conn);
-    if (!sal_conn) {
-        BT_LOGW("%s, sco_conn no longer tracked, skip disconnect", __func__);
-        return;
-    }
-
-    err = bt_conn_disconnect(sco_conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
-    if (err) {
-        sal_conn->sco_conn = NULL;
-        BT_LOGE("%s, Failed to disconnect HFP HF SCO, err=%d", __func__, err);
-        hfp_hf_on_audio_connection_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_DISCONNECTED, 0);
-    }
-}
-
-static void do_hf_sco_connect(service_work_t* work, void* userdata)
-{
-    bt_hfp_hf_connection_t* sal_conn;
-    struct bt_hfp_hf* hf = (struct bt_hfp_hf*)userdata;
-    int err;
-
-    if (!hf) {
-        BT_LOGE("%s, Invalid parameters", __func__);
-        return;
-    }
-
-    sal_conn = find_connection_by_hf(hf);
-    if (!sal_conn) {
-        BT_LOGW("%s, hf no longer tracked, skip connect", __func__);
-        return;
-    }
-
-    err = Z_API(bt_hfp_hf_audio_connect)(hf);
-    if (err == -EALREADY) {
-        BT_LOGW("%s, Audio already connected", __func__);
-        hfp_hf_on_audio_connection_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_CONNECTED, 0);
-    } else if (err) {
-        BT_LOGE("%s, Failed to connect HFP HF SCO, err=%d", __func__, err);
-        hfp_hf_on_audio_connection_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_DISCONNECTED, 0);
-    }
-}
-
-static void do_hf_slc_connect(service_work_t* work, void* userdata)
-{
-    bt_hfp_hf_slc_connect_param_t* params = (bt_hfp_hf_slc_connect_param_t*)userdata;
+    bt_hfp_hf_slc_connect_param_t* params = (bt_hfp_hf_slc_connect_param_t*)data;
     bt_hfp_hf_connection_t* sal_conn;
     struct bt_hfp_hf* hf = NULL;
 
@@ -516,12 +564,17 @@ error:
     return;
 }
 
-static void zblue_on_sdp_disconnected(struct bt_conn* conn, const struct bt_sdp_discover_params* params)
+static void hf_sdp_disconnected_handler(void* data)
 {
+    hf_sdp_disconnected_params_t* p = (hf_sdp_disconnected_params_t*)data;
     bt_address_t bd_addr;
-    bt_hfp_hf_connection_t* sal_conn = find_connection_by_context(conn);
+
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_context(p->conn);
+    bt_conn_unref(p->conn);
+
     if (!sal_conn) {
         BT_LOGW("%s, no pending connection found", __func__);
+        free(p);
         return;
     }
     memcpy(&bd_addr, &sal_conn->addr, sizeof(bt_address_t));
@@ -530,6 +583,19 @@ static void zblue_on_sdp_disconnected(struct bt_conn* conn, const struct bt_sdp_
     bt_list_remove(g_sal_hf_conn_list, sal_conn);
     hfp_hf_on_connection_state_changed(&bd_addr, PROFILE_STATE_DISCONNECTED, 0, 0);
     bt_sal_cm_profile_disconnected_callback(&bd_addr, PROFILE_HFP_HF, CONN_ID_DEFAULT);
+    free(p);
+}
+
+static void zblue_on_sdp_disconnected(struct bt_conn* conn, const struct bt_sdp_discover_params* params)
+{
+    hf_sdp_disconnected_params_t* p = malloc(sizeof(hf_sdp_disconnected_params_t));
+    if (!p) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return;
+    }
+
+    p->conn = bt_conn_ref(conn);
+    do_in_service_loop(hf_sdp_disconnected_handler, p);
 }
 
 static uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_result* result,
@@ -574,12 +640,7 @@ static uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_resu
     params->channel = (uint8_t)port;
     params->conn = bt_conn_ref(conn);
 
-    if (!service_loop_work(params, do_hf_slc_connect, NULL)) {
-        BT_LOGE("%s, service loop work submit failed", __func__);
-        bt_conn_unref(params->conn);
-        free(params);
-        goto error;
-    }
+    do_in_service_loop(hf_slc_connect_handler, params);
 
     return BT_SDP_DISCOVER_UUID_STOP;
 
@@ -590,38 +651,69 @@ error:
     return BT_SDP_DISCOVER_UUID_STOP;
 }
 
-static void zblue_on_connected(struct bt_conn* conn, struct bt_hfp_hf* hf)
+static void hf_connected_handler(void* data)
 {
+    hf_connected_params_t* p = (hf_connected_params_t*)data;
     bt_hfp_hf_connection_t* sal_conn;
 
-    sal_conn = find_connection_by_context(conn);
+    sal_conn = find_connection_by_context(p->conn);
     if (!sal_conn) {
         BT_LOGD("%s, hf connection incoming", __func__);
-        sal_conn = new_hf_connection(conn, hf);
+        sal_conn = new_hf_connection(p->conn, p->hf);
         if (!sal_conn) {
             BT_LOGE("%s, Failed to create HFP HF connection", __func__);
-            if (Z_API(bt_hfp_hf_disconnect)(hf)) {
+            if (Z_API(bt_hfp_hf_disconnect)(p->hf)) {
                 BT_LOGE("%s, Failed to disconnect HFP HF connection", __func__);
             }
+            bt_conn_unref(p->conn);
+            free(p);
             return;
         }
 
         hfp_hf_on_connection_state_changed(&sal_conn->addr, PROFILE_STATE_CONNECTING, 0, 0);
     } else {
         /* Override conn if both sides attempt to connect at the same time */
-        sal_conn->conn = conn;
-        sal_conn->hf = hf;
+        sal_conn->conn = p->conn;
+        sal_conn->hf = p->hf;
     }
+
+    bt_conn_unref(p->conn);
 
     bt_sal_cm_profile_connected_callback(&sal_conn->addr, PROFILE_HFP_HF, CONN_ID_DEFAULT);
     bt_sal_profile_disconnect_register(&sal_conn->addr, PROFILE_HFP_HF, CONN_ID_DEFAULT, PRIMARY_ADAPTER, do_hf_disconnect, NULL);
 
     hfp_hf_on_connection_state_changed(&sal_conn->addr, PROFILE_STATE_CONNECTED, 0, 0);
+
+    /* Start post-SLC AT command init (VGM, VGS, CMEE, COPS, CLIP, CCWA)
+     * after framework has processed the connected event and sent its own
+     * initial AT commands (e.g. VGS for volume sync). This ensures the
+     * correct AT command ordering that PTS expects.
+     */
+    Z_API(bt_hfp_hf_post_slc_init)(sal_conn->hf);
+
+    free(p);
 }
 
-static void zblue_hf_disconnected(struct bt_hfp_hf* hf)
+static void zblue_on_connected(struct bt_conn* conn, struct bt_hfp_hf* hf)
 {
-    bt_hfp_hf_connection_t* conn = find_connection_by_hf(hf);
+    hf_connected_params_t* p = malloc(sizeof(hf_connected_params_t));
+    if (!p) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return;
+    }
+
+    p->conn = bt_conn_ref(conn);
+    p->hf = hf;
+    do_in_service_loop(hf_connected_handler, p);
+}
+
+static void hf_disconnected_handler(void* data)
+{
+    hf_hf_params_t* p = (hf_hf_params_t*)data;
+    bt_hfp_hf_connection_t* conn = find_connection_by_hf(p->hf);
+
+    free(p);
+
     if (!conn) {
         BT_LOGE("%s, Failed to find connection", __func__);
         return;
@@ -634,76 +726,157 @@ static void zblue_hf_disconnected(struct bt_hfp_hf* hf)
     bt_list_remove(g_sal_hf_conn_list, conn);
 }
 
-static void zblue_on_sco_connected(struct bt_hfp_hf* hf, struct bt_conn* sco_conn)
+static void zblue_hf_disconnected(struct bt_hfp_hf* hf)
 {
-    bt_hfp_hf_connection_t* conn = find_connection_by_hf(hf);
-    if (!conn) {
-        BT_LOGE("%s, Failed to find connection for SCO", __func__);
+    hf_hf_params_t* p = malloc(sizeof(hf_hf_params_t));
+    if (!p) {
+        BT_LOGE("%s, malloc failed", __func__);
         return;
     }
 
-    conn->sco_conn = sco_conn;
-
-    hfp_hf_on_audio_connection_state_changed(&conn->addr, HFP_AUDIO_STATE_CONNECTED, 0);
+    p->hf = hf;
+    do_in_service_loop(hf_disconnected_handler, p);
 }
 
-static void zblue_on_sco_disconnected(struct bt_conn* sco_conn, uint8_t reason)
+static void hf_sco_connected_handler(void* data)
 {
-    (void)reason;
-    bt_hfp_hf_connection_t* conn = find_connection_by_sco(sco_conn);
+    hf_sco_connected_params_t* p = (hf_sco_connected_params_t*)data;
+    bt_hfp_hf_connection_t* conn = find_connection_by_hf(p->hf);
+
+    if (!conn) {
+        BT_LOGE("%s, Failed to find connection for SCO", __func__);
+        free(p);
+        return;
+    }
+
+    conn->sco_conn = p->sco_conn;
+    hfp_hf_on_audio_connection_state_changed(&conn->addr, HFP_AUDIO_STATE_CONNECTED, 0);
+    free(p);
+}
+
+static void zblue_on_sco_connected(struct bt_hfp_hf* hf, struct bt_conn* sco_conn)
+{
+    hf_sco_connected_params_t* p = malloc(sizeof(hf_sco_connected_params_t));
+    if (!p) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return;
+    }
+
+    p->hf = hf;
+    p->sco_conn = sco_conn;
+    do_in_service_loop(hf_sco_connected_handler, p);
+}
+
+static void hf_sco_disconnected_handler(void* data)
+{
+    hf_sco_disconnected_params_t* p = (hf_sco_disconnected_params_t*)data;
+    bt_hfp_hf_connection_t* conn = find_connection_by_sco(p->sco_conn);
+
     if (!conn) {
         BT_LOGW("%s, Failed to find connection for SCO disconn", __func__);
+        free(p);
         return;
     }
 
     hfp_hf_on_audio_connection_state_changed(&conn->addr, HFP_AUDIO_STATE_DISCONNECTED, 0);
-
     conn->sco_conn = NULL;
+    free(p);
 }
 
-static void zblue_on_outgoing_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_call* call)
+static void zblue_on_sco_disconnected(struct bt_conn* sco_conn, uint8_t reason)
 {
-    bt_hfp_hf_connection_t* sal_conn = find_connection_by_hf(hf);
-    if (!sal_conn) {
-        BT_LOGE("%s, Failed to find connection", __func__);
+    hf_sco_disconnected_params_t* p = malloc(sizeof(hf_sco_disconnected_params_t));
+    if (!p) {
+        BT_LOGE("%s, malloc failed", __func__);
         return;
     }
 
-    bt_hfp_hf_call_info_t* sal_call = find_or_create_call(sal_conn, call);
+    p->sco_conn = sco_conn;
+    p->reason = reason;
+    do_in_service_loop(hf_sco_disconnected_handler, p);
+}
+
+static void hf_outgoing_call_handler(void* data)
+{
+    hf_hf_call_params_t* p = (hf_hf_call_params_t*)data;
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_hf(p->hf);
+
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        free(p);
+        return;
+    }
+
+    bt_hfp_hf_call_info_t* sal_call = find_or_create_call(sal_conn, p->call);
     if (!sal_call) {
         BT_LOGE("%s, Failed to track outgoing call", __func__);
+        free(p);
         return;
     }
 
     set_call_state(sal_conn, sal_call, HFP_HF_CALL_STATE_DIALING);
     hfp_hf_on_call_setup_state_changed(&sal_conn->addr, HFP_CALLSETUP_OUTGOING);
+    free(p);
 }
 
-static void zblue_on_incoming_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_call* call)
+static void zblue_on_outgoing_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_call* call)
 {
-    bt_hfp_hf_connection_t* sal_conn = find_connection_by_hf(hf);
-    if (!sal_conn) {
-        BT_LOGE("%s, Failed to find connection", __func__);
+    hf_hf_call_params_t* p = malloc(sizeof(hf_hf_call_params_t));
+    if (!p) {
+        BT_LOGE("%s, malloc failed", __func__);
         return;
     }
 
-    bt_hfp_hf_call_info_t* sal_call = find_or_create_call(sal_conn, call);
+    p->hf = hf;
+    p->call = call;
+    do_in_service_loop(hf_outgoing_call_handler, p);
+}
+
+static void hf_incoming_call_handler(void* data)
+{
+    hf_hf_call_params_t* p = (hf_hf_call_params_t*)data;
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_hf(p->hf);
+
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        free(p);
+        return;
+    }
+
+    bt_hfp_hf_call_info_t* sal_call = find_or_create_call(sal_conn, p->call);
     if (!sal_call) {
         BT_LOGE("%s, Failed to track incoming call", __func__);
+        free(p);
         return;
     }
 
     set_call_state(sal_conn, sal_call, HFP_HF_CALL_STATE_INCOMING);
     hfp_hf_on_call_setup_state_changed(&sal_conn->addr, HFP_CALLSETUP_INCOMING);
+    free(p);
 }
 
-static void zblue_on_remote_ringing(struct bt_hfp_hf_call* call)
+static void zblue_on_incoming_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_call* call)
 {
+    hf_hf_call_params_t* p = malloc(sizeof(hf_hf_call_params_t));
+    if (!p) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return;
+    }
+
+    p->hf = hf;
+    p->call = call;
+    do_in_service_loop(hf_incoming_call_handler, p);
+}
+
+static void hf_remote_ringing_handler(void* data)
+{
+    hf_call_event_params_t* p = (hf_call_event_params_t*)data;
     bt_hfp_hf_call_info_t* sal_call = NULL;
-    bt_hfp_hf_connection_t* conn = find_connection_by_call_context(call, &sal_call);
+    bt_hfp_hf_connection_t* conn = find_connection_by_call_context(p->call, &sal_call);
 
     if (!conn) {
         BT_LOGW("%s, Failed to find connection for remote ringing", __func__);
+        free(p);
         return;
     }
 
@@ -712,44 +885,89 @@ static void zblue_on_remote_ringing(struct bt_hfp_hf_call* call)
     }
 
     hfp_hf_on_call_setup_state_changed(&conn->addr, HFP_CALLSETUP_ALERTING);
+    free(p);
 }
 
-static void zblue_on_call_accept(struct bt_hfp_hf_call* call)
+static void zblue_on_remote_ringing(struct bt_hfp_hf_call* call)
 {
+    hf_call_event_params_t* p = malloc(sizeof(hf_call_event_params_t));
+    if (!p) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return;
+    }
+
+    p->call = call;
+    do_in_service_loop(hf_remote_ringing_handler, p);
+}
+
+static void hf_call_accept_handler(void* data)
+{
+    hf_call_event_params_t* p = (hf_call_event_params_t*)data;
     bt_hfp_hf_call_info_t* sal_call = NULL;
-    bt_hfp_hf_connection_t* conn = find_connection_by_call_context(call, &sal_call);
+    bt_hfp_hf_connection_t* conn = find_connection_by_call_context(p->call, &sal_call);
 
     if (!conn || !sal_call) {
         BT_LOGW("%s, Failed to find call to accept", __func__);
+        free(p);
         return;
     }
 
     set_call_state(conn, sal_call, HFP_HF_CALL_STATE_ACTIVE);
     hfp_hf_on_call_active_state_changed(&conn->addr, HFP_CALL_CALLS_IN_PROGRESS);
     hfp_hf_on_call_setup_state_changed(&conn->addr, HFP_CALLSETUP_NONE);
+    free(p);
 }
 
-static void zblue_on_call_reject(struct bt_hfp_hf_call* call)
+static void zblue_on_call_accept(struct bt_hfp_hf_call* call)
 {
+    hf_call_event_params_t* p = malloc(sizeof(hf_call_event_params_t));
+    if (!p) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return;
+    }
+
+    p->call = call;
+    do_in_service_loop(hf_call_accept_handler, p);
+}
+
+static void hf_call_reject_handler(void* data)
+{
+    hf_call_event_params_t* p = (hf_call_event_params_t*)data;
     bt_hfp_hf_call_info_t* sal_call = NULL;
-    bt_hfp_hf_connection_t* sal_conn = find_connection_by_call_context(call, &sal_call);
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_call_context(p->call, &sal_call);
 
     if (!sal_conn || !sal_call) {
         BT_LOGW("%s, Failed to find call to reject", __func__);
+        free(p);
         return;
     }
 
     remove_call(sal_conn, sal_call);
     hfp_hf_on_call_setup_state_changed(&sal_conn->addr, HFP_CALLSETUP_NONE);
+    free(p);
 }
 
-static void zblue_on_call_terminate(struct bt_hfp_hf_call* call)
+static void zblue_on_call_reject(struct bt_hfp_hf_call* call)
 {
+    hf_call_event_params_t* p = malloc(sizeof(hf_call_event_params_t));
+    if (!p) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return;
+    }
+
+    p->call = call;
+    do_in_service_loop(hf_call_reject_handler, p);
+}
+
+static void hf_call_terminate_handler(void* data)
+{
+    hf_call_event_params_t* p = (hf_call_event_params_t*)data;
     bt_hfp_hf_call_info_t* sal_call = NULL;
-    bt_hfp_hf_connection_t* sal_conn = find_connection_by_call_context(call, &sal_call);
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_call_context(p->call, &sal_call);
 
     if (!sal_conn || !sal_call) {
         BT_LOGW("%s, Failed to find call to terminate", __func__);
+        free(p);
         return;
     }
 
@@ -762,15 +980,30 @@ static void zblue_on_call_terminate(struct bt_hfp_hf_call* call)
     }
 
     remove_call(sal_conn, sal_call);
+    free(p);
 }
 
-static void zblue_on_call_held(struct bt_hfp_hf_call* call)
+static void zblue_on_call_terminate(struct bt_hfp_hf_call* call)
 {
+    hf_call_event_params_t* p = malloc(sizeof(hf_call_event_params_t));
+    if (!p) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return;
+    }
+
+    p->call = call;
+    do_in_service_loop(hf_call_terminate_handler, p);
+}
+
+static void hf_call_held_handler(void* data)
+{
+    hf_call_event_params_t* p = (hf_call_event_params_t*)data;
     bt_hfp_hf_call_info_t* sal_call = NULL;
-    bt_hfp_hf_connection_t* sal_conn = find_connection_by_call_context(call, &sal_call);
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_call_context(p->call, &sal_call);
 
     if (!sal_conn || !sal_call) {
         BT_LOGW("%s, Failed to find call to hold", __func__);
+        free(p);
         return;
     }
 
@@ -783,15 +1016,30 @@ static void zblue_on_call_held(struct bt_hfp_hf_call* call)
     }
 
     set_call_state(sal_conn, sal_call, HFP_HF_CALL_STATE_HELD);
+    free(p);
 }
 
-static void zblue_on_call_retrieve(struct bt_hfp_hf_call* call)
+static void zblue_on_call_held(struct bt_hfp_hf_call* call)
 {
+    hf_call_event_params_t* p = malloc(sizeof(hf_call_event_params_t));
+    if (!p) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return;
+    }
+
+    p->call = call;
+    do_in_service_loop(hf_call_held_handler, p);
+}
+
+static void hf_call_retrieve_handler(void* data)
+{
+    hf_call_event_params_t* p = (hf_call_event_params_t*)data;
     bt_hfp_hf_call_info_t* sal_call = NULL;
-    bt_hfp_hf_connection_t* sal_conn = find_connection_by_call_context(call, &sal_call);
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_call_context(p->call, &sal_call);
 
     if (!sal_conn || !sal_call) {
         BT_LOGW("%s, Failed to find call to retrieve", __func__);
+        free(p);
         return;
     }
 
@@ -804,18 +1052,34 @@ static void zblue_on_call_retrieve(struct bt_hfp_hf_call* call)
     hfp_hf_on_call_active_state_changed(&sal_conn->addr, HFP_CALL_CALLS_IN_PROGRESS);
 
     set_call_state(sal_conn, sal_call, HFP_HF_CALL_STATE_ACTIVE);
+    free(p);
 }
 
-static void zblue_on_subscriber_number(struct bt_hfp_hf* hf, const char* number, uint8_t type, uint8_t service)
+static void zblue_on_call_retrieve(struct bt_hfp_hf_call* call)
 {
-    bt_hfp_hf_connection_t* conn = find_connection_by_hf(hf);
+    hf_call_event_params_t* p = malloc(sizeof(hf_call_event_params_t));
+    if (!p) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return;
+    }
+
+    p->call = call;
+    do_in_service_loop(hf_call_retrieve_handler, p);
+}
+
+static void hf_subscriber_number_handler(void* data)
+{
+    hf_subscriber_number_params_t* p = (hf_subscriber_number_params_t*)data;
+    bt_hfp_hf_connection_t* conn = find_connection_by_hf(p->hf);
+
     if (!conn) {
         BT_LOGE("%s, Failed to find connection", __func__);
+        free(p);
         return;
     }
 
     hfp_subscriber_number_service_t fw_service = 0;
-    switch (service) {
+    switch (p->service) {
     case 4:
         fw_service = HFP_HF_SERVICE_VOICE;
         break;
@@ -823,99 +1087,226 @@ static void zblue_on_subscriber_number(struct bt_hfp_hf* hf, const char* number,
         fw_service = HFP_HF_SERVICE_FAX;
         break;
     default:
-        BT_LOGW("%s, Unknown service: %d", __func__, service);
+        BT_LOGW("%s, Unknown service: %d", __func__, p->service);
         break;
     }
 
-    hfp_hf_on_subscriber_number_response(&conn->addr, number, fw_service);
+    hfp_hf_on_subscriber_number_response(&conn->addr, p->number, fw_service);
+    free(p);
+}
+
+static void zblue_on_subscriber_number(struct bt_hfp_hf* hf, const char* number, uint8_t type, uint8_t service)
+{
+    hf_subscriber_number_params_t* p = malloc(sizeof(hf_subscriber_number_params_t));
+    if (!p) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return;
+    }
+
+    p->hf = hf;
+    if (number) {
+        strlcpy(p->number, number, sizeof(p->number));
+    } else {
+        p->number[0] = '\0';
+    }
+    p->type = type;
+    p->service = service;
+    do_in_service_loop(hf_subscriber_number_handler, p);
+}
+
+static void hf_vgm_handler(void* data)
+{
+    hf_u8_event_params_t* p = (hf_u8_event_params_t*)data;
+    bt_hfp_hf_connection_t* conn = find_connection_by_hf(p->hf);
+
+    if (!conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        free(p);
+        return;
+    }
+
+    hfp_hf_on_volume_changed(&conn->addr, HFP_VOLUME_TYPE_MIC, p->value);
+    free(p);
 }
 
 static void zblue_on_vgm(struct bt_hfp_hf* hf, uint8_t gain)
 {
-    bt_hfp_hf_connection_t* conn = find_connection_by_hf(hf);
-    if (!conn) {
-        BT_LOGE("%s, Failed to find connection", __func__);
+    hf_u8_event_params_t* p = malloc(sizeof(hf_u8_event_params_t));
+    if (!p) {
+        BT_LOGE("%s, malloc failed", __func__);
         return;
     }
 
-    hfp_hf_on_volume_changed(&conn->addr, HFP_VOLUME_TYPE_MIC, gain);
+    p->hf = hf;
+    p->value = gain;
+    do_in_service_loop(hf_vgm_handler, p);
+}
+
+static void hf_vgs_handler(void* data)
+{
+    hf_u8_event_params_t* p = (hf_u8_event_params_t*)data;
+    bt_hfp_hf_connection_t* conn = find_connection_by_hf(p->hf);
+
+    if (!conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        free(p);
+        return;
+    }
+
+    hfp_hf_on_volume_changed(&conn->addr, HFP_VOLUME_TYPE_SPK, p->value);
+    free(p);
 }
 
 static void zblue_on_vgs(struct bt_hfp_hf* hf, uint8_t gain)
 {
-    bt_hfp_hf_connection_t* conn = find_connection_by_hf(hf);
-    if (!conn) {
-        BT_LOGE("%s, Failed to find connection", __func__);
+    hf_u8_event_params_t* p = malloc(sizeof(hf_u8_event_params_t));
+    if (!p) {
+        BT_LOGE("%s, malloc failed", __func__);
         return;
     }
 
-    hfp_hf_on_volume_changed(&conn->addr, HFP_VOLUME_TYPE_SPK, gain);
+    p->hf = hf;
+    p->value = gain;
+    do_in_service_loop(hf_vgs_handler, p);
+}
+
+static void hf_voice_recognition_handler(void* data)
+{
+    hf_bool_event_params_t* p = (hf_bool_event_params_t*)data;
+    bt_hfp_hf_connection_t* conn = find_connection_by_hf(p->hf);
+
+    if (!conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        free(p);
+        return;
+    }
+
+    hfp_hf_on_voice_recognition_state_changed(&conn->addr, p->activate);
+    free(p);
 }
 
 static void zblue_on_voice_recognition(struct bt_hfp_hf* hf, bool activate)
 {
-    bt_hfp_hf_connection_t* conn = find_connection_by_hf(hf);
-    if (!conn) {
-        BT_LOGE("%s, Failed to find connection", __func__);
+    hf_bool_event_params_t* p = malloc(sizeof(hf_bool_event_params_t));
+    if (!p) {
+        BT_LOGE("%s, malloc failed", __func__);
         return;
     }
 
-    hfp_hf_on_voice_recognition_state_changed(&conn->addr, activate);
+    p->hf = hf;
+    p->activate = activate;
+    do_in_service_loop(hf_voice_recognition_handler, p);
 }
 
-static void zblue_on_ring_indication(struct bt_hfp_hf_call* call)
+static void hf_ring_indication_handler(void* data)
 {
-    bt_hfp_hf_connection_t* conn = find_connection_by_call_context(call, NULL);
+    hf_call_event_params_t* p = (hf_call_event_params_t*)data;
+    bt_hfp_hf_connection_t* conn = find_connection_by_call_context(p->call, NULL);
+
     if (!conn) {
         BT_LOGW("%s, Failed to find connection for ring", __func__);
+        free(p);
         return;
     }
 
     hfp_hf_on_ring_active_state_changed(&conn->addr, true, HFP_IN_BAND_RINGTONE_NOT_PROVIDED);
+    free(p);
 }
 
-static void zblue_on_clip(struct bt_hfp_hf_call* call, char* number, uint8_t type)
+static void zblue_on_ring_indication(struct bt_hfp_hf_call* call)
 {
+    hf_call_event_params_t* p = malloc(sizeof(hf_call_event_params_t));
+    if (!p) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return;
+    }
+
+    p->call = call;
+    do_in_service_loop(hf_ring_indication_handler, p);
+}
+
+static void hf_clip_handler(void* data)
+{
+    hf_clip_params_t* p = (hf_clip_params_t*)data;
     bt_hfp_hf_call_info_t* sal_call = NULL;
-    const char* num = number ? number : "";
-    bt_hfp_hf_connection_t* conn = find_connection_by_call_context(call, &sal_call);
+    bt_hfp_hf_connection_t* conn = find_connection_by_call_context(p->call, &sal_call);
+
     if (!conn) {
         BT_LOGE("%s, Failed to find connection for CLIP", __func__);
+        free(p);
         return;
     }
 
     if (sal_call) {
-        sal_call->type = type;
+        sal_call->type = p->type;
     }
 
-    hfp_hf_on_clip(&conn->addr, num, "");
+    hfp_hf_on_clip(&conn->addr, p->number, "");
+    free(p);
 }
 
-static void zblue_on_vendor_specific(struct bt_hfp_hf* hf, const char* cmd, const char* value)
+static void zblue_on_clip(struct bt_hfp_hf_call* call, char* number, uint8_t type)
 {
-    bt_hfp_hf_connection_t* conn = find_connection_by_hf(hf);
+    hf_clip_params_t* p = malloc(sizeof(hf_clip_params_t));
+    if (!p) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return;
+    }
+
+    p->call = call;
+    if (number) {
+        strlcpy(p->number, number, sizeof(p->number));
+    } else {
+        p->number[0] = '\0';
+    }
+    p->type = type;
+    do_in_service_loop(hf_clip_handler, p);
+}
+
+static void hf_vendor_specific_handler(void* data)
+{
+    hf_vendor_specific_params_t* p = (hf_vendor_specific_params_t*)data;
+    bt_hfp_hf_connection_t* conn = find_connection_by_hf(p->hf);
+
     if (!conn) {
         BT_LOGE("%s, Failed to find connection for vendor specific response", __func__);
+        free(p);
         return;
     }
 
-    if (!cmd || !value) {
-        return;
-    }
-
-    size_t cmd_len = strlen(cmd);
-    size_t val_len = strlen(value);
+    size_t cmd_len = strlen(p->cmd);
+    size_t val_len = strlen(p->value);
     size_t len = cmd_len + val_len + 2; /* '+' and ':' */
 
     char* rsp = malloc(len + 1);
     if (!rsp) {
         BT_LOGE("%s, Failed to allocate vendor response", __func__);
+        free(p);
         return;
     }
 
-    snprintf(rsp, len + 1, "+%s:%s", cmd, value);
+    snprintf(rsp, len + 1, "+%s:%s", p->cmd, p->value);
     hfp_hf_on_received_at_cmd_resp(&conn->addr, rsp, len);
     free(rsp);
+    free(p);
+}
+
+static void zblue_on_vendor_specific(struct bt_hfp_hf* hf, const char* cmd, const char* value)
+{
+    if (!cmd || !value) {
+        return;
+    }
+
+    hf_vendor_specific_params_t* p = malloc(sizeof(hf_vendor_specific_params_t));
+    if (!p) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return;
+    }
+
+    p->hf = hf;
+    strlcpy(p->cmd, cmd, sizeof(p->cmd));
+    strlcpy(p->value, value, sizeof(p->value));
+    do_in_service_loop(hf_vendor_specific_handler, p);
 }
 
 static hfp_atcmd_code_t zblue_at_cmd_to_service_cmd(
@@ -934,36 +1325,59 @@ static hfp_atcmd_code_t zblue_at_cmd_to_service_cmd(
     }
 }
 
+static void hf_at_cmd_complete_handler(void* data)
+{
+    hf_at_cmd_complete_params_t* p = (hf_at_cmd_complete_params_t*)data;
+    bt_hfp_hf_connection_t* conn = find_connection_by_hf(p->hf);
+
+    if (!conn) {
+        BT_LOGE("%s, Failed to find connection for AT cmd complete", __func__);
+        free(p);
+        return;
+    }
+
+    uint32_t result_code = p->result == BT_AT_RESULT_CME_ERROR ? p->err : p->result;
+
+    hfp_hf_on_at_command_result_response(&conn->addr, zblue_at_cmd_to_service_cmd(p->cmd), result_code);
+    free(p);
+}
+
 static void zblue_on_at_cmd_complete(struct bt_hfp_hf* hf, enum bt_hfp_hf_at_cmd cmd,
     enum bt_at_result result, enum bt_at_cme err)
 {
     BT_LOGD("%s, AT cmd complete: cmd=%d, result=%d, err=%d", __func__, cmd, result, err);
-    bt_hfp_hf_connection_t* conn = find_connection_by_hf(hf);
-    if (!conn) {
-        BT_LOGE("%s, Failed to find connection for AT cmd complete", __func__);
+
+    hf_at_cmd_complete_params_t* p = malloc(sizeof(hf_at_cmd_complete_params_t));
+    if (!p) {
+        BT_LOGE("%s, malloc failed", __func__);
         return;
     }
 
-    uint32_t result_code = result == BT_AT_RESULT_CME_ERROR ? err : result;
-
-    hfp_hf_on_at_command_result_response(&conn->addr, zblue_at_cmd_to_service_cmd(cmd), result_code);
+    p->hf = hf;
+    p->cmd = cmd;
+    p->result = result;
+    p->err = err;
+    do_in_service_loop(hf_at_cmd_complete_handler, p);
 }
 
-static void zblue_on_codec_negotiate(struct bt_hfp_hf* hf, uint8_t id)
+static void hf_codec_negotiate_handler(void* data)
 {
-    bt_hfp_hf_connection_t* conn = find_connection_by_hf(hf);
+    hf_u8_event_params_t* p = (hf_u8_event_params_t*)data;
+    bt_hfp_hf_connection_t* conn = find_connection_by_hf(p->hf);
+
     if (!conn) {
         BT_LOGE("%s, Failed to find connection", __func__);
+        free(p);
         return;
     }
 
-    int ret = Z_API(bt_hfp_hf_select_codec)(hf, id);
+    int ret = Z_API(bt_hfp_hf_select_codec)(p->hf, p->value);
     if (ret) {
         BT_LOGE("%s, bt_hfp_hf_select_codec failed: %d", __func__, ret);
     }
 
     hfp_codec_config_t cfg = { 0 };
-    switch (id) {
+    switch (p->value) {
     case BT_HFP_HF_CODEC_MSBC:
         cfg.codec = HFP_CODEC_MSBC;
         cfg.sample_rate = HFP_CODEC_MSBC_SAMPLE_RATE;
@@ -978,22 +1392,41 @@ static void zblue_on_codec_negotiate(struct bt_hfp_hf* hf, uint8_t id)
     }
 
     hfp_hf_on_codec_changed(&conn->addr, &cfg);
+    free(p);
 }
 
-static void zblue_on_current_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_current_call* call)
+static void zblue_on_codec_negotiate(struct bt_hfp_hf* hf, uint8_t id)
 {
-    bt_hfp_hf_connection_t* sal_conn = find_connection_by_hf(hf);
+    hf_u8_event_params_t* p = malloc(sizeof(hf_u8_event_params_t));
+    if (!p) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return;
+    }
+
+    p->hf = hf;
+    p->value = id;
+    do_in_service_loop(hf_codec_negotiate_handler, p);
+}
+
+static void hf_current_call_handler(void* data)
+{
+    hf_current_call_params_t* p = (hf_current_call_params_t*)data;
+    bt_hfp_hf_connection_t* sal_conn = find_connection_by_hf(p->hf);
+
     if (!sal_conn) {
         BT_LOGE("%s, Failed to find connection", __func__);
+        free(p);
         return;
     }
 
-    if (!call) {
+    if (!p->has_call) {
         BT_ADDR_LOG("CLCC finished from %s", &sal_conn->addr);
         hfp_hf_on_current_call_response(&sal_conn->addr, 0, 0, 0, 0, NULL, 0);
+        free(p);
         return;
     }
 
+    struct bt_hfp_hf_current_call* call = &p->call_data;
     BT_LOGD("%s, CLCC %d: %s", __func__, call->index, call->number);
 
     bt_hfp_hf_call_info_t* sal_call = find_or_create_call(sal_conn, call->call);
@@ -1046,6 +1479,25 @@ static void zblue_on_current_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_current
     sal_call->state = status;
 
     hfp_hf_on_current_call_response(&sal_conn->addr, idx, dir, status, mpty, call->number, call->type);
+    free(p);
+}
+
+static void zblue_on_current_call(struct bt_hfp_hf* hf, struct bt_hfp_hf_current_call* call)
+{
+    hf_current_call_params_t* p = malloc(sizeof(hf_current_call_params_t));
+    if (!p) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return;
+    }
+
+    p->hf = hf;
+    if (call) {
+        p->has_call = true;
+        memcpy(&p->call_data, call, sizeof(struct bt_hfp_hf_current_call));
+    } else {
+        p->has_call = false;
+    }
+    do_in_service_loop(hf_current_call_handler, p);
 }
 
 static struct bt_hfp_hf_cb hf_callbacks = {
@@ -1172,9 +1624,13 @@ bt_status_t bt_sal_hfp_hf_connect_audio(bt_address_t* addr)
         return BT_STATUS_NOT_READY;
     }
 
-    if (!service_loop_work(sal_conn->hf, do_hf_sco_connect, NULL)) {
-        BT_LOGE("%s, service loop work submit failed.", __func__);
-        return BT_STATUS_FAIL;
+    int err = Z_API(bt_hfp_hf_audio_connect)(sal_conn->hf);
+    if (err == -EALREADY) {
+        BT_LOGW("%s, Audio already connected", __func__);
+        hfp_hf_on_audio_connection_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_CONNECTED, 0);
+    } else if (err) {
+        BT_LOGE("%s, Failed to connect HFP HF SCO, err=%d", __func__, err);
+        hfp_hf_on_audio_connection_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_DISCONNECTED, 0);
     }
 
     return BT_STATUS_SUCCESS;
@@ -1200,9 +1656,11 @@ bt_status_t bt_sal_hfp_hf_disconnect_audio(bt_address_t* addr)
         return BT_STATUS_PARM_INVALID;
     }
 
-    if (!service_loop_work(sal_conn->sco_conn, do_hf_sco_disconnect, NULL)) {
-        BT_LOGE("%s, service loop work submit failed.", __func__);
-        return BT_STATUS_FAIL;
+    int err = bt_conn_disconnect(sal_conn->sco_conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+    if (err) {
+        sal_conn->sco_conn = NULL;
+        BT_LOGE("%s, Failed to disconnect HFP HF SCO, err=%d", __func__, err);
+        hfp_hf_on_audio_connection_state_changed(&sal_conn->addr, HFP_AUDIO_STATE_DISCONNECTED, 0);
     }
 
     return BT_STATUS_SUCCESS;
