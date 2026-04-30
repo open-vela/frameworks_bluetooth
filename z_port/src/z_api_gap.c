@@ -1674,8 +1674,10 @@ static int unpair_in_ipc(void *arg)
     unpair_args_t *a = (unpair_args_t *)arg;
     bt_instance_t *ins = get_ins();
     if (!ins) return -EIO;
-    if (a->has_addr)
+    if (a->has_addr) {
         bt_device_remove_bond(ins, &a->fw_addr, BT_TRANSPORT_BLE);
+        bt_device_remove_bond(ins, &a->fw_addr, BT_TRANSPORT_BREDR);
+    }
     return 0;
 }
 
