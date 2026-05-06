@@ -721,6 +721,7 @@ endif # BLUETOOTH_GATT_SERVER
 menuconfig BLUETOOTH_SPP
 	bool "Serial Port Profile (SPP)"
 	default n
+	select BT_RFCOMM
 
 if BLUETOOTH_SPP
 config BLUETOOTH_SPP_MAX_CONNECTIONS
