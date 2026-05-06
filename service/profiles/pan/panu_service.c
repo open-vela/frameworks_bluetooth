@@ -29,6 +29,7 @@
 #include "bt_list.h"
 #include "callbacks_list.h"
 #include "netutils/netlib.h"
+#include "pan_service.h"
 #include "power_manager.h"
 #include "sal_pan_interface.h"
 #include "service_loop.h"
