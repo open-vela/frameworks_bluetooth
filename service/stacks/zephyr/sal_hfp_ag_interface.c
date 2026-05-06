@@ -1632,6 +1632,24 @@ static void ag_codec_negotiation_handler(void* data)
         return;
     }
     hfp_ag_on_codec_changed(&sal_conn->addr, &cfg);
+
+    /* When HF changes AT+BAC mid-negotiation, zblue notifies codec_negotiate
+     * with err=-EAGAIN to indicate "restart codec connection". Re-invoke
+     * bt_hfp_ag_audio_connect with the new preferred codec (CVSD fallback)
+     * so zblue resends +BCS:<new_codec>, otherwise HFP AG stays stuck in
+     * AudioConnecting state until SLC times out. */
+    if (params->err == -EAGAIN) {
+        int err_ac;
+        BT_LOGW("%s, codec negotiation restart requested, re-sending +BCS with codec=%d",
+            __func__, sal_conn->preferred_codec);
+        err_ac = Z_API(bt_hfp_ag_audio_connect)(params->ag, sal_conn->preferred_codec);
+        if (err_ac && err_ac != -EALREADY) {
+            BT_LOGE("%s, bt_hfp_ag_audio_connect retry failed: %d", __func__, err_ac);
+            hfp_ag_on_audio_state_changed(&sal_conn->addr,
+                HFP_AUDIO_STATE_DISCONNECTED, 0xFFFF);
+        }
+    }
+
     free(params);
 }
 
