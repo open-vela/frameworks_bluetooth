@@ -67,10 +67,11 @@ struct h4_data {
     pthread_mutex_t mutex;
     bt_hci_recv_t recv;
     void* hci_data;
+    pthread_t rx_thread;
+    bool rx_thread_running;
 };
 
 static const struct device* bt_dev;
-static service_poll_t* hci_handle;
 
 static void hci_remove_recv(void* data);
 
@@ -305,22 +306,68 @@ void bt_sal_hci_transport_cleanup(void)
 static void hci_remove_recv(void* data)
 {
     (void)data;
-
     BT_LOGD("%s", __func__);
-    service_loop_remove_poll(hci_handle);
-    hci_handle = NULL;
 }
 
-static void hci_poll_recv(service_poll_t* poll, int revent, void* userdata)
+static int h4_close(const struct device* dev)
 {
-    (void)poll;
-    (void)userdata;
+    struct h4_data* h4 = dev->data;
 
-    if (revent & (POLL_ERROR | POLL_DISCONNECT))
-        hci_remove_recv(NULL);
+    /* Stop the dedicated HCI RX thread. */
+    if (h4->rx_thread_running) {
+        h4->rx_thread_running = false;
+        pthread_join(h4->rx_thread, NULL);
+    }
 
-    if (revent & POLL_READABLE)
-        bt_sal_hci_transport_recv();
+    close(h4->fd);
+    h4->fd = -1;
+
+    return 0;
+}
+
+static void* hci_rx_thread(void* arg)
+{
+    struct h4_data* h4 = (struct h4_data*)arg;
+    struct pollfd pfd;
+
+    BT_LOGI("HCI RX thread started, fd=%d", h4->fd);
+
+    pthread_setname_np(pthread_self(), "bt_hci_rx");
+
+    pfd.fd = h4->fd;
+    pfd.events = POLLIN;
+
+    while (h4->rx_thread_running) {
+        int ret;
+
+        pfd.revents = 0;
+        ret = poll(&pfd, 1, 500);
+        if (ret < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            BT_LOGE("HCI RX poll error: errno=%d", errno);
+            break;
+        }
+
+        if (ret == 0) {
+            /* Timeout, check running flag and continue */
+            continue;
+        }
+
+        if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) {
+            BT_LOGE("HCI RX poll hangup: revents=0x%04x", pfd.revents);
+            break;
+        }
+
+        if (pfd.revents & POLLIN) {
+            bt_sal_hci_transport_recv();
+        }
+    }
+
+    BT_LOGI("HCI RX thread exiting");
+    h4->rx_thread_running = false;
+    return NULL;
 }
 
 static int h4_open(const struct device* dev, bt_hci_recv_t recv, void* hci_data)
@@ -355,23 +402,25 @@ static int h4_open(const struct device* dev, bt_hci_recv_t recv, void* hci_data)
     bt_dev = dev;
     BT_LOGE("H4: %s opened as fd:%d", CONFIG_BT_UART_ON_DEV_NAME, h4->fd);
 
-    hci_handle = service_loop_poll_fd(h4->fd, POLL_READABLE, hci_poll_recv, NULL);
-    if (!hci_handle) {
-        BT_LOGD("hci fd:%d add poll failed", h4->fd);
-        return -1;
+    /* Use a dedicated thread for HCI reception instead of polling via
+     * service_loop. The bluetoothd service_loop is a single-threaded libuv
+     * loop; if any handler running on it (e.g. HFP state machine) calls
+     * bt_hci_cmd_send_sync, the thread blocks on the semaphore and HCI
+     * events polled on the same loop cannot be dispatched, causing
+     * Command Status/Complete to be deferred by the full 10s command
+     * timeout. A dedicated RX thread processes HCI events unconditionally
+     * and calls back into zblue (which signals the waiter), allowing
+     * bluetoothd to resume promptly.
+     */
+    h4->rx_thread_running = true;
+    ret = pthread_create(&h4->rx_thread, NULL, hci_rx_thread, h4);
+    if (ret != 0) {
+        BT_LOGE("Failed to start HCI RX thread: %d", ret);
+        h4->rx_thread_running = false;
+        close(fd);
+        h4->fd = -1;
+        return -ret;
     }
-
-    return 0;
-}
-
-static int h4_close(const struct device* dev)
-{
-    struct h4_data* h4 = dev->data;
-
-    do_in_service_loop_sync(hci_remove_recv, NULL);
-
-    close(h4->fd);
-    h4->fd = -1;
 
     return 0;
 }
