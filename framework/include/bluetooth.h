@@ -488,12 +488,6 @@ typedef struct bt_instance {
     callbacks_list_t* avrcp_target_callbacks;
     callbacks_list_t* avrcp_control_callbacks;
     callbacks_list_t* cs_callbacks;
-    void* adapter_cookie;
-    void* a2dp_sink_cookie;
-    void* a2dp_source_cookie;
-    void* avrcp_target_cookie;
-    void* avrcp_control_cookie;
-    void* cs_cookie;
 
     callbacks_list_t* hfp_ag_callbacks;
     callbacks_list_t* hfp_hf_callbacks;
@@ -501,17 +495,24 @@ typedef struct bt_instance {
     callbacks_list_t* spp_callbacks;
     callbacks_list_t* hidd_callbacks;
     callbacks_list_t* l2cap_callbacks;
+
+    bt_list_t* gattc_remote_list;
+    bt_list_t* gatts_remote_list;
+    void* priv;
+#endif
+
+    void* adapter_cookie;
+    void* a2dp_sink_cookie;
+    void* a2dp_source_cookie;
+    void* avrcp_target_cookie;
+    void* avrcp_control_cookie;
+    void* cs_cookie;
     void* hfp_ag_cookie;
     void* hfp_hf_cookie;
     void* panu_cookie;
     void* spp_cookie;
     void* hidd_cookie;
     void* l2cap_cookie;
-
-    bt_list_t* gattc_remote_list;
-    bt_list_t* gatts_remote_list;
-    void* priv;
-#endif
 } bt_instance_t;
 
 /**

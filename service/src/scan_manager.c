@@ -25,7 +25,9 @@
 #include "bt_hash.h"
 #include "bt_le_scan.h"
 #include "bt_list.h"
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_SOCKET_IPC
 #include "bt_socket.h"
+#endif
 #include "bt_time.h"
 #include "sal_interface.h"
 #include "scan_filter.h"
@@ -249,10 +251,12 @@ static void notify_scanners_scan_result(void* data)
     scanner_device_t* device;
     uint32_t timestamp_ms;
 
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_SOCKET_IPC
     if (bt_socket_server_is_busy()) {
         do_in_service_loop_deffered(notify_scanners_scan_result, data, true);
         return;
     }
+#endif
 
     timestamp_ms = bt_get_os_timestamp_ms();
     list_for_every(&scanner_manager.scanning_list, node)
