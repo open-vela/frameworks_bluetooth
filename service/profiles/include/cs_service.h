@@ -665,7 +665,7 @@ typedef struct {
      * @brief Unregister the cs event callback
      */
     bool (*unregister_callbacks)(void** remote, void* cookie);
-    bt_status_t (*start_distance_measurement)(bt_distance_measurement_params_t* params);
+    bt_status_t (*start_distance_measurement)(const bt_distance_measurement_params_t* params);
 
     bt_status_t (*stop_distance_measurement)(bt_address_t* addr, int method, bool timeout);
 

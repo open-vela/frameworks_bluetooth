@@ -42,7 +42,7 @@ bool BTSYMBOLS(bt_cs_unregister_callbacks)(bt_instance_t* ins, void* cookie)
     return profile->unregister_callbacks(NULL, cookie);
 }
 
-bt_status_t BTSYMBOLS(bt_cs_start_distance_measurement)(bt_instance_t* ins, bt_distance_measurement_params_t* params)
+bt_status_t BTSYMBOLS(bt_cs_start_distance_measurement)(bt_instance_t* ins, const bt_distance_measurement_params_t* params)
 {
     bt_cs_interface_t* profile = get_profile_service();
 

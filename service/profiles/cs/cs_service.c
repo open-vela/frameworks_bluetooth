@@ -232,7 +232,7 @@ static bool cs_unregister_callbacks(void** remote, void* cookie)
     return bt_remote_callbacks_unregister(g_cs_service.callbacks, remote, cookie);
 }
 
-static bt_status_t cs_start_distance_measurement(bt_distance_measurement_params_t* params)
+static bt_status_t cs_start_distance_measurement(const bt_distance_measurement_params_t* params)
 {
     BT_LOGD("cs_start_distance_measurement");
     switch (params->method) {
