@@ -35,6 +35,16 @@
 #ifdef CONFIG_BLUETOOTH_GATT_CLIENT
 #define STACK_CALL(func) zblue_##func
 
+#ifndef CONFIG_GATT_CLIENT_SERVICE_MAX
+#define CONFIG_GATT_CLIENT_SERVICE_MAX 20
+#endif
+#ifndef CONFIG_GATT_CLIENT_ELEMENT_MAX
+#define CONFIG_GATT_CLIENT_ELEMENT_MAX 200
+#endif
+#ifndef CONFIG_GATT_CLIENT_CHAR_PER_SERVICE_MAX
+#define CONFIG_GATT_CLIENT_CHAR_PER_SERVICE_MAX 100
+#endif
+
 typedef void (*sal_func_t)(void* args);
 
 typedef struct {
