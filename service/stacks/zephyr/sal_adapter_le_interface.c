@@ -149,7 +149,9 @@ static struct bt_conn_cb g_conn_cbs = {
 };
 
 static struct bt_conn_auth_info_cb g_conn_auth_info_cbs = {
+#ifdef CONFIG_BT_SMP
     .pairing_complete_ctkd = zblue_on_pairing_complete_ctkd,
+#endif
     .pairing_complete = zblue_on_pairing_complete,
     .pairing_failed = zblue_on_pairing_failed,
     .bond_deleted = zblue_on_bond_deleted,
@@ -325,7 +327,9 @@ static int zblue_on_ltk_notify(uint8_t dev_id, uint8_t id, bt_addr_le_t* addr, c
     /* smp[38 ~ 53] IRK */
     memcpy(&prop->smp_key[38], keys->irk.val, 16);
     /* smp[54 ~ 69] CSRK(remote) */
+#ifdef CONFIG_BT_SIGNING
     memcpy(&prop->smp_key[54], keys->remote_csrk.val, 16);
+#endif
 
     // smp[70 ~ 77] addr { addr[6], type[1], cap[1]/id_num[1] };
     memcpy(&prop->smp_key[70], prop->addr.addr, sizeof(prop->addr.addr));
@@ -334,7 +338,9 @@ static int zblue_on_ltk_notify(uint8_t dev_id, uint8_t id, bt_addr_le_t* addr, c
     /* smp[78 ~ 79] RFU/keys; */
     memcpy(&prop->smp_key[78], &keys->keys, 2);
 
+#ifdef CONFIG_BT_SIGNING
     memcpy(prop->local_csrk, keys->local_csrk.val, 16);
+#endif
 
     adapter_on_le_bonded_device_update(prop, 1);
     free(prop);
@@ -387,10 +393,12 @@ static int zblue_on_ltk_load(bt_addr_le_t* addr, uint8_t* key_value, uint8_t val
 
     memcpy(keys->irk.rpa.val, remote_addr->addr, sizeof(remote_addr->addr));
 
+#ifdef CONFIG_BT_SIGNING
     memcpy(keys->remote_csrk.val, &smp_data[54], 16);
 
     if (local_csrk)
         memcpy(keys->local_csrk.val, local_csrk, 16);
+#endif
 
     memcpy(key_value, keys->storage_start, value_len);
 
