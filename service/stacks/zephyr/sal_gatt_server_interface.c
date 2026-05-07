@@ -190,6 +190,9 @@ static struct bt_gatt_service server_svcs[CONFIG_GATT_SERVER_MAX_SERVICES];
 static struct bt_gatt_attr server_db[CONFIG_GATT_SERVER_MAX_ATTRIBUTES];
 static sal_gatt_sdp_record_t gatt_sdp_records[CONFIG_GATT_SERVER_MAX_SERVICES];
 
+/* Forward declarations */
+static sal_gatt_sdp_record_t* get_sdp_from_service(struct bt_gatt_service* srv);
+
 static int find_free_service_index(void)
 {
     int i;
@@ -1168,6 +1171,39 @@ bt_status_t bt_sal_gatt_server_enable(void)
 
 bt_status_t bt_sal_gatt_server_disable(void)
 {
+    size_t i;
+
+    /* Unregister and clean up all registered GATT services to prevent
+     * server_db/server_svcs resource exhaustion across disable/enable cycles.
+     */
+    for (i = 0; i < ARRAY_SIZE(server_svcs); i++) {
+        struct bt_gatt_service* svc = &server_svcs[i];
+        sal_gatt_sdp_record_t* record;
+
+        if (!svc->attrs) {
+            continue;
+        }
+
+        record = get_sdp_from_service(svc);
+        if (record && record->record) {
+            bt_sdp_unregister_service(record->record);
+            gatt_sdp_delete_record(record->record);
+        }
+
+        bt_gatt_service_unregister(svc);
+    }
+
+    /* Free all attribute resources in server_db */
+    for (i = 0; i < attr_count; i++) {
+        free(server_db[i].user_data);
+        free((void*)server_db[i].uuid);
+    }
+
+    memset(server_db, 0, sizeof(server_db));
+    memset(server_svcs, 0, sizeof(server_svcs));
+    attr_count = 0;
+    svc_attr_count = 0;
+
     bt_gatt_cb_unregister(&zblue_gatt_callbacks);
     bt_att_conn_cb_unregister(&zblue_att_callbacks);
 
