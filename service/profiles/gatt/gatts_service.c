@@ -472,12 +472,13 @@ static bt_status_t if_gatts_shutdown(profile_on_shutdown_t cb)
         return BT_STATUS_SUCCESS;
     }
 
+    bt_sal_gatt_server_disable();
+
     bt_list_free(manager->services);
     manager->services = NULL;
     bt_list_free(manager->pend_ops);
     manager->pend_ops = NULL;
     manager->started = false;
-    bt_sal_gatt_server_disable();
     cb(PROFILE_GATTS, true);
 
     return BT_STATUS_SUCCESS;
