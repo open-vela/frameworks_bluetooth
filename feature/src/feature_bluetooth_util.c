@@ -82,7 +82,7 @@ char* StringToFtString(const char* str)
     }
     int len = strlen(str);
     char* ftStr = (char*)FeatureMalloc(len + 1, FT_CHAR);
-    strcpy(ftStr, str);
+    strlcpy(ftStr, str, len + 1);
     return ftStr;
 }
 
