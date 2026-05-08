@@ -603,7 +603,7 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
                 HFP_AG_CALL_STATE_ACTIVE, HFP_CALL_MODE_VOICE, HFP_CALL_MPTY_TYPE_SINGLE,
                 HFP_CALL_ADDRTYPE_UNKNOWN, HFP_FAKE_NUMBER);
         } else {
-#ifdef CONFIG_PHONE_SERVICE
+#if defined(CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY) && defined(CONFIG_PHONE_SERVICE)
             tele_service_get_current_calls(&agsm->addr);
 #endif
         }
@@ -776,39 +776,53 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
         }
         break;
     case AG_STACK_EVENT_AT_COPS_REQUEST: {
+#ifdef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
         /* system call interface */
         char* operation_name = NULL;
         operation_name = tele_service_get_operator();
         BT_LOGD("Operation name:%s", operation_name);
         bt_sal_hfp_ag_cops_response(&agsm->addr, operation_name, operation_name ? strlen(operation_name) : 0);
+#endif
     } break;
     case AG_STACK_EVENT_BATTERY_UPDATE:
         ag_service_notify_hf_battery_update(&agsm->addr, data->valueint1);
         break;
     case AG_STACK_EVENT_ANSWER_CALL:
+#ifdef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
         /* system call interface */
         tele_service_answer_call();
+#endif
         ag_service_notify_call_answered(&agsm->addr);
         break;
     case AG_STACK_EVENT_REJECT_CALL:
+#ifdef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
         /* system call interface */
         tele_service_reject_call();
+#endif
         ag_service_notify_call_rejected(&agsm->addr);
         break;
     case AG_STACK_EVENT_HANGUP_CALL:
+#ifdef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
         /* system call interface */
         tele_service_hangup_call();
+#endif
         ag_service_notify_call_hangup(&agsm->addr);
         break;
     case AG_STACK_EVENT_DIAL_NUMBER: {
         set_virtual_call_started(sm, false);
         if (data->string1) {
             BT_LOGD("Dial number:%s", data->string1);
+#ifdef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
             /* system call interface */
             if (tele_service_dial_number(data->string1) != BT_STATUS_SUCCESS)
                 bt_sal_hfp_ag_dial_response(&agsm->addr, HFP_ATCMD_RESULT_ERROR);
             else
                 agsm->dial_out_timer = service_loop_timer_no_repeating(5000, dial_out_timeout, NULL);
+#endif
+            /* When LOCAL_TELEPHONY=n the application (AutoPTS) is expected to
+             * respond via bt_hfp_ag_phone_state_change(DIALING, ..., number),
+             * which will drive the outgoing-call flow inside zblue.
+             */
         } else {
             BT_LOGD("Redial last number, currently not supported");
             bt_sal_hfp_ag_dial_response(&agsm->addr, HFP_ATCMD_RESULT_ERROR);
@@ -820,8 +834,10 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
         break;
     case AG_STACK_EVENT_CALL_CONTROL: {
         hfp_call_control_t chld = data->valueint1;
+#ifdef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
         /* system call interface */
         tele_service_call_control(chld);
+#endif
     } break;
     case AG_STACK_EVENT_AT_COMMAND: {
         const char* at_cmd = data->string1;
@@ -849,7 +865,7 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
                 HFP_AG_CALL_STATE_ACTIVE, HFP_CALL_MODE_VOICE, HFP_CALL_MPTY_TYPE_SINGLE,
                 HFP_CALL_ADDRTYPE_UNKNOWN, HFP_FAKE_NUMBER);
         } else {
-#ifdef CONFIG_LIB_DBUS
+#if defined(CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY) && defined(CONFIG_LIB_DBUS)
             tele_service_get_current_calls(&agsm->addr);
 #endif
         }
@@ -1031,7 +1047,6 @@ static bool is_virtual_call_allowed(state_machine_t* sm)
 {
     ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     uint32_t state;
-    uint8_t num_active, num_held, call_state;
 
     state = ag_state_machine_get_state(agsm);
     if (state != HFP_AG_STATE_CONNECTED)
@@ -1040,10 +1055,18 @@ static bool is_virtual_call_allowed(state_machine_t* sm)
     if (agsm->virtual_call_started)
         return false;
 
-    tele_service_get_phone_state(&num_active, &num_held, &call_state);
-    if (num_active || num_held
-        || (call_state != HFP_AG_CALL_STATE_IDLE && call_state != HFP_AG_CALL_STATE_DISCONNECTED))
-        return false;
+#ifdef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+    {
+        uint8_t num_active, num_held, call_state;
+        tele_service_get_phone_state(&num_active, &num_held, &call_state);
+        if (num_active || num_held
+            || (call_state != HFP_AG_CALL_STATE_IDLE && call_state != HFP_AG_CALL_STATE_DISCONNECTED))
+            return false;
+    }
+#endif /* else: without local telephony we have no way to query the    \
+        * call state here; assume no background call and allow virtual \
+        * call to proceed.                                             \
+        */
 
     return true;
 }
