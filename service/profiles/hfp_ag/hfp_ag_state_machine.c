@@ -820,6 +820,8 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
         operation_name = tele_service_get_operator();
         BT_LOGD("Operation name:%s", operation_name);
         bt_sal_hfp_ag_cops_response(&agsm->addr, operation_name, operation_name ? strlen(operation_name) : 0);
+#else
+        ag_service_notify_cops_req(&agsm->addr);
 #endif
     } break;
     case AG_STACK_EVENT_BATTERY_UPDATE:
@@ -908,6 +910,8 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
 #ifdef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
         /* system call interface */
         tele_service_call_control(chld);
+#else
+        ag_service_notify_call_control(&agsm->addr, (uint8_t)chld);
 #endif
     } break;
     case AG_STACK_EVENT_AT_COMMAND: {
@@ -920,11 +924,17 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
         }
     } break;
     case AG_STACK_EVENT_SEND_DTMF:
+#ifndef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+        ag_service_notify_dtmf(&agsm->addr, (uint8_t)data->valueint1);
+#endif
         break;
     case AG_STACK_EVENT_NREC_REQ:
         /* disable local ANC */
         if (data->valueint1 == 0)
             bt_media_set_anc_enable(false);
+#ifndef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+        ag_service_notify_nrec_req(&agsm->addr, data->valueint1 != 0);
+#endif
         break;
     case AG_OFFLOAD_STOP_EVT:
         audio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);

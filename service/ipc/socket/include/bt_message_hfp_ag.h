@@ -52,6 +52,10 @@ BT_HFP_AG_MESSAGE_START,
     BT_HFP_AG_ON_AT_COMMAND_RECEIVED,
     BT_HFP_AG_ON_VENDOR_SPECIFIC_AT_COMMAND_RECEIVED,
     BT_HFP_AG_ON_CLCC_COMMAND_RECEIVED,
+    BT_HFP_AG_ON_CALL_CONTROL,
+    BT_HFP_AG_ON_DTMF,
+    BT_HFP_AG_ON_NREC_REQ,
+    BT_HFP_AG_ON_COPS_REQ,
     BT_HFP_AG_ON_REDIAL_REQ,
     BT_HFP_AG_CALLBACK_END,
 #endif
@@ -237,6 +241,25 @@ BT_HFP_AG_MESSAGE_START,
         struct {
             bt_address_t addr;
         } _on_cind_cmd_received;
+
+        struct {
+            bt_address_t addr;
+            uint8_t chld;
+        } _on_call_control;
+
+        struct {
+            bt_address_t addr;
+            uint8_t code;
+        } _on_dtmf;
+
+        struct {
+            bt_address_t addr;
+            uint8_t enable;
+        } _on_nrec_req;
+
+        struct {
+            bt_address_t addr;
+        } _on_cops_req;
 
         struct {
             bt_address_t addr;

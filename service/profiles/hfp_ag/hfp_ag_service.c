@@ -919,6 +919,30 @@ void ag_service_notify_cind_cmd(bt_address_t* addr)
 }
 
 #ifndef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+void ag_service_notify_call_control(bt_address_t* addr, uint8_t chld)
+{
+    BT_LOGD("%s, chld=%" PRIu8, __func__, chld);
+    AG_CALLBACK_FOREACH_SAFE(g_ag_service.callbacks, call_control_cb, addr, chld);
+}
+
+void ag_service_notify_dtmf(bt_address_t* addr, uint8_t code)
+{
+    BT_LOGD("%s, code=0x%02x", __func__, code);
+    AG_CALLBACK_FOREACH_SAFE(g_ag_service.callbacks, dtmf_cb, addr, code);
+}
+
+void ag_service_notify_nrec_req(bt_address_t* addr, bool enable)
+{
+    BT_LOGD("%s, enable=%d", __func__, (int)enable);
+    AG_CALLBACK_FOREACH_SAFE(g_ag_service.callbacks, nrec_req_cb, addr, enable);
+}
+
+void ag_service_notify_cops_req(bt_address_t* addr)
+{
+    BT_LOGD("%s", __func__);
+    AG_CALLBACK_FOREACH_SAFE(g_ag_service.callbacks, cops_req_cb, addr);
+}
+
 void ag_service_notify_redial_req(bt_address_t* addr)
 {
     BT_LOGD("%s", __func__);

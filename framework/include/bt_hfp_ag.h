@@ -340,6 +340,50 @@ typedef void (*hfp_ag_clcc_cmd_received_callback)(void* cookie, bt_address_t* ad
 typedef void (*hfp_ag_cind_cmd_received_callback)(void* cookie, bt_address_t* addr);
 
 /**
+ * @brief HFP call control (AT+CHLD) callback
+ *
+ * This callback is used to notify the application of the call-control command
+ * (AT+CHLD=<n>). It is only invoked when local telephony handling is disabled
+ * (CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY is not set), so the application is
+ * expected to drive the multiparty-call state machine itself (e.g. via
+ * bt_hfp_ag_phone_state_change()).
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer HF device.
+ * @param chld - CHLD value (0..4, see HFP specification).
+ */
+typedef void (*hfp_ag_call_control_callback)(void* cookie, bt_address_t* addr, uint8_t chld);
+
+/**
+ * @brief HFP DTMF (AT+VTS) callback
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer HF device.
+ * @param code - single DTMF code ('0'..'9', '*', '#', 'A'..'D').
+ */
+typedef void (*hfp_ag_dtmf_callback)(void* cookie, bt_address_t* addr, uint8_t code);
+
+/**
+ * @brief HFP NREC (AT+NREC) callback
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer HF device.
+ * @param enable - true if HF requested to enable NREC, false to disable.
+ */
+typedef void (*hfp_ag_nrec_req_callback)(void* cookie, bt_address_t* addr, bool enable);
+
+/**
+ * @brief HFP COPS (AT+COPS?) query callback
+ *
+ * This callback is used to let the application respond to an operator-name
+ * query. Only invoked when local telephony handling is disabled.
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer HF device.
+ */
+typedef void (*hfp_ag_cops_req_callback)(void* cookie, bt_address_t* addr);
+
+/**
  * @brief HFP redial request (AT+BLDN) callback
  *
  * This callback is used to notify the application that the HF issued
@@ -379,6 +423,10 @@ typedef struct
      * hfp_ag_callbacks_t still work because the service layer checks
      * `size` before dispatching into the fields below.
      */
+    hfp_ag_call_control_callback call_control_cb;
+    hfp_ag_dtmf_callback dtmf_cb;
+    hfp_ag_nrec_req_callback nrec_req_cb;
+    hfp_ag_cops_req_callback cops_req_cb;
     hfp_ag_redial_req_callback redial_req_cb;
 } hfp_ag_callbacks_t;
 

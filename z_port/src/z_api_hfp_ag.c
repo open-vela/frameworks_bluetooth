@@ -206,6 +206,48 @@ static void ag_cind_cmd_cb(void* cookie, bt_address_t* addr)
  * outside; with local telephony enabled the AG service handles the AT
  * commands internally and never invokes these callbacks.
  */
+#ifndef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+extern void btp_hfp_ag_call_control_cb(const uint8_t* addr, uint8_t chld);
+extern void btp_hfp_ag_dtmf_cb(const uint8_t* addr, uint8_t code);
+extern void btp_hfp_ag_nrec_cb(const uint8_t* addr, uint8_t enable);
+extern void btp_hfp_ag_cops_request_cb(const uint8_t* addr);
+
+static void ag_call_control_cb(void* cookie, bt_address_t* addr, uint8_t chld)
+{
+    uint8_t z_addr[7];
+
+    _info("[z_api_hfp_ag] call_control_cb: chld=%u\n", chld);
+    fw_addr_to_zephyr(addr, 0x00, z_addr);
+    btp_hfp_ag_call_control_cb(z_addr, chld);
+}
+
+static void ag_dtmf_cb(void* cookie, bt_address_t* addr, uint8_t code)
+{
+    uint8_t z_addr[7];
+
+    _info("[z_api_hfp_ag] dtmf_cb: code=0x%02x\n", code);
+    fw_addr_to_zephyr(addr, 0x00, z_addr);
+    btp_hfp_ag_dtmf_cb(z_addr, code);
+}
+
+static void ag_nrec_req_cb(void* cookie, bt_address_t* addr, bool enable)
+{
+    uint8_t z_addr[7];
+
+    _info("[z_api_hfp_ag] nrec_req_cb: enable=%d\n", (int)enable);
+    fw_addr_to_zephyr(addr, 0x00, z_addr);
+    btp_hfp_ag_nrec_cb(z_addr, enable ? 1 : 0);
+}
+
+static void ag_cops_req_cb(void* cookie, bt_address_t* addr)
+{
+    uint8_t z_addr[7];
+
+    _info("[z_api_hfp_ag] cops_req_cb\n");
+    fw_addr_to_zephyr(addr, 0x00, z_addr);
+    btp_hfp_ag_cops_request_cb(z_addr);
+}
+
 extern void btp_hfp_ag_redial_req_cb(const uint8_t* addr);
 
 static void ag_redial_req_cb(void* cookie, bt_address_t* addr)
@@ -234,6 +276,10 @@ static const hfp_ag_callbacks_t ag_cbs = {
     .clcc_cmd_cb = ag_clcc_cmd_cb,
     .cind_cmd_cb = ag_cind_cmd_cb,
 #ifndef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+    .call_control_cb = ag_call_control_cb,
+    .dtmf_cb = ag_dtmf_cb,
+    .nrec_req_cb = ag_nrec_req_cb,
+    .cops_req_cb = ag_cops_req_cb,
     .redial_req_cb = ag_redial_req_cb,
 #endif
 };

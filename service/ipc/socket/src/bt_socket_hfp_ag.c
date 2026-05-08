@@ -211,6 +211,49 @@ static void on_cind_cmd_received_cb(void* cookie, bt_address_t* addr)
 }
 
 #ifndef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+static void on_call_control_cb(void* cookie, bt_address_t* addr, uint8_t chld)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_instance_t* ins = cookie;
+
+    memcpy(&packet.hfp_ag_cb._on_call_control.addr, addr, sizeof(bt_address_t));
+    packet.hfp_ag_cb._on_call_control.chld = chld;
+
+    bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_CALL_CONTROL);
+}
+
+static void on_dtmf_cb(void* cookie, bt_address_t* addr, uint8_t code)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_instance_t* ins = cookie;
+
+    memcpy(&packet.hfp_ag_cb._on_dtmf.addr, addr, sizeof(bt_address_t));
+    packet.hfp_ag_cb._on_dtmf.code = code;
+
+    bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_DTMF);
+}
+
+static void on_nrec_req_cb(void* cookie, bt_address_t* addr, bool enable)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_instance_t* ins = cookie;
+
+    memcpy(&packet.hfp_ag_cb._on_nrec_req.addr, addr, sizeof(bt_address_t));
+    packet.hfp_ag_cb._on_nrec_req.enable = enable ? 1 : 0;
+
+    bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_NREC_REQ);
+}
+
+static void on_cops_req_cb(void* cookie, bt_address_t* addr)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_instance_t* ins = cookie;
+
+    memcpy(&packet.hfp_ag_cb._on_cops_req.addr, addr, sizeof(bt_address_t));
+
+    bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_COPS_REQ);
+}
+
 static void on_redial_req_cb(void* cookie, bt_address_t* addr)
 {
     bt_message_packet_t packet = { 0 };
@@ -238,6 +281,10 @@ const static hfp_ag_callbacks_t g_hfp_ag_socket_cbs = {
     .clcc_cmd_cb = on_clcc_cmd_received_cb,
     .cind_cmd_cb = on_cind_cmd_received_cb,
 #ifndef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+    .call_control_cb = on_call_control_cb,
+    .dtmf_cb = on_dtmf_cb,
+    .nrec_req_cb = on_nrec_req_cb,
+    .cops_req_cb = on_cops_req_cb,
     .redial_req_cb = on_redial_req_cb,
 #endif
 };
@@ -481,6 +528,29 @@ int bt_socket_client_hfp_ag_callback(service_poll_t* poll,
             &packet->hfp_ag_cb._on_clcc_cmd_received.addr);
         break;
 #ifndef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+    case BT_HFP_AG_ON_CALL_CONTROL:
+        CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
+            call_control_cb,
+            &packet->hfp_ag_cb._on_call_control.addr,
+            packet->hfp_ag_cb._on_call_control.chld);
+        break;
+    case BT_HFP_AG_ON_DTMF:
+        CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
+            dtmf_cb,
+            &packet->hfp_ag_cb._on_dtmf.addr,
+            packet->hfp_ag_cb._on_dtmf.code);
+        break;
+    case BT_HFP_AG_ON_NREC_REQ:
+        CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
+            nrec_req_cb,
+            &packet->hfp_ag_cb._on_nrec_req.addr,
+            packet->hfp_ag_cb._on_nrec_req.enable != 0);
+        break;
+    case BT_HFP_AG_ON_COPS_REQ:
+        CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
+            cops_req_cb,
+            &packet->hfp_ag_cb._on_cops_req.addr);
+        break;
     case BT_HFP_AG_ON_REDIAL_REQ:
         CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
             redial_req_cb,

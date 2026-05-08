@@ -89,6 +89,10 @@ void ag_service_notify_vendor_specific_cmd(bt_address_t* addr, const char* comma
 void ag_service_notify_clcc_cmd(bt_address_t* addr);
 void ag_service_notify_cind_cmd(bt_address_t* addr);
 #ifndef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+void ag_service_notify_call_control(bt_address_t* addr, uint8_t chld);
+void ag_service_notify_dtmf(bt_address_t* addr, uint8_t code);
+void ag_service_notify_nrec_req(bt_address_t* addr, bool enable);
+void ag_service_notify_cops_req(bt_address_t* addr);
 void ag_service_notify_redial_req(bt_address_t* addr);
 #endif /* !CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY */
 
