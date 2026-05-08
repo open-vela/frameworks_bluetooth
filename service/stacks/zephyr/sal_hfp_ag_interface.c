@@ -398,16 +398,6 @@ static bt_status_t do_ag_sdp_discover(bt_controller_id_t id, bt_address_t* addr,
 
     BT_LOGD("%s, ACL conn found: %p", __func__, conn);
 
-    /* Request bonding/encryption before SDP to avoid ACL disconnect/reconnect
-     * when RFCOMM later triggers pairing. For BR/EDR, bt_conn_set_security
-     * is async: if already bonded it returns 0 immediately; if pairing is
-     * needed it starts authentication and returns 0 (pairing completes via
-     * security_changed callback). SDP works at L0 so it can proceed in
-     * parallel; by the time RFCOMM connects, pairing should be done. */
-    if (bt_conn_set_security(conn, BT_SECURITY_L2) < 0) {
-        BT_LOGW("%s, bt_conn_set_security failed, proceeding anyway", __func__);
-    }
-
     sal_conn = new_sal_connection(conn, NULL);
     if (!sal_conn) {
         BT_LOGE("%s, could not create new ag connection", __func__);
