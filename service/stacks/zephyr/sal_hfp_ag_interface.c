@@ -992,10 +992,10 @@ static int zblue_on_ag_get_ongoing_call(struct bt_hfp_ag* ag)
     }
 
     params->ag = ag;
+    /* bt_hfp_ag_get_conn() already increments the ACL ref count, so do not ref
+     * it again. The corresponding unref is performed by ag_get_ongoing_call_handler.
+     */
     params->conn = Z_API(bt_hfp_ag_get_conn)(ag);
-    if (params->conn) {
-        bt_conn_ref(params->conn);
-    }
     do_in_service_loop(ag_get_ongoing_call_handler, params);
     return 0;
 }
