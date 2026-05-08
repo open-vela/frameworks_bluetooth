@@ -340,6 +340,18 @@ typedef void (*hfp_ag_clcc_cmd_received_callback)(void* cookie, bt_address_t* ad
 typedef void (*hfp_ag_cind_cmd_received_callback)(void* cookie, bt_address_t* addr);
 
 /**
+ * @brief HFP redial request (AT+BLDN) callback
+ *
+ * This callback is used to notify the application that the HF issued
+ * AT+BLDN. The application should respond asynchronously via
+ * bt_hfp_ag_redial_response(result, number) to complete the AT flow.
+ * Only invoked when local telephony handling is disabled.
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer HF device.
+ */
+typedef void (*hfp_ag_redial_req_callback)(void* cookie, bt_address_t* addr);
+/**
  * @cond
  */
 
@@ -363,6 +375,11 @@ typedef struct
     hfp_ag_vend_spec_at_cmd_received_callback vender_specific_at_cmd_cb;
     hfp_ag_clcc_cmd_received_callback clcc_cmd_cb;
     hfp_ag_cind_cmd_received_callback cind_cmd_cb;
+    /* Appended in LOCAL_TELEPHONY=n scenarios. Older apps with a smaller
+     * hfp_ag_callbacks_t still work because the service layer checks
+     * `size` before dispatching into the fields below.
+     */
+    hfp_ag_redial_req_callback redial_req_cb;
 } hfp_ag_callbacks_t;
 
 /**
@@ -985,6 +1002,47 @@ int bt_hfp_ag_send_cind_response(bt_instance_t* ins, bt_address_t* addr, hfp_net
 bt_status_t BTSYMBOLS(bt_hfp_ag_send_cind_response)(bt_instance_t* ins, bt_address_t* addr,
     hfp_network_state_t network, hfp_call_t call, hfp_callheld_t call_held, hfp_callsetup_t call_setup,
     uint8_t signal, hfp_roaming_state_t roam, uint8_t battery);
+
+/**
+ * @brief Report the AT command result for a pending dial / BLDN.
+ *
+ * When LOCAL_TELEPHONY is disabled, the application (e.g. AutoPTS agent)
+ * informs the AG state machine of the result for an in-flight
+ * AT+ATD. A successful result causes the AG to emit OK to HF;
+ * a failure causes a CME ERROR response.
+ *
+ * @note This API is valid only when `CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY`
+ *       is **not** set. When local telephony is enabled the AG drives the
+ *       dial outcome itself from tele_service, and this call returns
+ *       `BT_STATUS_NOT_SUPPORTED`.
+ *
+ * @param ins - Bluetooth client instance.
+ * @param result - HFP_ATCMD_RESULT_OK / _TIMEOUT / _ERROR.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success,
+ *                       BT_STATUS_NOT_SUPPORTED if local telephony is enabled,
+ *                       a negated errno on other failures.
+ */
+bt_status_t BTSYMBOLS(bt_hfp_ag_dial_response)(bt_instance_t* ins, uint8_t result);
+
+/**
+ * @brief Report the AT+BLDN (redial) result to the AG.
+ *
+ * When LOCAL_TELEPHONY is disabled and the AG has notified the application
+ * via redial_req_cb, the application should call this API with the result
+ * and the resolved last-dialed number. On success the AG sends OK to HF;
+ * on error it sends CME ERROR.
+ *
+ * @note This API is valid only when `CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY`
+ *       is **not** set. Returns `BT_STATUS_NOT_SUPPORTED` otherwise.
+ *
+ * @param ins - Bluetooth client instance.
+ * @param result - HFP_ATCMD_RESULT_OK / _ERROR.
+ * @param number - last-dialed number string (only used on OK, may be NULL otherwise).
+ * @return bt_status_t - BT_STATUS_SUCCESS on success,
+ *                       BT_STATUS_NOT_SUPPORTED if local telephony is enabled,
+ *                       a negated errno on other failures.
+ */
+bt_status_t BTSYMBOLS(bt_hfp_ag_redial_response)(bt_instance_t* ins, uint8_t result, const char* number);
 #ifdef __cplusplus
 }
 #endif

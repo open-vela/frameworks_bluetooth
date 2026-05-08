@@ -201,6 +201,23 @@ static void ag_cind_cmd_cb(void* cookie, bt_address_t* addr)
     btp_hfp_ag_cind_request_cb(z_addr);
 }
 
+/* New: call-control / dtmf / nrec / cops callbacks for LOCAL_TELEPHONY=n.
+ * These BTP events exist only when AutoPTS drives the telephony state from
+ * outside; with local telephony enabled the AG service handles the AT
+ * commands internally and never invokes these callbacks.
+ */
+extern void btp_hfp_ag_redial_req_cb(const uint8_t* addr);
+
+static void ag_redial_req_cb(void* cookie, bt_address_t* addr)
+{
+    uint8_t z_addr[7];
+
+    _info("[z_api_hfp_ag] redial_req_cb\n");
+    fw_addr_to_zephyr(addr, 0x00, z_addr);
+    btp_hfp_ag_redial_req_cb(z_addr);
+}
+#endif /* !CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY */
+
 static const hfp_ag_callbacks_t ag_cbs = {
     .size = sizeof(hfp_ag_callbacks_t),
     .connection_state_cb = ag_connection_state_cb,
@@ -216,6 +233,9 @@ static const hfp_ag_callbacks_t ag_cbs = {
     .vender_specific_at_cmd_cb = NULL,
     .clcc_cmd_cb = ag_clcc_cmd_cb,
     .cind_cmd_cb = ag_cind_cmd_cb,
+#ifndef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+    .redial_req_cb = ag_redial_req_cb,
+#endif
 };
 
 /* ---- IPC dispatch functions ---- */
@@ -806,11 +826,66 @@ int z_bt_hfp_ag_cind_response(const uint8_t* addr,
     return z_api_dispatch(ag_cind_response_in_ipc, &args);
 }
 
+typedef struct {
+    uint8_t result;
+} ag_dial_response_args_t;
+
+#ifndef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+static int ag_dial_response_in_ipc(void* arg)
+{
+    ag_dial_response_args_t* a = (ag_dial_response_args_t*)arg;
+    bt_instance_t* ins = get_ins();
+    if (!ins)
+        return -EIO;
+    return (int)bt_hfp_ag_dial_response(ins, a->result);
+}
+#endif
+
 int z_bt_hfp_ag_dial_response(uint8_t result)
 {
-    /* TODO: bt_hfp_ag_dial_result() needs a public framework API.
-     * For now this is a stub that logs the call. */
-    _info("[z_api] >>> z_bt_hfp_ag_dial_response: result=%d (stub)\n",
-        result);
-    return 0;
+    _info("[z_api] >>> z_bt_hfp_ag_dial_response: result=%d\n", result);
+#ifdef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+    (void)result;
+    /* Not supported when AG drives telephony internally. */
+    return -ENOTSUP;
+#else
+    ag_dial_response_args_t args = { .result = result };
+    return z_api_dispatch(ag_dial_response_in_ipc, &args);
+#endif
+}
+
+typedef struct {
+    uint8_t result;
+    char number[HFP_PHONE_NUMBER_MAX + 1];
+} ag_redial_response_args_t;
+
+#ifndef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+static int ag_redial_response_in_ipc(void* arg)
+{
+    ag_redial_response_args_t* a = (ag_redial_response_args_t*)arg;
+    bt_instance_t* ins = get_ins();
+    if (!ins)
+        return -EIO;
+    return (int)bt_hfp_ag_redial_response(ins, a->result,
+        a->number[0] ? a->number : NULL);
+}
+#endif
+
+int z_bt_hfp_ag_redial_response(uint8_t result, const char* number)
+{
+    _info("[z_api] >>> z_bt_hfp_ag_redial_response: result=%d number=%s\n",
+        result, number ? number : "(null)");
+#ifdef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+    (void)result;
+    (void)number;
+    return -ENOTSUP;
+#else
+    ag_redial_response_args_t args = { .result = result };
+    if (number) {
+        strlcpy(args.number, number, sizeof(args.number));
+    } else {
+        args.number[0] = '\0';
+    }
+    return z_api_dispatch(ag_redial_response_in_ipc, &args);
+#endif
 }

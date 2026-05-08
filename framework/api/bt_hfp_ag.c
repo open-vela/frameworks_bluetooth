@@ -176,3 +176,35 @@ bt_status_t BTSYMBOLS(bt_hfp_ag_send_cind_response)(bt_instance_t* ins, bt_addre
 
     return profile->send_cind_response(addr, network, call, call_held, call_setup, signal, roam, battery);
 }
+
+bt_status_t BTSYMBOLS(bt_hfp_ag_dial_response)(bt_instance_t* ins, uint8_t result)
+{
+#ifdef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+    /* When local telephony is enabled the AG service drives the dial
+     * outcome itself via tele_service; the external dial_response is a
+     * no-op and deliberately rejected to make programming errors
+     * visible.
+     */
+    (void)ins;
+    (void)result;
+    return BT_STATUS_NOT_SUPPORTED;
+#else
+    hfp_ag_interface_t* profile = get_profile_service();
+
+    return profile->dial_response(result);
+#endif
+}
+
+bt_status_t BTSYMBOLS(bt_hfp_ag_redial_response)(bt_instance_t* ins, uint8_t result, const char* number)
+{
+#ifdef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+    (void)ins;
+    (void)result;
+    (void)number;
+    return BT_STATUS_NOT_SUPPORTED;
+#else
+    hfp_ag_interface_t* profile = get_profile_service();
+
+    return profile->redial_response(result, number);
+#endif
+}

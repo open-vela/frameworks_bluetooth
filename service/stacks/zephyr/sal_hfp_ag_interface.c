@@ -1000,9 +1000,39 @@ static int zblue_on_ag_get_ongoing_call(struct bt_hfp_ag* ag)
     return 0;
 }
 
+static void ag_redial_handler(void* data);
+
 static int zblue_on_ag_memory_dial(struct bt_hfp_ag* ag, const char* location, char** number)
 {
+    /* Memory dial is not supported: the AG has no persistent phonebook.
+     * zblue will emit CME ERROR:22 to the HF on -ENOTSUP.
+     */
     return -ENOTSUP;
+}
+
+static void ag_redial_handler(void* data)
+{
+    struct bt_hfp_ag* ag = (struct bt_hfp_ag*)data;
+    bt_hfp_ag_connection_t* sal_conn;
+
+    sal_conn = find_connection_by_ag(ag);
+    if (!sal_conn) {
+        BT_LOGE("%s, connection not found for ag=%p", __func__, ag);
+        return;
+    }
+
+    /* Forward to the service layer so the upper app can query its
+     * telephony database for the last-dialed number.
+     */
+    hfp_ag_on_redial_request(&sal_conn->addr);
+}
+
+static void zblue_on_ag_redial(struct bt_hfp_ag* ag)
+{
+    if (!ag) {
+        return;
+    }
+    do_in_service_loop(ag_redial_handler, ag);
 }
 
 static void ag_number_call_handler(void* data)
@@ -1837,6 +1867,7 @@ static struct bt_hfp_ag_cb g_hfp_ag_cb = {
     .sco_disconnected = zblue_on_ag_sco_disconnected,
     .get_ongoing_call = zblue_on_ag_get_ongoing_call,
     .memory_dial = zblue_on_ag_memory_dial,
+    .redial = zblue_on_ag_redial,
     .number_call = zblue_on_ag_number_call,
     .outgoing = zblue_on_ag_outgoing,
     .incoming = zblue_on_ag_incoming,
@@ -2299,6 +2330,19 @@ bt_status_t bt_sal_hfp_ag_phone_state_change(bt_address_t* addr, uint8_t num_act
         call_info->state = new_state;
     }
 
+    return BT_STATUS_SUCCESS;
+}
+
+bt_status_t bt_sal_hfp_ag_dial_at_reply(bt_address_t* addr, const char* number)
+{
+    bt_hfp_ag_connection_t* sal_conn = find_connection_by_addr(addr);
+
+    if (!sal_conn || !sal_conn->ag) {
+        BT_LOGE("%s, connection not found", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    SAL_CHECK_RET(Z_API(bt_hfp_ag_dial_at_reply)(sal_conn->ag, number), 0);
     return BT_STATUS_SUCCESS;
 }
 

@@ -396,3 +396,41 @@ bt_status_t bt_hfp_ag_send_cind_response(bt_instance_t* ins, bt_address_t* addr,
 
     return packet.hfp_ag_r.status;
 }
+
+bt_status_t bt_hfp_ag_dial_response(bt_instance_t* ins, uint8_t result)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    packet.hfp_ag_pl._bt_hfp_ag_dial_response.result = result;
+
+    status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_DIAL_RESPONSE);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.hfp_ag_r.status;
+}
+
+bt_status_t bt_hfp_ag_redial_response(bt_instance_t* ins, uint8_t result, const char* number)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    packet.hfp_ag_pl._bt_hfp_ag_redial_response.result = result;
+    if (number) {
+        strlcpy(packet.hfp_ag_pl._bt_hfp_ag_redial_response.number, number,
+            sizeof(packet.hfp_ag_pl._bt_hfp_ag_redial_response.number));
+    } else {
+        packet.hfp_ag_pl._bt_hfp_ag_redial_response.number[0] = '\0';
+    }
+
+    status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_REDIAL_RESPONSE);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.hfp_ag_r.status;
+}

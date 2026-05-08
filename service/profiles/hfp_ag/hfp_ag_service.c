@@ -17,6 +17,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#include <stddef.h>
 #include <stdint.h>
 #include <sys/types.h>
 #ifdef CONFIG_KVDB
@@ -51,6 +52,33 @@
     }
 
 #define AG_CALLBACK_FOREACH(_list, _cback, ...) BT_CALLBACK_FOREACH(_list, hfp_ag_callbacks_t, _cback, ##__VA_ARGS__)
+
+/* Size-guarded dispatch for callbacks added after the original
+ * hfp_ag_callbacks_t layout. Applications compiled against the older
+ * header may register a callbacks_t whose `size` field is smaller than
+ * the new footprint; in that case the new cb slot does not exist in
+ * their memory and must not be dereferenced.
+ */
+#define AG_CALLBACK_FOREACH_SAFE(_list, _cback, ...)                                         \
+    do {                                                                                     \
+        callbacks_list_t* __cbsl = _list;                                                    \
+        if (__cbsl == NULL)                                                                  \
+            break;                                                                           \
+        bt_list_node_t* _node;                                                               \
+        bt_list_t* _blist = __cbsl->list;                                                    \
+        pthread_mutex_lock(&__cbsl->lock);                                                   \
+        for (_node = bt_list_head(_blist); _node != NULL;                                    \
+             _node = bt_list_next(_blist, _node)) {                                          \
+            remote_callback_t* _rcbk = (remote_callback_t*)bt_list_node(_node);              \
+            hfp_ag_callbacks_t* _cbs = (hfp_ag_callbacks_t*)_rcbk->callbacks;                \
+            void* _remote = _rcbk->remote ? _rcbk->remote : _rcbk;                           \
+            if (_cbs                                                                         \
+                && _cbs->size >= offsetof(hfp_ag_callbacks_t, _cback) + sizeof(_cbs->_cback) \
+                && _cbs->_cback)                                                             \
+                _cbs->_cback(_remote, __VA_ARGS__);                                          \
+        }                                                                                    \
+        pthread_mutex_unlock(&__cbsl->lock);                                                 \
+    } while (0)
 
 /****************************************************************************
  * Private Types
@@ -292,6 +320,9 @@ static void hfp_ag_process_message(void* data)
     case AG_SET_VOLUME:
     case AG_SET_INBAND_RING_ENABLE:
     case AG_DIALING_RESULT:
+#ifndef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+    case AG_REDIAL_RESULT:
+#endif
         pthread_mutex_lock(&g_ag_service.device_lock);
         bt_list_foreach(g_ag_service.ag_devices, ag_dispatch_msg_foreach, msg);
         pthread_mutex_unlock(&g_ag_service.device_lock);
@@ -709,6 +740,21 @@ bt_status_t hfp_ag_dial_result(uint8_t result)
     return hfp_ag_send_message(msg);
 }
 
+#ifndef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+bt_status_t hfp_ag_redial_result(uint8_t result, const char* number)
+{
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_REDIAL_RESULT, NULL);
+    if (!msg)
+        return BT_STATUS_NOMEM;
+
+    msg->data.valueint1 = result;
+    if (number)
+        AG_MSG_ADD_STR(msg, 1, number, strlen(number));
+
+    return hfp_ag_send_message(msg);
+}
+#endif
+
 bt_status_t hfp_ag_send_at_command(bt_address_t* addr, const char* at_command)
 {
     hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_SEND_AT_COMMAND, addr);
@@ -777,6 +823,9 @@ static const hfp_ag_interface_t agInterface = {
     .device_status_changed = hfp_ag_device_status_changed,
     .volume_control = hfp_ag_volume_control,
     .dial_response = hfp_ag_dial_result,
+#ifndef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+    .redial_response = hfp_ag_redial_result,
+#endif
     .send_at_command = hfp_ag_send_at_command,
     .send_vendor_specific_at_command = hfp_ag_send_vendor_specific_at_command,
     .send_clcc_response = hfp_ag_send_clcc_response,
@@ -868,6 +917,14 @@ void ag_service_notify_cind_cmd(bt_address_t* addr)
     BT_LOGD("%s", __func__);
     AG_CALLBACK_FOREACH(g_ag_service.callbacks, cind_cmd_cb, addr);
 }
+
+#ifndef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+void ag_service_notify_redial_req(bt_address_t* addr)
+{
+    BT_LOGD("%s", __func__);
+    AG_CALLBACK_FOREACH_SAFE(g_ag_service.callbacks, redial_req_cb, addr);
+}
+#endif /* !CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY */
 
 void hfp_ag_on_connection_state_changed(bt_address_t* addr, profile_connection_state_t state,
     profile_connection_reason_t reason, uint32_t remote_features)
@@ -996,6 +1053,15 @@ void hfp_ag_on_dial_memory(bt_address_t* addr, uint32_t location)
         return;
 
     msg->data.valueint1 = location;
+    hfp_ag_send_message(msg);
+}
+
+void hfp_ag_on_redial_request(bt_address_t* addr)
+{
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_STACK_EVENT_REDIAL_REQUEST, addr);
+    if (!msg)
+        return;
+
     hfp_ag_send_message(msg);
 }
 

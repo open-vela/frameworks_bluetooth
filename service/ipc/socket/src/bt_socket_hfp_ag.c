@@ -210,7 +210,20 @@ static void on_cind_cmd_received_cb(void* cookie, bt_address_t* addr)
     bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_CIND_COMMAND_RECEIVED);
 }
 
+#ifndef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+static void on_redial_req_cb(void* cookie, bt_address_t* addr)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_instance_t* ins = cookie;
+
+    memcpy(&packet.hfp_ag_cb._on_redial_req.addr, addr, sizeof(bt_address_t));
+
+    bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_REDIAL_REQ);
+}
+#endif /* !CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY */
+
 const static hfp_ag_callbacks_t g_hfp_ag_socket_cbs = {
+    .size = sizeof(hfp_ag_callbacks_t),
     .connection_state_cb = on_connection_state_changed_cb,
     .audio_state_cb = on_audio_state_changed_cb,
     .vr_cmd_cb = on_voice_recognition_command_cb,
@@ -224,6 +237,9 @@ const static hfp_ag_callbacks_t g_hfp_ag_socket_cbs = {
     .vender_specific_at_cmd_cb = on_vendor_specific_at_cmd_received_cb,
     .clcc_cmd_cb = on_clcc_cmd_received_cb,
     .cind_cmd_cb = on_cind_cmd_received_cb,
+#ifndef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+    .redial_req_cb = on_redial_req_cb,
+#endif
 };
 
 /****************************************************************************
@@ -367,6 +383,16 @@ void bt_socket_server_hfp_ag_process(service_poll_t* poll, int fd,
                 packet->hfp_ag_pl._bt_hfp_ag_send_cind_response.roam,
                 packet->hfp_ag_pl._bt_hfp_ag_send_cind_response.battery);
             break;
+        case HFP_AG_SUBCODE_DIAL_RESPONSE:
+            packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_dial_response)(ins,
+                packet->hfp_ag_pl._bt_hfp_ag_dial_response.result);
+            break;
+        case HFP_AG_SUBCODE_REDIAL_RESPONSE: {
+            const char* number = packet->hfp_ag_pl._bt_hfp_ag_redial_response.number;
+            packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_redial_response)(ins,
+                packet->hfp_ag_pl._bt_hfp_ag_redial_response.result,
+                number[0] ? number : NULL);
+        } break;
         default:
             break;
         }
@@ -454,6 +480,13 @@ int bt_socket_client_hfp_ag_callback(service_poll_t* poll,
             clcc_cmd_cb,
             &packet->hfp_ag_cb._on_clcc_cmd_received.addr);
         break;
+#ifndef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+    case BT_HFP_AG_ON_REDIAL_REQ:
+        CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
+            redial_req_cb,
+            &packet->hfp_ag_cb._on_redial_req.addr);
+        break;
+#endif
     default:
         switch (BT_IPC_GET_SUBCODE(packet->code)) {
         case HFP_AG_SUBCODE_ON_CIND_COMMAND_RECEIVED:

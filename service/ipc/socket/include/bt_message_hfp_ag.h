@@ -52,6 +52,7 @@ BT_HFP_AG_MESSAGE_START,
     BT_HFP_AG_ON_AT_COMMAND_RECEIVED,
     BT_HFP_AG_ON_VENDOR_SPECIFIC_AT_COMMAND_RECEIVED,
     BT_HFP_AG_ON_CLCC_COMMAND_RECEIVED,
+    BT_HFP_AG_ON_REDIAL_REQ,
     BT_HFP_AG_CALLBACK_END,
 #endif
 
@@ -70,6 +71,10 @@ BT_HFP_AG_MESSAGE_START,
 // TODO: Add new BT IPC Code sequentially
 #define HFP_AG_SUBCODE_SEND_CIND_RESPONSE 1
 #define BT_HFP_AG_SEND_CIND_RESPONSE BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_HFP_AG, HFP_AG_SUBCODE_SEND_CIND_RESPONSE)
+#define HFP_AG_SUBCODE_DIAL_RESPONSE 2
+#define BT_HFP_AG_DIAL_RESPONSE BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_HFP_AG, HFP_AG_SUBCODE_DIAL_RESPONSE)
+#define HFP_AG_SUBCODE_REDIAL_RESPONSE 3
+#define BT_HFP_AG_REDIAL_RESPONSE BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_HFP_AG, HFP_AG_SUBCODE_REDIAL_RESPONSE)
 #define BT_IPC_CODE_COMMAND_HFP_AG_END BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_HFP_AG, BT_IPC_CODE_SUBCODE_MAX_NUM)
 
 #define BT_IPC_CODE_CALLBACK_HFP_AG_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_HFP_AG, 0)
@@ -160,6 +165,16 @@ BT_HFP_AG_MESSAGE_START,
             uint8_t roam;
             uint8_t battery;
         } _bt_hfp_ag_send_cind_response;
+
+        struct {
+            uint8_t result; /* HFP_ATCMD_RESULT_* */
+        } _bt_hfp_ag_dial_response;
+
+        struct {
+            uint8_t result; /* HFP_ATCMD_RESULT_* */
+            uint8_t pad[3];
+            char number[HFP_PHONE_NUMBER_MAX + 1];
+        } _bt_hfp_ag_redial_response;
     } bt_message_hfp_ag_t;
 
     typedef union {
@@ -222,6 +237,10 @@ BT_HFP_AG_MESSAGE_START,
         struct {
             bt_address_t addr;
         } _on_cind_cmd_received;
+
+        struct {
+            bt_address_t addr;
+        } _on_redial_req;
     } bt_message_hfp_ag_callbacks_t;
 
 #ifdef __cplusplus

@@ -17,6 +17,7 @@
 
 #include <stdint.h>
 
+#include "bt_hfp_ag.h"
 #include "bt_list.h"
 #include "hfp_ag_service.h"
 #include "hfp_ag_tele_service.h"
@@ -65,6 +66,7 @@ static uint8_t g_num_held = 0;
 static uint8_t g_call_state = CALL_STATUS_DISCONNECTED;
 static bool is_online = false;
 static bool is_connected = false;
+static char g_last_dialed_number[HFP_PHONE_NUMBER_MAX + 1] = { 0 };
 
 static void on_connection_state_changed(tele_client_t* tele, bool connected)
 {
@@ -142,6 +144,14 @@ static void on_call_added(tele_client_t* tele, tele_call_t* call)
     bt_list_add_tail(g_current_calls, call);
     teleif_call_register_callbacks(tele, call, &tele_call_cbs);
     update_call_state(call->call_state);
+
+    /* Cache outgoing numbers originated by the modem (not just by the
+     * AT+BLDN / ATD path) so that BLDN can always redial the last one.
+     */
+    if (call && !call->is_incoming && call->line_identification[0]) {
+        strlcpy(g_last_dialed_number, call->line_identification,
+            sizeof(g_last_dialed_number));
+    }
 }
 
 static void on_call_removed(tele_client_t* tele, tele_call_t* call)
@@ -335,16 +345,35 @@ void tele_service_cleanup(void)
 
 bt_status_t tele_service_dial_number(char* number)
 {
-    if (!is_connected || !is_online)
-        return BT_STATUS_NOT_ENABLED;
-
     if (!number)
         return BT_STATUS_FAIL;
+
+    /* Cache the number as the last-dialed number so that a subsequent
+     * AT+BLDN from the HF can redial it. This is cached regardless of
+     * tele service availability so the AG can respond to redial even
+     * when running without a telephony backend.
+     */
+    strlcpy(g_last_dialed_number, number, sizeof(g_last_dialed_number));
+
+    if (!is_connected || !is_online)
+        return BT_STATUS_NOT_ENABLED;
 
     if (teleif_call_dial_number(tele_context, PRIMARY_SLOT, number, dial_number_callback) != 0) {
         return BT_STATUS_FAIL;
     }
 
+    return BT_STATUS_SUCCESS;
+}
+
+bt_status_t tele_service_get_last_dialed_number(char* buf, size_t len)
+{
+    if (!buf || len == 0)
+        return BT_STATUS_PARM_INVALID;
+
+    if (!g_last_dialed_number[0])
+        return BT_STATUS_FAIL;
+
+    strlcpy(buf, g_last_dialed_number, len);
     return BT_STATUS_SUCCESS;
 }
 

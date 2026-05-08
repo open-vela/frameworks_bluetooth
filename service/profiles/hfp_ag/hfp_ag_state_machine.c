@@ -66,6 +66,7 @@ typedef struct _ag_state_machine {
     service_timer_t* dial_out_timer;
     service_timer_t* offload_timer;
     service_timer_t* retry_timer;
+    bool pending_bldn; /* set when HF issued AT+BLDN and we wait for app response */
 } ag_state_machine_t;
 
 typedef struct vendor_specific_at_prefix {
@@ -215,6 +216,7 @@ static const char* stack_event_to_string(hfp_ag_event_t event)
         CASE_RETURN_STR(AG_DISCONNECT_AUDIO)
         CASE_RETURN_STR(AG_START_VIRTUAL_CALL)
         CASE_RETURN_STR(AG_STOP_VIRTUAL_CALL)
+        CASE_RETURN_STR(AG_REDIAL_RESULT)
         CASE_RETURN_STR(AG_VOICE_RECOGNITION_START)
         CASE_RETURN_STR(AG_VOICE_RECOGNITION_STOP)
         CASE_RETURN_STR(AG_PHONE_STATE_CHANGE)
@@ -254,6 +256,7 @@ static const char* stack_event_to_string(hfp_ag_event_t event)
         CASE_RETURN_STR(AG_STACK_EVENT_SEND_DTMF)
         CASE_RETURN_STR(AG_STACK_EVENT_NREC_REQ)
         CASE_RETURN_STR(AG_STACK_EVENT_CALL_SYNC)
+        CASE_RETURN_STR(AG_STACK_EVENT_REDIAL_REQUEST)
     default:
         snprintf(ag_evt, 32, "UNKNOWN_AG_EVENT:%d", event);
         return (const char*)ag_evt;
@@ -369,6 +372,7 @@ static void disconnected_enter(state_machine_t* sm)
         agsm->volume_listener = NULL;
         agsm->set_volume_cnt = 0;
         agsm->virtual_call_started = false;
+        agsm->pending_bldn = false;
         bt_media_set_anc_enable(true);
         bt_pm_conn_close(PROFILE_HFP_AG, &agsm->addr);
         flag_clear(agsm, PENDING_DISCONNECT);
@@ -737,7 +741,41 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
             agsm->dial_out_timer = NULL;
             bt_sal_hfp_ag_dial_response(&agsm->addr, data->valueint1);
         }
+#ifndef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+        else if (!agsm->pending_bldn) {
+            /* No dial_out_timer and not in BLDN path — this is an async
+             * ATD response from the application (LOCAL_TELEPHONY=n).
+             * Emit OK or CME ERROR to the HF.
+             */
+            const char* reply_number = (data->valueint1 == HFP_ATCMD_RESULT_OK)
+                ? (data->string1 && data->string1[0] ? data->string1 : "ok")
+                : NULL;
+            BT_LOGD("Dial response (ATD async): result=%d", data->valueint1);
+            bt_sal_hfp_ag_dial_at_reply(&agsm->addr, reply_number);
+        }
+#endif
         break;
+#ifndef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+    case AG_REDIAL_RESULT: {
+        /* BLDN result from application. data->valueint1 is the result
+         * (HFP_ATCMD_RESULT_OK / _ERROR), data->string1 is the number
+         * to redial (only meaningful on OK).
+         */
+        if (!agsm->pending_bldn) {
+            BT_LOGW("AG_REDIAL_RESULT: not in BLDN pending state, ignoring");
+            break;
+        }
+        agsm->pending_bldn = false;
+        if (data->valueint1 == HFP_ATCMD_RESULT_OK
+            && data->string1 && data->string1[0]) {
+            BT_LOGD("BLDN: replying OK with number=%s", data->string1);
+            bt_sal_hfp_ag_dial_at_reply(&agsm->addr, data->string1);
+        } else {
+            BT_LOGD("BLDN: replying CME ERROR (result=%d)", data->valueint1);
+            bt_sal_hfp_ag_dial_at_reply(&agsm->addr, NULL);
+        }
+    } break;
+#endif
     case AG_STACK_EVENT_VR_STATE_CHANGED:
         agsm->recognition_active = data->valueint1;
         ag_service_notify_vr_state_changed(&agsm->addr, data->valueint1);
@@ -832,6 +870,39 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
     case AG_STACK_EVENT_DIAL_MEMORY:
         /* system call interface */
         break;
+    case AG_STACK_EVENT_REDIAL_REQUEST: {
+        set_virtual_call_started(sm, false);
+#ifdef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+        {
+            char number[HFP_PHONE_NUMBER_MAX + 1] = { 0 };
+            if (tele_service_get_last_dialed_number(number, sizeof(number)) != BT_STATUS_SUCCESS
+                || !number[0]) {
+                BT_LOGD("Redial: no last-dialed number available");
+                bt_sal_hfp_ag_dial_at_reply(&agsm->addr, NULL);
+                break;
+            }
+            BT_LOGD("Redial number:%s", number);
+            if (bt_sal_hfp_ag_dial_at_reply(&agsm->addr, number) != BT_STATUS_SUCCESS) {
+                BT_LOGE("Redial: dial_at_reply failed");
+                break;
+            }
+            if (tele_service_dial_number(number) == BT_STATUS_SUCCESS) {
+                agsm->dial_out_timer = service_loop_timer_no_repeating(5000,
+                    dial_out_timeout, NULL);
+            }
+            ag_service_notify_call_dial(&agsm->addr, number);
+        }
+#else
+        /* No local telephony: notify the application asynchronously via
+         * redial_req_cb. The application should respond with
+         * bt_hfp_ag_redial_response(result, number) to complete the
+         * AT+BLDN flow. Mark pending_bldn so the response path knows
+         * this is a BLDN (not a plain ATD).
+         */
+        agsm->pending_bldn = true;
+        ag_service_notify_redial_req(&agsm->addr);
+#endif
+    } break;
     case AG_STACK_EVENT_CALL_CONTROL: {
         hfp_call_control_t chld = data->valueint1;
 #ifdef CONFIG_BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
@@ -849,7 +920,6 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
         }
     } break;
     case AG_STACK_EVENT_SEND_DTMF:
-        /* system call interface */
         break;
     case AG_STACK_EVENT_NREC_REQ:
         /* disable local ANC */

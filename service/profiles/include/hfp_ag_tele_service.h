@@ -21,6 +21,7 @@
 void tele_service_init(void);
 void tele_service_cleanup(void);
 bt_status_t tele_service_dial_number(char* number);
+bt_status_t tele_service_get_last_dialed_number(char* buf, size_t len);
 bt_status_t tele_service_answer_call(void);
 bt_status_t tele_service_reject_call(void);
 bt_status_t tele_service_hangup_call(void);

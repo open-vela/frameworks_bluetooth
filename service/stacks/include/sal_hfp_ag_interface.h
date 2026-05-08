@@ -50,4 +50,5 @@ bt_status_t bt_sal_hfp_ag_error_response(bt_address_t* addr, hfp_atcmd_result_t 
 bt_status_t bt_sal_hfp_ag_call_sync(bt_address_t* addr, hfp_call_direction_t dir,
     hfp_ag_call_state_t call, hfp_call_mode_t mode, hfp_call_mpty_type_t mpty,
     hfp_call_addrtype_t type, const char* number);
+bt_status_t bt_sal_hfp_ag_dial_at_reply(bt_address_t* addr, const char* number);
 #endif /* __SAL_HFP_AG_INTERFACE_H__ */
