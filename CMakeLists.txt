@@ -298,6 +298,22 @@ if(CONFIG_BLUETOOTH)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_avrcp_interface.c)
       endif()
 
+      if(CONFIG_BLUETOOTH_HFP_HF)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_hfp_hf_interface.c)
+      endif()
+
+      if(CONFIG_BLUETOOTH_HFP_AG)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_hfp_ag_interface.c)
+      endif()
+
+      if(CONFIG_BLUETOOTH_SPP)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_spp_interface.c)
+      endif()
+
+      if(CONFIG_BLUETOOTH_HID_DEVICE)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_hid_device_stub.c)
+      endif()
+
     endif()
 
     if(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)

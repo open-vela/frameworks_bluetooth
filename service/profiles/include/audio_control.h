@@ -37,10 +37,24 @@
  * Included Files
  ****************************************************************************/
 #include "audio_transport.h"
+#include "bt_profile.h"
+#include "audio_codec.h"
 #include "bt_status.h"
+
+#define HFP_HF_PROFILE_ID PROFILE_HFP_HF
+#define HFP_AG_PROFILE_ID PROFILE_HFP_AG
+
+typedef struct {
+    size_t size;
+    void (*start_cb)(void);
+    void (*stop_cb)(void);
+} audio_control_callbacks_t;
 
 void audio_ctrl_send_control_event(uint8_t profile_id, audio_ctrl_evt_t evt);
 bt_status_t audio_ctrl_init(uint8_t profile_id);
 void audio_ctrl_cleanup(uint8_t profile_id);
+void audio_control_open(uint8_t profile_id, bt_audio_config_t* config, audio_control_callbacks_t* callbacks);
+void audio_control_start(uint8_t profile_id, bool start);
+void audio_control_stop(uint8_t profile_id);
 
 #endif

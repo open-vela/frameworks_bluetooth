@@ -37,8 +37,8 @@ bt_status_t bt_sal_gatt_server_connect_bear(bt_controller_id_t id, bt_address_t*
 bt_status_t bt_sal_gatt_server_cancel_connection(bt_controller_id_t id, bt_address_t* addr);
 bt_status_t bt_sal_gatt_server_send_response(bt_controller_id_t id, bt_address_t* addr, uint32_t request_id, uint8_t* value, uint16_t length);
 #if defined(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
-bt_status_t bt_sal_gatt_server_send_notification(bt_controller_id_t id, bt_address_t* addr, bt_uuid_t element_id, uint8_t* value, uint16_t length);
-bt_status_t bt_sal_gatt_server_send_indication(bt_controller_id_t id, bt_address_t* addr, bt_uuid_t element_id, uint8_t* value, uint16_t length);
+bt_status_t bt_sal_gatt_server_send_notification(bt_controller_id_t id, bt_address_t* addr, gatt_element_t* element, uint8_t* value, uint16_t length);
+bt_status_t bt_sal_gatt_server_send_indication(bt_controller_id_t id, bt_address_t* addr, gatt_element_t* element, uint8_t* value, uint16_t length);
 #else
 bt_status_t bt_sal_gatt_server_send_notification(bt_controller_id_t id, bt_address_t* addr, uint16_t element_id, uint8_t* value, uint16_t length);
 bt_status_t bt_sal_gatt_server_send_indication(bt_controller_id_t id, bt_address_t* addr, uint16_t element_id, uint8_t* value, uint16_t length);

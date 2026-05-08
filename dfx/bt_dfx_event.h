@@ -47,6 +47,17 @@
 #define BT_DFXC_LE_GAP_DISCONN (110)
 #define BT_DFXC_LE_GAP_PAIR (200)
 
+// group: BT_DFXG_A2DP
+#define BT_DFXC_A2DP_CONN (0)
+#define BT_DFXC_A2DP_OFFLOAD (100)
+
+// group: BT_DFXG_HFP
+#define BT_DFXC_HFP_CONN (0)
+#define BT_DFXC_HFP_OFFLOAD (100)
+
+// group: BT_DFXG_OTHERS
+#define BT_DFXC_OPEN (0)
+
 #define BT_DFX_BUILD_CODE(group, subcode) ((BT_DFX_BASE_VELA_BLUETOOTH) + (group) + (subcode))
 
 #endif /* _BT_DFX_EVENT_H_ */

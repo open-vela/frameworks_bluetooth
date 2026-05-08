@@ -771,3 +771,24 @@ bool bt_adapter_is_support_leaudio(bt_instance_t* ins)
 
     return packet.adpt_r.bbool;
 }
+
+bt_status_t bt_adapter_start_limited_discovery(bt_instance_t* ins, uint32_t timeout)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    packet.adpt_pl._bt_adapter_start_limited_discovery.v32 = timeout;
+    status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_START_LIMITED_DISCOVERY);
+    if (status != BT_STATUS_SUCCESS) {
+        return status;
+    }
+
+    return packet.adpt_r.status;
+}
+
+bt_status_t bt_adapter_disable_safe(bt_instance_t* ins)
+{
+    return bt_adapter_disable(ins);
+}

@@ -132,7 +132,7 @@ void bt_socket_server_advertiser_process(service_poll_t* poll,
 #endif
 
 int bt_socket_client_advertiser_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet)
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async)
 {
     switch (packet->code) {
     case BT_LE_ON_ADVERTISER_START: {

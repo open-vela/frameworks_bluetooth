@@ -48,7 +48,9 @@ static int bt_vhal_send(uint8_t* value, uint32_t size)
 {
     switch (*value) {
     case HCI_TYPE_COMMAND: {
+#ifdef CONFIG_BLUETOOTH_HCI_FILTER
         bt_hci_filter_can_send(value, size);
+#endif
         break;
     }
     default:
@@ -64,7 +66,9 @@ static int bt_vhal_recv(uint8_t* value, uint32_t size)
 
     switch (*value) {
     case HCI_TYPE_EVENT: {
+#ifdef CONFIG_BLUETOOTH_HCI_FILTER
         ret = bt_hci_filter_can_recv(value, size);
+#endif
         break;
     }
     default:

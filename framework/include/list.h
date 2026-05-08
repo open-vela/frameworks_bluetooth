@@ -137,6 +137,15 @@
         list_initialize(item); \
     } while (0)
 
+#define list_merge(list_dst, list_src)             \
+    do {                                           \
+        (list_dst)->prev->next = (list_src)->next; \
+        (list_src)->next->prev = (list_dst)->prev; \
+        (list_src)->prev->next = (list_dst);       \
+        (list_dst)->prev = (list_src)->prev;       \
+        list_initialize(list_src);                 \
+    } while (0)
+
 #define list_remove_head_type(list, type, member)              \
     ({                                                         \
         FAR struct list_node* __node = list_remove_head(list); \
@@ -272,10 +281,7 @@
  * Public Type Definitions
  ****************************************************************************/
 
-struct list_node {
-    FAR struct list_node* prev;
-    FAR struct list_node* next;
-};
+#include <nuttx/list_type.h>
 
 /****************************************************************************
  * Inline Functions

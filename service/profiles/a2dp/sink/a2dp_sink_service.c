@@ -138,7 +138,7 @@ static void a2dp_snk_service_handle_event(void* data)
         break;
     }
     case PEER_STREAM_START_REQ:
-        bt_sal_a2dp_sink_start_stream(&event->event_data.bd_addr);
+        bt_sal_a2dp_sink_start_stream(PRIMARY_ADAPTER, &event->event_data.bd_addr);
         break;
     default: {
         a2dp_state_machine_t* a2dp_sm;

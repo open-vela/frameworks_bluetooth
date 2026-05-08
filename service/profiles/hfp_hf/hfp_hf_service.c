@@ -378,7 +378,7 @@ static bt_status_t hfp_hf_init(void)
         return BT_STATUS_NOMEM;
     }
 
-    ret = audio_ctrl_init();
+    ret = audio_ctrl_init(PROFILE_HFP_HF);
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s: failed to start audio control channel", __func__);
         bt_callbacks_list_free(g_hfp_service.callbacks);
@@ -391,7 +391,7 @@ static bt_status_t hfp_hf_init(void)
 
 static void hfp_hf_cleanup(void)
 {
-    audio_ctrl_cleanup();
+    audio_ctrl_cleanup(PROFILE_HFP_HF);
     bt_callbacks_list_free(g_hfp_service.callbacks);
     g_hfp_service.callbacks = NULL;
 }

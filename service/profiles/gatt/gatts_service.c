@@ -720,7 +720,7 @@ static bt_status_t if_gatts_notify(void* srv_handle, bt_address_t* addr, uint16_
         return BT_STATUS_PARM_INVALID;
     }
 
-    return bt_sal_gatt_server_send_notification(PRIMARY_ADAPTER, addr, element->uuid, value, length);
+    return bt_sal_gatt_server_send_notification(PRIMARY_ADAPTER, addr, element, value, length);
 #else
     return bt_sal_gatt_server_send_notification(PRIMARY_ADAPTER, addr, attr_handle + service->srv_id, value, length);
 #endif
@@ -745,7 +745,7 @@ static bt_status_t if_gatts_indicate(void* srv_handle, bt_address_t* addr, uint1
         return BT_STATUS_PARM_INVALID;
     }
 
-    return bt_sal_gatt_server_send_indication(PRIMARY_ADAPTER, addr, element->uuid, value, length);
+    return bt_sal_gatt_server_send_indication(PRIMARY_ADAPTER, addr, element, value, length);
 #else
     return bt_sal_gatt_server_send_indication(PRIMARY_ADAPTER, addr, attr_handle + service->srv_id, value, length);
 #endif

@@ -349,9 +349,20 @@ bond_state_t device_get_bond_state(bt_device_t* device)
     return device->remote.bond_state;
 }
 
-void device_set_bond_state(bt_device_t* device, bond_state_t state)
+void device_set_bond_state(bt_device_t* device, bond_state_t state, bool is_ctkd, void (*notify)(void*))
 {
+    bond_state_t previous = device->remote.bond_state;
     device->remote.bond_state = state;
+
+    if (notify) {
+        bond_state_change_message_t* msg = zalloc(sizeof(*msg));
+        if (msg) {
+            msg->device = device;
+            msg->previous_state = previous;
+            msg->is_ctkd = is_ctkd;
+            notify(msg);
+        }
+    }
 }
 
 bool device_is_bonded(bt_device_t* device)

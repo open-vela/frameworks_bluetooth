@@ -29,6 +29,7 @@
 #include "btsnoop_log.h"
 #include "btsnoop_writer.h"
 
+#define SNOOP_PATH_MAX_LEN 128
 #define SNOOP_FILE_NAME_PREFIX "/snoop_"
 #define SNOOP_FILE_NAME_PREFIX_LEN 7
 #define SNOOP_FILE_NAME_DATE_LEN 80

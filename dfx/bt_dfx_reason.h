@@ -24,5 +24,16 @@
 #define BT_DFXE_CONN_FAILED_TO_BE_ESTABLISHED "btConnFailedToBeEstablished"
 
 #define BT_DFXE_SCANNER_EXCEED_MAX_NUM "btScannerExceedMaxNum"
+#define BT_DFXE_LE_ENABLE_FAIL "btLeEnableFail"
+#define BT_DFXE_BR_ENABLE_FAIL "btBrEnableFail"
+#define BT_DFXE_A2DP_CONN_TIMEOUT "btA2dpConnTimeout"
+#define BT_DFXE_OFFLOAD_START_TIMEOUT "btOffloadStartTimeout"
+#define BT_DFXE_OFFLOAD_HCI_UNSPECIFIED_ERROR "btOffloadHciUnspecifiedError"
+#define BT_DFXE_HFP_HF_CONN_TIMEOUT "btHfpHfConnTimeout"
+#define BT_DFXE_HFP_HF_CONN_RETRY_FAIL "btHfpHfConnRetryFail"
+#define BT_DFXE_SPP_CONN_FAIL "btSppConnFail"
+#define BT_DFXE_SPP_NOT_STARTUP "btSppNotStartup"
+#define BT_DFXE_SPP_SCN_ALLOC_FAIL "btSppScnAllocFail"
+#define BT_DFXE_SPP_NO_RESOURCES "btSppNoResources"
 
 #endif /* _BT_DFX_REASON_H_ */
