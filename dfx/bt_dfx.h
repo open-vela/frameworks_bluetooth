@@ -96,4 +96,75 @@
             "%s:%s", "blePairError", reason);                                            \
     } while (0)
 
+// a2dp
+#if defined(CONFIG_BLUETOOTH_DFX) && defined(CONFIG_BLUETOOTH_BREDR_SUPPORT)
+#define BT_DFX_SEND_A2DP_EVENT(...) sendEventMisightF(__VA_ARGS__)
+#else
+#define BT_DFX_SEND_A2DP_EVENT(...)
+#endif
+
+#define BT_DFX_A2DP_CONN_ERROR(reason)                                               \
+    do {                                                                             \
+        BT_LOGE("BT_DFX: a2dpConnError: %s", reason);                                \
+        BT_DFX_SEND_A2DP_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_A2DP, BT_DFXC_A2DP_CONN),  \
+            "%s:%s", "a2dpConnError", reason);                                       \
+    } while (0)
+
+#define BT_DFX_A2DP_OFFLOAD_ERROR(reason)                                                  \
+    do {                                                                                   \
+        BT_LOGE("BT_DFX: a2dpOffloadError: %s", reason);                                   \
+        BT_DFX_SEND_A2DP_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_A2DP, BT_DFXC_A2DP_OFFLOAD),     \
+            "%s:%s", "a2dpOffloadError", reason);                                          \
+    } while (0)
+
+// hfp
+#if defined(CONFIG_BLUETOOTH_DFX) && defined(CONFIG_BLUETOOTH_BREDR_SUPPORT)
+#define BT_DFX_SEND_HFP_EVENT(...) sendEventMisightF(__VA_ARGS__)
+#else
+#define BT_DFX_SEND_HFP_EVENT(...)
+#endif
+
+#define BT_DFX_HFP_CONN_ERROR(reason)                                              \
+    do {                                                                            \
+        BT_LOGE("BT_DFX: hfpConnError: %s", reason);                               \
+        BT_DFX_SEND_HFP_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_HFP, BT_DFXC_HFP_CONN),  \
+            "%s:%s", "hfpConnError", reason);                                      \
+    } while (0)
+
+#define BT_DFX_HFP_OFFLOAD_ERROR(reason)                                                 \
+    do {                                                                                 \
+        BT_LOGE("BT_DFX: hfpOffloadError: %s", reason);                                  \
+        BT_DFX_SEND_HFP_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_HFP, BT_DFXC_HFP_OFFLOAD),     \
+            "%s:%s", "hfpOffloadError", reason);                                         \
+    } while (0)
+
+// open (enable)
+#if defined(CONFIG_BLUETOOTH_DFX)
+#define BT_DFX_SEND_OTHERS_EVENT(...) sendEventMisightF(__VA_ARGS__)
+#else
+#define BT_DFX_SEND_OTHERS_EVENT(...)
+#endif
+
+#define BT_DFX_OPEN_ERROR(reason)                                                    \
+    do {                                                                             \
+        BT_LOGE("BT_DFX: openError: %s", reason);                                    \
+        BT_DFX_SEND_OTHERS_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_OTHERS, BT_DFXC_OPEN),   \
+            "%s:%s", "openError", reason);                                           \
+    } while (0)
+
+// spp / ipc
+#define BT_DFX_SPP_CONN_ERROR(reason)                                                \
+    do {                                                                             \
+        BT_LOGE("BT_DFX: sppConnError: %s", reason);                                 \
+        BT_DFX_SEND_BR_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_RFCOMM, 0),                  \
+            "%s:%s", "sppConnError", reason);                                        \
+    } while (0)
+
+#define BT_DFX_IPC_CONN_ERROR(reason, extra)                                         \
+    do {                                                                             \
+        BT_LOGE("BT_DFX: ipcConnError: %s %s", reason, extra);                       \
+        BT_DFX_SEND_BR_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_RFCOMM, 0),                  \
+            "%s:%s:%s", "ipcConnError", reason, extra);                              \
+    } while (0)
+
 #endif /* _BT_DFX_H_ */

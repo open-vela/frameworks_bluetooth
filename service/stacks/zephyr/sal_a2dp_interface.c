@@ -15,6 +15,10 @@
  ***************************************************************************/
 #define LOG_TAG "sal_a2dp"
 
+#ifndef CONFIG_ZBLUE_A2DP_SBC_MAX_BIT_POOL
+#define CONFIG_ZBLUE_A2DP_SBC_MAX_BIT_POOL 53
+#endif
+
 #include <assert.h>
 #include <math.h>
 #include <stdbool.h>

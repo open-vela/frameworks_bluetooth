@@ -598,6 +598,8 @@ if (bt_adapter_disable(ins) == BT_STATUS_SUCCESS) {
  */
 bt_status_t BTSYMBOLS(bt_adapter_disable)(bt_instance_t* ins);
 
+bt_status_t BTSYMBOLS(bt_adapter_disable_safe)(bt_instance_t* ins);
+
 /**
  * @brief Enable BLE (Bluetooth Low Energy).
  *
@@ -667,6 +669,8 @@ if (bt_adapter_start_discovery(ins, 10) == BT_STATUS_SUCCESS) {
  * @endcode
  */
 bt_status_t BTSYMBOLS(bt_adapter_start_discovery)(bt_instance_t* ins, uint32_t timeout);
+
+bt_status_t BTSYMBOLS(bt_adapter_start_limited_discovery)(bt_instance_t* ins, uint32_t timeout);
 
 /**
  * @brief Cancel device discovery.

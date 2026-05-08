@@ -41,6 +41,7 @@ BT_HFP_HF_MESSAGE_START,
     BT_HFP_HF_UPDATE_BATTERY_LEVEL,
     BT_HFP_HF_VOLUME_CONTROL,
     BT_HFP_HF_SEND_DTMF,
+    BT_HFP_HF_QUERY_CURRENT_CALLS_WITH_CALLBACK,
     BT_HFP_HF_MESSAGE_END,
 #endif
 
@@ -56,6 +57,9 @@ BT_HFP_HF_MESSAGE_START,
     BT_HFP_HF_ON_CALL_IND_RECEIVED,
     BT_HFP_HF_ON_CALLSETUP_IND_RECEIVED,
     BT_HFP_HF_ON_CALLHELD_IND_RECEIVED,
+    BT_HFP_HF_ON_CLIP_RECEIVED,
+    BT_HFP_HF_ON_SUBSCRIBER_NUMBER_RECEIVED,
+    BT_HFP_HF_ON_CURRENT_CALLS,
     BT_HFP_HF_CALLBACK_END,
 #endif
 
@@ -69,6 +73,11 @@ BT_HFP_HF_MESSAGE_START,
 
 #include "bt_hfp_hf.h"
 #include "bt_ipc_code.h"
+
+#define HFP_HF_SUBCODE_GET_SUBSCRIBER_NUMBER 0x01
+#define HFP_HF_SUBCODE_ON_CLIP_RECEIVED 0x02
+#define HFP_HF_SUBCODE_ON_SUBSCRIBER_NUMBER_RECEIVED 0x03
+#define HFP_HF_SUBCODE_ON_CURRENT_CALLS_FINISHED 0x04
 
 #define BT_IPC_CODE_COMMAND_HFP_HF_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_HFP_HF, 0)
 // TODO: Add new BT IPC Code sequentially
@@ -156,6 +165,11 @@ BT_HFP_HF_MESSAGE_START,
             bt_address_t addr;
             uint8_t dtmf;
         } _bt_hfp_hf_send_dtmf;
+
+        struct {
+            bt_address_t addr;
+        } _bt_hfp_hf_query_current_calls_with_callback,
+            _bt_hfp_hf_get_subscriber_number;
     } bt_message_hfp_hf_t;
 
     typedef union {
@@ -202,6 +216,24 @@ BT_HFP_HF_MESSAGE_START,
         } _on_call_cb,
             _on_callsetup_cb,
             _on_callheld_cb;
+
+        struct {
+            bt_address_t addr;
+            char number[HFP_PHONENUM_DIGITS_MAX + 1];
+            char name[HFP_NAME_DIGITS_MAX + 1];
+        } _on_clip_cb;
+
+        struct {
+            bt_address_t addr;
+            char number[HFP_PHONENUM_DIGITS_MAX + 1];
+            uint8_t service; /* hfp_subscriber_number_service_t */
+        } _on_subscriber_number_cb;
+
+        struct {
+            bt_address_t addr;
+            uint8_t num;
+            hfp_current_call_t calls[HFP_CALL_LIST_MAX];
+        } _on_current_calls_cb;
     } bt_message_hfp_hf_callbacks_t;
 
 #ifdef __cplusplus

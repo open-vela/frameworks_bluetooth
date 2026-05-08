@@ -588,3 +588,13 @@ bt_status_t bt_device_get_le_sc_local_oob_data(bt_instance_t* ins, bt_address_t*
 
     return packet.devs_r.status;
 }
+
+bt_status_t bt_device_enable_enhanced_mode(bt_instance_t* ins, bt_address_t* addr, bt_enhanced_mode_t mode)
+{
+    return BT_STATUS_NOT_SUPPORTED;
+}
+
+bt_status_t bt_device_disable_enhanced_mode(bt_instance_t* ins, bt_address_t* addr, bt_enhanced_mode_t mode)
+{
+    return BT_STATUS_NOT_SUPPORTED;
+}

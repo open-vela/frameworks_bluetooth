@@ -43,6 +43,10 @@
 #define CONFIG_GATT_SERVER_MAX_SERVICES 20
 #endif
 
+struct gatt_user_data {
+    gatt_element_t* element;
+};
+
 #ifndef CONFIG_GATT_SERVER_MAX_ATTRIBUTES
 #define CONFIG_GATT_SERVER_MAX_ATTRIBUTES 60
 #endif

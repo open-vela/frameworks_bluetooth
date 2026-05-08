@@ -387,6 +387,9 @@ void hfp_hf_callheld_cb(void* cookie, bt_address_t* addr, hfp_callheld_t callhel
  * @endcode
  */
 typedef void (*hfp_hf_callheld_callback)(void* cookie, bt_address_t* addr, hfp_callheld_t callheld);
+typedef void (*hfp_hf_clip_callback)(void* cookie, bt_address_t* addr, const char* number, const char* name);
+typedef void (*hfp_hf_subscriber_number_callback)(void* cookie, bt_address_t* addr, const char* number, hfp_subscriber_number_service_t service);
+typedef void (*hfp_hf_query_current_calls_callback)(void* cookie, bt_address_t* addr, uint8_t num, hfp_current_call_t* calls);
 
 /**
  * @cond
@@ -409,6 +412,9 @@ typedef struct
     hfp_hf_call_callback call_cb;
     hfp_hf_callsetup_callback callsetup_cb;
     hfp_hf_callheld_callback callheld_cb;
+    hfp_hf_clip_callback clip_cb;
+    hfp_hf_subscriber_number_callback subscriber_number_cb;
+    hfp_hf_query_current_calls_callback query_current_calls_cb;
 } hfp_hf_callbacks_t;
 
 /**
@@ -1146,6 +1152,10 @@ int app_send_dtmf(bt_instance_t* ins, bt_address_t* addr, char dtmf);
  * @endcode
  */
 bt_status_t BTSYMBOLS(bt_hfp_hf_send_dtmf)(bt_instance_t* ins, bt_address_t* addr, char dtmf);
+
+bt_status_t BTSYMBOLS(bt_hfp_hf_get_subscriber_number)(bt_instance_t* ins, bt_address_t* addr);
+
+bt_status_t BTSYMBOLS(bt_hfp_hf_query_current_calls_with_callback)(bt_instance_t* ins, bt_address_t* addr);
 
 #ifdef __cplusplus
 }

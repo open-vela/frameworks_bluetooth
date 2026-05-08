@@ -197,7 +197,9 @@ void manager_init(void)
 #if defined(CONFIG_BLUETOOTH_SERVICE) && defined(__NuttX__)
     service_manager_init();
     bt_pm_init();
+#ifdef CONFIG_BLUETOOTH_CONNECTION_MANAGER
     bt_cm_init();
+#endif
 #endif
 }
 
@@ -221,7 +223,9 @@ void manager_cleanup(void)
 #if defined(CONFIG_BLUETOOTH_SERVICE) && defined(__NuttX__)
     service_manager_cleanup();
     bt_pm_cleanup();
+#ifdef CONFIG_BLUETOOTH_CONNECTION_MANAGER
     bt_cm_cleanup();
+#endif
 #endif
     uv_mutex_destroy(&g_mutex);
 }

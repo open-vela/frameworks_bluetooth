@@ -46,6 +46,8 @@ extern "C" {
  */
 #define BT_UUID_SERVCLASS_SERIAL_PORT 0x1101
 
+#define SPP_PORT_TYPE_TTY 1
+
 /**
  * @brief Spp proxy state
  *
@@ -53,6 +55,8 @@ extern "C" {
 typedef enum {
     SPP_PROXY_STATE_CONNECTED,
     SPP_PROXY_STATE_DISCONNECTED,
+    SPP_PROXY_STATE_CONNECTING,
+    SPP_PROXY_STATE_CLOSING,
 } spp_proxy_state_t;
 
 /**
