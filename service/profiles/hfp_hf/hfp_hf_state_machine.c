@@ -420,8 +420,9 @@ static void query_current_calls_final(hf_state_machine_t* hfsm)
         hfp_current_call_t* ccall = bt_list_find(clist, call_index_cmp, &ucall->index);
         /* update new call to current call list */
         if (!ccall) {
-            bt_list_add_tail(clist, ucall);
-            hf_service_notify_call_state_changed(&hfsm->addr, ucall);
+            hfp_current_call_t* new_call = hf_call_new(ucall->index, ucall->dir, ucall->state, ucall->mpty, ucall->number);
+            bt_list_add_tail(clist, new_call);
+            hf_service_notify_call_state_changed(&hfsm->addr, new_call);
         }
     }
 
@@ -1613,7 +1614,7 @@ hf_state_machine_t* hf_state_machine_new(bt_address_t* addr, void* context)
     hfsm->service = context;
     hfsm->codec = HFP_CODEC_CVSD;
     memcpy(&hfsm->addr, addr, sizeof(bt_address_t));
-    hfsm->update_calls = bt_list_new(NULL);
+    hfsm->update_calls = bt_list_new(hf_call_delete);
     hfsm->current_calls = bt_list_new(hf_call_delete);
     hfsm->media_volume = INVALID_MEDIA_VOLUME;
     list_initialize(&hfsm->pending_actions);
