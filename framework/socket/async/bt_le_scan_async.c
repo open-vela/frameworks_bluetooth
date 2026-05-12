@@ -65,7 +65,7 @@ static void le_start_scan_reply(bt_instance_t* ins, bt_message_packet_t* packet,
     }
 
     scan->remote = packet->scan_r.remote;
-    ret_cb(ins, packet->scan_r.status, data->scan, data->userdata);
+    ret_cb(ins, BT_STATUS_SUCCESS, data->scan, data->userdata);
 
     free(data);
     return;

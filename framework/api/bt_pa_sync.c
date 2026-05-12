@@ -1,0 +1,32 @@
+/****************************************************************************
+ *  Copyright (C) 2026 Xiaomi Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ***************************************************************************/
+
+#include "bt_pa_sync.h"
+#include "bt_internal.h"
+#include "pa_sync_service.h"
+
+bt_status_t BTSYMBOLS(bt_pa_sync_create)(bt_instance_t* ins, const bt_le_address_t* addr,
+    uint8_t sid, const bt_pa_sync_create_param_t* params, const bt_pa_sync_callbacks_t* cbs,
+    const void* context)
+{
+    return pa_sync_create(addr, sid, params, cbs, context);
+}
+
+bt_status_t BTSYMBOLS(bt_pa_sync_terminate)(bt_instance_t* ins, const bt_le_address_t* addr,
+    uint8_t sid)
+{
+    return pa_sync_terminate(addr, sid);
+}

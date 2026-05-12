@@ -40,6 +40,7 @@ extern "C" {
 #include "bt_message_l2cap.h"
 #include "bt_message_log.h"
 #include "bt_message_manager.h"
+#include "bt_message_pa_sync.h"
 #include "bt_message_pan.h"
 #include "bt_message_scan.h"
 #include "bt_message_spp.h"
@@ -119,6 +120,7 @@ typedef struct
         bt_pan_result_t pan_r;
         bt_hid_device_result_t hidd_r;
         bt_l2cap_result_t l2cap_r;
+        bt_pa_sync_result_t pa_sync_r;
     };
     union {
         bt_message_manager_t manager_pl;
@@ -170,6 +172,9 @@ typedef struct
 
         bt_message_l2cap_t l2cap_pl;
         bt_message_l2cap_callbacks_t l2cap_cb;
+
+        bt_message_pa_sync_t pa_sync_pl;
+        bt_message_pa_sync_callbacks_t pa_sync_cb;
 
         bt_message_log_t log_pl;
     };

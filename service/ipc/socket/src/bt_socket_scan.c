@@ -271,7 +271,7 @@ int bt_socket_client_scan_callback(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async)
 {
     switch (packet->code) {
-    case BT_LE_ON_SCAN_RESULT: {
+    case BT_LE_ON_SCAN_RESULT_UNUSED: {
         bt_scan_remote_t* scan = INT2PTR(bt_scan_remote_t*) packet->scan_cb._on_scan_result_cb.scanner;
         ble_scan_result_t* result = &packet->scan_cb._on_scan_result_cb.result;
         ble_scan_result_t* tmp = malloc(sizeof(ble_scan_result_t) + result->length);
@@ -325,6 +325,27 @@ int bt_socket_client_scan_callback(service_poll_t* poll,
                     on_scan_result,
                     tmp);
             }
+            break;
+        }
+        case BLE_SCAN_SUBCODE_SCAN_CALLBACK: {
+            bt_scan_remote_t* scan = INT2PTR(bt_scan_remote_t*) packet->scan_cb._on_scan_result_cb.scanner;
+            ble_scan_result_t* result = &packet->scan_cb._on_scan_result_cb.result;
+            ble_scan_result_t* tmp;
+
+            if (!scan)
+                break;
+
+            if (result->length > MAX_EXT_SCAN_RESULTS_LENGTH)
+                break;
+
+            tmp = malloc(sizeof(ble_scan_result_t) + result->length);
+            if (!tmp)
+                break;
+
+            memcpy(tmp, result, sizeof(ble_scan_result_t));
+            memcpy(tmp->adv_data, packet->scan_cb._on_scan_result_cb.adv_data, result->length);
+            CALLBACK_REMOTE(scan, scanner_callbacks_t, on_scan_result, tmp);
+            free(tmp);
             break;
         }
         default:

@@ -455,7 +455,7 @@ void scan_on_state_changed(uint8_t state)
     BT_LOGD("%s, state:%d", __func__, state);
 }
 
-void scan_on_result_data_update(ble_scan_result_t* result_info, char* adv_data)
+void scan_on_result_data_update(ble_scan_result_t* result_info, const uint8_t* adv_data)
 {
     ble_scan_result_t* result = malloc(sizeof(ble_scan_result_t) + result_info->length);
 
@@ -465,6 +465,11 @@ void scan_on_result_data_update(ble_scan_result_t* result_info, char* adv_data)
     /* TODO : gdb debug check */
     memcpy(result, result_info, sizeof(ble_scan_result_t));
     memcpy(result->adv_data, adv_data, result_info->length);
+
+    if (result->interval)
+        result->flags |= SCAN_RESULT_FLAG_PERIODIC_ADVERTISING;
+    else
+        result->flags &= ~SCAN_RESULT_FLAG_PERIODIC_ADVERTISING;
 
     do_in_service_loop(notify_scanners_scan_result, result);
 }

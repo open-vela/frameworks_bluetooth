@@ -29,6 +29,8 @@ extern "C" {
 #endif
 
 #define BLE_SCAN_FILTER_UUID_MAX_NUM 2
+#define BLE_SCAN_SID_MAX 0xF
+#define BLE_SCAN_SID_NOT_PROVIDED 0xFF
 
 /**
  * @brief Scan start status code
@@ -61,6 +63,8 @@ enum {
 #define SCAN_MODE_LOW_LATENCY_INTERVAL 0xA0
 #define SCAN_MODE_LOW_LATENCY_WINDOW 0xA0
 
+#define SCAN_RESULT_FLAG_PERIODIC_ADVERTISING 0x01
+
 typedef void bt_scanner_t;
 
 typedef enum {
@@ -86,11 +90,14 @@ typedef enum {
 typedef struct {
     bt_address_t addr;
     uint8_t dev_type; /* bt_device_type_t */
-    int8_t rssi;
+    int8_t rssi; /* RSSI in dBm (-127, +20). 0x7F if unavailable */
     uint8_t addr_type; /* ble_addr_type_t */
     uint8_t adv_type; /* ble_adv_type_t */
-    uint8_t length;
-    uint8_t pad[1];
+    uint8_t length; /* length of `adv_data` */
+    uint8_t sid; /* advertising set identifier, valid from 0x00 to 0x0F, 0xFF if not provided */
+    uint16_t interval; /* periodic advertising interval in 1.25 milliseconds, 0 if not presented */
+    int8_t tx_power; /* transmit power of the advertiser in dBm (-127, +20). 0x7F if unavailable */
+    uint8_t flags; /* e.g., `SCAN_RESULT_FLAG_PERIODIC_ADVERTISING` */
     uint8_t adv_data[1];
 } ble_scan_result_t;
 

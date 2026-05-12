@@ -103,6 +103,18 @@ config BLUETOOTH_BLE_SCAN_FILTER
 	default n
 	depends on BLUETOOTH_BLE_SCAN
 
+config BLUETOOTH_HCI_FILTER
+	bool "Enable Bluetooth HCI filter"
+	default y
+	help
+		Enable Bluetooth HCI filter
+
+config BLUETOOTH_PA_SYNC
+	bool "LE Periodic Advertising sync support"
+	default n
+	depends on BLUETOOTH_BLE_SUPPORT
+	depends on BLUETOOTH_BLE_SCAN
+
 config BLUETOOTH_L2CAP
 	bool "L2CAP dynamic channel support"
 	default n
@@ -244,8 +256,13 @@ config BLUETOOTH_LE_ADVERTISER_MAX_NUM
 	help
 		LE Advertiser max register number
 
+config BLUETOOTH_CONNECTION_MANAGER
+       bool "Bluetooth connection manager support"
+       default y
+
 config LE_DLF_SUPPORT
 	bool "Enable LE DLF support"
+	depends on BLUETOOTH_CONNECTION_MANAGER
 	default n
 
 endmenu #Bluetooth LE Config
@@ -295,12 +312,26 @@ config BLUETOOTH_A2DP_SOURCE
 	default n
 	select BLUETOOTH_AVRCP_TARGET
 
+config ZBLUE_A2DP_SBC_MAX_BIT_POOL
+	int "A2DP sbc codec max bit pool"
+	default 32
+	depends on BLUETOOTH_STACK_BREDR_ZBLUE
+	help
+		A2DP sbc codec max bit pool 1~53
+
 if BLUETOOTH_A2DP_SOURCE
 config BLUETOOTH_A2DP_PEER_PARTIAL_RECONN
 	bool "Bluetooth A2DP peer partial reconnect support"
 	default y
 	help
 		Bluetooth A2DP peer partial reconnect support
+
+config ZBLUE_A2DP_SOURCE_BUF_SIZE
+	int "A2DP source buffer size"
+	default 660
+	depends on BLUETOOTH_STACK_BREDR_ZBLUE
+	help
+		Buffer size is related to L2CAP TX MTU
 
 endif #BLUETOOTH_A2DP_SOURCE
 
@@ -364,6 +395,15 @@ config HFP_AG_MAX_CONNECTIONS
 config BLUETOOTH_HFP_AG_PRIMARY_SLOT
 	int "HFP select primary modem slot"
 	default 0
+
+config BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+	bool "Handle telephony AT commands locally instead of notifying upper layer"
+	default y
+	help
+		If enabled, the HFP AG service handles telephony-related AT commands
+		(AT+CIND, AT+CLCC, AT+COPS, ATA, AT+CHUP, ATD, AT+CHLD) locally by
+		calling telephony service directly. If disabled, these requests are
+		forwarded to the upper layer (e.g. AP core) via callback.
 
 endif # BLUETOOTH_HFP_AG
 
@@ -716,6 +756,15 @@ config BLUETOOTH_GATTS_MAX_CONNECTIONS
 config BLUETOOTH_GATTS_MAX_ATTRIBUTE_NUM
 	int "GATT Server max number of attributes contained in a table"
 	default 10
+
+config BLUETOOTH_GATTS_CACHE_SUPPORT
+	bool "Enable GATT Server Cache Support"
+	default y
+	depends on BLUETOOTH_BLE_SUPPORT
+	help
+		Enable internal GATT attribute table hash comparison.
+		On reconnect, trusted devices may receive Service Changed indications
+		if attribute changes are detected.
 endif # BLUETOOTH_GATT_SERVER
 
 menuconfig BLUETOOTH_SPP
@@ -817,6 +866,16 @@ config BLUETOOTH_SERVICE_LOG_LEVEL
 	depends on BLUETOOTH_SERVICE
 	help
 		Set BT Service log level <0~7>
+
+config BLUETOOTH_LOG_PRIVACY
+	int "Default log privacy mask"
+	default 0
+	help
+		Bitmask for log privacy. Can be changed at runtime via
+		bttool log privacy <bit> <0|1>.
+		Privacy Bit Enum:
+		  ADDR: 0
+
 endif #BLUETOOTH_LOG
 
 endmenu #Debug

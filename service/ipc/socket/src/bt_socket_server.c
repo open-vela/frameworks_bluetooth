@@ -215,6 +215,10 @@ static int bt_socket_server_receive(service_poll_t* poll, int fd, void* userdata
         || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_BLE_SCAN_BEGIN, BT_IPC_CODE_COMMAND_BLE_SCAN_END)) {
         bt_socket_server_scan_process(poll, fd, ins, packet);
 #endif
+#ifdef CONFIG_BLUETOOTH_PA_SYNC
+    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_PA_SYNC_BEGIN, BT_IPC_CODE_COMMAND_PA_SYNC_END)) {
+        bt_socket_server_pa_sync_process(poll, fd, ins, packet);
+#endif
 #ifdef CONFIG_BLUETOOTH_GATT_CLIENT
     } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_GATT_CLIENT_MESSAGE_START, BT_GATT_CLIENT_MESSAGE_END)
         || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_GATTC_BEGIN, BT_IPC_CODE_COMMAND_GATTC_END)) {

@@ -188,6 +188,9 @@ typedef enum {
 // Add new definition
 #define BT_DEVICE_TYPE_UNKNOW 0xFF
 
+// For TxPower and RSSI that are not available
+#define BT_POWER_UNAVAILABLE 0x7F
+
 typedef enum {
     BT_LE_ADDR_TYPE_PUBLIC,
     BT_LE_ADDR_TYPE_RANDOM,
@@ -376,6 +379,11 @@ typedef struct {
 
 #define BT_UUID_MAX_NUM (32)
 #define BT_UUID_128_LEN (16)
+
+/* `Broadcast_ID` is 24-bit (0x000000-0xFFFFFF). Other values are invalid. */
+#define BT_INVALID_BROADCAST_ID (0xFFFFFFFF)
+
+#define BT_BROADCAST_NAME_MAX_LEN (128)
 
 typedef struct {
     bt_address_t addr;

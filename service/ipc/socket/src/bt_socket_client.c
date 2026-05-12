@@ -111,6 +111,9 @@ static void bt_socket_client_callback_process(bt_instance_t* ins, bt_message_pac
         { BT_SCAN_CALLBACK_START, BT_SCAN_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_scan_callback },
         { BT_IPC_CODE_CALLBACK_BLE_SCAN_BEGIN, BT_IPC_CODE_CALLBACK_BLE_SCAN_END, (bt_socket_callback_t)bt_socket_client_scan_callback },
 #endif
+#ifdef CONFIG_BLUETOOTH_PA_SYNC
+        { BT_IPC_CODE_CALLBACK_PA_SYNC_BEGIN, BT_IPC_CODE_CALLBACK_PA_SYNC_END, (bt_socket_callback_t)bt_socket_client_pa_sync_callback },
+#endif
 #ifdef CONFIG_BLUETOOTH_GATT_CLIENT
         { BT_GATT_CLIENT_CALLBACK_START, BT_GATT_CLIENT_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_gattc_callback },
         { BT_IPC_CODE_CALLBACK_GATTC_BEGIN, BT_IPC_CODE_CALLBACK_GATTC_END, (bt_socket_callback_t)bt_socket_client_gattc_callback },
@@ -527,7 +530,7 @@ void bt_socket_client_deinit(bt_instance_t* ins)
  Async client
 */
 typedef struct {
-    bt_message_type_t code;
+    uint32_t code;
     // bt_message_packet_t* packet;
     bt_socket_reply_cb_t reply_cb;
     void* cb;
@@ -642,8 +645,8 @@ static void bt_socket_context_free(void* data)
     free(data);
 }
 
-int bt_socket_client_send_with_reply(bt_instance_t* ins, bt_message_packet_t* packet,
-    bt_message_type_t code, bt_socket_reply_cb_t reply, void* cb, void* userdata)
+int bt_socket_client_send_with_reply(bt_instance_t* ins, bt_message_packet_t* packet, uint32_t code,
+    bt_socket_reply_cb_t reply, void* cb, void* userdata)
 {
     uv_buf_t buf;
     bt_message_context_t* ctx;

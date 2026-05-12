@@ -23,7 +23,7 @@ extern "C" {
 #include "bluetooth.h"
 
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_ASYNC
-#define HANDLE_BT_ASTNC_CALLBACK(ret_cb, ins, packet, type, userdata) \
+#define HANDLE_BT_ASYNC_CALLBACK(ret_cb, ins, packet, type, userdata) \
     do {                                                              \
         if (!ret_cb)                                                  \
             return;                                                   \
@@ -34,6 +34,12 @@ extern "C" {
         ret_cb(ins, packet->type.status, userdata);                   \
     } while (0)
 
+typedef struct {
+    void* userdata;
+    void* cookie;
+} bt_register_callback_data_t;
+
+typedef void (*bt_register_callback_cb_t)(bt_instance_t* ins, bt_status_t status, void* cookie, void* userdata);
 typedef void (*bt_status_cb_t)(bt_instance_t* ins, bt_status_t status, void* userdata);
 typedef void (*bt_address_cb_t)(bt_instance_t* ins, bt_status_t status, bt_address_t* addr, void* userdata);
 typedef void (*bt_uuids_cb_t)(bt_instance_t* ins, bt_status_t status, bt_uuid_t* uuids, uint16_t size, void* userdata);

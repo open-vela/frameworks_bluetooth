@@ -64,6 +64,9 @@ endif #CONFIG_BLUETOOTH_BLE_ADV
 ifeq ($(CONFIG_BLUETOOTH_BLE_SCAN), y)
 CSRCS += framework/api/bt_le_scan.c
 endif #CONFIG_BLUETOOTH_BLE_SCAN
+ifeq ($(CONFIG_BLUETOOTH_PA_SYNC), y)
+CSRCS += framework/api/bt_pa_sync.c
+endif #CONFIG_BLUETOOTH_PA_SYNC
 ifeq ($(CONFIG_BLUETOOTH_LOG), y)
 CSRCS += framework/api/bt_trace.c
 endif
@@ -152,6 +155,11 @@ CSRCS += framework/socket/bt_le_scan.c
 CSRCS += service/ipc/socket/src/bt_socket_scan.c
 endif #CONFIG_BLUETOOTH_BLE_SCAN
 
+ifeq ($(CONFIG_BLUETOOTH_PA_SYNC), y)
+CSRCS += framework/socket/bt_pa_sync.c
+CSRCS += service/ipc/socket/src/bt_socket_pa_sync.c
+endif #CONFIG_BLUETOOTH_PA_SYNC
+
 ifeq ($(CONFIG_BLUETOOTH_PAN), y)
 CSRCS += framework/socket/bt_pan.c
 CSRCS += service/ipc/socket/src/bt_socket_pan.c
@@ -219,6 +227,9 @@ ifeq ($(CONFIG_BLUETOOTH_BLE_SCAN), y)
 	CSRCS += service/src/scan_record.c
 	CSRCS += service/src/scan_filter.c
 endif #CONFIG_BLUETOOTH_BLE_SCAN
+ifeq ($(CONFIG_BLUETOOTH_PA_SYNC), y)
+	CSRCS += service/src/pa_sync_service.c
+endif #CONFIG_BLUETOOTH_PA_SYNC
 ifeq ($(CONFIG_BLUETOOTH_L2CAP), y)
 	CSRCS += service/src/l2cap_service.c
 endif #CONFIG_BLUETOOTH_L2CAP
@@ -252,6 +263,9 @@ endif #CONFIG_BLUETOOTH_BLE_ADV
 ifeq ($(CONFIG_BLUETOOTH_BLE_SCAN), y)
 	CSRCS += service/stacks/zephyr/sal_le_scan_interface.c
 endif #CONFIG_BLUETOOTH_BLE_SCAN
+ifeq ($(CONFIG_BLUETOOTH_PA_SYNC), y)
+	CSRCS += service/stacks/zephyr/sal_pa_sync_interface.c
+endif #CONFIG_BLUETOOTH_PA_SYNC
 ifeq ($(CONFIG_BLUETOOTH_GATT_CLIENT), y)
 	CSRCS += service/stacks/zephyr/sal_gatt_client_interface.c
 endif #CONFIG_BLUETOOTH_GATT_CLIENT
