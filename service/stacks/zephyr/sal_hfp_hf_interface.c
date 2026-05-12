@@ -508,6 +508,51 @@ typedef struct {
 
 /* call + ring indication (uses call event) - reuse hf_call_event_params_t */
 
+#if defined(CONFIG_BT_HFP_HF_VOLUME)
+static void do_hf_set_volume(service_work_t* work, void* userdata)
+{
+    bt_hfp_hf_set_volume_param_t* params = (bt_hfp_hf_set_volume_param_t*)userdata;
+    bt_hfp_hf_connection_t* sal_conn;
+    struct bt_hfp_hf* hf;
+    int ret;
+
+    if (!params) {
+        BT_LOGE("%s, params is NULL", __func__);
+        return;
+    }
+
+    conn_list_lock();
+    sal_conn = find_connection_by_addr(&params->addr);
+    if (!sal_conn || !sal_conn->hf) {
+        conn_list_unlock();
+        BT_LOGW("%s, connection no longer available, skip set volume", __func__);
+        free(params);
+        return;
+    }
+    hf = sal_conn->hf;
+    conn_list_unlock();
+
+    switch (params->type) {
+    case HFP_VOLUME_TYPE_MIC:
+        ret = Z_API(bt_hfp_hf_vgm)(hf, params->gain);
+        break;
+    case HFP_VOLUME_TYPE_SPK:
+        ret = Z_API(bt_hfp_hf_vgs)(hf, params->gain);
+        break;
+    default:
+        BT_LOGE("%s, Unknown volume type: %d", __func__, params->type);
+        free(params);
+        return;
+    }
+
+    if (ret) {
+        BT_LOGE("%s, Failed to set volume, type=%d, ret=%d", __func__, params->type, ret);
+    }
+
+    free(params);
+}
+#endif /* CONFIG_BT_HFP_HF_VOLUME */
+
 static void hf_slc_connect_handler(void* data)
 {
     bt_hfp_hf_slc_connect_param_t* params = (bt_hfp_hf_slc_connect_param_t*)data;
@@ -1114,6 +1159,7 @@ static void zblue_on_subscriber_number(struct bt_hfp_hf* hf, const char* number,
     do_in_service_loop(hf_subscriber_number_handler, p);
 }
 
+#if defined(CONFIG_BT_HFP_HF_VOLUME)
 static void hf_vgm_handler(void* data)
 {
     hf_u8_event_params_t* p = (hf_u8_event_params_t*)data;
@@ -1169,6 +1215,7 @@ static void zblue_on_vgs(struct bt_hfp_hf* hf, uint8_t gain)
     p->value = gain;
     do_in_service_loop(hf_vgs_handler, p);
 }
+#endif /* CONFIG_BT_HFP_HF_VOLUME */
 
 static void hf_voice_recognition_handler(void* data)
 {
@@ -1521,8 +1568,13 @@ static struct bt_hfp_hf_cb hf_callbacks = {
     .ring_indication = zblue_on_ring_indication,
     .dialing = NULL,
     .clip = zblue_on_clip,
+#if defined(CONFIG_BT_HFP_HF_VOLUME)
     .vgm = zblue_on_vgm,
     .vgs = zblue_on_vgs,
+#else
+    .vgm = NULL,
+    .vgs = NULL,
+#endif
     .inband_ring = NULL,
     .codec_negotiate = zblue_on_codec_negotiate,
     .ecnr_turn_off = NULL,
@@ -1916,6 +1968,7 @@ bt_status_t bt_sal_hfp_hf_get_current_calls(bt_address_t* addr)
     return BT_STATUS_SUCCESS;
 }
 
+#if defined(CONFIG_BT_HFP_HF_VOLUME)
 bt_status_t bt_sal_hfp_hf_set_volume(bt_address_t* addr, hfp_volume_type_t type, uint8_t volume)
 {
     if (!addr) {
@@ -1953,6 +2006,15 @@ bt_status_t bt_sal_hfp_hf_set_volume(bt_address_t* addr, hfp_volume_type_t type,
     SAL_CHECK_RET(ret, 0);
     return BT_STATUS_SUCCESS;
 }
+#else
+bt_status_t bt_sal_hfp_hf_set_volume(bt_address_t* addr, hfp_volume_type_t type, uint8_t volume)
+{
+    (void)addr;
+    (void)type;
+    (void)volume;
+    return BT_STATUS_NOT_SUPPORTED;
+}
+#endif /* CONFIG_BT_HFP_HF_VOLUME */
 
 bt_status_t bt_sal_hfp_hf_start_voice_recognition(bt_address_t* addr)
 {
