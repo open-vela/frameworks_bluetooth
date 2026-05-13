@@ -747,11 +747,14 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
              * ATD response from the application (LOCAL_TELEPHONY=n).
              * Emit OK or CME ERROR to the HF.
              */
-            const char* reply_number = (data->valueint1 == HFP_ATCMD_RESULT_OK)
-                ? (data->string1 && data->string1[0] ? data->string1 : "ok")
-                : NULL;
             BT_LOGD("Dial response (ATD async): result=%d", data->valueint1);
-            bt_sal_hfp_ag_dial_at_reply(&agsm->addr, reply_number);
+            if (data->valueint1 == HFP_ATCMD_RESULT_OK) {
+                const char* reply_number = (data->string1 && data->string1[0])
+                    ? data->string1 : "ok";
+                bt_sal_hfp_ag_dial_at_reply(&agsm->addr, reply_number);
+            } else {
+                bt_sal_hfp_ag_dial_response(&agsm->addr, data->valueint1);
+            }
         }
 #endif
         break;

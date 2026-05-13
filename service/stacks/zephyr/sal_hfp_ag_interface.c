@@ -33,6 +33,7 @@
 #include <inttypes.h>
 #include <string.h>
 #include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/classic/at.h>
 #include <zephyr/bluetooth/classic/hfp_ag.h>
 #include <zephyr/bluetooth/classic/sdp.h>
@@ -49,6 +50,7 @@ extern struct net_buf_pool sdp_pool;
 
 static uint8_t zblue_on_sdp_done(struct bt_conn* conn, struct bt_sdp_client_result* result, const struct bt_sdp_discover_params* ignore);
 static void zblue_on_sdp_disconnected(struct bt_conn* conn, const struct bt_sdp_discover_params* params);
+static enum bt_at_cme hfp_at_result_to_cme(hfp_atcmd_result_t result);
 
 static struct bt_sdp_discover_params sdp_discover = {
     .func = zblue_on_sdp_done,
@@ -87,6 +89,9 @@ typedef struct _bt_hfp_ag_slc_connect_param {
     struct bt_conn* conn;
     uint8_t channel;
 } bt_hfp_ag_slc_connect_param_t;
+
+/* Forward declarations */
+static void ag_number_call_handler(void* data);
 
 static void free_connection(void* data)
 {
@@ -397,6 +402,10 @@ static bt_status_t do_ag_sdp_discover(bt_controller_id_t id, bt_address_t* addr,
     }
 
     BT_LOGD("%s, ACL conn found: %p", __func__, conn);
+
+    /* HFP requires security level 2 (encryption). Initiate pairing/encryption
+     * early so it completes during SDP, avoiding race with RFCOMM connect. */
+    (void)bt_conn_set_security(conn, BT_SECURITY_L2);
 
     sal_conn = new_sal_connection(conn, NULL);
     if (!sal_conn) {
@@ -994,10 +1003,33 @@ static void ag_redial_handler(void* data);
 
 static int zblue_on_ag_memory_dial(struct bt_hfp_ag* ag, const char* location, char** number)
 {
-    /* Memory dial is not supported: the AG has no persistent phonebook.
-     * zblue will emit CME ERROR:22 to the HF on -ENOTSUP.
+    /* Memory dial uses the same async path as BLDN/number_call:
+     * return -EINPROGRESS so zblue defers the AT response, then
+     * the framework state machine will call bt_hfp_ag_dial_response()
+     * to send OK and drive the call state transitions.
      */
-    return -ENOTSUP;
+    bt_hfp_ag_connection_t* sal_conn = find_connection_by_ag(ag);
+    if (!sal_conn) {
+        BT_LOGE("%s, Failed to find connection", __func__);
+        return -ENOTSUP;
+    }
+
+    BT_LOGD("%s, memory dial location='%s', dispatching to framework", __func__, location);
+
+    /* Treat memory dial as a number call with the location as "number".
+     * The framework/autopts will handle it via dial_response callback.
+     */
+    ag_number_call_params_t* params = (ag_number_call_params_t*)malloc(sizeof(ag_number_call_params_t));
+    if (!params) {
+        BT_LOGE("%s, Failed to allocate memory", __func__);
+        return -ENOTSUP;
+    }
+
+    params->ag = ag;
+    strlcpy(params->number, location, sizeof(params->number));
+    do_in_service_loop(ag_number_call_handler, params);
+
+    return -EINPROGRESS;
 }
 
 static void ag_redial_handler(void* data)
@@ -1922,8 +1954,25 @@ bt_status_t bt_sal_hfp_ag_connect(bt_address_t* addr)
 
     bt_hfp_ag_connection_t* sal_conn = find_connection_by_addr(addr);
     if (sal_conn) {
-        BT_LOGW("%s, Connection already exists or in progress (sal_conn=%p, ag=%p)", __func__, sal_conn, sal_conn->ag);
-        return BT_STATUS_BUSY;
+        /* Check if this is a stale connection that was not properly cleaned up.
+         * If ag is NULL and context (ACL conn) is NULL, the connection is dead
+         * and should be removed to allow a new connection attempt.
+         */
+        if (!sal_conn->ag && !sal_conn->context) {
+            BT_LOGW("%s, Removing stale sal_conn=%p (no ag, no context)", __func__, sal_conn);
+            bt_list_remove(g_sal_ag_conn_list, sal_conn);
+        } else {
+            /* Print conn ref count for debugging ref leak */
+            if (sal_conn->context) {
+                struct bt_conn* c = sal_conn->context;
+                BT_LOGW("%s, Connection BUSY: sal_conn=%p, ag=%p, context=%p",
+                    __func__, sal_conn, sal_conn->ag, c);
+            } else {
+                BT_LOGW("%s, Connection BUSY: sal_conn=%p, ag=%p, context=NULL",
+                    __func__, sal_conn, sal_conn->ag);
+            }
+            return BT_STATUS_BUSY;
+        }
     }
 
     ret = bt_sal_profile_connect_request(addr, PROFILE_HFP_AG, CONN_ID_DEFAULT, 0, do_ag_sdp_discover, NULL);
@@ -2459,7 +2508,12 @@ bt_status_t bt_sal_hfp_ag_dial_response(bt_address_t* addr, hfp_atcmd_result_t r
         return BT_STATUS_PARM_INVALID;
     }
 
-    SAL_CHECK_RET(Z_API(bt_hfp_ag_send_vendor)(sal_conn->ag, NULL), 0);
+    if (result == HFP_ATCMD_RESULT_OK) {
+        SAL_CHECK_RET(Z_API(bt_hfp_ag_send_vendor)(sal_conn->ag, NULL), 0);
+    } else {
+        /* Send plain ERROR for dial failure */
+        SAL_CHECK_RET(Z_API(bt_hfp_ag_send_vendor)(sal_conn->ag, "ERROR"), 0);
+    }
 
     return BT_STATUS_SUCCESS;
 }
