@@ -429,20 +429,24 @@ static void* pan_worker_thread(void* arg)
 
         pthread_mutex_lock(&g_pan_worker_lock);
         g_pan_acl_ready = false;
-        struct timespec abst;
-        clock_gettime(CLOCK_REALTIME, &abst);
-        abst.tv_sec += 3;
-        while (!g_pan_acl_ready && !already_connected) {
-            int rc = pthread_cond_timedwait(&g_pan_worker_cond,
-                &g_pan_worker_lock, &abst);
-            if (rc == ETIMEDOUT) {
-                break;
-            }
-            already_connected = (bt_conn_get_info(acl, &cinfo) == 0
-                && cinfo.state == BT_CONN_STATE_CONNECTED);
-        }
-        bool acl_ok = g_pan_acl_ready || already_connected;
         pthread_mutex_unlock(&g_pan_worker_lock);
+
+        /* Poll both the callback flag and the conn state: the remote
+         * can take >3s to complete page/connection setup. */
+        bool acl_ok = already_connected;
+        for (int i = 0; i < 100 && !acl_ok; i++) {
+            pthread_mutex_lock(&g_pan_worker_lock);
+            acl_ok = g_pan_acl_ready;
+            pthread_mutex_unlock(&g_pan_worker_lock);
+            if (!acl_ok) {
+                already_connected = (bt_conn_get_info(acl, &cinfo) == 0
+                    && cinfo.state == BT_CONN_STATE_CONNECTED);
+                acl_ok = already_connected;
+            }
+            if (!acl_ok) {
+                usleep(100000); /* 100ms, total up to 10s */
+            }
+        }
 
         if (!acl_ok) {
             syslog(LOG_WARNING, "[pan] worker: ACL up timeout\n");
