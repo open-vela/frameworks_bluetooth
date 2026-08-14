@@ -506,13 +506,10 @@ bt_status_t bt_sal_pan_connect(bt_address_t* addr, uint8_t dst_role,
      * L2CAP connect happens in pan_security_changed(). */
     acl = bt_conn_lookup_addr_br((const bt_addr_t*)addr);
     if (acl) {
-        syslog(LOG_INFO, "[pan] reuse ACL, wait encryption\n");
-        if (pan_l2cap_conn) {
-            bt_conn_unref(pan_l2cap_conn);
-        }
-        pan_l2cap_conn = bt_conn_ref(acl);
+        syslog(LOG_INFO, "[pan] reuse ACL, request encryption\n");
+        int sret = bt_conn_set_security(acl, BT_SECURITY_L2);
+        syslog(LOG_INFO, "[pan] set_security ret=%d\n", sret);
         bt_conn_unref(acl);
-        k_work_schedule(&pan_l2cap_work, K_MSEC(2000));
         return BT_STATUS_SUCCESS;
     }
 
@@ -527,6 +524,15 @@ bt_status_t bt_sal_pan_connect(bt_address_t* addr, uint8_t dst_role,
         return BT_STATUS_FAIL;
     }
     g_pan.acl_conn = acl; /* unref'd in pan_br_connected/failure */
+
+    /* The link is up now (create_br is synchronous). Request encryption
+     * from this application context (service thread): Android as NAP
+     * waits for the initiator to authenticate, and the passive wait
+     * below makes it time out and drop the ACL. send_sync blocks this
+     * thread only - the HCI RX thread still processes the response. */
+    syslog(LOG_INFO, "[pan] request encryption\n");
+    int sret = bt_conn_set_security(acl, BT_SECURITY_L2);
+    syslog(LOG_INFO, "[pan] set_security ret=%d\n", sret);
 
     return BT_STATUS_SUCCESS;
 }
