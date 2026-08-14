@@ -420,20 +420,28 @@ static void* pan_worker_thread(void* arg)
 
         /* Wait for the ACL-up callback (conn state CONNECTED) before
          * requesting encryption: set_security returns ENOTCONN if the
-         * link is not yet up from zblue's point of view. */
+         * link is not yet up from zblue's point of view. A reused ACL
+         * that is already CONNECTED skips the wait (its connected
+         * callback fired before we reset the flag). */
+        struct bt_conn_info cinfo;
+        bool already_connected = (bt_conn_get_info(acl, &cinfo) == 0
+            && cinfo.state == BT_CONN_STATE_CONNECTED);
+
         pthread_mutex_lock(&g_pan_worker_lock);
         g_pan_acl_ready = false;
         struct timespec abst;
         clock_gettime(CLOCK_REALTIME, &abst);
         abst.tv_sec += 3;
-        while (!g_pan_acl_ready) {
+        while (!g_pan_acl_ready && !already_connected) {
             int rc = pthread_cond_timedwait(&g_pan_worker_cond,
                 &g_pan_worker_lock, &abst);
             if (rc == ETIMEDOUT) {
                 break;
             }
+            already_connected = (bt_conn_get_info(acl, &cinfo) == 0
+                && cinfo.state == BT_CONN_STATE_CONNECTED);
         }
-        bool acl_ok = g_pan_acl_ready;
+        bool acl_ok = g_pan_acl_ready || already_connected;
         pthread_mutex_unlock(&g_pan_worker_lock);
 
         if (!acl_ok) {
