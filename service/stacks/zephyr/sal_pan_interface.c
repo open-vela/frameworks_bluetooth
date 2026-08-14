@@ -87,6 +87,7 @@ static pthread_mutex_t g_pan_worker_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t g_pan_worker_cond = PTHREAD_COND_INITIALIZER;
 static pan_conn_t* g_pan_worker_conn;
 static bool g_pan_worker_run;
+static bool g_pan_acl_ready; /* set by pan_br_connected (stack thread) */
 
 static void* pan_worker_thread(void* arg);
 static void pan_br_security_changed(struct bt_conn* conn, bt_security_t level,
@@ -299,6 +300,12 @@ static void pan_br_connected(struct bt_conn* conn, uint8_t err)
         return;
     }
     syslog(LOG_INFO, "[pan] ACL up\n");
+    /* Wake the worker: it waits for this before calling
+     * set_security() (conn state must be CONNECTED first). */
+    pthread_mutex_lock(&g_pan_worker_lock);
+    g_pan_acl_ready = true;
+    pthread_cond_signal(&g_pan_worker_cond);
+    pthread_mutex_unlock(&g_pan_worker_lock);
     /* No synchronous HCI here: the worker thread drives
      * set_security() and L2CAP (see pan_worker_thread). */
 }
@@ -406,6 +413,30 @@ static void* pan_worker_thread(void* arg)
             } else {
                 pthread_mutex_unlock(&g_pan_worker_lock);
             }
+            continue;
+        }
+
+        /* Wait for the ACL-up callback (conn state CONNECTED) before
+         * requesting encryption: set_security returns ENOTCONN if the
+         * link is not yet up from zblue's point of view. */
+        pthread_mutex_lock(&g_pan_worker_lock);
+        g_pan_acl_ready = false;
+        struct timespec abst;
+        clock_gettime(CLOCK_REALTIME, &abst);
+        abst.tv_sec += 3;
+        while (!g_pan_acl_ready) {
+            int rc = pthread_cond_timedwait(&g_pan_worker_cond,
+                &g_pan_worker_lock, &abst);
+            if (rc == ETIMEDOUT) {
+                break;
+            }
+        }
+        bool acl_ok = g_pan_acl_ready;
+        pthread_mutex_unlock(&g_pan_worker_lock);
+
+        if (!acl_ok) {
+            syslog(LOG_WARNING, "[pan] worker: ACL up timeout\n");
+            bt_conn_unref(acl);
             continue;
         }
 
