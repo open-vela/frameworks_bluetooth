@@ -277,7 +277,37 @@ static void pan_br_connected(struct bt_conn* conn, uint8_t err)
         return;
     }
 
-    /* Establish the L2CAP channel on PSM 0x000F */
+    /* Android NAP rejects the L2CAP connection (and drops the ACL) when
+     * the link is not encrypted. Request encryption first; the L2CAP
+     * connect is deferred to pan_security_changed(). */
+    int ret = bt_conn_set_security(conn, BT_SECURITY_L2);
+    if (ret < 0) {
+        BT_LOGW("%s set_security failed: %d, continuing anyway", __func__, ret);
+    }
+}
+
+static void pan_br_security_changed(struct bt_conn* conn, bt_security_t level,
+    enum bt_security_err err)
+{
+    bt_address_t addr;
+    struct bt_conn_info info;
+    pan_conn_t* pconn;
+
+    if (err != BT_SECURITY_ERR_SUCCESS) {
+        BT_LOGW("%s security err %d", __func__, err);
+        return;
+    }
+    if (bt_conn_get_info(conn, &info) != 0 || !info.br.dst) {
+        return;
+    }
+    bt_addr_set(&addr, info.br.dst->val);
+
+    pconn = pan_find_conn(&addr);
+    if (!pconn || pconn->state != PAN_CONN_ACL_PENDING) {
+        return;
+    }
+    BT_LOGI("%s encrypted, connecting L2CAP", __func__);
+
     pconn->state = PAN_CONN_L2CAP_PENDING;
     int ret = bt_l2cap_chan_connect(conn, &pconn->chan, BT_BNEP_PSM);
     if (ret < 0) {
@@ -329,6 +359,7 @@ bt_status_t bt_sal_pan_init(uint8_t max_connections, uint8_t role)
 
     g_pan.conn_cb.connected = pan_br_connected;
     g_pan.conn_cb.disconnected = pan_br_disconnected;
+    g_pan.conn_cb.security_changed = pan_br_security_changed;
     bt_conn_cb_register(&g_pan.conn_cb);
 
     g_pan.initialized = true;
