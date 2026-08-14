@@ -66,7 +66,7 @@ typedef struct {
     pan_conn_state_t state;
     uint8_t dst_role;
     uint8_t src_role;
-    struct bt_l2cap_chan chan;
+    struct bt_l2cap_br_chan chan;  /* must be br_chan: BR_CHAN() walks past chan */
 } pan_conn_t;
 
 /* Cooldown after a disconnect: the LCPU controller keeps stale state
@@ -150,7 +150,7 @@ static void pan_conn_free(pan_conn_t* conn)
 
 static void pan_chan_connected(struct bt_l2cap_chan* chan)
 {
-    pan_conn_t* conn = CONTAINER_OF(chan, pan_conn_t, chan);
+    pan_conn_t* conn = CONTAINER_OF(BT_L2CAP_BR_CHAN(chan), pan_conn_t, chan);
     uint8_t req[3];
 
     if (!conn || conn->state != PAN_CONN_L2CAP_PENDING) {
@@ -182,7 +182,7 @@ static void pan_chan_connected(struct bt_l2cap_chan* chan)
 
 static void pan_chan_disconnected(struct bt_l2cap_chan* chan)
 {
-    pan_conn_t* conn = CONTAINER_OF(chan, pan_conn_t, chan);
+    pan_conn_t* conn = CONTAINER_OF(BT_L2CAP_BR_CHAN(chan), pan_conn_t, chan);
 
     if (!conn) {
         return;
@@ -195,7 +195,7 @@ static void pan_chan_disconnected(struct bt_l2cap_chan* chan)
 
 static int pan_chan_recv(struct bt_l2cap_chan* chan, struct net_buf* buf)
 {
-    pan_conn_t* conn = CONTAINER_OF(chan, pan_conn_t, chan);
+    pan_conn_t* conn = CONTAINER_OF(BT_L2CAP_BR_CHAN(chan), pan_conn_t, chan);
     uint8_t* data = buf->data;
     uint16_t len = buf->len;
 
@@ -218,7 +218,7 @@ static int pan_chan_recv(struct bt_l2cap_chan* chan, struct net_buf* buf)
         } else {
             BT_LOGE("%s setup failed 0x%04x", __func__, resp);
             pan_conn_report(conn, PROFILE_STATE_DISCONNECTED);
-            bt_l2cap_chan_disconnect(&conn->chan);
+            bt_l2cap_chan_disconnect(&conn->chan.chan);
         }
         break;
     }
@@ -357,12 +357,12 @@ static void pan_l2cap_connect(struct bt_conn* conn)
     }
     pconn->state = PAN_CONN_L2CAP_PENDING;
     syslog(LOG_INFO, "[pan] L2CAP connect (psm 0x%04x)\n", BT_BNEP_PSM);
-    int ret = bt_l2cap_chan_connect(conn, &pconn->chan, BT_BNEP_PSM);
+    int ret = bt_l2cap_chan_connect(conn, &pconn->chan.chan, BT_BNEP_PSM);
     syslog(LOG_INFO, "[pan] L2CAP connect ret=%d\n", ret);
     if (ret < 0) {
         BT_LOGE("%s l2cap connect failed: %d", __func__, ret);
         pan_conn_report(pconn, PROFILE_STATE_DISCONNECTED);
-        bt_l2cap_chan_disconnect(&pconn->chan);
+        bt_l2cap_chan_disconnect(&pconn->chan.chan);
     }
 }
 
@@ -504,7 +504,7 @@ static void pan_br_disconnected(struct bt_conn* conn, uint8_t reason)
      * chan disconnected callback free it. For a pending (not yet
      * mounted) chan, tear down through the stack as well. */
     if (pconn->state >= PAN_CONN_L2CAP_PENDING) {
-        bt_l2cap_chan_disconnect(&pconn->chan);
+        bt_l2cap_chan_disconnect(&pconn->chan.chan);
     } else {
         pan_conn_free(pconn);
     }
@@ -555,7 +555,7 @@ void bt_sal_pan_cleanup(void)
     while ((node = bt_list_head(g_pan.conn_list)) != NULL) {
         pan_conn_t* conn = (pan_conn_t*)bt_list_node(node);
         if (conn->state >= PAN_CONN_L2CAP_PENDING) {
-            bt_l2cap_chan_disconnect(&conn->chan);
+            bt_l2cap_chan_disconnect(&conn->chan.chan);
         }
         pan_conn_free(conn);
     }
@@ -607,7 +607,7 @@ bt_status_t bt_sal_pan_connect(bt_address_t* addr, uint8_t dst_role,
     if (!conn) {
         return BT_STATUS_NOMEM;
     }
-    conn->chan.ops = &g_pan_chan_ops;
+    conn->chan.chan.ops = &g_pan_chan_ops;
     memcpy(&conn->addr, addr, sizeof(bt_address_t));
     conn->dst_role = dst_role;
     conn->src_role = src_role;
