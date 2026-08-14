@@ -74,6 +74,27 @@ typedef struct {
  */
 #define PAN_RECONNECT_COOLDOWN_MS 5000
 
+/* bt_conn_set_security() issues a synchronous HCI command; calling it
+ * from the zblue stack-thread callbacks deadlocks the HCI event loop
+ * (send_sync waits for a response that the blocked thread should
+ * process) and asserts after HCI_CMD_TIMEOUT. Defer it to the system
+ * workqueue where send_sync drains the command queue instead.
+ */
+static struct k_work pan_auth_work;
+static struct bt_conn* pan_auth_conn;
+
+static void pan_auth_work_handler(struct k_work* work)
+{
+    (void)work;
+    struct bt_conn* conn = pan_auth_conn;
+
+    pan_auth_conn = NULL;
+    if (conn) {
+        bt_conn_set_security(conn, BT_SECURITY_L2);
+        bt_conn_unref(conn);
+    }
+}
+
 static struct {
     uint8_t max_connections;
     uint8_t role;
@@ -278,12 +299,15 @@ static void pan_br_connected(struct bt_conn* conn, uint8_t err)
     }
 
     /* Android NAP rejects the L2CAP connection (and drops the ACL) when
-     * the link is not encrypted. Request encryption first; the L2CAP
-     * connect is deferred to pan_security_changed(). */
-    int ret = bt_conn_set_security(conn, BT_SECURITY_L2);
-    if (ret < 0) {
-        BT_LOGW("%s set_security failed: %d, continuing anyway", __func__, ret);
+     * the link is not encrypted. Request encryption on the system
+     * workqueue (never from this stack-thread callback: send_sync
+     * would deadlock); the L2CAP connect is deferred to
+     * pan_security_changed(). */
+    if (pan_auth_conn) {
+        bt_conn_unref(pan_auth_conn);
     }
+    pan_auth_conn = bt_conn_ref(conn);
+    k_work_submit(&pan_auth_work);
 }
 
 static void pan_br_security_changed(struct bt_conn* conn, bt_security_t level,
@@ -373,6 +397,8 @@ bt_status_t bt_sal_pan_init(uint8_t max_connections, uint8_t role)
     g_pan.conn_cb.disconnected = pan_br_disconnected;
     g_pan.conn_cb.security_changed = pan_br_security_changed;
     bt_conn_cb_register(&g_pan.conn_cb);
+    k_work_init(&pan_auth_work, pan_auth_work_handler);
+    pan_auth_conn = NULL;
 
     g_pan.initialized = true;
     return BT_STATUS_SUCCESS;
