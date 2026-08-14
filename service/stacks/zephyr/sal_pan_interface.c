@@ -75,17 +75,20 @@ typedef struct {
  */
 #define PAN_RECONNECT_COOLDOWN_MS 5000
 
-/* Do NOT call bt_conn_set_security() from any callback or workqueue
- * context: it issues a synchronous HCI command and the LCPU controller
- * stops answering AUTH_REQUESTED once the peer drops the ACL, wedging
- * the sys workqueue for HCI_CMD_TIMEOUT and then asserting (observed
- * 2026-08-15). Instead wait passively for the peer to encrypt (Android
- * re-encrypts bonded links) and fall back to L2CAP after a timeout.
+/* Synchronous HCI commands (bt_conn_create_br, bt_conn_set_security)
+ * must never run on the bluetoothd service-loop thread: that thread
+ * also polls /dev/ttyHCI0 and delivers the Command Status events the
+ * command is waiting for - a self-deadlock that times out and asserts
+ * after 10s (observed 2026-08-15). All connection work runs on a
+ * dedicated worker thread instead.
  */
-static struct k_work_delayable pan_l2cap_work;
-static struct bt_conn* pan_l2cap_conn;
+static pthread_t g_pan_worker;
+static pthread_mutex_t g_pan_worker_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t g_pan_worker_cond = PTHREAD_COND_INITIALIZER;
+static pan_conn_t* g_pan_worker_conn;
+static bool g_pan_worker_run;
 
-static void pan_l2cap_work_handler(struct k_work* work);
+static void* pan_worker_thread(void* arg);
 static void pan_br_security_changed(struct bt_conn* conn, bt_security_t level,
     enum bt_security_err err);
 static void pan_l2cap_connect(struct bt_conn* conn);
@@ -295,16 +298,9 @@ static void pan_br_connected(struct bt_conn* conn, uint8_t err)
         BT_LOGW("%s no pending pan conn", __func__);
         return;
     }
-    syslog(LOG_INFO, "[pan] ACL up, wait encryption\n");
-
-    /* Android NAP requires an encrypted link; wait for the peer to
-     * encrypt (security_changed) with a 2s fallback that attempts
-     * L2CAP regardless. */
-    if (pan_l2cap_conn) {
-        bt_conn_unref(pan_l2cap_conn);
-    }
-    pan_l2cap_conn = bt_conn_ref(conn);
-    k_work_schedule(&pan_l2cap_work, K_MSEC(2000));
+    syslog(LOG_INFO, "[pan] ACL up\n");
+    /* No synchronous HCI here: the worker thread drives
+     * set_security() and L2CAP (see pan_worker_thread). */
 }
 
 static void pan_br_security_changed(struct bt_conn* conn, bt_security_t level,
@@ -332,6 +328,9 @@ static void pan_br_security_changed(struct bt_conn* conn, bt_security_t level,
     BT_LOGI("%s encrypted, connecting L2CAP", __func__);
 
     pan_l2cap_connect(conn);
+    pthread_mutex_lock(&g_pan_worker_lock);
+    /* state changed by pan_l2cap_connect -> worker wait loop exits */
+    pthread_mutex_unlock(&g_pan_worker_lock);
 }
 
 static void pan_l2cap_connect(struct bt_conn* conn)
@@ -358,18 +357,83 @@ static void pan_l2cap_connect(struct bt_conn* conn)
     }
 }
 
-static void pan_l2cap_work_handler(struct k_work* work)
+/* Dedicated worker: runs the synchronous HCI sequence (create_br,
+ * set_security) off the service-loop thread so Command Status events
+ * keep being processed. */
+static void* pan_worker_thread(void* arg)
 {
-    (void)work;
-    struct bt_conn* conn = pan_l2cap_conn;
+    (void)arg;
+    pan_conn_t* conn;
+    struct bt_conn* acl;
+    bt_address_t addr;
 
-    pan_l2cap_conn = NULL;
-    if (conn) {
-        /* 2s fallback: connect L2CAP even if encryption events were
-         * missed (async op only, never blocks the workqueue). */
-        pan_l2cap_connect(conn);
-        bt_conn_unref(conn);
+    for (;;) {
+        pthread_mutex_lock(&g_pan_worker_lock);
+        while (g_pan_worker_run && !g_pan_worker_conn) {
+            pthread_cond_wait(&g_pan_worker_cond, &g_pan_worker_lock);
+        }
+        if (!g_pan_worker_run) {
+            pthread_mutex_unlock(&g_pan_worker_lock);
+            break;
+        }
+        conn = g_pan_worker_conn;
+        g_pan_worker_conn = NULL;
+        pthread_mutex_unlock(&g_pan_worker_lock);
+
+        if (!conn) {
+            continue;
+        }
+
+        /* Reuse the ACL if already up, else create one (synchronous:
+         * blocks this worker thread only, service loop keeps polling
+         * HCI events -> no deadlock). */
+        memcpy(&addr, &conn->addr, sizeof(bt_address_t));
+        acl = bt_conn_lookup_addr_br((const bt_addr_t*)&addr);
+        if (!acl) {
+            syslog(LOG_INFO, "[pan] worker: create_br...\n");
+            acl = bt_conn_create_br((const bt_addr_t*)&addr,
+                BT_BR_CONN_PARAM_DEFAULT);
+        } else {
+            syslog(LOG_INFO, "[pan] worker: reuse ACL\n");
+        }
+        if (!acl) {
+            syslog(LOG_ERR, "[pan] worker: create_br FAILED\n");
+            pthread_mutex_lock(&g_pan_worker_lock);
+            if (conn->state == PAN_CONN_ACL_PENDING) {
+                pthread_mutex_unlock(&g_pan_worker_lock);
+                pan_conn_report(conn, PROFILE_STATE_DISCONNECTED);
+                pan_conn_free(conn);
+            } else {
+                pthread_mutex_unlock(&g_pan_worker_lock);
+            }
+            continue;
+        }
+
+        /* Request encryption (also synchronous - fine on this thread) */
+        syslog(LOG_INFO, "[pan] worker: request encryption\n");
+        int sret = bt_conn_set_security(acl, BT_SECURITY_L2);
+        syslog(LOG_INFO, "[pan] worker: set_security ret=%d\n", sret);
+
+        /* Wait briefly for encryption, then connect L2CAP (async). */
+        for (int i = 0; i < 20; i++) {
+            pthread_mutex_lock(&g_pan_worker_lock);
+            bool done = (conn->state != PAN_CONN_ACL_PENDING);
+            pthread_mutex_unlock(&g_pan_worker_lock);
+            if (done) {
+                break;
+            }
+            usleep(100000); /* 100ms */
+        }
+        pthread_mutex_lock(&g_pan_worker_lock);
+        bool still_pending = (conn->state == PAN_CONN_ACL_PENDING);
+        pthread_mutex_unlock(&g_pan_worker_lock);
+        if (still_pending) {
+            syslog(LOG_INFO, "[pan] worker: timeout, L2CAP anyway\n");
+            pan_l2cap_connect(acl);
+        }
+        bt_conn_unref(acl);
     }
+    return NULL;
 }
 
 static void pan_br_disconnected(struct bt_conn* conn, uint8_t reason)
@@ -426,8 +490,15 @@ bt_status_t bt_sal_pan_init(uint8_t max_connections, uint8_t role)
     g_pan.conn_cb.disconnected = pan_br_disconnected;
     g_pan.conn_cb.security_changed = pan_br_security_changed;
     bt_conn_cb_register(&g_pan.conn_cb);
-    k_work_init_delayable(&pan_l2cap_work, pan_l2cap_work_handler);
-    pan_l2cap_conn = NULL;
+    g_pan_worker_run = true;
+    g_pan_worker_conn = NULL;
+    pthread_attr_t wattr;
+    pthread_attr_init(&wattr);
+    pthread_attr_setstacksize(&wattr, 8192);
+    if (pthread_create(&g_pan_worker, &wattr, pan_worker_thread, NULL) != 0) {
+        syslog(LOG_ERR, "[pan] worker thread create failed\n");
+    }
+    pthread_attr_destroy(&wattr);
 
     g_pan.initialized = true;
     return BT_STATUS_SUCCESS;
@@ -452,6 +523,12 @@ void bt_sal_pan_cleanup(void)
         bt_conn_unref(g_pan.acl_conn);
         g_pan.acl_conn = NULL;
     }
+    pthread_mutex_lock(&g_pan_worker_lock);
+    g_pan_worker_run = false;
+    g_pan_worker_conn = NULL;
+    pthread_cond_signal(&g_pan_worker_cond);
+    pthread_mutex_unlock(&g_pan_worker_lock);
+    pthread_join(g_pan_worker, NULL);
     bt_conn_cb_unregister(&g_pan.conn_cb);
     bt_list_free(g_pan.conn_list);
     g_pan.conn_list = NULL;
@@ -497,42 +574,13 @@ bt_status_t bt_sal_pan_connect(bt_address_t* addr, uint8_t dst_role,
     bt_list_add_tail(g_pan.conn_list, conn);
     pan_conn_report(conn, PROFILE_STATE_CONNECTING);
 
-    /* Reuse an existing BR/EDR ACL if one is already up: calling
-     * bt_conn_create_br() again while the controller still has the
-     * previous connection (or its teardown) pending makes HCI
-     * CREATE_CONN time out and zblue asserts (bt_hci_cmd_send_sync
-     * HCI_CMD_TIMEOUT) - observed 2026-08-15 on repeated pan connect.
-     * Same as the create_br path: request encryption first (workqueue),
-     * L2CAP connect happens in pan_security_changed(). */
-    acl = bt_conn_lookup_addr_br((const bt_addr_t*)addr);
-    if (acl) {
-        syslog(LOG_INFO, "[pan] reuse ACL, request encryption\n");
-        int sret = bt_conn_set_security(acl, BT_SECURITY_L2);
-        syslog(LOG_INFO, "[pan] set_security ret=%d\n", sret);
-        bt_conn_unref(acl);
-        return BT_STATUS_SUCCESS;
-    }
-
-    /* Establish the BR/EDR ACL first */
-    syslog(LOG_INFO, "[pan] create_br...\n");
-    acl = bt_conn_create_br((const bt_addr_t*)addr, BT_BR_CONN_PARAM_DEFAULT);
-    if (!acl) {
-        syslog(LOG_ERR, "[pan] create_br FAILED\n");
-        BT_LOGE("%s create_br failed", __func__);
-        pan_conn_report(conn, PROFILE_STATE_DISCONNECTED);
-        pan_conn_free(conn);
-        return BT_STATUS_FAIL;
-    }
-    g_pan.acl_conn = acl; /* unref'd in pan_br_connected/failure */
-
-    /* The link is up now (create_br is synchronous). Request encryption
-     * from this application context (service thread): Android as NAP
-     * waits for the initiator to authenticate, and the passive wait
-     * below makes it time out and drop the ACL. send_sync blocks this
-     * thread only - the HCI RX thread still processes the response. */
-    syslog(LOG_INFO, "[pan] request encryption\n");
-    int sret = bt_conn_set_security(acl, BT_SECURITY_L2);
-    syslog(LOG_INFO, "[pan] set_security ret=%d\n", sret);
+    /* Hand the connection sequence to the worker thread: synchronous
+     * HCI commands (create_br / set_security) must not run on the
+     * service-loop thread (self-deadlock on HCI event polling). */
+    pthread_mutex_lock(&g_pan_worker_lock);
+    g_pan_worker_conn = conn;
+    pthread_cond_signal(&g_pan_worker_cond);
+    pthread_mutex_unlock(&g_pan_worker_lock);
 
     return BT_STATUS_SUCCESS;
 }
