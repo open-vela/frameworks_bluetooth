@@ -29,6 +29,7 @@
 
 #include <errno.h>
 #include <stdbool.h>
+#include <syslog.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -204,6 +205,7 @@ static int pan_chan_recv(struct bt_l2cap_chan* chan, struct net_buf* buf)
         return -EINVAL;
     }
 
+    syslog(LOG_INFO, "[pan] recv type=0x%02x len=%u\n", data[0], len);
     switch (data[0]) {
     case BNEP_SETUP_CONN_RESP: {
         uint16_t resp;
@@ -273,6 +275,7 @@ static void pan_br_connected(struct bt_conn* conn, uint8_t err)
     struct bt_conn_info info;
 
     if (err) {
+        syslog(LOG_ERR, "[pan] ACL connect err %d\n", err);
         BT_LOGE("%s ACL err %d", __func__, err);
         if (g_pan.acl_conn) {
             bt_conn_unref(g_pan.acl_conn);
@@ -294,9 +297,11 @@ static void pan_br_connected(struct bt_conn* conn, uint8_t err)
 
     pconn = pan_find_conn(&addr);
     if (!pconn || pconn->state != PAN_CONN_ACL_PENDING) {
+        syslog(LOG_WARNING, "[pan] no pending conn for ACL\n");
         BT_LOGW("%s no pending pan conn", __func__);
         return;
     }
+    syslog(LOG_INFO, "[pan] ACL up, request encryption\n");
 
     /* Android NAP rejects the L2CAP connection (and drops the ACL) when
      * the link is not encrypted. Request encryption on the system
@@ -318,9 +323,11 @@ static void pan_br_security_changed(struct bt_conn* conn, bt_security_t level,
     pan_conn_t* pconn;
 
     if (err != BT_SECURITY_ERR_SUCCESS) {
+        syslog(LOG_WARNING, "[pan] security err %d\n", err);
         BT_LOGW("%s security err %d", __func__, err);
         return;
     }
+    syslog(LOG_INFO, "[pan] security level=%d\n", (int)level);
     if (bt_conn_get_info(conn, &info) != 0 || !info.br.dst) {
         return;
     }
@@ -360,6 +367,7 @@ static void pan_br_disconnected(struct bt_conn* conn, uint8_t reason)
     if (!pconn) {
         return;
     }
+    syslog(LOG_WARNING, "[pan] ACL disconnected reason=%d\n", reason);
     BT_LOGW("%s reason %d", __func__, reason);
     if (pconn->state == PAN_CONN_CONNECTED) {
         pan_conn_report(pconn, PROFILE_STATE_DISCONNECTED);
