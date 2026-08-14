@@ -356,7 +356,9 @@ static void pan_l2cap_connect(struct bt_conn* conn)
         return;
     }
     pconn->state = PAN_CONN_L2CAP_PENDING;
+    syslog(LOG_INFO, "[pan] L2CAP connect (psm 0x%04x)\n", BT_BNEP_PSM);
     int ret = bt_l2cap_chan_connect(conn, &pconn->chan, BT_BNEP_PSM);
+    syslog(LOG_INFO, "[pan] L2CAP connect ret=%d\n", ret);
     if (ret < 0) {
         BT_LOGE("%s l2cap connect failed: %d", __func__, ret);
         pan_conn_report(pconn, PROFILE_STATE_DISCONNECTED);
