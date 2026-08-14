@@ -83,17 +83,29 @@ typedef struct {
  */
 static struct k_work pan_auth_work;
 static struct bt_conn* pan_auth_conn;
+static void pan_br_security_changed(struct bt_conn* conn, bt_security_t level,
+    enum bt_security_err err);
 
 static void pan_auth_work_handler(struct k_work* work)
 {
     (void)work;
     struct bt_conn* conn = pan_auth_conn;
+    int ret;
 
     pan_auth_conn = NULL;
-    if (conn) {
-        bt_conn_set_security(conn, BT_SECURITY_L2);
-        bt_conn_unref(conn);
+    if (!conn) {
+        return;
     }
+    ret = bt_conn_set_security(conn, BT_SECURITY_L2);
+    syslog(LOG_INFO, "[pan] set_security ret=%d level=%d\n", ret,
+        (int)bt_conn_get_security(conn));
+    if (ret == 0 && bt_conn_get_security(conn) >= BT_SECURITY_L2) {
+        /* Already encrypted: security_changed will not fire, drive the
+         * L2CAP connect directly. */
+        pan_br_security_changed(conn, BT_SECURITY_L2,
+            BT_SECURITY_ERR_SUCCESS);
+    }
+    bt_conn_unref(conn);
 }
 
 static struct {
@@ -477,19 +489,18 @@ bt_status_t bt_sal_pan_connect(bt_address_t* addr, uint8_t dst_role,
      * bt_conn_create_br() again while the controller still has the
      * previous connection (or its teardown) pending makes HCI
      * CREATE_CONN time out and zblue asserts (bt_hci_cmd_send_sync
-     * HCI_CMD_TIMEOUT) - observed 2026-08-15 on repeated pan connect. */
+     * HCI_CMD_TIMEOUT) - observed 2026-08-15 on repeated pan connect.
+     * Same as the create_br path: request encryption first (workqueue),
+     * L2CAP connect happens in pan_security_changed(). */
     acl = bt_conn_lookup_addr_br((const bt_addr_t*)addr);
     if (acl) {
-        BT_LOGI("%s reuse existing ACL", __func__);
-        conn->state = PAN_CONN_L2CAP_PENDING;
-        int ret = bt_l2cap_chan_connect(acl, &conn->chan, BT_BNEP_PSM);
-        bt_conn_unref(acl);
-        if (ret < 0) {
-            BT_LOGE("%s l2cap connect failed: %d", __func__, ret);
-            pan_conn_report(conn, PROFILE_STATE_DISCONNECTED);
-            pan_conn_free(conn);
-            return BT_STATUS_FAIL;
+        syslog(LOG_INFO, "[pan] reuse ACL, request encryption\n");
+        if (pan_auth_conn) {
+            bt_conn_unref(pan_auth_conn);
         }
+        pan_auth_conn = bt_conn_ref(acl);
+        bt_conn_unref(acl);
+        k_work_submit(&pan_auth_work);
         return BT_STATUS_SUCCESS;
     }
 
