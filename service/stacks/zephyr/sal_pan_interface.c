@@ -370,6 +370,26 @@ bt_status_t bt_sal_pan_connect(bt_address_t* addr, uint8_t dst_role,
     bt_list_add_tail(g_pan.conn_list, conn);
     pan_conn_report(conn, PROFILE_STATE_CONNECTING);
 
+    /* Reuse an existing BR/EDR ACL if one is already up: calling
+     * bt_conn_create_br() again while the controller still has the
+     * previous connection (or its teardown) pending makes HCI
+     * CREATE_CONN time out and zblue asserts (bt_hci_cmd_send_sync
+     * HCI_CMD_TIMEOUT) - observed 2026-08-15 on repeated pan connect. */
+    acl = bt_conn_lookup_addr_br((const bt_addr_t*)addr);
+    if (acl) {
+        BT_LOGI("%s reuse existing ACL", __func__);
+        conn->state = PAN_CONN_L2CAP_PENDING;
+        int ret = bt_l2cap_chan_connect(acl, &conn->chan, BT_BNEP_PSM);
+        bt_conn_unref(acl);
+        if (ret < 0) {
+            BT_LOGE("%s l2cap connect failed: %d", __func__, ret);
+            pan_conn_report(conn, PROFILE_STATE_DISCONNECTED);
+            pan_conn_free(conn);
+            return BT_STATUS_FAIL;
+        }
+        return BT_STATUS_SUCCESS;
+    }
+
     /* Establish the BR/EDR ACL first */
     acl = bt_conn_create_br((const bt_addr_t*)addr, BT_BR_CONN_PARAM_DEFAULT);
     if (!acl) {
