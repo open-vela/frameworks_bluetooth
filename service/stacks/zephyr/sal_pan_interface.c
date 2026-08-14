@@ -32,6 +32,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/conn.h>
@@ -67,6 +68,12 @@ typedef struct {
     struct bt_l2cap_chan chan;
 } pan_conn_t;
 
+/* Cooldown after a disconnect: the LCPU controller keeps stale state
+ * right after an ACL teardown, and an immediate bt_conn_create_br()
+ * makes HCI CREATE_CONN time out -> zblue asserts (observed 2026-08-15).
+ */
+#define PAN_RECONNECT_COOLDOWN_MS 5000
+
 static struct {
     uint8_t max_connections;
     uint8_t role;
@@ -74,13 +81,22 @@ static struct {
     bt_list_t* conn_list;
     struct bt_conn* acl_conn;  /* BR/EDR ACL under setup (unref'd on up/fail) */
     struct bt_conn_cb conn_cb;
+    uint64_t last_disconnect_ms;
 } g_pan = {
     .max_connections = 1,
     .role = 0,
     .initialized = false,
     .conn_list = NULL,
     .acl_conn = NULL,
+    .last_disconnect_ms = 0,
 };
+
+static uint64_t pan_now_ms(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (uint64_t)ts.tv_sec * 1000u + (uint64_t)(ts.tv_nsec / 1000000u);
+}
 
 /* -- helpers --------------------------------------------------- */
 
@@ -292,6 +308,7 @@ static void pan_br_disconnected(struct bt_conn* conn, uint8_t reason)
         pan_conn_report(pconn, PROFILE_STATE_DISCONNECTED);
     }
     pan_conn_free(pconn);
+    g_pan.last_disconnect_ms = pan_now_ms();
 }
 
 /* -- Public API ------------------------------------------------ */
@@ -355,6 +372,15 @@ bt_status_t bt_sal_pan_connect(bt_address_t* addr, uint8_t dst_role,
 
     if (pan_find_conn(addr)) {
         BT_LOGW("%s already exists", __func__);
+        return BT_STATUS_BUSY;
+    }
+
+    /* Reconnect cooldown: the LCPU controller keeps stale state after an
+     * ACL teardown; reconnecting within the window makes CREATE_CONN time
+     * out and zblue asserts. Reject early instead. */
+    if (g_pan.last_disconnect_ms
+        && pan_now_ms() - g_pan.last_disconnect_ms < PAN_RECONNECT_COOLDOWN_MS) {
+        BT_LOGW("%s in reconnect cooldown, retry later", __func__);
         return BT_STATUS_BUSY;
     }
 
