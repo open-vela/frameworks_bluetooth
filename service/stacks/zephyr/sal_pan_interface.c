@@ -75,38 +75,20 @@ typedef struct {
  */
 #define PAN_RECONNECT_COOLDOWN_MS 5000
 
-/* bt_conn_set_security() issues a synchronous HCI command; calling it
- * from the zblue stack-thread callbacks deadlocks the HCI event loop
- * (send_sync waits for a response that the blocked thread should
- * process) and asserts after HCI_CMD_TIMEOUT. Defer it to the system
- * workqueue where send_sync drains the command queue instead.
+/* Do NOT call bt_conn_set_security() from any callback or workqueue
+ * context: it issues a synchronous HCI command and the LCPU controller
+ * stops answering AUTH_REQUESTED once the peer drops the ACL, wedging
+ * the sys workqueue for HCI_CMD_TIMEOUT and then asserting (observed
+ * 2026-08-15). Instead wait passively for the peer to encrypt (Android
+ * re-encrypts bonded links) and fall back to L2CAP after a timeout.
  */
-static struct k_work pan_auth_work;
-static struct bt_conn* pan_auth_conn;
+static struct k_work_delayable pan_l2cap_work;
+static struct bt_conn* pan_l2cap_conn;
+
+static void pan_l2cap_work_handler(struct k_work* work);
 static void pan_br_security_changed(struct bt_conn* conn, bt_security_t level,
     enum bt_security_err err);
-
-static void pan_auth_work_handler(struct k_work* work)
-{
-    (void)work;
-    struct bt_conn* conn = pan_auth_conn;
-    int ret;
-
-    pan_auth_conn = NULL;
-    if (!conn) {
-        return;
-    }
-    ret = bt_conn_set_security(conn, BT_SECURITY_L2);
-    syslog(LOG_INFO, "[pan] set_security ret=%d level=%d\n", ret,
-        (int)bt_conn_get_security(conn));
-    if (ret == 0 && bt_conn_get_security(conn) >= BT_SECURITY_L2) {
-        /* Already encrypted: security_changed will not fire, drive the
-         * L2CAP connect directly. */
-        pan_br_security_changed(conn, BT_SECURITY_L2,
-            BT_SECURITY_ERR_SUCCESS);
-    }
-    bt_conn_unref(conn);
-}
+static void pan_l2cap_connect(struct bt_conn* conn);
 
 static struct {
     uint8_t max_connections;
@@ -313,18 +295,16 @@ static void pan_br_connected(struct bt_conn* conn, uint8_t err)
         BT_LOGW("%s no pending pan conn", __func__);
         return;
     }
-    syslog(LOG_INFO, "[pan] ACL up, request encryption\n");
+    syslog(LOG_INFO, "[pan] ACL up, wait encryption\n");
 
-    /* Android NAP rejects the L2CAP connection (and drops the ACL) when
-     * the link is not encrypted. Request encryption on the system
-     * workqueue (never from this stack-thread callback: send_sync
-     * would deadlock); the L2CAP connect is deferred to
-     * pan_security_changed(). */
-    if (pan_auth_conn) {
-        bt_conn_unref(pan_auth_conn);
+    /* Android NAP requires an encrypted link; wait for the peer to
+     * encrypt (security_changed) with a 2s fallback that attempts
+     * L2CAP regardless. */
+    if (pan_l2cap_conn) {
+        bt_conn_unref(pan_l2cap_conn);
     }
-    pan_auth_conn = bt_conn_ref(conn);
-    k_work_submit(&pan_auth_work);
+    pan_l2cap_conn = bt_conn_ref(conn);
+    k_work_schedule(&pan_l2cap_work, K_MSEC(2000));
 }
 
 static void pan_br_security_changed(struct bt_conn* conn, bt_security_t level,
@@ -351,15 +331,44 @@ static void pan_br_security_changed(struct bt_conn* conn, bt_security_t level,
     }
     BT_LOGI("%s encrypted, connecting L2CAP", __func__);
 
+    pan_l2cap_connect(conn);
+}
+
+static void pan_l2cap_connect(struct bt_conn* conn)
+{
+    bt_address_t addr;
+    struct bt_conn_info info;
+    pan_conn_t* pconn;
+
+    if (bt_conn_get_info(conn, &info) != 0 || !info.br.dst) {
+        return;
+    }
+    bt_addr_set(&addr, info.br.dst->val);
+
+    pconn = pan_find_conn(&addr);
+    if (!pconn || pconn->state != PAN_CONN_ACL_PENDING) {
+        return;
+    }
     pconn->state = PAN_CONN_L2CAP_PENDING;
     int ret = bt_l2cap_chan_connect(conn, &pconn->chan, BT_BNEP_PSM);
     if (ret < 0) {
-        /* chan may still be referenced by the stack on async failure:
-         * report and wait for the disconnected callback instead of
-         * freeing directly. */
         BT_LOGE("%s l2cap connect failed: %d", __func__, ret);
         pan_conn_report(pconn, PROFILE_STATE_DISCONNECTED);
         bt_l2cap_chan_disconnect(&pconn->chan);
+    }
+}
+
+static void pan_l2cap_work_handler(struct k_work* work)
+{
+    (void)work;
+    struct bt_conn* conn = pan_l2cap_conn;
+
+    pan_l2cap_conn = NULL;
+    if (conn) {
+        /* 2s fallback: connect L2CAP even if encryption events were
+         * missed (async op only, never blocks the workqueue). */
+        pan_l2cap_connect(conn);
+        bt_conn_unref(conn);
     }
 }
 
@@ -417,8 +426,8 @@ bt_status_t bt_sal_pan_init(uint8_t max_connections, uint8_t role)
     g_pan.conn_cb.disconnected = pan_br_disconnected;
     g_pan.conn_cb.security_changed = pan_br_security_changed;
     bt_conn_cb_register(&g_pan.conn_cb);
-    k_work_init(&pan_auth_work, pan_auth_work_handler);
-    pan_auth_conn = NULL;
+    k_work_init_delayable(&pan_l2cap_work, pan_l2cap_work_handler);
+    pan_l2cap_conn = NULL;
 
     g_pan.initialized = true;
     return BT_STATUS_SUCCESS;
@@ -497,13 +506,13 @@ bt_status_t bt_sal_pan_connect(bt_address_t* addr, uint8_t dst_role,
      * L2CAP connect happens in pan_security_changed(). */
     acl = bt_conn_lookup_addr_br((const bt_addr_t*)addr);
     if (acl) {
-        syslog(LOG_INFO, "[pan] reuse ACL, request encryption\n");
-        if (pan_auth_conn) {
-            bt_conn_unref(pan_auth_conn);
+        syslog(LOG_INFO, "[pan] reuse ACL, wait encryption\n");
+        if (pan_l2cap_conn) {
+            bt_conn_unref(pan_l2cap_conn);
         }
-        pan_auth_conn = bt_conn_ref(acl);
+        pan_l2cap_conn = bt_conn_ref(acl);
         bt_conn_unref(acl);
-        k_work_submit(&pan_auth_work);
+        k_work_schedule(&pan_l2cap_work, K_MSEC(2000));
         return BT_STATUS_SUCCESS;
     }
 
