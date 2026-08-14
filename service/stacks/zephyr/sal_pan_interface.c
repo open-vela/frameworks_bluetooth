@@ -456,10 +456,12 @@ bt_status_t bt_sal_pan_connect(bt_address_t* addr, uint8_t dst_role,
     struct bt_conn* acl;
 
     if (!addr || !g_pan.initialized) {
+        syslog(LOG_ERR, "[pan] connect: bad param/not init\n");
         return BT_STATUS_PARM_INVALID;
     }
 
     if (pan_find_conn(addr)) {
+        syslog(LOG_WARNING, "[pan] connect: already exists\n");
         BT_LOGW("%s already exists", __func__);
         return BT_STATUS_BUSY;
     }
@@ -469,6 +471,7 @@ bt_status_t bt_sal_pan_connect(bt_address_t* addr, uint8_t dst_role,
      * out and zblue asserts. Reject early instead. */
     if (g_pan.last_disconnect_ms
         && pan_now_ms() - g_pan.last_disconnect_ms < PAN_RECONNECT_COOLDOWN_MS) {
+        syslog(LOG_WARNING, "[pan] connect: cooldown active\n");
         BT_LOGW("%s in reconnect cooldown, retry later", __func__);
         return BT_STATUS_BUSY;
     }
@@ -505,8 +508,10 @@ bt_status_t bt_sal_pan_connect(bt_address_t* addr, uint8_t dst_role,
     }
 
     /* Establish the BR/EDR ACL first */
+    syslog(LOG_INFO, "[pan] create_br...\n");
     acl = bt_conn_create_br((const bt_addr_t*)addr, BT_BR_CONN_PARAM_DEFAULT);
     if (!acl) {
+        syslog(LOG_ERR, "[pan] create_br FAILED\n");
         BT_LOGE("%s create_br failed", __func__);
         pan_conn_report(conn, PROFILE_STATE_DISCONNECTED);
         pan_conn_free(conn);
