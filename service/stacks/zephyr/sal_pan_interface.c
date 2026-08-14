@@ -197,7 +197,7 @@ static int pan_chan_recv(struct bt_l2cap_chan* chan, struct net_buf* buf)
         } else {
             BT_LOGE("%s setup failed 0x%04x", __func__, resp);
             pan_conn_report(conn, PROFILE_STATE_DISCONNECTED);
-            pan_conn_free(conn);
+            bt_l2cap_chan_disconnect(&conn->chan);
         }
         break;
     }
@@ -311,9 +311,12 @@ static void pan_br_security_changed(struct bt_conn* conn, bt_security_t level,
     pconn->state = PAN_CONN_L2CAP_PENDING;
     int ret = bt_l2cap_chan_connect(conn, &pconn->chan, BT_BNEP_PSM);
     if (ret < 0) {
+        /* chan may still be referenced by the stack on async failure:
+         * report and wait for the disconnected callback instead of
+         * freeing directly. */
         BT_LOGE("%s l2cap connect failed: %d", __func__, ret);
         pan_conn_report(pconn, PROFILE_STATE_DISCONNECTED);
-        pan_conn_free(pconn);
+        bt_l2cap_chan_disconnect(&pconn->chan);
     }
 }
 
@@ -337,7 +340,16 @@ static void pan_br_disconnected(struct bt_conn* conn, uint8_t reason)
     if (pconn->state == PAN_CONN_CONNECTED) {
         pan_conn_report(pconn, PROFILE_STATE_DISCONNECTED);
     }
-    pan_conn_free(pconn);
+    /* Never free the conn here: the L2CAP chan is still owned by the
+     * stack; freeing it early corrupts memory and hangs the system
+     * (observed 2026-08-15 after phone dropped the ACL). Let the
+     * chan disconnected callback free it. For a pending (not yet
+     * mounted) chan, tear down through the stack as well. */
+    if (pconn->state >= PAN_CONN_L2CAP_PENDING) {
+        bt_l2cap_chan_disconnect(&pconn->chan);
+    } else {
+        pan_conn_free(pconn);
+    }
     g_pan.last_disconnect_ms = pan_now_ms();
 }
 
