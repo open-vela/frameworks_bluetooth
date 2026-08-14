@@ -310,6 +310,10 @@ if(CONFIG_BLUETOOTH)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_spp_interface.c)
       endif()
 
+      if(CONFIG_BLUETOOTH_PAN)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_pan_interface.c)
+      endif()
+
       if(CONFIG_BLUETOOTH_HID_DEVICE)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_hid_device_stub.c)
       endif()

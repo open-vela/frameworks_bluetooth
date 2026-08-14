@@ -15,6 +15,7 @@
  ***************************************************************************/
 #define LOG_TAG "sal_adapter"
 #include <stdint.h>
+#include <syslog.h>
 
 #include "bluetooth.h"
 #include "bt_adapter.h"
@@ -976,6 +977,10 @@ static void STACK_CALL(set_scan_mode)(void* args)
 
     ret = bt_br_set_visibility(iscan, pscan);
     if (ret != 0 && ret != -EALREADY) {
+        /* syslog so the failure is visible with BLUETOOTH_LOG=n: phone
+         * cannot see the device when inquiry/page scan stays disabled */
+        syslog(LOG_ERR, "sal set_scan_mode failed: iscan=%d pscan=%d ret=%d\n",
+            iscan, pscan, ret);
         BT_LOGE("%s set scanmode failed:%d", __func__, ret);
         return;
     }
