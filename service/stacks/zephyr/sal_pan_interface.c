@@ -468,6 +468,14 @@ static void* pan_worker_thread(void* arg)
         if (!acl_ok) {
             syslog(LOG_WARNING, "[pan] worker: ACL up timeout\n");
             bt_conn_unref(acl);
+            /* Release pending conn so retry is not rejected as already-exists */
+            pthread_mutex_lock(&g_pan_worker_lock);
+            bool still_pending = (conn->state == PAN_CONN_ACL_PENDING);
+            pthread_mutex_unlock(&g_pan_worker_lock);
+            if (still_pending) {
+                pan_conn_report(conn, PROFILE_STATE_DISCONNECTED);
+                pan_conn_free(conn);
+            }
             continue;
         }
 

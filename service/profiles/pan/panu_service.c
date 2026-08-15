@@ -573,18 +573,21 @@ static bt_status_t pan_connect(bt_address_t* addr, uint8_t dst_role, uint8_t src
 
     pthread_mutex_lock(&g_pan.pan_lock);
     if (!g_pan.enable) {
+        syslog(LOG_ERR, "[panu] connect: not enabled\n");
         status = BT_STATUS_NOT_ENABLED;
         goto exit;
     }
 
     conn = pan_new_conn(addr);
     if (!conn) {
+        syslog(LOG_ERR, "[panu] connect: no resources\n");
         status = BT_STATUS_NO_RESOURCES;
         goto exit;
     }
 
     status = bt_sal_pan_connect(addr, dst_role, src_role);
     if (status != BT_STATUS_SUCCESS) {
+        syslog(LOG_ERR, "[panu] connect: sal failed %d\n", (int)status);
         pan_free_conn(conn);
         goto exit;
     }
