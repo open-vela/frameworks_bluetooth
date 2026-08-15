@@ -614,8 +614,10 @@ bt_status_t bt_sal_pan_connect(bt_address_t* addr, uint8_t dst_role,
     conn->chan.chan.ops = &g_pan_chan_ops;
     /* br_chan fields are calloc'd zero: zblue sends CONFIG_REQ with
      * MTU=0 unless rx.mtu is set (l2cap_br_conf checks != 672), which
-     * the phone rejects and disconnects. Match other BR profiles. */
-    conn->chan.rx.mtu = L2CAP_BR_DEFAULT_MTU;
+     * the phone rejects and disconnects. Android NAP additionally
+     * rejects MTU<1691 (CONF_RSP UNACCEPTABLE_PARAMS + MTU=1691
+     * observed on Redmi Note 12 Turbo); 1691 is the BNEP standard. */
+    conn->chan.rx.mtu = 1691;
     conn->chan.required_sec_level = BT_SECURITY_L2;
     memcpy(&conn->addr, addr, sizeof(bt_address_t));
     conn->dst_role = dst_role;
