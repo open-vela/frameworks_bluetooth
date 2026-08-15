@@ -48,11 +48,31 @@
 #include "service_loop.h"
 #include "utils/log.h"
 
-#define PAN_TX_BUF_SIZE 1600 /* 3 hdr + max eth payload */
+/* TX buffers come from zblue's global ACL TX pool via
+ * bt_conn_create_pdu(NULL, 0, ...): it reserves the HCI ACL header,
+ * L2CAP header and BT_BUF_RESERVE itself. A hand-rolled
+ * net_buf_alloc()+net_buf_reserve() combo on a raw pool overflowed the
+ * tailroom assertion in net_buf_simple_add_mem (HardFault in
+ * pan_chan_connected, 2026-08-15). CONFIG_BT_L2CAP_TX_MTU=1700 sizes
+ * the ACL TX pool for the BNEP standard MTU 1691 that Android NAP
+ * demands (CONF_RSP UNACCEPTABLE_PARAMS below 1691). */
+#define PAN_TX_MTU 1691 /* BNEP std MTU */
+#define PAN_TX_BUF_SIZE (PAN_TX_MTU + 8) /* payload + BNEP/L2CAP hdr */
 #define PAN_TX_BUF_COUNT 6
 
+/* Keep a pool reference for the fragment path but unused: allocation
+ * goes through bt_l2cap_create_pdu_timeout(NULL, 0, K_NO_WAIT). */
 NET_BUF_POOL_FIXED_DEFINE(pan_tx_pool, PAN_TX_BUF_COUNT,
     PAN_TX_BUF_SIZE, CONFIG_BT_CONN_TX_USER_DATA_SIZE, NULL);
+
+/* bt_l2cap_create_pdu_timeout is the exported zblue entry (l2cap.c,
+ * unconditionally compiled); bt_l2cap_create_pdu is only a macro in the
+ * internal l2cap_internal.h, so call the timeout variant directly.
+ * pool=NULL selects zblue's global ACL TX pool, whose size follows
+ * CONFIG_BT_L2CAP_TX_MTU (=1700 for BNEP MTU 1691). */
+struct net_buf *bt_l2cap_create_pdu_timeout(struct net_buf_pool *pool,
+                                            size_t reserve,
+                                            k_timeout_t timeout);
 
 typedef enum {
     PAN_CONN_ACL_PENDING = 0,  /* waiting BR/EDR ACL */
@@ -163,12 +183,11 @@ static void pan_chan_connected(struct bt_l2cap_chan* chan)
     req[1] = conn->dst_role;
     req[2] = conn->src_role;
 
-    struct net_buf* buf = net_buf_alloc(&pan_tx_pool, K_NO_WAIT);
+    struct net_buf* buf = bt_l2cap_create_pdu_timeout(NULL, 0, K_NO_WAIT);
     if (!buf) {
         BT_LOGE("%s tx pool exhausted", __func__);
         return;
     }
-    net_buf_reserve(buf, CONFIG_BT_L2CAP_TX_MTU);
     net_buf_add_mem(buf, req, sizeof(req));
 
     int ret = bt_l2cap_chan_send(chan, buf);
@@ -242,9 +261,8 @@ static int pan_chan_recv(struct bt_l2cap_chan* chan, struct net_buf* buf)
     case BNEP_SETUP_CONN_REQ: {
         /* Incoming connection (we are PANU, not NAP): reject. */
         uint8_t resp[3] = { BNEP_SETUP_CONN_RESP, 0x00, 0x03 };
-        struct net_buf* out = net_buf_alloc(&pan_tx_pool, K_NO_WAIT);
+        struct net_buf* out = bt_l2cap_create_pdu_timeout(NULL, 0, K_NO_WAIT);
         if (out) {
-            net_buf_reserve(out, CONFIG_BT_L2CAP_TX_MTU);
             net_buf_add_mem(out, resp, sizeof(resp));
             bt_l2cap_chan_send(chan, out);
         }
@@ -675,12 +693,11 @@ bt_status_t bt_sal_pan_write(bt_address_t* addr, uint16_t protocol,
         return BT_STATUS_NOMEM;
     }
 
-    buf = net_buf_alloc(&pan_tx_pool, K_NO_WAIT);
+    buf = bt_l2cap_create_pdu_timeout(NULL, 0, K_NO_WAIT);
     if (!buf) {
         BT_LOGE("%s tx pool exhausted", __func__);
         return BT_STATUS_NOMEM;
     }
-    net_buf_reserve(buf, CONFIG_BT_L2CAP_TX_MTU);
     p = net_buf_tail(buf);
     p[0] = BNEP_FRAME_ETH;
     p[1] = (uint8_t)(protocol >> 8);
