@@ -104,6 +104,8 @@ static uint8_t pan_conns(void)
     return list_length(&g_pan.conn_list);
 }
 
+static void pan_free_conn(pan_conn_t* conn);
+
 static pan_conn_t* pan_new_conn(bt_address_t* addr)
 {
     pan_conn_t* conn;
@@ -113,8 +115,15 @@ static pan_conn_t* pan_new_conn(bt_address_t* addr)
         return NULL;
     }
 
-    if (pan_find_conn(addr))
-        return NULL;
+    /* A stale entry for the same address (previous attempt that failed
+     * before a DISCONNECTED callback reached the framework, e.g. BR
+     * encryption/pairing failure) must not block reconnects: drop it. */
+    conn = pan_find_conn(addr);
+    if (conn) {
+        syslog(LOG_WARNING, "[panu] new_conn: dropping stale conn for %02x:%02x:%02x:%02x:%02x:%02x\n",
+            addr->addr[5], addr->addr[4], addr->addr[3], addr->addr[2], addr->addr[1], addr->addr[0]);
+        pan_free_conn(conn);
+    }
 
     conn = malloc(sizeof(pan_conn_t));
     memcpy(&conn->addr, addr, sizeof(bt_address_t));
