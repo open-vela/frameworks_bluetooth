@@ -15,8 +15,11 @@
  ***************************************************************************/
 
 #define LOG_TAG "storage"
+#include <errno.h>
 #include <nuttx/crc16.h>
+#include <pthread.h>
 #include <stdint.h>
+#include <syslog.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -46,12 +49,20 @@ typedef struct {
 
 static uv_db_t* storage_handle = NULL;
 
-static void key_set_callback(int status, const char* key, uv_buf_t value, void* cookie)
-{
-    free(value.base);
-    if (status == 0)
-        uv_db_commit(storage_handle);
-}
+/* Every entry point below is reachable from more than one thread: the adapter
+ * and profile state machines run on the service loop, while the stack
+ * callbacks that load the adapter properties and the bonded devices run on the
+ * Bluetooth stack thread. The unqlite handle behind uv_db is shared, so each
+ * operation is serialised here and executed synchronously on the calling
+ * thread.
+ *
+ * The callback flavours of uv_db_set()/uv_db_get() are deliberately not used:
+ * they hand the work to the libuv thread pool, which means the uv_db request
+ * queue is manipulated from whichever thread happens to call in (it is not
+ * thread safe), the caller's buffer has to stay alive until an unrelated
+ * thread is done with it, and the commit ends up running on a third thread. A
+ * corrupted unqlite pager was the visible symptom - see docs_ble. */
+static pthread_mutex_t storage_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void key_get_callback(int status, const char* key, uv_buf_t value, void* cookie)
 {
@@ -64,31 +75,64 @@ static void key_get_callback(int status, const char* key, uv_buf_t value, void* 
         callback(NULL, 0, 0);
 }
 
+/* The buffer belongs to the caller once this returns, whatever the result. */
 static int storage_set_key(const char* key, void* data, uint16_t length)
 {
     uv_buf_t buf = uv_buf_init((char*)data, length);
-    int ret = uv_db_set(storage_handle, key, &buf, key_set_callback, NULL);
+    int ret;
+
+    if (!storage_handle)
+        return -ENODEV;
+
+    pthread_mutex_lock(&storage_lock);
+    ret = uv_db_set(storage_handle, key, &buf, NULL, NULL);
+    if (ret == 0)
+        ret = uv_db_commit(storage_handle);
+    pthread_mutex_unlock(&storage_lock);
+
     if (ret != 0)
         BT_LOGE("key %s set error:%d", key, ret);
+
+    syslog(ret == 0 ? LOG_INFO : LOG_ERR, "[bt_storage] set %s len=%u ret=%d\n",
+        key, length, ret);
 
     return ret;
 }
 
+/* With data != NULL the stored blob is handed back to the caller, which owns
+ * it. With data == NULL the blob is passed to the load callback in cookie and
+ * released here. A negative return means nothing was read, and the caller is
+ * the one that reports that to its own callback - same contract as before. */
 static int storage_get_key(const char* key, void** data, uint16_t* length, void* cookie)
 {
-    uv_buf_t buf;
+    uv_buf_t buf = uv_buf_init(NULL, 0);
+    int ret;
 
-    if (data)
-        buf = uv_buf_init(NULL, 0);
+    if (!storage_handle)
+        return -ENODEV;
 
-    int ret = uv_db_get(storage_handle, key, data ? &buf : NULL,
-        data ? NULL : key_get_callback, cookie);
-    if (ret == 0 && data) {
+    pthread_mutex_lock(&storage_lock);
+    ret = uv_db_get(storage_handle, key, &buf, NULL, NULL);
+    pthread_mutex_unlock(&storage_lock);
+
+    syslog(LOG_INFO, "[bt_storage] get %s ret=%d len=%u\n", key, ret,
+        ret == 0 ? (unsigned)buf.len : 0u);
+
+    if (ret != 0)
+        return ret;
+
+    if (data) {
         *data = buf.base;
         *length = buf.len;
+        return 0;
     }
 
-    return ret;
+    /* Outside the lock: the load callbacks re-enter the adapter state machine,
+     * which stores keys again. */
+    key_get_callback(0, key, buf, cookie);
+    free(buf.base);
+
+    return 0;
 }
 
 static void adapter_properties_default(adapter_storage_t* prop)
@@ -104,14 +148,18 @@ static void adapter_properties_default(adapter_storage_t* prop)
 
 int bt_storage_save_adapter_info(adapter_storage_t* adapter)
 {
-    key_header_t* key = malloc(sizeof(key_header_t) + sizeof(*adapter));
+    uint16_t length = sizeof(key_header_t) + sizeof(*adapter);
+    key_header_t* key = malloc(length);
+    int ret;
+
+    if (!key)
+        return -ENOMEM;
 
     key->items = 1;
     key->key_length = sizeof(*adapter);
     memcpy(key->key_value, adapter, sizeof(*adapter));
-    int ret = storage_set_key(BT_KEY_ADAPTER_INFO, key, sizeof(key_header_t) + sizeof(*adapter));
-    if (ret != 0)
-        free(key);
+    ret = storage_set_key(BT_KEY_ADAPTER_INFO, key, length);
+    free(key);
 
     return ret;
 }
@@ -135,16 +183,20 @@ int bt_storage_load_adapter_info(adapter_storage_t* adapter)
 static int bt_storage_save_remote_device(const char* key, void* value, uint16_t value_size, uint16_t items)
 {
     uint16_t total_length = value_size * items;
-    key_header_t* header = malloc(sizeof(key_header_t) + total_length);
+    uint16_t length = sizeof(key_header_t) + total_length;
+    key_header_t* header = malloc(length);
+    int ret;
+
+    if (!header)
+        return -ENOMEM;
 
     header->items = items;
     header->key_length = total_length;
     if (value && items)
         memcpy(header->key_value, value, total_length);
 
-    int ret = storage_set_key(key, header, sizeof(key_header_t) + total_length);
-    if (ret != 0)
-        free(header);
+    ret = storage_set_key(key, header, length);
+    free(header);
 
     return ret;
 }
@@ -202,20 +254,32 @@ int bt_storage_init(void)
     int ret;
 
     ret = uv_db_init(get_service_uv_loop(), &storage_handle, BT_DB_FILE_PATH);
-    if (ret != 0)
+    if (ret != 0) {
         BT_LOGE("%s fail, ret:%d", __func__, ret);
+        syslog(LOG_ERR, "[bt_storage] open %s failed: %d\n", BT_DB_FILE_PATH, ret);
+        storage_handle = NULL;
+        return ret;
+    }
 
     BT_LOGD("%s successed", __func__);
+    syslog(LOG_INFO, "[bt_storage] %s ready (synchronous)\n", BT_DB_FILE_PATH);
 
     return ret;
 }
 
 int bt_storage_cleanup(void)
 {
-    BT_LOGD("%s", __func__);
-    if (storage_handle)
-        uv_db_close(storage_handle);
+    uv_db_t* handle;
 
+    BT_LOGD("%s", __func__);
+
+    pthread_mutex_lock(&storage_lock);
+    handle = storage_handle;
     storage_handle = NULL;
+    pthread_mutex_unlock(&storage_lock);
+
+    if (handle)
+        uv_db_close(handle);
+
     return 0;
 }
