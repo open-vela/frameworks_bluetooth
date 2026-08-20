@@ -24,6 +24,7 @@
 #include <arpa/inet.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <syslog.h>
 #include <unistd.h>
 #include <time.h>
 
@@ -84,12 +85,43 @@ static int g_reconnect_attempts;
 static int g_abnormal_reconnect_count;
 static uint64_t g_last_disconnect_ms;
 static service_timer_t* g_auto_connect_timer;
-static pthread_t g_dhcp_thread;
+/* True exactly while a pan_dhcp_thread is alive, so pan_start_dhcp() can
+ * trust it as an "already running" test.
+ *
+ * The epoch exists because a bool alone is not enough. A link drop clears
+ * the flag to ask the worker to stop, but the worker is asleep between
+ * retries and may not notice for a couple of seconds. If a reconnect starts
+ * a fresh worker in that window, the old worker waking up would clear the
+ * flag out from under the new one, and the next reconnect would then run
+ * two workers at once. A worker only clears the flag if the epoch it
+ * captured at startup is still current, which is exactly the condition
+ * "nobody has asked me to stop, so I am still the live worker". */
 static volatile bool g_dhcp_running;
+static volatile uint32_t g_dhcp_epoch;
 static pan_disc_type_t g_last_disc_type;
 
 #define PAN_MAX_CONNECTIONS 1
 #define PAN_DEV_NAME "bt-pan"
+
+/* DHCP worker tuning. 10 attempts x 2s covers the slowest phone NAP seen
+ * (HyperOS can take ~12s to bring up its tethering DHCP server after the
+ * BNEP link comes up); past that the link is more likely broken than slow. */
+#define PAN_DHCP_MAX_ATTEMPTS      10
+#define PAN_DHCP_RETRY_INTERVAL_S  2
+#define PAN_DHCP_STACK_SIZE        4096
+
+/* PAN lifecycle trace.
+ *
+ * Deliberately raw syslog and not BT_LOGI: CONFIG_BLUETOOTH_LOG is off in
+ * the product config, which makes CONFIG_BLUETOOTH_SERVICE_LOG_LEVEL
+ * undefined, which expands every BT_LOG* macro in utils/log.h to nothing.
+ * All 51 BT_LOG* calls in this file therefore produce no output on the
+ * board, and the PAN link would come up or fail in complete silence. The
+ * SAL layer already uses raw syslog for the same reason.
+ *
+ * One fixed prefix so the whole lifecycle is `grep '\[pan\] state='`. */
+#define PAN_STATE_LOG(level, fmt, ...) \
+    syslog(level, "[pan] state=" fmt "\n", ##__VA_ARGS__)
 
 /* Largest Ethernet frame the TAP device can hand us. Must equal
  * CONFIG_NET_ETH_PKTSIZE: netdev_register.c:318-323 sets d_pktsize to it
@@ -272,31 +304,65 @@ static void pan_start_auto_connect(uint32_t delay_ms)
     }
 }
 
-/* DHCP worker thread: runs after PAN connects to get IP from phone NAP */
+static void pan_dhcp_give_up_and_reconnect(void);
+
+/* Posted to the service loop when DHCP has exhausted its retries.
+ * bt_sal_pan_disconnect() and the reconnect timer both belong to the
+ * service-loop thread, so the worker cannot call them directly.
+ *
+ * Dropping the link is deliberate rather than retrying here: the
+ * PROFILE_STATE_DISCONNECTED handler already owns ifdown and the
+ * three-class backoff, so routing through it leaves exactly one
+ * reconnect path to reason about. A live BNEP link with no IP is the
+ * worst state to sit in - it looks connected to every status check. */
+static void pan_dhcp_give_up_cb(void* arg)
+{
+    (void)arg;
+
+    if (g_auto_state != PAN_AUTO_CONNECTED) {
+        return; /* link already went away on its own */
+    }
+    PAN_STATE_LOG(LOG_WARNING, "dhcp_failed dropping link to force reconnect");
+    bt_sal_pan_disconnect(&g_pan.peer_addr);
+}
+
+/* DHCP worker thread: runs after PAN connects to get IP from phone NAP.
+ *
+ * Single exit through `out` on purpose. Every early return here used to
+ * leave g_dhcp_running true, and pan_start_dhcp() refuses to start when
+ * that flag is set, so one dhcpc_open() failure disabled DHCP for the
+ * rest of the boot - the link would reconnect and never get an address. */
 static void* pan_dhcp_thread(void* arg)
 {
     const char* devname = (const char*)arg;
+    uint32_t my_epoch = g_dhcp_epoch;
     struct dhcpc_state ds;
-    void* handle;
+    void* handle = NULL;
     uint8_t mac[6];
     int retries = 0;
+    bool got_lease = false;
+    bool asked_to_stop = false;
 
-    BT_LOGI("DHCP starting on %s", devname);
+    PAN_STATE_LOG(LOG_INFO, "dhcp_start dev=%s", devname);
 
     /* Get MAC address from the bt-pan interface */
     if (netlib_getmacaddr(devname, mac) != 0) {
-        BT_LOGE("Failed to get MAC for %s", devname);
-        return NULL;
+        PAN_STATE_LOG(LOG_ERR, "dhcp_abort reason=getmacaddr dev=%s", devname);
+        goto out;
     }
 
     handle = dhcpc_open(devname, mac, 6);
     if (!handle) {
-        BT_LOGE("dhcpc_open failed for %s", devname);
-        return NULL;
+        PAN_STATE_LOG(LOG_ERR, "dhcp_abort reason=dhcpc_open dev=%s", devname);
+        goto out;
     }
 
     /* Retry DHCP request (phone NAP may take a moment) */
-    while (g_dhcp_running && retries < 10) {
+    while (retries < PAN_DHCP_MAX_ATTEMPTS) {
+        if (g_dhcp_epoch != my_epoch) {
+            asked_to_stop = true;
+            break;
+        }
         if (dhcpc_request(handle, &ds) == OK) {
             /* Apply the lease: set IP, netmask, default router, DNS */
             netlib_set_ipv4addr(devname, &ds.ipaddr);
@@ -305,7 +371,7 @@ static void* pan_dhcp_thread(void* arg)
 
             char ip_str[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &ds.ipaddr, ip_str, sizeof(ip_str));
-            BT_LOGI("DHCP success on %s: IP=%s", devname, ip_str);
+            PAN_STATE_LOG(LOG_INFO, "dhcp_ok dev=%s ip=%s", devname, ip_str);
 
             if (ds.dnsaddr.s_addr != 0) {
                 char dns_str[INET_ADDRSTRLEN];
@@ -316,40 +382,76 @@ static void* pan_dhcp_thread(void* arg)
                 dns_addr.sin_family = AF_INET;
                 dns_addr.sin_addr = ds.dnsaddr;
                 dns_add_nameserver((FAR const struct sockaddr*)&dns_addr,
-                                   sizeof(dns_addr));
-                BT_LOGI("DNS: %s", dns_str);
+                    sizeof(dns_addr));
+                PAN_STATE_LOG(LOG_INFO, "dhcp_dns dns=%s", dns_str);
             }
 
-            dhcpc_close(handle);
+            got_lease = true;
             g_auto_state = PAN_AUTO_CONNECTED;
-            return NULL;
+            break;
         }
         retries++;
-        BT_LOGW("DHCP attempt %d failed, retrying in 2s...", retries);
-        sleep(2);
+        PAN_STATE_LOG(LOG_WARNING, "dhcp_retry attempt=%d/%d", retries,
+            PAN_DHCP_MAX_ATTEMPTS);
+        sleep(PAN_DHCP_RETRY_INTERVAL_S);
     }
 
-    BT_LOGE("DHCP failed after %d attempts", retries);
-    dhcpc_close(handle);
+out:
+    if (handle) {
+        dhcpc_close(handle);
+    }
+
+    /* Only the still-current worker owns the flag; see g_dhcp_epoch. */
+    if (g_dhcp_epoch == my_epoch) {
+        g_dhcp_running = false;
+    }
+
+    /* A stop request means the link went away and the disconnect handler is
+     * already driving the reconnect - giving up here as well could drop a
+     * link that has since come back up. */
+    if (!got_lease && !asked_to_stop) {
+        PAN_STATE_LOG(LOG_ERR, "dhcp_giveup attempts=%d", retries);
+        pan_dhcp_give_up_and_reconnect();
+    }
     return NULL;
+}
+
+static void pan_dhcp_give_up_and_reconnect(void)
+{
+    do_in_service_loop(pan_dhcp_give_up_cb, NULL);
+}
+
+/* Ask a live DHCP worker to stop. Bumping the epoch is what makes this safe
+ * to call from the service loop while the worker sleeps between retries:
+ * the worker will not clear the flag or trigger a give-up reconnect once its
+ * epoch is stale, so a fast reconnect can start a fresh worker immediately. */
+static void pan_stop_dhcp(void)
+{
+    g_dhcp_epoch++;
+    g_dhcp_running = false;
 }
 
 static void pan_start_dhcp(const char* devname)
 {
+    pthread_attr_t attr;
+    pthread_t tid;
+
     if (g_dhcp_running) {
+        PAN_STATE_LOG(LOG_WARNING, "dhcp_skip reason=already_running");
         return;
     }
     g_dhcp_running = true;
 
-    pthread_attr_t attr;
     pthread_attr_init(&attr);
-    pthread_attr_setstacksize(&attr, 4096);
-    if (pthread_create(&g_dhcp_thread, &attr, pan_dhcp_thread,
-            (void*)devname) == 0) {
-        pthread_setname_np(g_dhcp_thread, "pan_dhcp");
-        BT_LOGI("DHCP thread started for %s", devname);
+    pthread_attr_setstacksize(&attr, PAN_DHCP_STACK_SIZE);
+    /* Detached: nothing ever joins this thread, so a joinable one leaks
+     * its TCB and stack on every PAN reconnect. devname is always a
+     * string literal, so passing it across the thread boundary is safe. */
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    if (pthread_create(&tid, &attr, pan_dhcp_thread, (void*)devname) == 0) {
+        pthread_setname_np(tid, "pan_dhcp");
     } else {
-        BT_LOGE("Failed to create DHCP thread");
+        PAN_STATE_LOG(LOG_ERR, "dhcp_abort reason=pthread_create");
         g_dhcp_running = false;
     }
     pthread_attr_destroy(&attr);
@@ -628,7 +730,8 @@ static void pan_ifup_and_dhcp(void)
      * just have to tell the IP stack which one it is. 14 bytes is the
      * worst-case BNEP header (General Ethernet). */
     if (tx_mtu <= BNEP_ETH_HDR_LEN) {
-        BT_LOGE("no negotiated MTU (%u), aborting ifup", tx_mtu);
+        PAN_STATE_LOG(LOG_ERR, "ifup_abort reason=no_negotiated_mtu tx_mtu=%u",
+            tx_mtu);
         return;
     }
     if_mtu = (uint16_t)(tx_mtu - BNEP_ETH_HDR_LEN);
@@ -638,10 +741,11 @@ static void pan_ifup_and_dhcp(void)
     pan_set_tap_mtu(PAN_DEV_NAME, if_mtu);
 
     if (netlib_ifup(PAN_DEV_NAME) < 0) {
-        BT_LOGE("ifup %s failed", PAN_DEV_NAME);
+        PAN_STATE_LOG(LOG_ERR, "ifup_abort reason=ifup_failed dev=%s",
+            PAN_DEV_NAME);
         return;
     }
-    BT_LOGI("%s up, tx_mtu=%u if_mtu=%u, starting DHCP",
+    PAN_STATE_LOG(LOG_INFO, "ifup dev=%s tx_mtu=%u if_mtu=%u",
         PAN_DEV_NAME, tx_mtu, if_mtu);
     pan_start_dhcp(PAN_DEV_NAME);
 }
@@ -745,22 +849,41 @@ static void pan_conn_close(pan_conn_t* conn)
     }
 }
 
+/* Fixed, greppable name for each profile_connection_state_t value. The whole
+ * PAN lifecycle is traceable with a single `grep '\[pan\] state='` because the
+ * DHCP worker logs in the same form. */
+static const char* pan_state_name(profile_connection_state_t state)
+{
+    switch (state) {
+    case PROFILE_STATE_DISCONNECTED:
+        return "disconnected";
+    case PROFILE_STATE_CONNECTING:
+        return "connecting";
+    case PROFILE_STATE_CONNECTED:
+        return "connected";
+    case PROFILE_STATE_DISCONNECTING:
+        return "disconnecting";
+    default:
+        return "unknown";
+    }
+}
+
 static void on_pan_connection_state_changed(bt_address_t* addr, pan_conn_evt_t* evt)
 {
     pan_conn_t* conn;
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     bt_addr_ba2str(addr, addr_str);
-    BT_LOGD("%s, addr: %s, remote_role: %d, local_role: %d, state: %d",
-        __func__, addr_str, evt->remote_role,
-        evt->local_role, evt->state);
+    PAN_STATE_LOG(LOG_INFO, "%s addr=%s remote_role=%d local_role=%d",
+        pan_state_name(evt->state), addr_str,
+        (int)evt->remote_role, (int)evt->local_role);
 
     switch (evt->state) {
     case PROFILE_STATE_DISCONNECTED: {
         conn = pan_find_conn(addr);
         pan_conn_close(conn);
         bt_pm_conn_close(PROFILE_PANU, addr);
-        g_dhcp_running = false;
+        pan_stop_dhcp();
         /* pan_tap_bridge_close() only runs on PAN disable, so a plain
          * link drop would leave the interface up with the previous
          * negotiated MTU still applied to the next handshake. */
@@ -978,7 +1101,9 @@ static bt_status_t pan_startup(profile_on_startup_t cb)
     g_pan_ever_connected = false;
     g_abnormal_reconnect_count = 0;
     g_last_disc_type = DISC_TYPE_NONE;
-    g_dhcp_running = false;
+    /* Retires any worker left over from a previous enable/disable cycle
+     * rather than just clearing the flag under it. */
+    pan_stop_dhcp();
 
     /* Register adapter + bond state callbacks for auto-connect */
     {
@@ -1013,7 +1138,7 @@ static bt_status_t pan_shutdown(profile_on_shutdown_t cb)
     }
 
     g_pan.enable = false;
-    g_dhcp_running = false;
+    pan_stop_dhcp();
     g_auto_state = PAN_AUTO_IDLE;
     if (g_auto_connect_timer) {
         service_loop_cancel_timer(g_auto_connect_timer);
