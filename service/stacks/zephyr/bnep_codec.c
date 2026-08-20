@@ -183,3 +183,86 @@ int bnep_encode_eth(uint8_t *out, size_t cap,
 
     return (int)o;
 }
+
+int bnep_decode_eth(uint8_t *out, size_t cap,
+                    const uint8_t *bnep, size_t bnep_len,
+                    const uint8_t local_mac[6], const uint8_t peer_mac[6],
+                    const uint8_t **ctrl_out, size_t *ctrl_len)
+{
+    if (!out || !bnep || !local_mac || !peer_mac || !ctrl_out || !ctrl_len) {
+        return BNEP_ERR_TRUNCATED;
+    }
+    if (bnep_len < 1) { return BNEP_ERR_TRUNCATED; }
+
+    uint8_t type = bnep[0] & BNEP_TYPE_MASK;
+    bool has_ext = (bnep[0] & BNEP_EXT_FLAG) != 0;
+    size_t i = 1;
+
+    const uint8_t *dst = NULL;
+    const uint8_t *src = NULL;
+
+    switch (type) {
+    case BNEP_CONTROL:
+        /* Control payload starts right after the header byte and runs to
+         * the end of the frame; extension headers, if any, follow the
+         * control message and are not our concern here. */
+        *ctrl_out = &bnep[1];
+        *ctrl_len = bnep_len - 1;
+        return BNEP_DECODE_IS_CONTROL;
+
+    case BNEP_GENERAL_ETHERNET:
+        if (bnep_len < i + 12) { return BNEP_ERR_TRUNCATED; }
+        dst = &bnep[i]; i += 6;
+        src = &bnep[i]; i += 6;
+        break;
+
+    case BNEP_COMPRESSED_ETHERNET:
+        dst = local_mac;
+        src = peer_mac;
+        break;
+
+    case BNEP_COMPRESSED_ETHERNET_SRC_ONLY:
+        if (bnep_len < i + 6) { return BNEP_ERR_TRUNCATED; }
+        dst = local_mac;
+        src = &bnep[i]; i += 6;
+        break;
+
+    case BNEP_COMPRESSED_ETHERNET_DEST_ONLY:
+        if (bnep_len < i + 6) { return BNEP_ERR_TRUNCATED; }
+        dst = &bnep[i]; i += 6;
+        src = peer_mac;
+        break;
+
+    default:
+        return BNEP_ERR_BADTYPE;
+    }
+    /* Protocol type. */
+    if (bnep_len < i + 2) { return BNEP_ERR_TRUNCATED; }
+    uint8_t proto_hi = bnep[i];
+    uint8_t proto_lo = bnep[i + 1];
+    i += 2;
+
+    /* Skip every extension header. Each is [more|type][len][payload].
+     * Forgetting this loop hands extension bytes to the IP stack as if
+     * they were payload. */
+    while (has_ext) {
+        if (bnep_len < i + 2) { return BNEP_ERR_TRUNCATED; }
+        bool more = (bnep[i] & BNEP_EXT_FLAG) != 0;
+        uint8_t ext_len = bnep[i + 1];
+        i += 2;
+        if (bnep_len < i + ext_len) { return BNEP_ERR_TRUNCATED; }
+        i += ext_len;
+        has_ext = more;
+    }
+
+    size_t payload_len = bnep_len - i;
+    if (cap < BNEP_ETH_HDR_LEN + payload_len) { return BNEP_ERR_NOSPACE; }
+
+    memcpy(&out[0], dst, 6);
+    memcpy(&out[6], src, 6);
+    out[12] = proto_hi;
+    out[13] = proto_lo;
+    if (payload_len) { memcpy(&out[BNEP_ETH_HDR_LEN], &bnep[i], payload_len); }
+
+    return (int)(BNEP_ETH_HDR_LEN + payload_len);
+}
