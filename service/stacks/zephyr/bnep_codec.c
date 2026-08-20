@@ -113,3 +113,73 @@ int bnep_parse_control(const uint8_t *ctrl, size_t len,
         return BNEP_ERR_BADTYPE;
     }
 }
+
+int bnep_encode_eth(uint8_t *out, size_t cap,
+                    const uint8_t *eth_frame, size_t eth_len,
+                    const uint8_t local_mac[6], const uint8_t peer_mac[6],
+                    bool compress)
+{
+    if (!out || !eth_frame || !local_mac || !peer_mac) {
+        return BNEP_ERR_TRUNCATED;
+    }
+    if (eth_len < BNEP_ETH_HDR_LEN) { return BNEP_ERR_TRUNCATED; }
+
+    const uint8_t *dst = &eth_frame[0];
+    const uint8_t *src = &eth_frame[6];
+    const uint8_t *proto = &eth_frame[12];
+    const uint8_t *payload = &eth_frame[BNEP_ETH_HDR_LEN];
+    size_t payload_len = eth_len - BNEP_ETH_HDR_LEN;
+
+    /* Broadcast and multicast must stay General: a compressed frame makes
+     * the receiver rebuild the destination as its own unicast MAC, which
+     * silently eats DHCP DISCOVER and every ARP request.
+     *
+     * The guard has to sit on BOTH omittable flags, not just dst_omittable.
+     * A broadcast frame we originate has src == local_mac, so with the guard
+     * only on dst the ladder falls through to DEST_ONLY (0x04) and still
+     * emits a compressed frame. Confirmed by running the two tests above
+     * against a src_omittable that lacked the guard: type came out 0x04
+     * with n=37 instead of 0x00 with n=43. */
+    bool bcast_or_mcast = bnep_mac_is_broadcast(dst)
+                          || bnep_mac_is_multicast(dst);
+    bool dst_omittable = compress && !bcast_or_mcast
+                         && memcmp(dst, peer_mac, 6) == 0;
+    bool src_omittable = compress && !bcast_or_mcast
+                         && memcmp(src, local_mac, 6) == 0;
+
+    uint8_t type;
+    if (dst_omittable && src_omittable) {
+        type = BNEP_COMPRESSED_ETHERNET;
+    } else if (dst_omittable) {
+        type = BNEP_COMPRESSED_ETHERNET_SRC_ONLY;
+    } else if (src_omittable) {
+        type = BNEP_COMPRESSED_ETHERNET_DEST_ONLY;
+    } else {
+        type = BNEP_GENERAL_ETHERNET;
+    }
+
+    size_t need = 1;
+    if (type == BNEP_GENERAL_ETHERNET) { need += 12; }
+    else if (type == BNEP_COMPRESSED_ETHERNET_SRC_ONLY) { need += 6; }
+    else if (type == BNEP_COMPRESSED_ETHERNET_DEST_ONLY) { need += 6; }
+    need += 2 + payload_len;
+
+    if (cap < need) { return BNEP_ERR_NOSPACE; }
+
+    size_t o = 0;
+    out[o++] = type;
+    if (type == BNEP_GENERAL_ETHERNET) {
+        memcpy(&out[o], dst, 6); o += 6;
+        memcpy(&out[o], src, 6); o += 6;
+    } else if (type == BNEP_COMPRESSED_ETHERNET_SRC_ONLY) {
+        memcpy(&out[o], src, 6); o += 6;
+    } else if (type == BNEP_COMPRESSED_ETHERNET_DEST_ONLY) {
+        memcpy(&out[o], dst, 6); o += 6;
+    }
+    out[o++] = proto[0];
+    out[o++] = proto[1];
+    memcpy(&out[o], payload, payload_len);
+    o += payload_len;
+
+    return (int)o;
+}
