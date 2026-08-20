@@ -312,6 +312,12 @@ if(CONFIG_BLUETOOTH)
 
       if(CONFIG_BLUETOOTH_PAN)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_pan_interface.c)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/bnep_codec.c)
+        # bnep_codec.h is reached from sal_pan_interface.h, which lives in
+        # service/stacks/include - a quoted include there resolves relative to
+        # that directory, not to service/stacks/zephyr, so the codec directory
+        # has to be on the search path for panu_service.c to see it too.
+        list(APPEND INCDIR ${BLUETOOTH_DIR}/service/stacks/zephyr)
       endif()
 
       if(CONFIG_BLUETOOTH_HID_DEVICE)

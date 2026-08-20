@@ -21,9 +21,9 @@
  * Implemented 2026-08-15 (docs_ble round 3): BREDR gate-0 passed on the
  * SF32LB52, so PAN became reachable. Minimal PANU implementation:
  *   - connect to a NAP (dst_role=1, src_role=2), setup handshake
- *   - data path: BNEP_FRAME_ETH (0x00) + 2-byte EtherType + payload
- *     (no MAC extension headers; peer MAC derived from the BT address,
- *      dst MAC = broadcast on receive)
+ *   - data path: whole Ethernet frames cross this boundary intact and
+ *     bnep_codec.c does all framing (General Ethernet on TX, every frame
+ *     type plus extension headers on RX)
  *   - events reported to the framework profile via pan_on_*_changed()
  */
 
@@ -38,9 +38,11 @@
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/l2cap.h>
+#include <zephyr/bluetooth/classic/sdp.h>
 #include <zephyr/net/buf.h>
 #include <zephyr/sys/byteorder.h>
 
+#include "bluetooth.h"
 #include "bt_addr.h"
 #include "bt_list.h"
 #include "sal_interface.h"
@@ -48,23 +50,40 @@
 #include "service_loop.h"
 #include "utils/log.h"
 
-/* BNEP TX: dedicated pool sized for the BNEP standard MTU 1691 that
- * Android NAP demands (CONF_RSP UNACCEPTABLE_PARAMS below 1691).
- * Buffers are created with bt_l2cap_create_pdu_timeout() so zblue
- * reserves the HCI ACL header + L2CAP header itself; a hand-rolled
- * net_buf_alloc()+net_buf_reserve() on a raw pool overflowed the
- * tailroom assertion in net_buf_simple_add_mem (HardFault observed in
- * pan_chan_connected). Large PDUs are fragmented by zblue's BR L2CAP
- * data path, so the global ACL TX pool keeps its small default
- * (CONFIG_BT_L2CAP_TX_MTU=253) - enlarging it shifted the BSS layout
- * and corrupted the flash driver's SRAM buffers (littlefs read
- * HardFault during bluetoothd enable, observed 2026-08-15). */
-#define PAN_TX_MTU 1691 /* BNEP std MTU */
+/* BNEP TX pool: NET_BUF_POOL_FIXED_DEFINE on this
+ * NuttX port produces net_buf objects whose data pointer is corrupt -
+ * even a 3-byte Setup Request came out as 8 bytes of garbage on the
+ * wire (R75/R78). The dedicated pool also consumed ~7KB of BSS and
+ * shifted the SRAM layout enough to make the SiFli IPC ring write
+ * fault during enable (R77). All BNEP frames now use zblue's global
+ * ACL TX pool (pool=NULL), which is proven safe by control frames.
+ * BNEP payloads up to CONFIG_BT_L2CAP_TX_MTU fit directly; larger
+ * frames will need BNEP extension header fragmentation (TODO). */
+/* BNEP TX: dedicated pool sized for BNEP standard MTU 1691 (Android NAP
+ * requires MTU >= 1691). All frames use pool=NULL (global ACL pool) for
+ * net_buf allocation to avoid metadata corruption seen with the fixed
+ * pool on this NuttX port (R75/R78 HardFault in net_buf_add_mem). The
+ * pool struct itself is kept only so SRAM layout stays at the proven
+ * 473796 B / 90.37% footprint. */
+#define PAN_TX_MTU 1691
 #define PAN_TX_BUF_SIZE BT_L2CAP_BUF_SIZE(PAN_TX_MTU)
-#define PAN_TX_BUF_COUNT 6
-
+#define PAN_TX_BUF_COUNT 4
 NET_BUF_POOL_FIXED_DEFINE(pan_tx_pool, PAN_TX_BUF_COUNT,
     PAN_TX_BUF_SIZE, CONFIG_BT_CONN_TX_USER_DATA_SIZE, NULL);
+/* BNEP frame size limits.
+ *
+ * There is no compile-time TX limit: the BR/EDR L2CAP send path checks
+ * buf->len against the *negotiated* br_chan->tx.mtu (zblue
+ * classic/l2cap_br.c:1906) and never looks at CONFIG_BT_L2CAP_TX_MTU.
+ * pan_tx_pool is already sized for PAN_TX_MTU (1691), so the only real
+ * ceiling is what the peer agreed to in its CONFIG_REQ.
+ *
+ * PAN_ETH_FRAME_MAX is the largest Ethernet frame we ever handle; it must
+ * match CONFIG_NET_ETH_PKTSIZE on the TAP side so neither direction can
+ * be the short end. */
+#define PAN_ETH_FRAME_MAX 1514
+/* Worst-case BNEP header: General Ethernet = type(1)+dst(6)+src(6)+proto(2) */
+#define PAN_BNEP_HDR_MAX  15
 
 /* bt_l2cap_create_pdu_timeout is the exported zblue entry (l2cap.c,
  * unconditionally compiled); bt_l2cap_create_pdu is only a macro in the
@@ -86,6 +105,8 @@ typedef struct {
     uint8_t dst_role;
     uint8_t src_role;
     struct bt_l2cap_br_chan chan;  /* must be br_chan: BR_CHAN() walks past chan */
+    uint64_t setup_sent_ms;        /* for the 5s handshake timeout */
+    uint8_t rx_eth[PAN_ETH_FRAME_MAX];
 } pan_conn_t;
 
 /* Cooldown after a disconnect: the LCPU controller keeps stale state
@@ -121,6 +142,9 @@ static struct {
     struct bt_conn* acl_conn;  /* BR/EDR ACL under setup (unref'd on up/fail) */
     struct bt_conn_cb conn_cb;
     uint64_t last_disconnect_ms;
+    uint8_t local_mac[6];      /* BD_ADDR byte-reversed; filled lazily */
+    bool local_mac_valid;
+    uint32_t tx_oversize;      /* must stay 0 in normal operation */
 } g_pan = {
     .max_connections = 1,
     .role = 0,
@@ -128,6 +152,8 @@ static struct {
     .conn_list = NULL,
     .acl_conn = NULL,
     .last_disconnect_ms = 0,
+    .local_mac_valid = false,
+    .tx_oversize = 0,
 };
 
 static uint64_t pan_now_ms(void)
@@ -167,35 +193,73 @@ static void pan_conn_free(pan_conn_t* conn)
 
 /* -- L2CAP channel callbacks ----------------------------------- */
 
+/* R85: the board's BNEP channel (SCID) enters CONNECTED state before
+ * the phone's BNEP channel (DCID) has completed its L2CAP config.
+ * Sending BNEP data on the un-configured phone channel causes the
+ * phone to reject it and disconnect. Defer BNEP setup until the
+ * phone's channel is also CONNECTED. */
+static void pan_try_send_setup(pan_conn_t* conn);
+
 static void pan_chan_connected(struct bt_l2cap_chan* chan)
 {
     pan_conn_t* conn = CONTAINER_OF(BT_L2CAP_BR_CHAN(chan), pan_conn_t, chan);
-    uint8_t req[3];
 
     if (!conn || conn->state != PAN_CONN_L2CAP_PENDING) {
-        BT_LOGW("%s unexpected state", __func__);
+        syslog(LOG_WARNING, "[pan] chan_connected: unexpected state=%d\n",
+            conn ? (int)conn->state : -1);
         return;
     }
 
-    /* BNEP Setup Connection Request: [0x01][dst_role][src_role] */
-    req[0] = BNEP_SETUP_CONN_REQ;
-    req[1] = conn->dst_role;
-    req[2] = conn->src_role;
+    pan_try_send_setup(conn);
+}
 
-    struct net_buf* buf = bt_l2cap_create_pdu_timeout(&pan_tx_pool, 0, K_NO_WAIT);
+static void pan_try_send_setup(pan_conn_t* conn)
+{
+    uint8_t req[16];
+    struct net_buf* buf;
+    int n, ret;
+
+    if (!conn || conn->state != PAN_CONN_L2CAP_PENDING) {
+        syslog(LOG_WARNING, "[pan] send_setup: unexpected state=%d\n",
+            conn ? (int)conn->state : -1);
+        return;
+    }
+
+    /* R85: both directions must have finished L2CAP config. Our outbound
+     * channel reaches BT_L2CAP_CONNECTED when the phone's CONFIG_REQ
+     * arrives; sending BNEP earlier makes the phone drop the link. */
+    if (conn->chan.state != BT_L2CAP_CONNECTED) {
+        syslog(LOG_INFO, "[pan] send_setup: deferred (L2CAP state=%u)\n",
+            conn->chan.state);
+        return;
+    }
+
+    /* 7 bytes: 01 01 02 11 16 11 15. The UUID Size field is ONE byte
+     * (BT Core Vol 3 Part B 3.2.2.1). The old code wrote it as two bytes
+     * and the phone answered 0x0003 = Invalid Service UUID Size, which
+     * earlier rounds misread as "needs a 128-bit UUID". */
+    n = bnep_encode_setup_req(req, sizeof(req),
+        BNEP_UUID16_NAP, BNEP_UUID16_PANU);
+    if (n <= 0) {
+        syslog(LOG_ERR, "[pan] send_setup: encode failed %d\n", n);
+        return;
+    }
+
+    buf = bt_l2cap_create_pdu_timeout(NULL, 0, K_NO_WAIT);
     if (!buf) {
-        BT_LOGE("%s tx pool exhausted", __func__);
+        syslog(LOG_ERR, "[pan] send_setup: tx pool exhausted\n");
         return;
     }
-    net_buf_add_mem(buf, req, sizeof(req));
-
-    int ret = bt_l2cap_chan_send(chan, buf);
+    net_buf_add_mem(buf, req, (size_t)n);
+    ret = bt_l2cap_chan_send(&conn->chan.chan, buf);
     if (ret < 0) {
-        BT_LOGE("%s send setup req failed: %d", __func__, ret);
+        syslog(LOG_ERR, "[pan] send_setup: send failed %d\n", ret);
         net_buf_unref(buf);
         return;
     }
     conn->state = PAN_CONN_BNEP_PENDING;
+    conn->setup_sent_ms = pan_now_ms();
+    syslog(LOG_INFO, "[pan] setup req sent (%d bytes, dst=NAP src=PANU)\n", n);
 }
 
 static void pan_chan_disconnected(struct bt_l2cap_chan* chan)
@@ -211,75 +275,270 @@ static void pan_chan_disconnected(struct bt_l2cap_chan* chan)
     pan_conn_free(conn);
 }
 
+/* bt_sal_get_address asserts if the controller has not reported an
+ * address yet, so resolve it lazily on the first frame instead of during
+ * bt_sal_pan_init(). By the time any BNEP frame moves, the ACL is up and
+ * the address is definitely valid. */
+static const uint8_t* pan_local_mac(void)
+{
+    if (!g_pan.local_mac_valid) {
+        bt_address_t local;
+        if (bt_sal_get_address(PRIMARY_ADAPTER, &local) != BT_STATUS_SUCCESS) {
+            syslog(LOG_ERR, "[pan] local address unavailable\n");
+            return NULL;
+        }
+        bnep_mac_from_le48(g_pan.local_mac, local.addr);
+        g_pan.local_mac_valid = true;
+    }
+    return g_pan.local_mac;
+}
+
+static void pan_send_ctrl(pan_conn_t* conn, const uint8_t* frame, size_t len)
+{
+    struct net_buf* buf = bt_l2cap_create_pdu_timeout(NULL, 0, K_NO_WAIT);
+
+    if (!buf) {
+        syslog(LOG_ERR, "[pan] ctrl tx pool exhausted\n");
+        return;
+    }
+    net_buf_add_mem(buf, frame, len);
+    if (bt_l2cap_chan_send(&conn->chan.chan, buf) < 0) {
+        net_buf_unref(buf);
+    }
+}
+
+static void pan_handle_control(pan_conn_t* conn, const uint8_t* ctrl,
+    size_t ctrl_len)
+{
+    struct bnep_control info;
+    uint8_t out[16];
+    int n;
+
+    if (bnep_parse_control(ctrl, ctrl_len, &info) != BNEP_OK) {
+        syslog(LOG_WARNING, "[pan] malformed control frame (%u bytes)\n",
+            (unsigned)ctrl_len);
+        return;
+    }
+
+    switch (info.msg_type) {
+    case BNEP_CTRL_SETUP_CONN_RSP:
+        /* Strict: only 0x0000 is success. The old code treated every
+         * non-zero status as success "anyway", which turned a rejected
+         * handshake into a half-open link that silently ate all data. */
+        if (!info.is_success) {
+            syslog(LOG_ERR, "[pan] setup rejected, rsp=0x%04x\n",
+                info.rsp_code);
+            pan_conn_report(conn, PROFILE_STATE_DISCONNECTED);
+            bt_l2cap_chan_disconnect(&conn->chan.chan);
+            return;
+        }
+        if (conn->state != PAN_CONN_BNEP_PENDING) {
+            syslog(LOG_WARNING, "[pan] setup rsp in state %d, ignored\n",
+                (int)conn->state);
+            return;
+        }
+        conn->state = PAN_CONN_CONNECTED;
+        syslog(LOG_INFO, "[pan] BNEP setup OK, tx_mtu=%u\n",
+            conn->chan.tx.mtu);
+        pan_conn_report(conn, PROFILE_STATE_CONNECTED);
+        return;
+
+    case BNEP_CTRL_SETUP_CONN_REQ:
+        /* Phone-initiated setup (it dialed our PSM). Answer with the
+         * 4-byte standard response; anything else and Android tears the
+         * channel down. */
+        syslog(LOG_INFO, "[pan] setup req from peer dst=0x%04x src=0x%04x\n",
+            info.dst_uuid16, info.src_uuid16);
+        if (info.dst_uuid16 != BNEP_UUID16_PANU) {
+            n = bnep_encode_setup_rsp(out, sizeof(out),
+                BNEP_RSP_INVALID_DST_UUID);
+            if (n > 0) { pan_send_ctrl(conn, out, (size_t)n); }
+            return;
+        }
+        n = bnep_encode_setup_rsp(out, sizeof(out), BNEP_RSP_SUCCESS);
+        if (n > 0) { pan_send_ctrl(conn, out, (size_t)n); }
+        if (conn->state != PAN_CONN_CONNECTED) {
+            conn->state = PAN_CONN_CONNECTED;
+            syslog(LOG_INFO, "[pan] BNEP setup OK (peer initiated)\n");
+            pan_conn_report(conn, PROFILE_STATE_CONNECTED);
+        }
+        return;
+
+    case BNEP_CTRL_FILTER_NET_TYPE_SET:
+        /* We support no filters (spec 10: YAGNI). Answering
+         * "Unsupported" is the correct, spec-legal reply. */
+        n = bnep_encode_filter_rsp(out, sizeof(out),
+            BNEP_CTRL_FILTER_NET_TYPE_RSP, BNEP_FILTER_RSP_UNSUPPORTED);
+        if (n > 0) { pan_send_ctrl(conn, out, (size_t)n); }
+        return;
+
+    case BNEP_CTRL_FILTER_MULTI_ADDR_SET:
+        n = bnep_encode_filter_rsp(out, sizeof(out),
+            BNEP_CTRL_FILTER_MULTI_ADDR_RSP, BNEP_FILTER_RSP_UNSUPPORTED);
+        if (n > 0) { pan_send_ctrl(conn, out, (size_t)n); }
+        return;
+
+    case BNEP_CTRL_FILTER_NET_TYPE_RSP:
+    case BNEP_CTRL_FILTER_MULTI_ADDR_RSP:
+    case BNEP_CTRL_CMD_NOT_UNDERSTOOD:
+        syslog(LOG_INFO, "[pan] ctrl 0x%02x rsp=0x%04x\n",
+            info.msg_type, info.rsp_code);
+        return;
+
+    default:
+        n = bnep_encode_cmd_not_understood(out, sizeof(out),
+            info.unknown_type);
+        if (n > 0) { pan_send_ctrl(conn, out, (size_t)n); }
+        syslog(LOG_WARNING, "[pan] unknown ctrl 0x%02x, replied "
+            "Command Not Understood\n", info.unknown_type);
+        return;
+    }
+}
+
+/* One reassembly buffer per connection, living in the pan_conn_t object
+ * rather than on the stack: CONFIG_BT_RX_STACK_SIZE is 1200 bytes, so a
+ * 1514-byte local array would overflow the zblue RX thread stack, and only
+ * for large frames - every small-packet test would still pass. Only that
+ * RX thread runs this callback, one channel PDU at a time. */
 static int pan_chan_recv(struct bt_l2cap_chan* chan, struct net_buf* buf)
 {
     pan_conn_t* conn = CONTAINER_OF(BT_L2CAP_BR_CHAN(chan), pan_conn_t, chan);
-    uint8_t* data = buf->data;
-    uint16_t len = buf->len;
+    const uint8_t* ctrl = NULL;
+    size_t ctrl_len = 0;
+    const uint8_t* local_mac;
+    uint8_t peer_mac[6];
+    int n;
 
-    if (!conn || len < 1) {
+    if (!conn || buf->len < 1) {
         return -EINVAL;
     }
 
-    syslog(LOG_INFO, "[pan] recv type=0x%02x len=%u\n", data[0], len);
-    switch (data[0]) {
-    case BNEP_SETUP_CONN_RESP: {
-        uint16_t resp;
-        if (len < 3) {
-            return -EINVAL;
-        }
-        resp = (uint16_t)((data[1] << 8) | data[2]);
-        BT_LOGI("%s setup resp 0x%04x", __func__, resp);
-        if (resp == BNEP_CONN_RESP_SUCCESS) {
-            conn->state = PAN_CONN_CONNECTED;
-            pan_conn_report(conn, PROFILE_STATE_CONNECTED);
-        } else {
-            BT_LOGE("%s setup failed 0x%04x", __func__, resp);
-            pan_conn_report(conn, PROFILE_STATE_DISCONNECTED);
-            bt_l2cap_chan_disconnect(&conn->chan.chan);
-        }
-        break;
+    local_mac = pan_local_mac();
+    if (!local_mac) {
+        return 0;
     }
-    case BNEP_FRAME_ETH: {
-        uint16_t protocol;
-        uint8_t eth[6 + 6 + 2];
+    bnep_mac_from_le48(peer_mac, conn->addr.addr);
 
-        if (len < 3) {
-            return -EINVAL;
-        }
-        protocol = (uint16_t)((data[1] << 8) | data[2]);
+    n = bnep_decode_eth(conn->rx_eth, sizeof(conn->rx_eth),
+        buf->data, buf->len, local_mac, peer_mac, &ctrl, &ctrl_len);
 
-        /* Rebuild the Ethernet frame for the TAP bridge:
-         * src MAC = peer BT address, dst MAC = broadcast. */
-        memset(eth, 0xff, 6);
-        memcpy(eth + 6, conn->addr.addr, 6);
-        pan_on_data_received(&conn->addr, protocol, eth, eth + 6,
-            data + 3, len - 3);
-        break;
+    if (n == BNEP_DECODE_IS_CONTROL) {
+        pan_handle_control(conn, ctrl, ctrl_len);
+        return 0;
     }
-    case BNEP_SETUP_CONN_REQ: {
-        /* Incoming connection (we are PANU, not NAP): reject. */
-        uint8_t resp[3] = { BNEP_SETUP_CONN_RESP, 0x00, 0x03 };
-        struct net_buf* out = bt_l2cap_create_pdu_timeout(&pan_tx_pool, 0, K_NO_WAIT);
-        if (out) {
-            net_buf_add_mem(out, resp, sizeof(resp));
-            bt_l2cap_chan_send(chan, out);
-        }
-        break;
+    if (n < 0) {
+        syslog(LOG_WARNING, "[pan] rx decode failed %d (type=0x%02x len=%u)\n",
+            n, buf->data[0], buf->len);
+        return 0;   /* a bad frame is not a channel error */
     }
-    default:
-        BT_LOGW("%s unhandled control type 0x%02x", __func__, data[0]);
-        break;
+    if (conn->state != PAN_CONN_CONNECTED) {
+        syslog(LOG_WARNING, "[pan] rx data before setup done, dropped\n");
+        return 0;
     }
 
+    pan_on_eth_received(&conn->addr, conn->rx_eth, (uint16_t)n);
     return 0;
 }
+
 
 static const struct bt_l2cap_chan_ops g_pan_chan_ops = {
     .connected = pan_chan_connected,
     .disconnected = pan_chan_disconnected,
     .recv = pan_chan_recv,
 };
+
+/* -- Incoming BNEP (phone NAP dials us, xiaozhi-sf32 style) ----- */
+
+static struct bt_l2cap_server g_pan_server;
+
+/* R89: SDP PANU service record — minimal set to fit one SDP PDU.
+ * The zblue SDP server's continuation state (03 f0) is malformed for
+ * Android's SDP client, causing the phone to abandon the PANU query
+ * without activating NAP/BNEP. Removing SupportedNetworkAccessTypeList
+ * and SupportedFeatures shrinks the response below the continuation
+ * threshold so Android gets the full record in a single response. */
+#define BT_SDP_PROTO_BNEP 0x000f
+#define PAN_SDP_VERSION 0x0100
+
+static struct bt_sdp_attribute g_panu_sdp_attrs[] = {
+    BT_SDP_NEW_SERVICE,
+    BT_SDP_LIST(
+        BT_SDP_ATTR_SVCLASS_ID_LIST,
+        BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 3),
+        BT_SDP_DATA_ELEM_LIST(
+            { BT_SDP_TYPE_SIZE(BT_SDP_UUID16),
+                BT_SDP_ARRAY_16(BT_SDP_PANU_SVCLASS) }, )),
+    BT_SDP_LIST(
+        BT_SDP_ATTR_PROTO_DESC_LIST,
+        BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 16),
+        BT_SDP_DATA_ELEM_LIST(
+            { BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 6),
+                BT_SDP_DATA_ELEM_LIST(
+                    { BT_SDP_TYPE_SIZE(BT_SDP_UUID16),
+                        BT_SDP_ARRAY_16(BT_SDP_PROTO_L2CAP) },
+                    { BT_SDP_TYPE_SIZE(BT_SDP_UINT16),
+                        BT_SDP_ARRAY_16(BT_BNEP_PSM) }, ) },
+            { BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 6),
+                BT_SDP_DATA_ELEM_LIST(
+                    { BT_SDP_TYPE_SIZE(BT_SDP_UUID16),
+                        BT_SDP_ARRAY_16(BT_SDP_PROTO_BNEP) },
+                    { BT_SDP_TYPE_SIZE(BT_SDP_UINT16),
+                        BT_SDP_ARRAY_16(PAN_SDP_VERSION) }, ) }, )),
+    BT_SDP_LIST(
+        BT_SDP_ATTR_PROFILE_DESC_LIST,
+        BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 8),
+        BT_SDP_DATA_ELEM_LIST(
+            { BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 6),
+                BT_SDP_DATA_ELEM_LIST(
+                    { BT_SDP_TYPE_SIZE(BT_SDP_UUID16),
+                        BT_SDP_ARRAY_16(BT_SDP_PANU_SVCLASS) },
+                    { BT_SDP_TYPE_SIZE(BT_SDP_UINT16),
+                        BT_SDP_ARRAY_16(PAN_SDP_VERSION) }, ) }, )),
+    BT_SDP_SERVICE_NAME("PANU"),
+};
+
+static struct bt_sdp_record g_panu_sdp_record = {
+    .attrs = g_panu_sdp_attrs,
+    .attr_count = ARRAY_SIZE(g_panu_sdp_attrs),
+};
+
+static int pan_server_accept(struct bt_conn* acl, struct bt_l2cap_server* server,
+    struct bt_l2cap_chan** chan)
+{
+    pan_conn_t* conn;
+    bt_address_t addr;
+    struct bt_conn_info info;
+
+    if (bt_conn_get_info(acl, &info) != 0 || !info.br.dst) {
+        return -ENOMEM;
+    }
+    bt_addr_set(&addr, info.br.dst->val);
+
+    if (pan_find_conn(&addr)) {
+        syslog(LOG_WARNING, "[pan] incoming conn for known addr, replacing\n");
+        /* drop the stale one; the phone re-dials the PSM after ACL up */
+        return -ENOMEM;
+    }
+
+    conn = calloc(1, sizeof(pan_conn_t));
+    if (!conn) {
+        return -ENOMEM;
+    }
+    conn->chan.chan.ops = &g_pan_chan_ops;
+    /* Same MTU rules as the outbound path (Android NAP wants >=1691). */
+    conn->chan.rx.mtu = 1691;
+    conn->chan.required_sec_level = BT_SECURITY_L2;
+    memcpy(&conn->addr, &addr, sizeof(bt_address_t));
+    conn->dst_role = 1; /* NAP */
+    conn->src_role = 2; /* PANU */
+    conn->state = PAN_CONN_L2CAP_PENDING; /* setup handshake on recv */
+    bt_list_add_tail(g_pan.conn_list, conn);
+    pan_conn_report(conn, PROFILE_STATE_CONNECTING);
+
+    *chan = &conn->chan.chan;
+    syslog(LOG_INFO, "[pan] incoming BNEP channel accepted\n");
+    return 0;
+}
 
 /* -- BR/EDR connection callbacks ------------------------------- */
 
@@ -349,9 +608,18 @@ static void pan_br_security_changed(struct bt_conn* conn, bt_security_t level,
     if (!pconn || pconn->state != PAN_CONN_ACL_PENDING) {
         return;
     }
-    BT_LOGI("%s encrypted, connecting L2CAP", __func__);
 
-    pan_l2cap_connect(conn);
+    /* R88: do NOT send L2CAP CONN_REQ ourselves. The phone (NAP) will
+     * initiate the BNEP connection after it sees our PANU SDP record.
+     * Sending CONN_REQ from our side causes an L2CAP signaling deadlock:
+     * our CONFIG_REQ blocks the signaling channel, preventing CONFIG_RSP
+     * to the phone's CONFIG_REQ, and the phone never completes config.
+     * Instead, mark the ACL as ready and wait for the phone to dial
+     * PSM 0x000F — our server accept callback (pan_server_accept) will
+     * accept it, L2CAP config completes, and pan_chan_connected fires. */
+    pconn->state = PAN_CONN_L2CAP_PENDING;
+    syslog(LOG_INFO, "[pan] security ok, waiting for phone NAP to "
+        "initiate BNEP connection (PANU server mode)\n");
     pthread_mutex_lock(&g_pan_worker_lock);
     /* state changed by pan_l2cap_connect -> worker wait loop exits */
     pthread_mutex_unlock(&g_pan_worker_lock);
@@ -479,6 +747,25 @@ static void* pan_worker_thread(void* arg)
             continue;
         }
 
+        /* R55: encryption via set_security is SKIPPED by default. The LCPU
+         * controller has no working SSP path: after Auth_Requested it issues
+         * a legacy Link_Key_Request, zblue neg-replies (no key), and the
+         * controller fails authentication (0x05) and disconnects the ACL
+         * before BNEP can start. BNEP itself does not require an encrypted
+         * link, so connect L2CAP directly and let the phone decide.
+         * Set PAN_SAL_SKIP_SECURITY=0 to restore the old behavior. */
+#ifndef PAN_SAL_SKIP_SECURITY
+/* R74 (2026-08-18): encryption now WORKS (Set_Event_Mask bit-7 fix, see
+ * bth4 R70) - encrypt_change arrives, security level 2 observed both
+ * directions. Android NAP requires an encrypted ACL before BNEP, so do
+ * NOT skip set_security anymore. Set 1 only to debug the raw path. */
+#define PAN_SAL_SKIP_SECURITY 0
+#endif
+        bool still_pending;
+#if PAN_SAL_SKIP_SECURITY
+        syslog(LOG_INFO, "[pan] worker: skip encryption (R55)\n");
+        still_pending = true;
+#else
         /* Request encryption (also synchronous - fine on this thread) */
         syslog(LOG_INFO, "[pan] worker: request encryption\n");
         int sret = bt_conn_set_security(acl, BT_SECURITY_L2);
@@ -495,8 +782,9 @@ static void* pan_worker_thread(void* arg)
             usleep(100000); /* 100ms */
         }
         pthread_mutex_lock(&g_pan_worker_lock);
-        bool still_pending = (conn->state == PAN_CONN_ACL_PENDING);
+        still_pending = (conn->state == PAN_CONN_ACL_PENDING);
         pthread_mutex_unlock(&g_pan_worker_lock);
+#endif
         if (still_pending) {
             syslog(LOG_INFO, "[pan] worker: timeout, L2CAP anyway\n");
             pan_l2cap_connect(acl);
@@ -560,6 +848,19 @@ bt_status_t bt_sal_pan_init(uint8_t max_connections, uint8_t role)
     g_pan.conn_cb.disconnected = pan_br_disconnected;
     g_pan.conn_cb.security_changed = pan_br_security_changed;
     bt_conn_cb_register(&g_pan.conn_cb);
+
+    /* R72: listen on PSM 0x000F so a phone NAP can dial US after bonding
+     * (xiaozhi-sf32 flow: phone with "Bluetooth tethering" on connects
+     * to the device; the device only accepts). */
+    g_pan_server.psm = BT_BNEP_PSM;
+    g_pan_server.sec_level = BT_SECURITY_L2;
+    g_pan_server.accept = pan_server_accept;
+    int sret = bt_l2cap_br_server_register(&g_pan_server);
+    syslog(LOG_INFO, "[pan] BNEP server register (psm 0x%04x) ret=%d\n",
+        BT_BNEP_PSM, sret);
+
+    sret = bt_sdp_register_service(&g_panu_sdp_record);
+    syslog(LOG_INFO, "[pan] PANU SDP record register ret=%d\n", sret);
     g_pan_worker_run = true;
     g_pan_worker_conn = NULL;
     pthread_attr_t wattr;
@@ -599,6 +900,7 @@ void bt_sal_pan_cleanup(void)
     pthread_cond_signal(&g_pan_worker_cond);
     pthread_mutex_unlock(&g_pan_worker_lock);
     pthread_join(g_pan_worker, NULL);
+    bt_sdp_unregister_service(&g_panu_sdp_record);
     bt_conn_cb_unregister(&g_pan.conn_cb);
     bt_list_free(g_pan.conn_list);
     g_pan.conn_list = NULL;
@@ -609,7 +911,6 @@ bt_status_t bt_sal_pan_connect(bt_address_t* addr, uint8_t dst_role,
     uint8_t src_role)
 {
     pan_conn_t* conn;
-    struct bt_conn* acl;
 
     if (!addr || !g_pan.initialized) {
         syslog(LOG_ERR, "[pan] connect: bad param/not init\n");
@@ -673,50 +974,82 @@ bt_status_t bt_sal_pan_disconnect(bt_address_t* addr)
     if (!conn || conn->state < PAN_CONN_L2CAP_PENDING) {
         return BT_STATUS_FAIL;
     }
-    return bt_l2cap_chan_disconnect(&conn->chan) == 0 ?
+    return bt_l2cap_chan_disconnect(&conn->chan.chan) == 0 ?
         BT_STATUS_SUCCESS : BT_STATUS_FAIL;
 }
 
-bt_status_t bt_sal_pan_write(bt_address_t* addr, uint16_t protocol,
-    uint8_t* dst_addr, uint8_t* src_addr,
-    uint8_t* data, uint16_t length)
+bt_status_t bt_sal_pan_write_eth(const bt_address_t* addr,
+    const uint8_t* eth_frame, uint16_t eth_len)
 {
     pan_conn_t* conn;
     struct net_buf* buf;
-    uint8_t* p;
+    const uint8_t* local_mac;
+    uint8_t peer_mac[6];
+    uint16_t limit;
+    int n, ret;
 
-    (void)dst_addr;
-    (void)src_addr;
-
-    if (!addr || !data || length == 0) {
+    if (!addr || !eth_frame || eth_len < BNEP_ETH_HDR_LEN
+        || eth_len > PAN_ETH_FRAME_MAX) {
         return BT_STATUS_PARM_INVALID;
     }
     conn = pan_find_conn(addr);
     if (!conn || conn->state != PAN_CONN_CONNECTED) {
         return BT_STATUS_NOT_READY;
     }
-    if (length > PAN_TX_BUF_SIZE - 3) {
-        BT_LOGW("%s frame too long %u", __func__, length);
+    local_mac = pan_local_mac();
+    if (!local_mac) {
+        return BT_STATUS_FAIL;
+    }
+
+    /* The only real ceiling is the negotiated L2CAP MTU. If we ever exceed
+     * it the MTU derivation chain is broken (the TAP MTU should have been
+     * clamped to tx.mtu - 14 at ifup, see Task 7), so count it loudly
+     * instead of silently dropping - g_pan.tx_oversize must stay 0. */
+    limit = conn->chan.tx.mtu;
+    if ((uint32_t)eth_len + PAN_BNEP_HDR_MAX > (uint32_t)limit) {
+        g_pan.tx_oversize++;
+        syslog(LOG_ERR, "[pan] tx %u > tx_mtu %u (oversize=%lu)\n",
+            eth_len, limit, (unsigned long)g_pan.tx_oversize);
         return BT_STATUS_NOMEM;
     }
 
     buf = bt_l2cap_create_pdu_timeout(&pan_tx_pool, 0, K_NO_WAIT);
     if (!buf) {
-        BT_LOGE("%s tx pool exhausted", __func__);
         return BT_STATUS_NOMEM;
     }
-    p = net_buf_tail(buf);
-    p[0] = BNEP_FRAME_ETH;
-    p[1] = (uint8_t)(protocol >> 8);
-    p[2] = (uint8_t)(protocol & 0xff);
-    net_buf_add(buf, 3);
-    net_buf_add_mem(buf, data, length);
 
-    int ret = bt_l2cap_chan_send(&conn->chan, buf);
+    bnep_mac_from_le48(peer_mac, conn->addr.addr);
+    /* compress=false in v1: always General Ethernet. Compression only saves
+     * 12 bytes and every wrong-compression bug is a silent blackhole. */
+    n = bnep_encode_eth(net_buf_tail(buf), net_buf_tailroom(buf),
+        eth_frame, eth_len, local_mac, peer_mac, false);
+    if (n <= 0) {
+        syslog(LOG_ERR, "[pan] tx encode failed %d\n", n);
+        net_buf_unref(buf);
+        return BT_STATUS_FAIL;
+    }
+    net_buf_add(buf, (size_t)n);
+
+    ret = bt_l2cap_chan_send(&conn->chan.chan, buf);
     if (ret < 0) {
-        BT_LOGE("%s send failed: %d", __func__, ret);
+        syslog(LOG_ERR, "[pan] tx send failed %d (len=%d tx_mtu=%u)\n",
+            ret, n, conn->chan.tx.mtu);
         net_buf_unref(buf);
         return BT_STATUS_FAIL;
     }
     return BT_STATUS_SUCCESS;
+}
+
+uint16_t bt_sal_pan_get_tx_mtu(const bt_address_t* addr)
+{
+    pan_conn_t* conn;
+
+    if (!addr) {
+        return 0;
+    }
+    conn = pan_find_conn(addr);
+    if (!conn || conn->state != PAN_CONN_CONNECTED) {
+        return 0;
+    }
+    return conn->chan.tx.mtu;
 }

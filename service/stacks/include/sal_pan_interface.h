@@ -25,32 +25,18 @@
 /* BNEP PSM (Bluetooth Core Spec Vol 3 Part E) */
 #define BT_BNEP_PSM 0x000F
 
-/* BNEP control types */
-#define BNEP_FRAME_ETH            0x00 /* Ethernet frame (uncompressed) */
-#define BNEP_SETUP_CONN_REQ       0x01
-#define BNEP_SETUP_CONN_RESP      0x02
-#define BNEP_FILTER_NET_TYPE_SET  0x03
-#define BNEP_FILTER_NET_TYPE_RESP 0x04
-#define BNEP_FILTER_MULTI_ADDR_SET 0x05
-#define BNEP_FILTER_MULTI_ADDR_RESP 0x06
-#define BNEP_EXT_CONTROL          0x7F
-
-/* BNEP setup connection response codes */
-#define BNEP_CONN_RESP_SUCCESS      0x0000
-#define BNEP_CONN_RESP_FAIL_INVALID_DEST_ROLE 0x0001
-#define BNEP_CONN_RESP_FAIL_INVALID_SRC_ROLE  0x0002
-#define BNEP_CONN_RESP_FAIL_CONN_NOT_ALLOWED  0x0003
-#define BNEP_CONN_RESP_FAIL_CONN_NOT_CONNECTED 0x0004
-#define BNEP_CONN_RESP_FAIL_INVALID_DEV_ADDR  0x0005
-#define BNEP_CONN_RESP_FAIL_CONN_FAILED      0x0006
-#define BNEP_CONN_RESP_FAIL_REQ_NOT_SUPPORTED 0x0007
+/* All BNEP frame/control/response constants live in bnep_codec.h, which is
+ * zero-dependency so the same header compiles in the host unit test.
+ * Do not re-declare them here: the previous local copies had the response
+ * codes wrong from 0x0003 up and gave 0x02 two conflicting meanings. */
+#include "bnep_codec.h"
 
 bt_status_t bt_sal_pan_init(uint8_t max_connections, uint8_t role);
 void bt_sal_pan_cleanup(void);
 bt_status_t bt_sal_pan_connect(bt_address_t* addr, uint8_t dst_role, uint8_t src_role);
 bt_status_t bt_sal_pan_disconnect(bt_address_t* addr);
-bt_status_t bt_sal_pan_write(bt_address_t* addr, uint16_t protocol,
-    uint8_t* dst_addr, uint8_t* src_addr,
-    uint8_t* data, uint16_t length);
+bt_status_t bt_sal_pan_write_eth(const bt_address_t* addr,
+    const uint8_t* eth_frame, uint16_t eth_len);
+uint16_t bt_sal_pan_get_tx_mtu(const bt_address_t* addr);
 
 #endif /* __SAL_PAN_INTERFACE_H__ */
