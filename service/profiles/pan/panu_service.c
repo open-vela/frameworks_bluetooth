@@ -510,6 +510,18 @@ static void pan_on_adapter_state_changed(void* cookie, bt_adapter_state_t state)
     if (state == BT_ADAPTER_STATE_ON) {
         BT_LOGI("Adapter ON, setting local name with MAC suffix");
         pan_set_local_name_with_mac();
+
+        /* The bond and the NAP address both survive a reset (bt_storage.db
+         * and last_nap under /data/misc/bt), so on a normal boot nothing
+         * bonds again and pan_on_bond_state() never fires. Without this the
+         * watch came up paired but with no network until someone typed
+         * "pan connect" on the console. pan_service_init() has already read
+         * last_nap into g_last_nap_addr; the IDLE test keeps this from
+         * disturbing a connect that a bond or a reconnect already started. */
+        if (g_has_last_nap && g_auto_state == PAN_AUTO_IDLE) {
+            PAN_STATE_LOG(LOG_INFO, "adapter-on-auto-connect");
+            pan_start_auto_connect(PAN_CONNECT_DELAY_MS);
+        }
     }
 }
 
