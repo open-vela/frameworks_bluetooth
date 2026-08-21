@@ -56,7 +56,11 @@ void bt_list_free(bt_list_t* list)
 
 void bt_list_clear(bt_list_t* list)
 {
-    if (!list) { syslog(LOG_ERR, "bt_list: NULL list\n"); return; }
+    if (!list) {
+        syslog(LOG_ERR, "bt_list: NULL list\n");
+        return;
+    }
+
     struct list_node* node;
     struct list_node* tmp;
 
@@ -73,35 +77,51 @@ void bt_list_clear(bt_list_t* list)
 
 bool bt_list_is_empty(bt_list_t* list)
 {
-    if (!list) { syslog(LOG_ERR, "bt_list: NULL list\n"); return true; }
+    if (!list) {
+        syslog(LOG_ERR, "bt_list: NULL list\n");
+        return true;
+    }
 
     return list->length == 0;
 }
 
 size_t bt_list_length(bt_list_t* list)
 {
-    if (!list) { syslog(LOG_ERR, "bt_list: NULL list\n"); return 0; }
+    if (!list) {
+        syslog(LOG_ERR, "bt_list: NULL list\n");
+        return 0;
+    }
 
     return list->length;
 }
 
 bt_list_node_t* bt_list_head(bt_list_t* list)
 {
-    if (!list) { syslog(LOG_ERR, "bt_list: NULL list\n"); return NULL; }
+    if (!list) {
+        syslog(LOG_ERR, "bt_list: NULL list\n");
+        return NULL;
+    }
 
     return (bt_list_node_t*)list_peek_head(&list->list);
 }
 
 bt_list_node_t* bt_list_tail(bt_list_t* list)
 {
-    if (!list) { syslog(LOG_ERR, "bt_list: NULL list\n"); return NULL; }
+    if (!list) {
+        syslog(LOG_ERR, "bt_list: NULL list\n");
+        return NULL;
+    }
 
     return (bt_list_node_t*)list_peek_tail(&list->list);
 }
 
 bt_list_node_t* bt_list_next(bt_list_t* list, bt_list_node_t* bt_node)
 {
-    if (!list) { syslog(LOG_ERR, "bt_list: NULL list\n"); return NULL; }
+    if (!list) {
+        syslog(LOG_ERR, "bt_list: NULL list\n");
+        return NULL;
+    }
+
     if (!bt_node)
         return NULL;
 
@@ -119,7 +139,11 @@ void* bt_list_node(bt_list_node_t* bt_node)
 
 void bt_list_add_head(bt_list_t* list, void* data)
 {
-    if (!list) { syslog(LOG_ERR, "bt_list: NULL list\n"); return; }
+    if (!list) {
+        syslog(LOG_ERR, "bt_list: NULL list\n");
+        return;
+    }
+
     bt_list_node_t* node = malloc(sizeof(bt_list_node_t));
 
     /* 2026-08-17: bluetoothd runs close to the SRAM ceiling (90.9%) and a
@@ -140,7 +164,11 @@ void bt_list_add_head(bt_list_t* list, void* data)
 
 void bt_list_add_tail(bt_list_t* list, void* data)
 {
-    if (!list) { syslog(LOG_ERR, "bt_list: NULL list\n"); return; }
+    if (!list) {
+        syslog(LOG_ERR, "bt_list: NULL list\n");
+        return;
+    }
+
     bt_list_node_t* node = malloc(sizeof(bt_list_node_t));
 
     /* See bt_list_add_head above. */
@@ -166,7 +194,11 @@ void bt_list_remove_node(bt_list_t* list, bt_list_node_t* node)
 
 void bt_list_remove(bt_list_t* list, void* data)
 {
-    if (!list) { syslog(LOG_ERR, "bt_list: NULL list\n"); return; }
+    if (!list) {
+        syslog(LOG_ERR, "bt_list: NULL list\n");
+        return;
+    }
+
     struct list_node* node;
     struct list_node* tmp;
 
@@ -213,7 +245,11 @@ void bt_list_move(bt_list_t* src, bt_list_t* dst, void* data, bool move_to_head)
 
 void bt_list_foreach(bt_list_t* list, bt_list_iter_cb cb, void* context)
 {
-    if (!list) { syslog(LOG_ERR, "bt_list: NULL list\n"); return; }
+    if (!list) {
+        syslog(LOG_ERR, "bt_list: NULL list\n");
+        return;
+    }
+
     struct list_node* node;
     struct list_node* tmp;
 
@@ -226,7 +262,11 @@ void bt_list_foreach(bt_list_t* list, bt_list_iter_cb cb, void* context)
 
 void* bt_list_find(bt_list_t* list, bt_list_find_cb cb, void* context)
 {
-    if (!list) { syslog(LOG_ERR, "bt_list: NULL list\n"); return NULL; }
+    if (!list) {
+        syslog(LOG_ERR, "bt_list: NULL list\n");
+        return NULL;
+    }
+
     struct list_node* node;
     struct list_node* tmp;
 
