@@ -98,6 +98,7 @@ static service_timer_t* g_auto_connect_timer;
  * "nobody has asked me to stop, so I am still the live worker". */
 static volatile bool g_dhcp_running;
 static volatile uint32_t g_dhcp_epoch;
+static void* g_dhcp_handle; /* for pan_stop_dhcp to close the socket */
 static pan_disc_type_t g_last_disc_type;
 
 #define PAN_MAX_CONNECTIONS 1
@@ -220,6 +221,39 @@ static bool pan_load_last_nap(bt_address_t* addr)
         }
     }
     return false;
+}
+
+static bool pan_addr_allocator(void** data, uint32_t size)
+{
+    *data = malloc(size);
+    return *data != NULL;
+}
+
+/* Fall back to the bond list when last_nap is missing.
+ *
+ * last_nap is only written when a BOND_STATE_BONDED event arrives, so a watch
+ * that was paired by an older firmware - or whose last_nap was wiped while
+ * bt_storage.db survived - came up bonded but never auto-connected. The bond
+ * list is the same information the phone side relies on, so take the most
+ * recently bonded BR/EDR device, exactly like bt_cm_device_connect() does. */
+static bool pan_pick_bonded_nap(bt_address_t* addr)
+{
+    bt_address_t* addrs = NULL;
+    int num = 0;
+
+    if (adapter_get_bonded_devices(BT_TRANSPORT_BREDR, &addrs, &num,
+            pan_addr_allocator)
+        != BT_STATUS_SUCCESS) {
+        return false;
+    }
+    if (!addrs) {
+        return false;
+    }
+    if (num > 0) {
+        memcpy(addr, &addrs[num - 1], sizeof(bt_address_t));
+    }
+    free(addrs);
+    return num > 0;
 }
 
 static void pan_auto_connect_timeout(service_timer_t* timer, void* data);
@@ -356,6 +390,7 @@ static void* pan_dhcp_thread(void* arg)
         PAN_STATE_LOG(LOG_ERR, "dhcp_abort reason=dhcpc_open dev=%s", devname);
         goto out;
     }
+    g_dhcp_handle = handle; /* so pan_stop_dhcp can close the socket */
 
     /* Retry DHCP request (phone NAP may take a moment) */
     while (retries < PAN_DHCP_MAX_ATTEMPTS) {
@@ -397,9 +432,11 @@ static void* pan_dhcp_thread(void* arg)
     }
 
 out:
-    if (handle) {
+    if (handle && g_dhcp_epoch == my_epoch) {
+        /* pan_stop_dhcp hasn't closed it yet — do it ourselves */
         dhcpc_close(handle);
     }
+    g_dhcp_handle = NULL; /* either way, the handle is no longer valid */
 
     /* Only the still-current worker owns the flag; see g_dhcp_epoch. */
     if (g_dhcp_epoch == my_epoch) {
@@ -429,6 +466,22 @@ static void pan_stop_dhcp(void)
 {
     g_dhcp_epoch++;
     g_dhcp_running = false;
+    /* Slam the DHCP socket shut to unblock recv() in the DHCP thread.
+     * dhcpc_close() is NOT safe here — it frees the handle while the
+     * thread still holds a local pointer to it.  Instead, reach into
+     * the handle and close just the sockfd; the thread wakes up from
+     * recv() with an error, sees the epoch mismatch, and calls
+     * dhcpc_close() itself (the normal exit path). */
+    if (g_dhcp_handle) {
+        /* struct dhcpc_state_s starts with: interface, sockfd, ...
+         * The sockfd field is at offset sizeof(const char*) = 4 on ARM. */
+        typedef struct { const char *iface; int sockfd; } *dhcp_min_t;
+        dhcp_min_t h = (dhcp_min_t)g_dhcp_handle;
+        if (h->sockfd > 0) {
+            close(h->sockfd);
+            h->sockfd = -1;
+        }
+    }
 }
 
 static void pan_start_dhcp(const char* devname)
@@ -520,6 +573,12 @@ static void pan_on_adapter_state_changed(void* cookie, bt_adapter_state_t state)
          * disturbing a connect that a bond or a reconnect already started. */
         if (g_has_last_nap && g_auto_state == PAN_AUTO_IDLE) {
             PAN_STATE_LOG(LOG_INFO, "adapter-on-auto-connect");
+            pan_start_auto_connect(PAN_CONNECT_DELAY_MS);
+        } else if (!g_has_last_nap && g_auto_state == PAN_AUTO_IDLE
+                   && pan_pick_bonded_nap(&g_last_nap_addr)) {
+            g_has_last_nap = true;
+            pan_save_last_nap(&g_last_nap_addr);
+            PAN_STATE_LOG(LOG_INFO, "adapter-on-auto-connect source=bondlist");
             pan_start_auto_connect(PAN_CONNECT_DELAY_MS);
         }
     }
@@ -784,6 +843,7 @@ static void pan_tap_poll_data(service_poll_t* poll, int revent, void* userdata)
     }
 
     BT_LOGE("%s poll disconnected", __func__);
+    pan_stop_dhcp(); /* must stop DHCP before tearing down connections */
     pan_close_all_conn();
 }
 
@@ -844,6 +904,7 @@ static void pan_conn_close(pan_conn_t* conn)
 
     pan_free_conn(conn);
     if (pan_conns() == 0) {
+        pan_stop_dhcp(); /* stop DHCP before tearing down TAP/poll */
         if (g_pan.poll_handle) {
             service_loop_remove_poll(g_pan.poll_handle);
             g_pan.poll_handle = NULL;
@@ -954,6 +1015,15 @@ static void on_pan_connection_state_changed(bt_address_t* addr, pan_conn_evt_t* 
             g_reconnect_attempts = 0;
             g_abnormal_reconnect_count = 0;
             g_last_disc_type = DISC_TYPE_NONE;
+            /* Remember the NAP we actually reached, not just the one we bonded
+             * with: a console "pan connect" or the bond-list fallback must also
+             * make the next boot auto-connect. */
+            if (!g_has_last_nap
+                || memcmp(&g_last_nap_addr, addr, sizeof(bt_address_t)) != 0) {
+                memcpy(&g_last_nap_addr, addr, sizeof(bt_address_t));
+                g_has_last_nap = true;
+                pan_save_last_nap(addr);
+            }
             pan_ifup_and_dhcp();
         }
         break;
@@ -976,9 +1046,25 @@ static int on_pan_data_incoming(bt_address_t* addr, uint16_t protocol,
             ret = write(g_pan.tun_fd, packet, length);
         } while (ret == -1 && errno == EINTR);
 
+        /* Only DHCP/ARP and failures are logged: everything else on a tethered
+         * link is mDNS/ND chatter that would drown the console. */
+        if (ret != (ssize_t)length) {
+            PAN_STATE_LOG(LOG_ERR, "rx_tun_write_fail len=%u ret=%d errno=%d",
+                length, (int)ret, errno);
+        } else if (protocol == 0x0806) {
+            PAN_STATE_LOG(LOG_INFO, "rx_arp len=%u", length);
+        } else if (protocol == 0x0800 && length >= 42
+                   && packet[23] == 17
+                   && (packet[35] == 0x43 || packet[37] == 0x44)) {
+            PAN_STATE_LOG(LOG_INFO, "rx_dhcp len=%u sport=%u dport=%u",
+                length, (packet[34] << 8) | packet[35],
+                (packet[36] << 8) | packet[37]);
+        }
+
         return (int)ret;
     }
 
+    PAN_STATE_LOG(LOG_ERR, "rx_drop reason=no_tun len=%u", length);
     return -1;
 }
 

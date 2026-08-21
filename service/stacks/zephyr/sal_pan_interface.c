@@ -50,24 +50,22 @@
 #include "service_loop.h"
 #include "utils/log.h"
 
-/* BNEP TX pool: NET_BUF_POOL_FIXED_DEFINE on this
- * NuttX port produces net_buf objects whose data pointer is corrupt -
- * even a 3-byte Setup Request came out as 8 bytes of garbage on the
- * wire (R75/R78). The dedicated pool also consumed ~7KB of BSS and
- * shifted the SRAM layout enough to make the SiFli IPC ring write
- * fault during enable (R77). All BNEP frames now use zblue's global
- * ACL TX pool (pool=NULL), which is proven safe by control frames.
- * BNEP payloads up to CONFIG_BT_L2CAP_TX_MTU fit directly; larger
- * frames will need BNEP extension header fragmentation (TODO). */
-/* BNEP TX: dedicated pool sized for BNEP standard MTU 1691 (Android NAP
- * requires MTU >= 1691). All frames use pool=NULL (global ACL pool) for
- * net_buf allocation to avoid metadata corruption seen with the fixed
- * pool on this NuttX port (R75/R78 HardFault in net_buf_add_mem). The
- * pool struct itself is kept only so SRAM layout stays at the proven
- * 473796 B / 90.37% footprint. */
+/* BNEP TX pool, sized for the BNEP standard MTU 1691 (Android NAP negotiates
+ * 1691 in its L2CAP CONFIG_REQ).
+ *
+ * Any pool handed to net_buf_alloc() on this port must also be listed in
+ * _net_buf_pool_list[] (external/zblue/zblue/port/sections/defines.c).
+ * pool_id() resolves a pool pointer by scanning that list and returns 0 for an
+ * unlisted pool, so its buffers would take discardable_pool's max_alloc_size
+ * (258 -> 249 bytes of tailroom, hence the historical BNEP encode -ENOSPC) and
+ * would write into discardable_pool's storage. */
 #define PAN_TX_MTU 1691
 #define PAN_TX_BUF_SIZE BT_L2CAP_BUF_SIZE(PAN_TX_MTU)
-#define PAN_TX_BUF_COUNT 4
+/* Two buffers: the TAP reader sends one frame at a time and the buffer is
+ * released on ACL completion, so depth only buys pipelining. Each buffer is
+ * ~1.7 KB of BSS and the heap has under 30 KB left after .bss, so a deeper
+ * pool would come straight out of malloc(). */
+#define PAN_TX_BUF_COUNT 2
 NET_BUF_POOL_FIXED_DEFINE(pan_tx_pool, PAN_TX_BUF_COUNT,
     PAN_TX_BUF_SIZE, CONFIG_BT_CONN_TX_USER_DATA_SIZE, NULL);
 /* BNEP frame size limits.
@@ -145,6 +143,7 @@ static struct {
     uint8_t local_mac[6];      /* BD_ADDR byte-reversed; filled lazily */
     bool local_mac_valid;
     uint32_t tx_oversize;      /* must stay 0 in normal operation */
+    uint32_t tx_nobuf;         /* pan_tx_pool exhausted for >100ms */
 } g_pan = {
     .max_connections = 1,
     .role = 0,
@@ -154,6 +153,7 @@ static struct {
     .last_disconnect_ms = 0,
     .local_mac_valid = false,
     .tx_oversize = 0,
+    .tx_nobuf = 0,
 };
 
 static uint64_t pan_now_ms(void)
@@ -609,20 +609,16 @@ static void pan_br_security_changed(struct bt_conn* conn, bt_security_t level,
         return;
     }
 
-    /* R88: do NOT send L2CAP CONN_REQ ourselves. The phone (NAP) will
-     * initiate the BNEP connection after it sees our PANU SDP record.
-     * Sending CONN_REQ from our side causes an L2CAP signaling deadlock:
-     * our CONFIG_REQ blocks the signaling channel, preventing CONFIG_RSP
-     * to the phone's CONFIG_REQ, and the phone never completes config.
-     * Instead, mark the ACL as ready and wait for the phone to dial
-     * PSM 0x000F — our server accept callback (pan_server_accept) will
-     * accept it, L2CAP config completes, and pan_chan_connected fires. */
-    pconn->state = PAN_CONN_L2CAP_PENDING;
-    syslog(LOG_INFO, "[pan] security ok, waiting for phone NAP to "
-        "initiate BNEP connection (PANU server mode)\n");
-    pthread_mutex_lock(&g_pan_worker_lock);
-    /* state changed by pan_l2cap_connect -> worker wait loop exits */
-    pthread_mutex_unlock(&g_pan_worker_lock);
+    /* R88: encryption is done — now send L2CAP CONN_REQ to the phone's
+     * NAP service (PSM 0x000F).  The phone will not connect to our PANU
+     * server on its own; the PANU is the initiator.  The R88 deadlock
+     * scenario (outbound CONFIG_REQ blocking the signaling channel) only
+     * happens when both sides dial simultaneously; here only the PANU
+     * dials, so the signaling channel is free for the phone's CONFIG_REQ.
+     * pan_l2cap_connect sets state = L2CAP_PENDING, so the worker's
+     * wait loop (which watches for state != ACL_PENDING) exits cleanly. */
+    syslog(LOG_INFO, "[pan] security ok, connecting L2CAP to phone NAP\n");
+    pan_l2cap_connect(conn);
 }
 
 static void pan_l2cap_connect(struct bt_conn* conn)
@@ -771,8 +767,12 @@ static void* pan_worker_thread(void* arg)
         int sret = bt_conn_set_security(acl, BT_SECURITY_L2);
         syslog(LOG_INFO, "[pan] worker: set_security ret=%d\n", sret);
 
-        /* Wait briefly for encryption, then connect L2CAP (async). */
-        for (int i = 0; i < 20; i++) {
+        /* Wait for encryption to complete before connecting L2CAP.
+         * BNEP requires an encrypted link (BT_SECURITY_L2). A full SSP
+         * pairing + encrypt cycle can take 5-10 s on slower phones;
+         * a reconnect with a stored link key is typically < 1 s.
+         * 30 s covers all cases without blocking reconnects forever. */
+        for (int i = 0; i < 300; i++) {
             pthread_mutex_lock(&g_pan_worker_lock);
             bool done = (conn->state != PAN_CONN_ACL_PENDING);
             pthread_mutex_unlock(&g_pan_worker_lock);
@@ -1013,8 +1013,9 @@ bt_status_t bt_sal_pan_write_eth(const bt_address_t* addr,
         return BT_STATUS_NOMEM;
     }
 
-    buf = bt_l2cap_create_pdu_timeout(&pan_tx_pool, 0, K_NO_WAIT);
+    buf = bt_l2cap_create_pdu_timeout(&pan_tx_pool, 0, K_MSEC(100));
     if (!buf) {
+        g_pan.tx_nobuf++;
         return BT_STATUS_NOMEM;
     }
 
