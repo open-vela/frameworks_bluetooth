@@ -151,8 +151,7 @@ void bt_list_add_head(bt_list_t* list, void* data)
      * which every BT IPC call hangs. Degrade to a logged no-op instead -
      * the list simply misses one entry (device/conn record) which callers
      * already tolerate via lookup failures. */
-    if (!node)
-    {
+    if (!node) {
         syslog(LOG_ERR, "bt_list_add_head: OOM, entry dropped\n");
         return;
     }
@@ -172,8 +171,7 @@ void bt_list_add_tail(bt_list_t* list, void* data)
     bt_list_node_t* node = malloc(sizeof(bt_list_node_t));
 
     /* See bt_list_add_head above. */
-    if (!node)
-    {
+    if (!node) {
         syslog(LOG_ERR, "bt_list_add_tail: OOM, entry dropped\n");
         return;
     }

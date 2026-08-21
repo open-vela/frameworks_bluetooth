@@ -536,7 +536,7 @@ static void pan_on_bond_state(void* cookie, bt_address_t* addr,
 
 /* Adapter state callback: set local name with MAC suffix when BT is ON.
  * xiaozhi-sf32 does this at BT_APP_READY: bt_interface_set_local_name
- * with "小智-XX:XX:XX:XX:XX:XX". We do "Agent-Watch-XX:XX:XX:XX:XX:XX". */
+ * with "xiaozhi-XX:XX:XX:XX:XX:XX". We do "Agent-Watch-XX:XX:XX:XX:XX:XX". */
 
 static void pan_set_local_name_with_mac(void)
 {
@@ -971,7 +971,8 @@ static void on_pan_connection_state_changed(bt_address_t* addr, pan_conn_evt_t* 
 
             if (!g_pan_ever_connected) {
                 /* Class 1: PAN disconnected but was never successfully connected.
-                 * xiaozhi: 3×3s retry, then "请确保手机开了网络共享" */
+                 * xiaozhi: 3x3s retry, then tell the user to enable
+                 * Bluetooth tethering on the phone. */
                 g_last_disc_type = DISC_TYPE_PAN_NEVER;
                 g_reconnect_attempts++;
                 if (g_reconnect_attempts <= PAN_FIRST_CONNECT_MAX_RETRIES) {

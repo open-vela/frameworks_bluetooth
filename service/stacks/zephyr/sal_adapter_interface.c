@@ -193,7 +193,8 @@ static struct bt_conn_auth_cb g_conn_auth_cbs = {
     /* R102: register passkey_display + passkey_confirm so get_io_capa()
      * returns DisplayYesNo (0x01) instead of NoInputNoOutput (0x03).
      * Without both set, HyperOS 3.0 falls back to legacy PIN entry
-     * (phone shows "PIN错误"), which has no handler on headless board.
+     * (the phone reports a PIN mismatch), which has no handler on a
+     * headless board.
      * passkey_confirm auto-accepts (headless device). */
     .passkey_display = zblue_on_passkey_display,
     .passkey_confirm = zblue_on_passkey_confirm,
