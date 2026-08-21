@@ -26,13 +26,26 @@
 #define SMP_KEYS_MAX_SIZE 80
 #define BT_COMMON_KEY_LENGTH 16
 
-#ifdef CONFIG_BLUETOOTH_DEFAULT_COD
+/* The Kconfig symbol is literally named "CONFIG_BLUETOOTH_DEFAULT_COD"
+ * (frameworks/connectivity/bluetooth/Kconfig:278), so kconfig emits it into
+ * .config as CONFIG_CONFIG_BLUETOOTH_DEFAULT_COD. Testing the single-prefix
+ * spelling here always failed, and a defconfig line written with one prefix
+ * is silently discarded, so the value below was unreachable both ways.
+ * Accept either spelling so this keeps working if the symbol is ever renamed.
+ *
+ * The fallback carries the Networking service-class bit (0x020000) on top of
+ * the wristwatch base 0x000704 and Audio+Capturing 0x280000. Phones read that
+ * bit to decide whether to offer network tethering, so PAN needs it set even
+ * when no defconfig overrides the value. */
+#ifdef CONFIG_CONFIG_BLUETOOTH_DEFAULT_COD
+#define DEFAULT_DEVICE_OF_CLASS CONFIG_CONFIG_BLUETOOTH_DEFAULT_COD
+#elif defined(CONFIG_BLUETOOTH_DEFAULT_COD)
 #define DEFAULT_DEVICE_OF_CLASS CONFIG_BLUETOOTH_DEFAULT_COD
 #else
-#define DEFAULT_DEVICE_OF_CLASS 0x00280704
+#define DEFAULT_DEVICE_OF_CLASS 0x002A0704
 #endif
 
-#define DEFAULT_IO_CAPABILITY BT_IO_CAPABILITY_NOINPUTNOOUTPUT
+#define DEFAULT_IO_CAPABILITY BT_IO_CAPABILITY_DISPLAYYESNO
 #define DEFAULT_SCAN_MODE BT_BR_SCAN_MODE_CONNECTABLE
 #define DEFAULT_BONDABLE_MODE 1
 

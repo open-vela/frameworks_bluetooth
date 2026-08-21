@@ -58,9 +58,10 @@ typedef struct {
 
 void pan_on_connection_state_changed(bt_address_t* addr, pan_role_t remote_role,
     pan_role_t local_role, profile_connection_state_t state);
-void pan_on_data_received(bt_address_t* addr, uint16_t protocol,
-    uint8_t* dst_addr, uint8_t* src_addr,
-    uint8_t* data, uint16_t length);
+/* Whole Ethernet frames cross the SAL boundary intact - the 14-byte header
+ * is built and parsed by bnep_codec, not reassembled here. */
+void pan_on_eth_received(bt_address_t* addr, const uint8_t* eth_frame,
+    uint16_t eth_len);
 
 /*
  * register profile to service manager

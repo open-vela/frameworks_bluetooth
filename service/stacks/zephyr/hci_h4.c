@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
+#include <syslog.h>
 #include <unistd.h>
 
 #include <zephyr/device.h>
@@ -264,20 +265,31 @@ static void bt_sal_hci_transport_recv(void)
         buf_add = frame_start + sizeof(packet_type);
         buf_add_len = decoded_len - sizeof(packet_type);
 
+#ifdef CONFIG_BLUETOOTH_HCI_FRAME_TRACE
+        syslog(LOG_INFO, "[h4] frame type=0x%02x evt=0x%02x len=%d\n",
+            frame_start[0],
+            (frame_start[0] == BT_HCI_H4_EVT) ? frame_start[1] : 0,
+            (int)decoded_len);
+#endif
+
         buf = get_rx(frame_start);
 
         frame_size -= decoded_len;
         frame_start += decoded_len;
 
         if (!buf) {
-            BT_LOGD("Discard adv report due to insufficient buf");
+            /* Not gated: this one drops an event the stack needed and it is
+             * invisible through BT_LOG* in this config. */
+            syslog(LOG_ERR, "[h4] DROP frame type=0x%02x evt=0x%02x (no buf)\n",
+                frame_start[-decoded_len],
+                (frame_start[-decoded_len] == BT_HCI_H4_EVT) ? frame_start[1 - decoded_len] : 0);
             continue;
         }
 
         buf_tailroom = net_buf_tailroom(buf);
         if (buf_tailroom < buf_add_len) {
-            BT_LOGE("Not enough space in buffer %zu/%zu", buf_add_len,
-                buf_tailroom);
+            syslog(LOG_ERR, "[h4] DROP tailroom %zu < %zu (type=0x%02x)\n",
+                buf_tailroom, buf_add_len, frame_start[-decoded_len]);
             net_buf_unref(buf);
             continue;
         }

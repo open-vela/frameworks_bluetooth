@@ -281,6 +281,48 @@ config CONFIG_BLUETOOTH_DEFAULT_COD
 	help
 		Set default class of device
 
+config BLUETOOTH_AUTO_ENABLE
+	bool "Turn the adapter on when bluetoothd starts"
+	default n
+	help
+		bluetoothd normally just initializes the stack and then waits for a
+		client to call bt_adapter_enable(). On a headless product nobody
+		does, so Bluetooth stays off until someone types "bttool enable" on
+		the console. Enable this to have the daemon turn the adapter on by
+		itself shortly after startup.
+
+config BLUETOOTH_AUTO_ENABLE_DELAY_MS
+	int "Delay before the automatic enable (ms)"
+	default 1000
+	depends on BLUETOOTH_AUTO_ENABLE
+	help
+		Counted from the moment the service loop starts running. It keeps the
+		HCI reset sequence out of the way of the rest of the boot; 0 is legal
+		and enables as soon as the loop is up.
+
+config BLUETOOTH_BOOT_SCAN_MODE
+	int "BR/EDR scan mode to force at every startup (-1: use stored value)"
+	default -1
+	range -1 2
+	help
+		The adapter normally restores whatever scan mode was last saved, and
+		a device with no saved properties yet falls back to connectable-only
+		(DEFAULT_SCAN_MODE). A product that is meant to be paired from the
+		phone side needs to be discoverable as well, and with no pairing UI
+		there is nobody to switch it on. Set this to 2
+		(connectable+discoverable) to make that the boot state regardless of
+		what is stored. -1 keeps the stored/default behaviour. 0 is none and
+		1 is connectable only.
+
+config BLUETOOTH_HCI_FRAME_TRACE
+	bool "Log every HCI frame the H4 transport decodes"
+	default n
+	help
+		One syslog line per decoded HCI frame, which on the BNEP data path
+		means one console write per ACL packet. It was what made the BR/EDR
+		bring-up traceable, but it is far too expensive to leave on in a
+		product build. The two frame-drop paths stay logged either way.
+
 endif #BLUETOOTH_SERVICE
 
 menu "Profiles"
