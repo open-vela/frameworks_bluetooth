@@ -371,7 +371,8 @@ static void* hci_recv_thread(void* arg)
         }
 
         if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) {
-            BT_LOGE("H4 poll disconnected, events 0x%x", pfd.revents);
+            BT_LOGE("H4 poll disconnected, events 0x%lx",
+                (unsigned long)pfd.revents);
             break;
         }
 
