@@ -60,11 +60,10 @@
 
 #define CALLBACK_FOREACH(_list, _struct, _cback, ...) BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
 
-#define CHECK_ADAPTER_READY()                                      \
-    if ((g_adapter_service.adapter_state != BT_ADAPTER_STATE_ON) && \
-        (g_adapter_service.adapter_state != BT_ADAPTER_STATE_BLE_ON)) { \
-        status = BT_STATUS_NOT_ENABLED;                            \
-        goto error;                                                \
+#define CHECK_ADAPTER_READY()                                                                                                       \
+    if ((g_adapter_service.adapter_state != BT_ADAPTER_STATE_ON) && (g_adapter_service.adapter_state != BT_ADAPTER_STATE_BLE_ON)) { \
+        status = BT_STATUS_NOT_ENABLED;                                                                                             \
+        goto error;                                                                                                                 \
     }
 
 #define CBLIST (g_adapter_service.adapter_callbacks)
@@ -332,10 +331,7 @@ static bt_device_t* adapter_find_create_le_device(bt_address_t* addr, ble_addr_t
 
 static bool adapter_is_valid_le_whitelist_addr_type(ble_addr_type_t type)
 {
-    return type == BT_LE_ADDR_TYPE_PUBLIC ||
-        type == BT_LE_ADDR_TYPE_RANDOM ||
-        type == BT_LE_ADDR_TYPE_PUBLIC_ID ||
-        type == BT_LE_ADDR_TYPE_RANDOM_ID;
+    return type == BT_LE_ADDR_TYPE_PUBLIC || type == BT_LE_ADDR_TYPE_RANDOM || type == BT_LE_ADDR_TYPE_PUBLIC_ID || type == BT_LE_ADDR_TYPE_RANDOM_ID;
 }
 #endif
 
@@ -2289,8 +2285,7 @@ bt_status_t adapter_cancel_discovery(void)
     adapter_service_t* adapter = &g_adapter_service;
 
     adapter_lock();
-    if ((adapter->adapter_state != BT_ADAPTER_STATE_ON) &&
-        (adapter->adapter_state != BT_ADAPTER_STATE_BLE_ON)) {
+    if ((adapter->adapter_state != BT_ADAPTER_STATE_ON) && (adapter->adapter_state != BT_ADAPTER_STATE_BLE_ON)) {
         adapter_unlock();
         return BT_STATUS_NOT_ENABLED;
     }
@@ -3187,8 +3182,7 @@ bt_status_t adapter_le_add_whitelist_with_type(bt_address_t* addr, ble_addr_type
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     adapter_lock();
-    if ((adapter->adapter_state != BT_ADAPTER_STATE_ON) &&
-        (adapter->adapter_state != BT_ADAPTER_STATE_BLE_ON)) {
+    if ((adapter->adapter_state != BT_ADAPTER_STATE_ON) && (adapter->adapter_state != BT_ADAPTER_STATE_BLE_ON)) {
         adapter_unlock();
         return BT_STATUS_NOT_ENABLED;
     }
@@ -3198,10 +3192,7 @@ bt_status_t adapter_le_add_whitelist_with_type(bt_address_t* addr, ble_addr_type
     if (type == BT_LE_ADDR_TYPE_UNKNOWN) {
         if (device) {
             resolved_type = device_get_address_type(device);
-            if ((resolved_type != BT_LE_ADDR_TYPE_PUBLIC) &&
-                (resolved_type != BT_LE_ADDR_TYPE_RANDOM) &&
-                (resolved_type != BT_LE_ADDR_TYPE_PUBLIC_ID) &&
-                (resolved_type != BT_LE_ADDR_TYPE_RANDOM_ID)) {
+            if ((resolved_type != BT_LE_ADDR_TYPE_PUBLIC) && (resolved_type != BT_LE_ADDR_TYPE_RANDOM) && (resolved_type != BT_LE_ADDR_TYPE_PUBLIC_ID) && (resolved_type != BT_LE_ADDR_TYPE_RANDOM_ID)) {
                 resolved_type = BT_LE_ADDR_TYPE_PUBLIC;
             }
         } else {
@@ -3211,10 +3202,7 @@ bt_status_t adapter_le_add_whitelist_with_type(bt_address_t* addr, ble_addr_type
         resolved_type = type;
     }
 
-    if ((resolved_type != BT_LE_ADDR_TYPE_PUBLIC) &&
-        (resolved_type != BT_LE_ADDR_TYPE_RANDOM) &&
-        (resolved_type != BT_LE_ADDR_TYPE_PUBLIC_ID) &&
-        (resolved_type != BT_LE_ADDR_TYPE_RANDOM_ID)) {
+    if ((resolved_type != BT_LE_ADDR_TYPE_PUBLIC) && (resolved_type != BT_LE_ADDR_TYPE_RANDOM) && (resolved_type != BT_LE_ADDR_TYPE_PUBLIC_ID) && (resolved_type != BT_LE_ADDR_TYPE_RANDOM_ID)) {
         adapter_unlock();
         return BT_STATUS_PARM_INVALID;
     }
@@ -3303,8 +3291,7 @@ bt_status_t adapter_le_remove_whitelist(bt_address_t* addr)
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     adapter_lock();
-    if ((adapter->adapter_state != BT_ADAPTER_STATE_ON) &&
-        (adapter->adapter_state != BT_ADAPTER_STATE_BLE_ON)) {
+    if ((adapter->adapter_state != BT_ADAPTER_STATE_ON) && (adapter->adapter_state != BT_ADAPTER_STATE_BLE_ON)) {
         adapter_unlock();
         return BT_STATUS_NOT_ENABLED;
     }
@@ -3459,8 +3446,7 @@ bt_status_t adapter_create_bond(bt_address_t* addr, bt_transport_t transport)
             adapter_unlock();
         }
         return status;
-    }
-    else
+    } else
 #endif
         return BT_STATUS_PARM_INVALID;
 }

@@ -14,7 +14,6 @@
  * limitations under the License.
  ***************************************************************************/
 
-
 #undef BT_LE_SCAN_TYPE_PASSIVE
 #undef BT_LE_SCAN_TYPE_ACTIVE
 #include <zephyr/bluetooth/bluetooth.h>

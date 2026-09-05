@@ -26,9 +26,9 @@
     } while (0)
 
 #define BT_SOCKET_PTR_VALID(cb, ret) \
-    do {                            \
-        if (cb == NULL)             \
-            return ret;             \
+    do {                             \
+        if (cb == NULL)              \
+            return ret;              \
     } while (0)
 
 /* Macros for number of items.

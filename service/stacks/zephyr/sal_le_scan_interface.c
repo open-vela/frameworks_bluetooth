@@ -14,8 +14,8 @@
  * limitations under the License.
  ***************************************************************************/
 
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 
 #undef BT_LE_SCAN_TYPE_PASSIVE
 #undef BT_LE_SCAN_TYPE_ACTIVE

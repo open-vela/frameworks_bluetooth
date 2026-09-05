@@ -25,13 +25,12 @@
 #include "service_loop.h"
 #include "utils/log.h"
 
-
 #undef BT_LE_SCAN_TYPE_PASSIVE
 #undef BT_LE_SCAN_TYPE_ACTIVE
-#include <zephyr/kernel.h>
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/hci.h>
+#include <zephyr/kernel.h>
 
 #ifndef CONFIG_BT_EXT_ADV_MAX_ADV_SET
 #define CONFIG_BT_EXT_ADV_MAX_ADV_SET 3

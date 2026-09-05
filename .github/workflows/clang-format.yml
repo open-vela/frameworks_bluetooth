@@ -1,13 +1,48 @@
-# This is a basic workflow to help you get started with Actions
-
 name: clang-format
 
-# Controls when the workflow will run
 on:
   pull_request:
     types: [opened, reopened, synchronize]
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   clang-format:
-    uses: open-vela/public-actions/.github/workflows/clang-format.yml@dev
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Update and install clang-format
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-format-14
+        sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-14 110
+        sudo update-alternatives --display clang-format
+        clang-format --version
+
+    - name: Checkout Repo
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Get changed files in the PR
+      id: files
+      run: |
+        git log
+        ls -atl
+        files=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} -- '*.cpp' '*.h' '*.c' '*.hpp' | tr '\n' ' ')
+        echo "Modified files:"
+        echo "$files"
+        echo "changed-files=$files" >> $GITHUB_OUTPUT
+
+    - name: Run clang-format check
+      run: |
+        for file in ${{ steps.files.outputs.changed-files }}
+        do
+          if [ -f "$file" ]; then
+            if [ -f ".clang-format" ]; then
+                echo clang-format -n $file --Werror
+                clang-format -n $file --Werror
+            else
+                echo clang-format --style=WebKit -n $file --Werror
+                clang-format --style=WebKit -n $file --Werror
+            fi
+          fi
+        done
+        echo "All changed files passed clang-format check"

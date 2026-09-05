@@ -1954,8 +1954,7 @@ static int bttool_ins_init(bttool_t* bttool)
     }
 
     adapter_callback = bt_adapter_register_callback(g_bttool_ins, &g_adapter_cbs);
-    if (bt_adapter_get_state(g_bttool_ins) == BT_ADAPTER_STATE_ON ||
-        bt_adapter_get_state(g_bttool_ins) == BT_ADAPTER_STATE_BLE_ON)
+    if (bt_adapter_get_state(g_bttool_ins) == BT_ADAPTER_STATE_ON || bt_adapter_get_state(g_bttool_ins) == BT_ADAPTER_STATE_BLE_ON)
         bt_tool_init(g_bttool_ins);
 
     return 0;

@@ -18,7 +18,6 @@
 #include "sal_interface.h"
 #include "service_loop.h"
 
-
 #undef BT_LE_SCAN_TYPE_PASSIVE
 #undef BT_LE_SCAN_TYPE_ACTIVE
 #include <zephyr/bluetooth/conn.h>
@@ -26,7 +25,7 @@
 #include "utils/log.h"
 
 #ifndef CONFIG_BT_CLASSIC
-static inline struct bt_conn *bt_conn_lookup_addr_br(const bt_addr_t *peer)
+static inline struct bt_conn* bt_conn_lookup_addr_br(const bt_addr_t* peer)
 {
     (void)peer;
     return NULL;

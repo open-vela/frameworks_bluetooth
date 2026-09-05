@@ -41,8 +41,8 @@ BT_SCAN_MESSAGE_START,
 #endif
 
 #include "bluetooth.h"
-#include "bt_le_scan.h"
 #include "bt_ipc_code.h"
+#include "bt_le_scan.h"
 
     enum {
         BLE_SCAN_SUBCODE_START = 0,

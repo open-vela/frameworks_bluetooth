@@ -42,7 +42,6 @@
 #include <unistd.h>
 #include <zephyr/sys/byteorder.h>
 
-
 #undef BT_LE_SCAN_TYPE_PASSIVE
 #undef BT_LE_SCAN_TYPE_ACTIVE
 #include <zephyr/bluetooth/bluetooth.h>
@@ -266,7 +265,7 @@ static int bt_sal_hci_transport_recv(struct h4_data* h4)
     const uint8_t* frame_start = h4->frame;
 
     len = read(h4->fd, h4->frame + h4->frame_size,
-               frame_capacity - h4->frame_size);
+        frame_capacity - h4->frame_size);
     if (len < 0) {
         BT_LOGE("Reading hci failed, errno %d", errno);
         h4->frame_size = 0;
@@ -283,7 +282,7 @@ static int bt_sal_hci_transport_recv(struct h4_data* h4)
         const uint8_t* buf_add;
         const uint8_t packet_type = frame_start[0];
         const int32_t decoded_len = hci_packet_complete(frame_start,
-                                                         h4->frame_size);
+            h4->frame_size);
 
         if (decoded_len == -1) {
             BT_LOGE("HCI Packet type is invalid, length could not be decoded");
