@@ -53,17 +53,17 @@
 
 #ifndef BT_HID_DEVICE_API_PREFIXED
 extern int zblue_bt_hid_device_register(struct bt_hid_device_cb* cb)
-    __asm__("bt_hid_device_register");
+    __asm__("zblue_bt_hid_device_register");
 extern struct bt_hid_device* zblue_bt_hid_device_connect(struct bt_conn* conn)
-    __asm__("bt_hid_device_connect");
+    __asm__("zblue_bt_hid_device_connect");
 extern int zblue_bt_hid_device_disconnect(struct bt_hid_device* hid)
-    __asm__("bt_hid_device_disconnect");
+    __asm__("zblue_bt_hid_device_disconnect");
 extern int zblue_bt_hid_device_send_ctrl_data(struct bt_hid_device* hid, uint8_t type,
-    uint8_t* data, uint16_t len) __asm__("bt_hid_device_send_ctrl_data");
+    uint8_t* data, uint16_t len) __asm__("zblue_bt_hid_device_send_ctrl_data");
 extern int zblue_bt_hid_device_send_intr_data(struct bt_hid_device* hid, uint8_t type,
-    uint8_t* data, uint16_t len) __asm__("bt_hid_device_send_intr_data");
+    uint8_t* data, uint16_t len) __asm__("zblue_bt_hid_device_send_intr_data");
 extern int zblue_bt_hid_device_report_error(struct bt_hid_device* hid, uint8_t error)
-    __asm__("bt_hid_device_report_error");
+    __asm__("zblue_bt_hid_device_report_error");
 #endif
 
 #ifdef BT_HID_DEVICE_API_CONST_REPORT
