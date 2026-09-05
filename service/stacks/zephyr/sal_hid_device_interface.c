@@ -21,7 +21,19 @@
 
 #undef BT_LE_SCAN_TYPE_PASSIVE
 #undef BT_LE_SCAN_TYPE_ACTIVE
+#define bt_hid_device_register zblue_decl_bt_hid_device_register
+#define bt_hid_device_connect zblue_decl_bt_hid_device_connect
+#define bt_hid_device_disconnect zblue_decl_bt_hid_device_disconnect
+#define bt_hid_device_send_ctrl_data zblue_decl_bt_hid_device_send_ctrl_data
+#define bt_hid_device_send_intr_data zblue_decl_bt_hid_device_send_intr_data
+#define bt_hid_device_report_error zblue_decl_bt_hid_device_report_error
 #include <zephyr/bluetooth/classic/hid_device.h>
+#undef bt_hid_device_register
+#undef bt_hid_device_connect
+#undef bt_hid_device_disconnect
+#undef bt_hid_device_send_ctrl_data
+#undef bt_hid_device_send_intr_data
+#undef bt_hid_device_report_error
 #include <zephyr/bluetooth/classic/sdp.h>
 
 #include "bt_addr.h"
@@ -36,7 +48,22 @@
 #ifdef BT_HID_DEVICE_API_PREFIXED
 #define BT_HID_API(func) Z_API(func)
 #else
-#define BT_HID_API(func) func
+#define BT_HID_API(func) zblue_##func
+#endif
+
+#ifndef BT_HID_DEVICE_API_PREFIXED
+extern int zblue_bt_hid_device_register(struct bt_hid_device_cb* cb)
+    __asm__("bt_hid_device_register");
+extern struct bt_hid_device* zblue_bt_hid_device_connect(struct bt_conn* conn)
+    __asm__("bt_hid_device_connect");
+extern int zblue_bt_hid_device_disconnect(struct bt_hid_device* hid)
+    __asm__("bt_hid_device_disconnect");
+extern int zblue_bt_hid_device_send_ctrl_data(struct bt_hid_device* hid, uint8_t type,
+    uint8_t* data, uint16_t len) __asm__("bt_hid_device_send_ctrl_data");
+extern int zblue_bt_hid_device_send_intr_data(struct bt_hid_device* hid, uint8_t type,
+    uint8_t* data, uint16_t len) __asm__("bt_hid_device_send_intr_data");
+extern int zblue_bt_hid_device_report_error(struct bt_hid_device* hid, uint8_t error)
+    __asm__("bt_hid_device_report_error");
 #endif
 
 #ifdef BT_HID_DEVICE_API_CONST_REPORT
