@@ -21,6 +21,7 @@
 /**
  * @cond
  */
+
 typedef struct {
     uint32_t attr_id;
     uint16_t chr_set;
@@ -44,6 +45,7 @@ typedef struct {
     avrcp_connection_state_callback connection_state_cb;
     avrcp_get_element_attribute_cb get_element_attribute_cb;
 } avrcp_control_callbacks_t;
+
 /**
  * @endcond
  */
@@ -105,24 +107,15 @@ void avrcp_control_uninit(void* ins)
 bool BTSYMBOLS(bt_avrcp_control_unregister_callbacks)(bt_instance_t* ins, void* cookie);
 
 /**
- * @brief Get element attributes from AVRCP Target.
+ * @brief Get element attribute from peer device.
  *
  * This function is used when an application wants to obtain song information
  * from an AVRCP Target device, including title, artist name, album name, track
  * number, total number of tracks, genre, playing time.
  *
  * @param ins - Bluetooth client instance.
- * @param addr - The Bluetooth address of the peer device.
+ * @param addr - Remote BT address.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
- *
- * **Example:**
- * @code
-bt_status_t start_get_element_attributes(bt_instance_t* ins, bt_address_t* addr)
-{
-    bt_status_t ret = bt_avrcp_control_get_element_attributes(ins, addr);
-
-    return ret;
-}
  */
 bt_status_t BTSYMBOLS(bt_avrcp_control_get_element_attributes)(bt_instance_t* ins, bt_address_t* addr);
 
@@ -137,12 +130,41 @@ bt_status_t BTSYMBOLS(bt_avrcp_control_get_element_attributes)(bt_instance_t* in
  */
 bt_status_t BTSYMBOLS(bt_avrcp_control_send_passthrough_cmd)(bt_instance_t* ins, bt_address_t* addr, uint8_t cmd, uint8_t state);
 
+/**
+ * @brief Get unit info from peer device.
+ *
+ * @param ins - Bluetooth client instance.
+ * @param addr - Remote BT address.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
 bt_status_t BTSYMBOLS(bt_avrcp_control_get_unit_info)(bt_instance_t* ins, bt_address_t* addr);
 
+/**
+ * @brief Get subunit info from peer device.
+ *
+ * @param ins - Bluetooth client instance.
+ * @param addr - Remote BT address.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
 bt_status_t BTSYMBOLS(bt_avrcp_control_get_subunit_info)(bt_instance_t* ins, bt_address_t* addr);
 
+/**
+ * @brief Get playback state from peer device.
+ *
+ * @param ins - Bluetooth client instance.
+ * @param addr - Remote BT address.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
 bt_status_t BTSYMBOLS(bt_avrcp_control_get_playback_state)(bt_instance_t* ins, bt_address_t* addr);
 
-bt_status_t BTSYMBOLS(bt_avrcp_control_register_notification)(bt_instance_t* ins, bt_address_t* addr, avrcp_notification_event_t event, uint32_t interval);
-
+/**
+ * @brief Register notification to peer device, this interface is used for pts.
+ *
+ * @param ins - Bluetooth client instance.
+ * @param addr - Remote BT address.
+ * @param event - Notification event.
+ * @param interval - Notification interval.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_avrcp_control_register_notification)(bt_instance_t* ins, bt_address_t* addr, uint8_t event, uint32_t interval);
 #endif /* __BT_AVRCP_CONTROL_H__ */

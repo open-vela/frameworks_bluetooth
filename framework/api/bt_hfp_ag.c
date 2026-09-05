@@ -152,13 +152,6 @@ bt_status_t BTSYMBOLS(bt_hfp_ag_send_at_command)(bt_instance_t* ins, bt_address_
     return profile->send_at_command(addr, at_command);
 }
 
-bt_status_t BTSYMBOLS(bt_hfp_ag_send_vendor_specific_at_command)(bt_instance_t* ins, bt_address_t* addr, const char* command, const char* value)
-{
-    hfp_ag_interface_t* profile = get_profile_service();
-
-    return profile->send_vendor_specific_at_command(addr, command, value);
-}
-
 bt_status_t BTSYMBOLS(bt_hfp_ag_send_clcc_response)(bt_instance_t* ins, bt_address_t* addr,
     uint32_t index, hfp_call_direction_t dir, hfp_ag_call_state_t call, hfp_call_mode_t mode,
     hfp_call_mpty_type_t mpty, hfp_call_addrtype_t type, const char* number)
@@ -166,6 +159,13 @@ bt_status_t BTSYMBOLS(bt_hfp_ag_send_clcc_response)(bt_instance_t* ins, bt_addre
     hfp_ag_interface_t* profile = get_profile_service();
 
     return profile->send_clcc_response(addr, index, dir, call, mode, mpty, type, number);
+}
+
+bt_status_t BTSYMBOLS(bt_hfp_ag_send_vendor_specific_at_command)(bt_instance_t* ins, bt_address_t* addr, const char* command, const char* value)
+{
+    hfp_ag_interface_t* profile = get_profile_service();
+
+    return profile->send_vendor_specific_at_command(addr, command, value);
 }
 
 bt_status_t BTSYMBOLS(bt_hfp_ag_send_cind_response)(bt_instance_t* ins, bt_address_t* addr,

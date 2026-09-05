@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include "adapter_internel.h"
 #include "bt_profile.h"
@@ -87,7 +88,6 @@ static void service_on_startup(enum profile_id id, bool ret)
 
     profile_service_t* profile = service_slots[id].service;
     BT_LOGD("%s {%s} start ret:%d", __func__, profile->name, ret);
-
     if (ret)
         service_slots[id].state = TURN_ON;
     else {

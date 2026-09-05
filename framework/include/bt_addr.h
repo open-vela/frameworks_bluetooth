@@ -69,7 +69,6 @@ typedef struct bt_le_addr {
  */
 bool bt_addr_is_empty(const bt_address_t* addr);
 
-
 /**
  * @brief Set a Bluetooth address to empty.
  *
@@ -84,7 +83,6 @@ bool bt_addr_is_empty(const bt_address_t* addr);
  * @endcode
  */
 void bt_addr_set_empty(bt_address_t* addr);
-
 
 /**
  * @brief Compare two Bluetooth addresses.
@@ -105,7 +103,6 @@ void bt_addr_set_empty(bt_address_t* addr);
  * @endcode
  */
 int bt_addr_compare(const bt_address_t* a, const bt_address_t* b);
-
 
 /**
  * @brief Convert a Bluetooth address to a string.
@@ -128,7 +125,6 @@ int bt_addr_compare(const bt_address_t* a, const bt_address_t* b);
  */
 int bt_addr_ba2str(const bt_address_t* addr, char* str);
 
-
 /**
  * @brief Convert a string to a Bluetooth address.
  *
@@ -148,7 +144,6 @@ int bt_addr_ba2str(const bt_address_t* addr, char* str);
  * @endcode
  */
 int bt_addr_str2ba(const char* str, bt_address_t* addr);
-
 
 /**
  * @brief Get the string representation of a Bluetooth address.
@@ -189,7 +184,6 @@ char* bt_addr_bastr(const bt_address_t* addr);
  * @endcode
  */
 void bt_addr_set(bt_address_t* addr, const uint8_t* bd);
-
 
 /**
  * @brief Swap byte order of a Bluetooth address.

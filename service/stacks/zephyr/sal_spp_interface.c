@@ -20,6 +20,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+
+#undef BT_LE_SCAN_TYPE_PASSIVE
+#undef BT_LE_SCAN_TYPE_ACTIVE
 #include <zephyr/bluetooth/classic/rfcomm.h>
 #include <zephyr/bluetooth/classic/sdp.h>
 #include <zephyr/sys/byteorder.h>
@@ -82,9 +85,6 @@ typedef struct {
     struct bt_sdp_attribute* attrs;
     uint8_t uuid128[BT_UUID_SIZE_128];
     uint16_t channel;
-    struct bt_sdp_data_elem svclass_id_list[1];
-    struct bt_sdp_data_elem proto_desc_list[2];
-    struct bt_sdp_data_elem proto_desc_rfcomm[2];
 } spp_sdp_record_t;
 
 typedef struct {
@@ -155,36 +155,11 @@ static inline void spp_conn_unlock(void)
     pthread_mutex_unlock(&g_spp_manager.mutex);
 }
 
-static sal_spp_connection_t* spp_find_connection_by_scn(const bt_address_t* addr, uint16_t scn)
-{
-    sal_spp_manager_t* spp_mgr = &g_spp_manager;
-    sal_spp_connection_t* spp_conn;
-    bt_list_node_t* node;
-
-    if (!spp_mgr->connections || !addr) {
-        return NULL;
-    }
-
-    for (node = bt_list_head(spp_mgr->connections); node != NULL;
-         node = bt_list_next(spp_mgr->connections, node)) {
-        spp_conn = bt_list_node(node);
-        if (spp_conn->scn == scn && bt_addr_compare(&spp_conn->addr, addr) == 0) {
-            return spp_conn;
-        }
-    }
-
-    return NULL;
-}
-
 static sal_spp_connection_t* spp_find_connection_by_port(uint16_t conn_port)
 {
     sal_spp_manager_t* spp_mgr = &g_spp_manager;
     sal_spp_connection_t* spp_conn;
     bt_list_node_t* node;
-
-    if (!spp_mgr->connections) {
-        return NULL;
-    }
 
     for (node = bt_list_head(spp_mgr->connections); node != NULL;
          node = bt_list_next(spp_mgr->connections, node)) {
@@ -202,10 +177,6 @@ static sal_spp_connection_t* spp_find_connection_by_dlc(struct bt_rfcomm_dlc* rf
     sal_spp_manager_t* spp_mgr = &g_spp_manager;
     sal_spp_connection_t* spp_conn;
     bt_list_node_t* node;
-
-    if (!spp_mgr->connections || !rfcomm_dlc) {
-        return NULL;
-    }
 
     for (node = bt_list_head(spp_mgr->connections); node != NULL;
          node = bt_list_next(spp_mgr->connections, node)) {
@@ -248,10 +219,6 @@ static sal_spp_connection_t* spp_find_connection_by_dlci(const bt_address_t* add
     sal_spp_connection_t* spp_conn;
     bt_list_node_t* node;
 
-    if (!spp_mgr->connections || !addr) {
-        return NULL;
-    }
-
     for (node = bt_list_head(spp_mgr->connections); node != NULL;
          node = bt_list_next(spp_mgr->connections, node)) {
         spp_conn = bt_list_node(node);
@@ -268,10 +235,6 @@ static sal_spp_server_t* spp_find_server_by_scn(uint16_t scn)
     sal_spp_manager_t* spp_mgr = &g_spp_manager;
     sal_spp_server_t* spp_server;
     bt_list_node_t* node;
-
-    if (!spp_mgr->servers) {
-        return NULL;
-    }
 
     for (node = bt_list_head(spp_mgr->servers); node != NULL;
          node = bt_list_next(spp_mgr->servers, node)) {
@@ -310,41 +273,32 @@ struct bt_sdp_record* spp_sdp_create_record(uint16_t channel, bt_uuid_t* uuid)
     attrs_count = ARRAY_SIZE(spp_attrs_template);
     memcpy(spp_record->attrs, spp_attrs_template, sizeof(spp_attrs_template));
 
-    memcpy(spp_record->uuid128, uuid->val.u128, BT_UUID_SIZE_128);
+    sys_memcpy_swap(spp_record->uuid128, uuid->val.u128, BT_UUID_SIZE_128);
     spp_record->channel = channel;
 
     for (int i = 0; i < attrs_count; i++) {
         if (spp_record->attrs[i].id == BT_SDP_ATTR_SVCLASS_ID_LIST) {
-            spp_record->svclass_id_list[0] = (struct bt_sdp_data_elem) {
-                BT_SDP_TYPE_SIZE(BT_SDP_UUID128),
-                .data = spp_record->uuid128,
-            };
+            struct bt_sdp_data_elem* element = (struct bt_sdp_data_elem*)&spp_record->attrs[i].val;
 
-            spp_record->attrs[i].val.data = spp_record->svclass_id_list;
+            element = (struct bt_sdp_data_elem*)element[0].data;
+            element->type = BT_SDP_UUID128;
+            element->data = spp_record->uuid128;
         } else if (spp_record->attrs[i].id == BT_SDP_ATTR_PROTO_DESC_LIST) {
-            struct bt_sdp_data_elem* list_tmpl = (struct bt_sdp_data_elem*)spp_record->attrs[i].val.data;
-            struct bt_sdp_data_elem* rfcomm_tmpl = NULL;
+            struct bt_sdp_data_elem* element = (struct bt_sdp_data_elem*)&spp_record->attrs[i].val;
 
-            if (!list_tmpl) {
+            element = (struct bt_sdp_data_elem*)element->data;
+            if (!element) {
                 BT_LOGE("SPP Descriptor List PROTO_DESC is NULL");
                 goto fail;
             }
 
-            spp_record->proto_desc_list[0] = list_tmpl[0];
-            spp_record->proto_desc_list[1] = list_tmpl[1];
-
-            rfcomm_tmpl = (struct bt_sdp_data_elem*)spp_record->proto_desc_list[1].data;
-            if (!rfcomm_tmpl) {
+            element = (struct bt_sdp_data_elem*)element[1].data;
+            if (!element) {
                 BT_LOGE("SPP Descriptor List Channel is NULL");
                 goto fail;
             }
 
-            spp_record->proto_desc_rfcomm[0] = rfcomm_tmpl[0];
-            spp_record->proto_desc_rfcomm[1] = rfcomm_tmpl[1];
-            spp_record->proto_desc_rfcomm[1].data = &spp_record->channel;
-
-            spp_record->proto_desc_list[1].data = spp_record->proto_desc_rfcomm;
-            spp_record->attrs[i].val.data = spp_record->proto_desc_list;
+            element[1].data = &spp_record->channel;
         }
     }
 
@@ -372,8 +326,6 @@ static void spp_rfcomm_connected(struct bt_rfcomm_dlc* rfcomm_dlc)
     sal_spp_connection_t* spp_conn;
 
     BT_LOGD("%s, rfcomm_dlc: %p", __func__, rfcomm_dlc);
-
-    bt_rfcomm_dlc_set_rx_credit_mode(rfcomm_dlc, BT_RFCOMM_RX_CREDIT_MANUAL);
 
     spp_conn_lock();
     spp_conn = spp_find_connection_by_dlc(rfcomm_dlc);
@@ -578,7 +530,7 @@ static int spp_rfcomm_accept(struct bt_conn* conn, struct bt_rfcomm_server* serv
         return -ENXIO;
     }
 
-    spp_conn = spp_connection_new(&addr, 0, server->channel);
+    spp_conn = spp_connection_new(&addr, 0, PORT2SCN(server->channel));
     if (!spp_conn) {
         BT_LOGE("Failed to create SPP connection for DLCI %d", server->channel);
         return -ENOMEM;
@@ -679,8 +631,8 @@ bt_status_t bt_sal_spp_server_start(uint16_t port, bt_uuid_t* uuid, uint8_t max_
     server->sdp_record = (struct bt_sdp_record*)spp_sdp_create_record(scn, uuid);
     ret = bt_sdp_register_service(server->sdp_record);
     if (ret < 0) {
+        // TODO: unregister rfcomm server
         BT_LOGE("Failed to register SDP record: %d", ret);
-        bt_rfcomm_server_unregister(&server->rfcomm_server);
         spp_sdp_remove_record(server->sdp_record);
         free(server);
         return BT_STATUS_FAIL;
@@ -896,7 +848,7 @@ bt_status_t bt_sal_spp_connect(bt_address_t* addr, uint16_t conn_port, bt_uuid_t
     sal_spp_connection_t* spp_conn;
     uint16_t scn = PORT2SCN(conn_port);
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-    char uuid_str[BT_UUID_STR_LENGTH] = { 0 };
+    char uuid_str[40] = { 0 };
     sal_spp_client_t* spp_client;
     bt_status_t status;
 
@@ -906,7 +858,7 @@ bt_status_t bt_sal_spp_connect(bt_address_t* addr, uint16_t conn_port, bt_uuid_t
     }
 
     bt_addr_ba2str(addr, addr_str);
-    bt_uuid_to_string(uuid, uuid_str, BT_UUID_STR_LENGTH);
+    bt_uuid_to_string(uuid, uuid_str, 40);
     BT_LOGD("%s, addr:%s, scn:%d, uuid:%s", __func__, addr_str, scn, uuid_str);
 
     spp_conn_lock();
@@ -1016,8 +968,6 @@ bt_status_t bt_sal_spp_data_received_response(uint16_t conn_port, uint8_t* buf)
     }
 
     spp_conn_unlock();
-
-    bt_rfcomm_dlc_update_credits(&spp_conn->rfcomm_dlc);
     return BT_STATUS_SUCCESS;
 }
 
@@ -1038,13 +988,7 @@ bt_status_t bt_sal_spp_write(uint16_t conn_port, uint8_t* buf, uint16_t size)
 
     spp_conn_unlock();
 
-    nbuf = net_buf_alloc(&rfcomm_tx_pool, K_NO_WAIT);
-    if (!nbuf) {
-        BT_LOGW("rfcomm_tx_pool exhausted");
-        return BT_STATUS_NOMEM;
-    }
-
-    net_buf_reserve(nbuf, SPP_MFS_EXTRA_SIZE - 1); /* exclude trailing FCS byte */
+    nbuf = bt_rfcomm_create_pdu(&rfcomm_tx_pool);
     net_buf_add_mem(nbuf, buf, size);
 
     ret = bt_rfcomm_dlc_send(&spp_conn->rfcomm_dlc, nbuf);
@@ -1079,7 +1023,7 @@ bt_status_t bt_sal_spp_connect_request_reply(bt_address_t* addr, uint16_t port, 
     sal_spp_connection_t* spp_conn;
 
     spp_conn_lock();
-    spp_conn = spp_find_connection_by_scn(addr, PORT2SCN(port));
+    spp_conn = spp_find_connection_by_dlci(addr, PORT2DLCI(port, 1));
     if (!spp_conn) {
         spp_conn_unlock();
         BT_LOGE("No SPP connection found for port %d", port);
@@ -1104,10 +1048,5 @@ bt_status_t bt_sal_spp_connect_request_reply(bt_address_t* addr, uint16_t port, 
 
 bt_status_t bt_sal_spp_connect_with_option(bt_address_t* addr, uint16_t conn_port, bt_uuid_t* uuid128, uint8_t insecure)
 {
-    if (insecure) {
-        BT_LOGW("%s: insecure connection not supported yet", __func__);
-        return BT_STATUS_UNSUPPORTED;
-    }
-
-    return bt_sal_spp_connect(addr, conn_port, uuid128);
+    return BT_STATUS_UNSUPPORTED;
 }

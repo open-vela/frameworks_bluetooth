@@ -79,29 +79,6 @@
  */
 #define L2CAP_TX_QUOTA 16
 
-/**
- * \def L2CAP dynamic CID minimum value per Bluetooth Core Spec
- *
- * \note CID 0x0001-0x003F are reserved for fixed channels
- */
-#define L2CAP_CID_DYNAMIC_MIN 0x0040
-
-/**
- * \def L2CAP maximum receive buffer size per channel
- */
-#define L2CAP_MAX_RX_BUF_SIZE 10240
-
-/**
- * \def L2CAP LE credits low watermark for triggering refill mechanism
- *
- * \note When incoming credits drop below this watermark, the credits refill
- * mechanism will be triggered to replenish credits and maintain flow control.
- *
- * TODO: Optimize this watermark based on performance testing and memory constraints
- * to balance between flow control responsiveness and system overhead.
- */
-#define L2CAP_LE_CREDITS_LOW_WATERMARK 10
-
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -110,13 +87,6 @@ typedef enum {
     L2CAP_CHANNEL_ROLE_SERVER_ACCEPT,
     L2CAP_CHANNEL_ROLE_CLIENT,
 } l2cap_channel_role_t;
-
-typedef struct {
-    struct list_node node;
-    uint16_t len_total; /* SDU total length */
-    uint16_t len_received; /* current length received */
-    uint8_t data[]; /* flexible array for SDU */
-} l2cap_pkt_t;
 
 typedef struct {
     bt_address_t addr;
@@ -135,10 +105,6 @@ typedef struct {
     char proxy_name[16];
     bool proxy_connected;
     remote_callback_t* app_handle;
-    /* sdu receive */
-    l2cap_pkt_t* rx_sdu;
-    struct list_node rx_list;
-    uint16_t rx_buf_size;
 } l2cap_channel_t;
 
 typedef struct {
@@ -155,7 +121,7 @@ typedef struct {
         CID_ALLOCATED_EVT,
         CHANNEL_CONNECTED_EVT,
         CHANNEL_DISCONNECTED_EVT,
-        PACKET_RECEIVED_EVT,
+        PACKET_RECEVIED_EVT,
         PACKET_SENT_EVT,
     } event;
 
@@ -186,12 +152,13 @@ typedef struct {
         } channel_disconnected;
 
         /**
-         * @brief PACKET_RECEIVED_EVT
+         * @brief PACKET_RECEVIED_EVT
          */
         struct packet_received_evt_param {
             bt_address_t addr;
             uint16_t cid;
-            l2cap_pkt_t* packet;
+            uint16_t size;
+            uint8_t* data;
         } packet_received;
 
         /**
@@ -279,7 +246,6 @@ static l2cap_channel_t* alloc_free_channel(void* handle, bt_address_t* addr, uin
     channel->role = role;
     channel->channel_connected = false;
     channel->proxy_connected = false;
-    list_initialize(&channel->rx_list);
 
     bt_list_add_tail(g_l2cap_manager.channel_list, (void*)channel);
 
@@ -437,8 +403,6 @@ static void free_l2cap_channel(void* context)
 {
     uint16_t psm;
     l2cap_channel_t* channel = (l2cap_channel_t*)context;
-    struct list_node* node;
-    struct list_node* next;
 
     BT_LOGD("%s, channel id: %" PRIu16, __func__, channel->id);
     if (!channel) {
@@ -456,16 +420,6 @@ static void free_l2cap_channel(void* context)
         channel->psm = 0; // remove this channel's psm
         BT_LOGD("%s, try to free le dynamic psm 0x%" PRIx16, __func__, psm);
         free_le_dynamic_psm(psm);
-    }
-
-    if (channel->rx_sdu) {
-        free(channel->rx_sdu);
-    }
-
-    list_for_every_safe(&channel->rx_list, node, next)
-    {
-        list_delete(node);
-        free(list_entry(node, l2cap_pkt_t, node));
     }
 
     free(channel);
@@ -591,126 +545,9 @@ static bool prepare_data_path(l2cap_channel_t* channel)
     return true;
 }
 
-static void l2cap_abort_channel(l2cap_channel_t* channel)
+static void euv_write_complete(euv_pipe_t* handle, uint8_t* buf, int status)
 {
-    if (channel->pipe) {
-        euv_pipe_close(channel->pipe);
-        channel->proxy_connected = false;
-        channel->pipe = NULL;
-    }
-
-    if (channel->local_cid) {
-        bt_sal_l2cap_disconnect_channel(channel->local_cid);
-    }
-}
-
-static bool l2cap_config_param(l2cap_config_option_t* option)
-{
-    uint16_t min_credits;
-    uint16_t max_credits;
-
-    if (option->mtu > L2CAP_MAX_RX_BUF_SIZE) {
-        BT_LOGE("%s, MTU (%" PRIu16 ") exceeds maximum buffer size (%d)", __func__, option->mtu, L2CAP_MAX_RX_BUF_SIZE);
-        return false;
-    }
-
-    if (option->transport == BT_TRANSPORT_BLE) {
-        if (option->le_mps == 0) {
-            BT_LOGE("%s, invalid MPS value (0)", __func__);
-            return false;
-        }
-
-        if (option->mtu < option->le_mps) {
-            BT_LOGE("%s, MTU (%" PRIu16 ") must be >= MPS (%" PRIu16 ")", __func__, option->mtu, option->le_mps);
-            return false;
-        }
-
-        min_credits = (option->mtu + option->le_mps - 1) / option->le_mps;
-        max_credits = L2CAP_MAX_RX_BUF_SIZE / option->le_mps;
-
-        if (option->init_credits < min_credits) {
-            BT_LOGW("%s, initial credits (%" PRIu16 ") adjusted to minimum (%" PRIu16 ")", __func__, option->init_credits, min_credits);
-            option->init_credits = min_credits;
-        } else if (option->init_credits > max_credits) {
-            BT_LOGW("%s, initial credits (%" PRIu16 ") adjusted to maximum (%" PRIu16 ")", __func__, option->init_credits, max_credits);
-            option->init_credits = max_credits;
-        }
-    }
-
-    return true;
-}
-
-static void l2cap_add_incoming_credits(l2cap_channel_t* channel)
-{
-    uint16_t remote_credits;
-    uint16_t additional_credits;
-
-    remote_credits = channel->rx_buf_size / channel->incoming.le_mps;
-    if (remote_credits <= channel->incoming.credits) {
-        return;
-    }
-
-    additional_credits = remote_credits - channel->incoming.credits;
-    if (bt_sal_l2cap_give_incoming_credits(&channel->addr, channel->local_cid, additional_credits) != BT_STATUS_SUCCESS) {
-        BT_LOGE("%s, give incoming credits failed", __func__);
-        return;
-    }
-
-    channel->incoming.credits = remote_credits;
-}
-
-static void l2cap_send_sdu_to_app_cb(euv_pipe_t* handle, uint8_t* buf, int status)
-{
-    l2cap_channel_t* channel;
-    l2cap_pkt_t* sdu;
-
-    channel = find_l2cap_channel_by_pipe(handle);
-    if (!channel) {
-        BT_LOGE("%s, find null by pipe %p", __func__, handle);
-        return;
-    }
-
-    if (status != 0) {
-        BT_LOGE("%s, L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") write failed with status %d", __func__, channel->id, channel->local_cid, status);
-        l2cap_abort_channel(channel); /* release SDU when free l2cap channel */
-        return;
-    }
-
-    sdu = (l2cap_pkt_t*)list_remove_head(&channel->rx_list);
-    if (!sdu) {
-        BT_LOGE("%s, L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") rx_list is empty!", __func__, channel->id, channel->local_cid);
-        return;
-    }
-
-    assert(buf == sdu->data);
-    channel->rx_buf_size += sdu->len_total;
-    if (channel->rx_buf_size > L2CAP_MAX_RX_BUF_SIZE) {
-        BT_LOGW("%s, L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") rx_buf_size exceeds max, clamping to %d",
-            __func__, channel->id, channel->local_cid, L2CAP_MAX_RX_BUF_SIZE);
-        channel->rx_buf_size = L2CAP_MAX_RX_BUF_SIZE;
-    }
-
-    free(sdu);
-    if (channel->incoming.credits < L2CAP_LE_CREDITS_LOW_WATERMARK) {
-        l2cap_add_incoming_credits(channel);
-    }
-}
-
-static void l2cap_send_sdu_to_app(l2cap_channel_t* channel)
-{
-    int ret;
-    l2cap_pkt_t* sdu = channel->rx_sdu;
-
-    channel->rx_sdu = NULL;
-    ret = euv_pipe_write(channel->pipe, sdu->data, sdu->len_total, l2cap_send_sdu_to_app_cb);
-    if (ret != 0) {
-        BT_LOGE("%s, L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") write %" PRIu16 " bytes to app failed!",
-            __func__, channel->id, channel->local_cid, sdu->len_total);
-        free(sdu);
-        l2cap_abort_channel(channel);
-    } else {
-        list_add_tail(&channel->rx_list, &sdu->node);
-    }
+    free(buf);
 }
 
 static void handle_cid_allocated(bt_address_t* addr, uint16_t psm, uint16_t cid)
@@ -730,7 +567,6 @@ static void handle_cid_allocated(bt_address_t* addr, uint16_t psm, uint16_t cid)
 static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* param)
 {
     int ret;
-    uint32_t rx_buf_size;
     l2cap_channel_t* channel;
     l2cap_channel_t* new_listen_channel = NULL;
     l2cap_connect_params_t conn_param = { .listen_id = INVALID_L2CAP_LISTEN_ID };
@@ -745,15 +581,14 @@ static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* p
     channel = find_l2cap_channel_by_conn_param(addr, param->psm, role, false);
     if (!channel) {
         BT_LOGE("%s, find L2CAP channel null, local cid: 0x%" PRIx16, __func__, param->local_cid);
-        if (param->local_cid) {
-            bt_sal_l2cap_disconnect_channel(param->local_cid);
-        }
+        bt_sal_l2cap_disconnect_channel(param->local_cid);
+
         return;
     }
 
     if (!channel->proxy_connected) {
         BT_LOGE("L2CAP channel(id:%" PRIu16 "/cid:0x %" PRIx16 ") data path is not prepared", channel->id, channel->local_cid);
-        l2cap_abort_channel(channel);
+        bt_sal_l2cap_disconnect_channel(channel->local_cid);
         return;
     }
 
@@ -778,33 +613,25 @@ static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* p
     memcpy(&channel->outgoing, &param->outgoing, sizeof(channel->outgoing));
     channel->tx_mtu = MIN(param->outgoing.mtu, CONFIG_BLUETOOTH_L2CAP_OUTGOING_MTU);
     channel->tx_quota = L2CAP_TX_QUOTA; // TODO: need to adjust quota according to mtu and memory
-    rx_buf_size = (uint32_t)channel->incoming.credits * channel->incoming.le_mps;
-    if (rx_buf_size > L2CAP_MAX_RX_BUF_SIZE) {
-        BT_LOGW("%s, L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") rx_buf_size %" PRIu32 " exceeds max, clamping to %d",
-            __func__, channel->id, channel->local_cid, rx_buf_size, L2CAP_MAX_RX_BUF_SIZE);
-        channel->rx_buf_size = L2CAP_MAX_RX_BUF_SIZE;
-    } else {
-        channel->rx_buf_size = (uint16_t)rx_buf_size;
-    }
 
     // restart read pipe to adjust mtu
     ret = euv_pipe_read_stop(channel->pipe);
     if (ret != 0) {
         BT_LOGE("L2CAP channel(id: %" PRIu16 "/cid: 0x%" PRIx16 ") read stop failed!", channel->id, channel->local_cid);
-        l2cap_abort_channel(channel);
+        bt_sal_l2cap_disconnect_channel(channel->local_cid);
         return;
     }
 
     ret = euv_pipe_read_start(channel->pipe, channel->tx_mtu, l2cap_receive_data_from_app, NULL);
     if (ret != 0) {
         BT_LOGE("L2CAP channel(id: %" PRIu16 "/cid: 0x%" PRIx16 ") read start failed!", channel->id, channel->local_cid);
-        l2cap_abort_channel(channel);
+        bt_sal_l2cap_disconnect_channel(channel->local_cid);
         return;
     }
 
     BT_LOGI("L2CAP channel(id: %" PRIu16 "/cid: 0x%" PRIx16 ") connected", channel->id, channel->local_cid);
-    BT_LOGD("L2CAP channel(id: %" PRIu16 "/cid: 0x%" PRIx16 ") Tx mtu: %" PRIu16 ", Tx quota: %" PRIu16 ", Rx buf size: %" PRIu16,
-        channel->id, channel->local_cid, channel->tx_mtu, channel->tx_quota, channel->rx_buf_size);
+    BT_LOGD("L2CAP channel(id: %" PRIu16 "/cid: 0x%" PRIx16 ") Tx mtu: %" PRIu16 ", Tx quota: %" PRIu16,
+        channel->id, channel->local_cid, channel->tx_mtu, channel->tx_quota);
     channel->channel_connected = true;
 
     // notify app
@@ -850,84 +677,19 @@ static void handle_channel_disconneted(bt_address_t* addr, uint16_t cid, uint32_
     bt_list_remove(g_l2cap_manager.channel_list, (void*)channel);
 }
 
-static void handle_packet_received(bt_address_t* addr, uint16_t cid, l2cap_pkt_t* packet)
+static void handle_packet_received(bt_address_t* addr, uint16_t cid, uint8_t* packet_data, uint16_t packet_size)
 {
     l2cap_channel_t* channel;
 
     channel = find_l2cap_channel_by_cid(cid);
-    if (!channel) {
-        BT_LOGE("%s, find L2CAP channel null, local cid: 0x%" PRIx16 ", lost %" PRIu16 " bytes data", __func__, cid, packet->len_received);
-        free(packet);
-        return;
-    }
-
-    if (packet->len_received > channel->incoming.le_mps) {
-        BT_LOGE("%s, L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") received segment length %" PRIu16 " is larger than MPS %" PRIu16,
-            __func__, channel->id, channel->local_cid, packet->len_received, channel->incoming.le_mps);
-        free(packet);
-        l2cap_abort_channel(channel);
-        return;
-    }
-
-    if (packet->len_total > channel->incoming.mtu) {
-        BT_LOGE("%s, L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") received sdu length %" PRIu16 " is larger than mtu %" PRIu16,
-            __func__, channel->id, channel->local_cid, packet->len_total, channel->incoming.mtu);
-        free(packet);
-        l2cap_abort_channel(channel);
-        return;
-    }
-
-    if (channel->incoming.credits == 0) {
-        BT_LOGE("%s, L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") has no incoming credits",
-            __func__, channel->id, channel->local_cid);
-        free(packet);
-        l2cap_abort_channel(channel);
-        return;
-    }
-
-    if (!channel->proxy_connected || !channel->pipe) {
-        BT_LOGE("%s, L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") data path is not prepared, lost %" PRIu16 " bytes data",
-            __func__, channel->id, channel->local_cid, packet->len_received);
-        free(packet);
-        return;
-    }
-
-    --channel->incoming.credits; /* TODO: different transport and mode may need different handling*/
-    channel->rx_buf_size -= packet->len_received;
-    if (channel->incoming.credits < L2CAP_LE_CREDITS_LOW_WATERMARK) {
-        l2cap_add_incoming_credits(channel);
-    }
-
-    if (!channel->rx_sdu) {
-        /* first segment */
-        if (packet->len_received == packet->len_total) {
-            /* single segment, send directly */
-            channel->rx_sdu = packet;
-            l2cap_send_sdu_to_app(channel);
-            return;
-        }
-
-        /* multi-segment, start reassembly */
-        channel->rx_sdu = packet;
-    } else {
-        /* append segment */
-        if (channel->rx_sdu->len_received + packet->len_received > channel->rx_sdu->len_total) {
-            BT_LOGE("%s, L2CAP channel (id:%" PRIu16 "/cid:0x%" PRIx16 ") append data overflow",
-                __func__, channel->id, channel->local_cid);
-            free(channel->rx_sdu);
-            channel->rx_sdu = NULL;
-            free(packet);
-            l2cap_abort_channel(channel);
-            return;
-        }
-
-        memcpy(channel->rx_sdu->data + channel->rx_sdu->len_received, packet->data, packet->len_received);
-        channel->rx_sdu->len_received += packet->len_received;
-        free(packet);
-
-        if (channel->rx_sdu->len_received == channel->rx_sdu->len_total) {
-            /* reassembly complete */
-            l2cap_send_sdu_to_app(channel);
+    if (channel && channel->pipe) {
+        int ret = euv_pipe_write(channel->pipe, packet_data, packet_size, euv_write_complete);
+        if (ret != 0) {
+            BT_LOGE("L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") write failed!", channel->id, channel->local_cid);
+            euv_pipe_close(channel->pipe);
+            channel->proxy_connected = false;
+            channel->pipe = NULL;
+            bt_sal_l2cap_disconnect_channel(channel->local_cid);
         }
     }
 }
@@ -972,10 +734,11 @@ static void handle_l2cap_event(void* data)
             msg->channel_disconnected.cid,
             msg->channel_disconnected.reason);
         break;
-    case PACKET_RECEIVED_EVT:
+    case PACKET_RECEVIED_EVT:
         handle_packet_received(&msg->packet_received.addr,
             msg->packet_received.cid,
-            msg->packet_received.packet);
+            msg->packet_received.data,
+            msg->packet_received.size);
         break;
     case PACKET_SENT_EVT:
         handle_packet_sent(&msg->packet_sent.addr,
@@ -1041,18 +804,17 @@ void l2cap_on_packet_received(bt_address_t* addr, uint16_t cid, uint8_t* packet_
         return;
     }
 
-    msg->packet_received.packet = malloc(sizeof(l2cap_pkt_t) + packet_size);
-    if (!msg->packet_received.packet) {
+    msg->packet_received.data = malloc(packet_size);
+    if (!msg->packet_received.data) {
         free(msg);
         return;
     }
 
-    msg->event = PACKET_RECEIVED_EVT;
+    msg->event = PACKET_RECEVIED_EVT;
     memcpy(&msg->packet_received.addr, addr, sizeof(msg->packet_received.addr));
     msg->packet_received.cid = cid;
-    msg->packet_received.packet->len_total = packet_size;
-    msg->packet_received.packet->len_received = packet_size;
-    memcpy(msg->packet_received.packet->data, packet_data, packet_size);
+    msg->packet_received.size = packet_size;
+    memcpy(msg->packet_received.data, packet_data, packet_size);
     do_in_service_loop(handle_l2cap_event, msg);
 }
 
@@ -1067,61 +829,6 @@ void l2cap_on_packet_sent(bt_address_t* addr, uint16_t cid)
     memcpy(&msg->packet_sent.addr, addr, sizeof(msg->packet_sent.addr));
     msg->packet_sent.cid = cid;
     do_in_service_loop(handle_l2cap_event, msg);
-}
-
-bool l2cap_on_segment_received(bt_address_t* addr, uint16_t cid, uint8_t* seg, uint16_t seg_len, uint16_t sdu_len, uint16_t seg_off)
-{
-    uint16_t data_len;
-    l2cap_msg_t* msg;
-    char addr_str[BT_ADDR_STR_LENGTH];
-
-    if (!addr) {
-        BT_LOGE("%s, addr is NULL, cid: 0x%" PRIx16, __func__, cid);
-        return false;
-    }
-
-    if (!seg || seg_len == 0) {
-        bt_addr_ba2str(addr, addr_str);
-        BT_LOGE("%s, invalid seg (seg: %p, len: %" PRIu16 "), addr: %s, cid: 0x%" PRIx16,
-            __func__, seg, seg_len, addr_str, cid);
-        return false;
-    }
-
-    if (cid < L2CAP_CID_DYNAMIC_MIN) {
-        bt_addr_ba2str(addr, addr_str);
-        BT_LOGE("%s, invalid cid: 0x%" PRIx16 ", addr: %s", __func__, cid, addr_str);
-        return false;
-    }
-
-    if (sdu_len > 0 && seg_len > sdu_len) {
-        bt_addr_ba2str(addr, addr_str);
-        BT_LOGE("%s, seg_len (%" PRIu16 ") > sdu_len (%" PRIu16 "), addr: %s, cid: 0x%" PRIx16,
-            __func__, seg_len, sdu_len, addr_str, cid);
-        return false;
-    }
-
-    msg = malloc(sizeof(l2cap_msg_t));
-    if (!msg) {
-        BT_LOGE("%s, malloc failed", __func__);
-        return false;
-    }
-
-    data_len = seg_off ? seg_len : sdu_len; // first segment malloc sdu_len, otherwise seg_len
-    msg->packet_received.packet = malloc(sizeof(l2cap_pkt_t) + data_len);
-    if (!msg->packet_received.packet) {
-        BT_LOGE("%s, malloc packet failed", __func__);
-        free(msg);
-        return false;
-    }
-
-    msg->event = PACKET_RECEIVED_EVT;
-    memcpy(&msg->packet_received.addr, addr, sizeof(msg->packet_received.addr));
-    msg->packet_received.cid = cid;
-    msg->packet_received.packet->len_total = sdu_len;
-    msg->packet_received.packet->len_received = seg_len;
-    memcpy(msg->packet_received.packet->data, seg, seg_len);
-    do_in_service_loop(handle_l2cap_event, msg);
-    return true;
 }
 
 void* l2cap_register_callbacks(void* remote, const l2cap_callbacks_t* callbacks)
@@ -1166,10 +873,6 @@ bt_status_t l2cap_listen_channel(void* handle, l2cap_config_option_t* option)
         // TBD: support BR/EDR later
         BT_LOGW("%s, only support LE transport", __func__);
         return BT_STATUS_UNSUPPORTED;
-    }
-
-    if (l2cap_config_param(option) == false) {
-        return BT_STATUS_PARM_INVALID;
     }
 
     pthread_mutex_lock(&g_l2cap_manager.l2cap_lock);
@@ -1228,10 +931,6 @@ bt_status_t l2cap_connect_channel(void* handle, bt_address_t* addr, l2cap_config
     }
 
     CHECK_ADAPTER_ENABLED(BT_STATUS_NOT_ENABLED);
-
-    if (l2cap_config_param(option) == false) {
-        return BT_STATUS_PARM_INVALID;
-    }
 
     pthread_mutex_lock(&g_l2cap_manager.l2cap_lock);
     channel = alloc_free_channel(handle, addr, option->psm, L2CAP_CHANNEL_ROLE_CLIENT);

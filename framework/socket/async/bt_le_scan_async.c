@@ -102,7 +102,7 @@ bt_status_t bt_le_start_scan_async(bt_instance_t* ins, const scanner_callbacks_t
         return BT_STATUS_FAIL;
 
     scan->ins = ins;
-    scan->callbacks = (scanner_callbacks_t*)scan_cbs;
+    scan->callback = (scanner_callbacks_t*)scan_cbs;
     packet.scan_pl._bt_le_start_scan.remote = PTR2INT(uint64_t) scan;
 
     data = calloc(1, sizeof(bt_le_start_scan_data_t));
@@ -135,7 +135,7 @@ bt_status_t bt_le_start_scan_settings_async(bt_instance_t* ins, ble_scan_setting
         return BT_STATUS_FAIL;
 
     scan->ins = ins;
-    scan->callbacks = (scanner_callbacks_t*)scan_cbs;
+    scan->callback = (scanner_callbacks_t*)scan_cbs;
     packet.scan_pl._bt_le_start_scan_settings.remote = PTR2INT(uint64_t) scan;
     if (settings)
         memcpy(&packet.scan_pl._bt_le_start_scan_settings.settings, settings, sizeof(*settings));
@@ -170,7 +170,7 @@ bt_status_t bt_le_start_scan_with_filters_async(bt_instance_t* ins, ble_scan_set
         return BT_STATUS_FAIL;
 
     scan->ins = ins;
-    scan->callbacks = (scanner_callbacks_t*)scan_cbs;
+    scan->callback = (scanner_callbacks_t*)scan_cbs;
     packet.scan_pl._bt_le_start_scan_with_filters.remote = PTR2INT(uint64_t) scan;
     if (settings)
         memcpy(&packet.scan_pl._bt_le_start_scan_with_filters.settings, settings, sizeof(*settings));

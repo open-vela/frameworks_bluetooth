@@ -21,9 +21,6 @@
 #include "bt_addr.h"
 #include "bt_device.h"
 
-/**
- * @cond
- */
 #define AVRCP_MAX_ATTR_COUNT 9
 #define AVRCP_ATTR_MAX_TIELE_LEN 64
 #define AVRCP_ATTR_MAX_ARTIST_LEN 64
@@ -34,6 +31,9 @@
 #define AVRCP_ATTR_MAX_PLAYING_TIMES_LEN 0
 #define AVRCP_ATTR_MAX_COVER_ART_HANDLE_LEN 0
 
+/**
+ * @cond
+ */
 typedef enum {
     PASSTHROUGH_CMD_ID_SELECT,
     PASSTHROUGH_CMD_ID_UP,
@@ -111,10 +111,10 @@ typedef enum {
     PLAY_STATUS_ERROR,
 } avrcp_play_status_t;
 
-enum {
+typedef enum {
     AVRCP_CAPABILITY_ID_COMPANY_ID = 2,
     AVRCP_CAPABILITY_ID_EVENTS_SUPPORTED,
-};
+} avrcp_capability_id_t;
 
 typedef enum {
     NOTIFICATION_EVT_PALY_STATUS_CHANGED = 0x01,
@@ -156,6 +156,7 @@ typedef enum {
     AVRCP_ATTR_PLAYING_TIME_MS,
     AVRCP_ATTR_COVER_ART_HANDLE
 } avrcp_media_attr_type_t;
+
 /**
  * @endcond
  */

@@ -23,7 +23,7 @@ extern "C" {
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "list.h"
+#include "bt_list_internal.h"
 
 typedef void (*bt_list_free_cb_t)(void* data);
 typedef struct _bt_list bt_list_t;

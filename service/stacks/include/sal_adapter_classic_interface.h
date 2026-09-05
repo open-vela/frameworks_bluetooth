@@ -27,6 +27,11 @@
 #include "bluetooth_define.h"
 #include "power_manager.h"
 
+typedef struct {
+    uint8_t hash[16];
+    uint8_t rand[16];
+} bt_oob_data_t;
+
 /* service adapter layer for BREDR */
 // #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 bt_status_t bt_sal_init(const bt_vhal_interface* vhal);
@@ -96,8 +101,6 @@ bt_status_t bt_sal_set_link_policy(bt_controller_id_t id, bt_address_t* addr, bt
 bt_status_t bt_sal_set_afh_channel_classification(bt_controller_id_t id, uint16_t central_frequency,
     uint16_t band_width, uint16_t number);
 bt_status_t bt_sal_set_afh_channel_classification_1(bt_controller_id_t id, uint8_t* map);
-
-bt_status_t bt_sal_read_rssi(bt_controller_id_t id, bt_address_t* addr, bt_transport_t transport);
 
 /* VSC */
 bt_status_t bt_sal_send_hci_command(bt_controller_id_t id, uint8_t ogf, uint16_t ocf, uint8_t length, uint8_t* buf,

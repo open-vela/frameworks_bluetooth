@@ -186,9 +186,9 @@ bt_status_t bt_adapter_set_le_address(bt_instance_t* ins, bt_address_t* addr)
     return BpBtAdapter_setLeAddress((BpBtAdapter*)ins->adapter_proxy, addr);
 }
 
-bt_status_t bt_adapter_set_le_identity_address(bt_instance_t* ins, bt_address_t* addr, bool public)
+bt_status_t bt_adapter_set_le_identity_address(bt_instance_t* ins, bt_address_t* addr, bool is_public)
 {
-    return BpBtAdapter_setLeIdentityAddress((BpBtAdapter*)ins->adapter_proxy, addr, public);
+    return BpBtAdapter_setLeIdentityAddress((BpBtAdapter*)ins->adapter_proxy, addr, is_public);
 }
 
 bt_status_t bt_adapter_set_le_appearance(bt_instance_t* ins, uint16_t appearance)

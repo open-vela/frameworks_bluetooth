@@ -24,6 +24,9 @@
 #include "bt_tools.h"
 
 #define THROUGHTPUT_HORIZON 5
+#define ATT_HEADER_SIZE 3
+#define MAX_ATTRIBUTE_SIZE 512
+#define RW_CHAR_SIZE_DEFAULT 11
 
 typedef struct {
     struct list_node node;
@@ -33,6 +36,7 @@ typedef struct {
 
 static int register_cmd(void* handle, int argc, char* argv[]);
 static int unregister_cmd(void* handle, int argc, char* argv[]);
+static int init_cmd(void* handle, int argc, char* argv[]);
 static int start_cmd(void* handle, int argc, char* argv[]);
 static int stop_cmd(void* handle, int argc, char* argv[]);
 static int connect_cmd(void* handle, int argc, char* argv[]);
@@ -45,9 +49,14 @@ static int read_phy_cmd(void* handle, int argc, char* argv[]);
 static int update_phy_cmd(void* handle, int argc, char* argv[]);
 static int throughput_cmd(void* handle, int argc, char* argv[]);
 
+static gatts_device_t* find_gatts_device(bt_address_t* addr);
+
 static gatts_handle_t g_dis_handle = NULL;
 static gatts_handle_t g_bas_handle = NULL;
 static gatts_handle_t g_custom_handle = NULL;
+static bool g_dis_started = false;
+static bool g_bas_started = false;
+static bool g_custom_started = false;
 static volatile uint32_t throughtput_cursor = 0;
 static uint16_t cccd_enable = 0;
 static struct list_node gatts_device_list = LIST_INITIAL_VALUE(gatts_device_list);
@@ -102,9 +111,15 @@ enum {
     IOT_SERVICE_TX_CHR_CCC_ID,
     IOT_SERVICE_RX_CHR_ID,
     IOT_SERVICE_READ_CHR_ID,
+    IOT_SERVICE_PTS_MTU_CHR_ID,
+    IOT_SERVICE_SIGN_RW_CHR_ID,
+    IOT_SERVICE_AUTH_CHR_ID,
 };
 
-uint8_t read_char_value[] = { 'H', 'e', 'l', 'l', 'o', ' ', 'V', 'E', 'L', 'A', '!' };
+uint8_t read_pts_char_value[] = { 'H', 'e', 'l', 'l', 'o', ' ', 'P', 'T', 'S', '!' };
+uint8_t read_only_char_value[] = { 'H', 'e', 'l', 'l', 'o', ' ', 'V', 'E', 'L', 'A', '!' };
+uint8_t read_write_char_value[MAX_ATTRIBUTE_SIZE] = { 'H', 'e', 'l', 'l', 'o', ' ', 'V', 'E', 'L', 'A', '!' };
+uint16_t read_write_char_len = RW_CHAR_SIZE_DEFAULT;
 
 uint16_t tx_char_ccc_changed(void* srv_handle, bt_address_t* addr, uint16_t attr_handle, const uint8_t* value, uint16_t length, uint16_t offset)
 {
@@ -115,18 +130,73 @@ uint16_t tx_char_ccc_changed(void* srv_handle, bt_address_t* addr, uint16_t attr
     return length;
 }
 
+uint16_t rx_pts_char_on_read(void* srv_handle, bt_address_t* addr, uint16_t attr_handle, uint32_t req_handle)
+{
+    gatts_device_t* device;
+    uint16_t payload_len;
+    uint16_t mtu = 23;
+
+    PRINT_ADDR("gatts service PTS RX char received read request, addr:%s", addr);
+
+    device = find_gatts_device(addr);
+    if (device) {
+        mtu = device->gatt_mtu;
+    }
+
+    /* GATT/SR/GAC/BV-01-C: return payload len = ATT_MTU - 1 */
+    payload_len = mtu + ATT_HEADER_SIZE - 1;
+
+    /* Allocate response buffer from heap */
+    uint8_t* rsp_data = (uint8_t*)malloc(payload_len);
+    if (!rsp_data) {
+        PRINT("malloc rsp_data failed, size: %" PRIu16, payload_len);
+        return 0;
+    }
+
+    memset(rsp_data, 0xAA, payload_len);
+
+    bt_status_t ret = bt_gatts_response(srv_handle, addr, req_handle, rsp_data, payload_len);
+    PRINT("gatts service PTS RX char response. status: %d", ret);
+
+    free(rsp_data);
+    return 0;
+}
+
 uint16_t rx_char_on_read(void* srv_handle, bt_address_t* addr, uint16_t attr_handle, uint32_t req_handle)
 {
+    gatts_device_t* device;
+    uint16_t mtu = 23;
+
     PRINT_ADDR("gatts service RX char received read request, addr:%s", addr);
-    bt_status_t ret = bt_gatts_response(srv_handle, addr, req_handle, read_char_value, sizeof(read_char_value));
+
+    device = find_gatts_device(addr);
+    if (device) {
+        mtu = device->gatt_mtu;
+    }
+
+    bt_status_t ret = bt_gatts_response(srv_handle, addr, req_handle, read_write_char_value,
+        MIN(read_write_char_len, mtu));
     PRINT("gatts service RX char response. status: %d", ret);
     return 0;
 }
 
 uint16_t rx_char_on_write(void* srv_handle, bt_address_t* addr, uint16_t attr_handle, const uint8_t* value, uint16_t length, uint16_t offset)
 {
+    if (offset + length > sizeof(read_write_char_value)) {
+        PRINT("invalid offset (%u) or too long length (%u)", offset, length);
+        return 0;
+    }
+
+    if (!offset) {
+        memset(read_write_char_value, 0, length);
+    }
+
+    memcpy(read_write_char_value + offset, value, length);
+    read_write_char_len = offset + length;
+
     PRINT_ADDR("gatts service RX char received write request, addr:%s", addr);
     lib_dumpbuffer("write value:", value, length);
+
     return length;
 }
 
@@ -172,9 +242,15 @@ static gatt_attr_db_t s_iot_attr_db[] = {
     /* Client Characteristic Configuration Descriptor - 0x2902 */
     GATT_H_CCCD(GATT_PERM_READ | GATT_PERM_WRITE | GATT_PERM_AUTHEN_REQUIRED, tx_char_ccc_changed, IOT_SERVICE_TX_CHR_CCC_ID),
     /* Private Characteristic for RX - 0xFF02 */
-    GATT_H_CHARACTERISTIC_USER_RSP(BT_UUID_DECLARE_16(0xFF02), GATT_PROP_READ | GATT_PROP_WRITE_NR, GATT_PERM_READ | GATT_PERM_WRITE, rx_char_on_read, rx_char_on_write, IOT_SERVICE_RX_CHR_ID),
+    GATT_H_CHARACTERISTIC_USER_RSP(BT_UUID_DECLARE_16(0xFF02), GATT_PROP_READ | GATT_PROP_WRITE_NR | GATT_PROP_WRITE, GATT_PERM_READ | GATT_PERM_WRITE, rx_char_on_read, rx_char_on_write, IOT_SERVICE_RX_CHR_ID),
     /* Private Characteristic for read operation demo - 0xFF05 */
-    GATT_H_CHARACTERISTIC_AUTO_RSP(BT_UUID_DECLARE_16(0xFF05), GATT_PROP_READ, GATT_PERM_READ, read_char_value, sizeof(read_char_value), IOT_SERVICE_READ_CHR_ID),
+    GATT_H_CHARACTERISTIC_AUTO_RSP(BT_UUID_DECLARE_16(0xFF05), GATT_PROP_READ, GATT_PERM_READ, read_only_char_value, sizeof(read_only_char_value), IOT_SERVICE_READ_CHR_ID),
+    /* PTS: MTU-1 Read characteristic - 0xFF06 */
+    GATT_H_CHARACTERISTIC_USER_RSP(BT_UUID_DECLARE_16(0xFF06), GATT_PROP_READ, GATT_PERM_READ, rx_pts_char_on_read, NULL, IOT_SERVICE_PTS_MTU_CHR_ID),
+    /* Private Characteristic for read and Signed write demo - 0xFF07 */
+    GATT_H_CHARACTERISTIC_USER_RSP(BT_UUID_DECLARE_16(0xFF07), GATT_PROP_READ | GATT_PROP_SIGNED_WRITE, GATT_PERM_READ | GATT_PERM_WRITE, rx_char_on_read, rx_char_on_write, IOT_SERVICE_SIGN_RW_CHR_ID),
+    /* Private Characteristic for Auth R/W demo - 0xFF08 */
+    GATT_H_CHARACTERISTIC_USER_RSP(BT_UUID_DECLARE_16(0xFF08), GATT_PROP_READ | GATT_PROP_WRITE, GATT_PERM_READ | GATT_PERM_WRITE | GATT_PERM_AUTHEN_REQUIRED, rx_char_on_read, rx_char_on_write, IOT_SERVICE_AUTH_CHR_ID),
 };
 
 static gatt_srv_db_t s_iot_service_db = {
@@ -185,6 +261,7 @@ static gatt_srv_db_t s_iot_service_db = {
 static bt_command_t g_gatts_tables[] = {
     { "register", register_cmd, 0, "\"register gatt service(DIS = 1, BAS = 2, CUSTOM = 3) :<id>\"" },
     { "unregister", unregister_cmd, 0, "\"unregister gatt service :<id>\"" },
+    { "init", init_cmd, 0, "\"register and start all demo services(DIS/BAS/CUSTOM)\"" },
     { "start", start_cmd, 0, "\"start gatt service :<id>\"" },
     { "stop", stop_cmd, 0, "\"stop gatt service :<id>\"" },
     { "connect", connect_cmd, 0, "\"connect remote device :<id><address>[addr type(0:public,1:random,2:public_id,3:random_id)]\"" },
@@ -223,7 +300,12 @@ static gatts_device_t* find_gatts_device(bt_address_t* addr)
 
 static gatts_device_t* add_gatts_device(bt_address_t* addr)
 {
-    gatts_device_t* device = (gatts_device_t*)malloc(sizeof(gatts_device_t));
+    gatts_device_t* device = find_gatts_device(addr);
+
+    if (device)
+        return device;
+
+    device = (gatts_device_t*)malloc(sizeof(gatts_device_t));
     if (!device) {
         PRINT("malloc device failed!");
         return NULL;
@@ -240,6 +322,21 @@ static void remove_gatts_device(gatts_device_t* device)
     if (device) {
         list_delete(&device->node);
         free(device);
+    }
+}
+
+static void remove_gatts_devices(bt_address_t* addr)
+{
+    struct list_node* node;
+    struct list_node* tmp;
+
+    list_for_every_safe(&gatts_device_list, node, tmp)
+    {
+        gatts_device_t* device = (gatts_device_t*)node;
+
+        if (!bt_addr_compare(&device->remote_address, addr)) {
+            remove_gatts_device(device);
+        }
     }
 }
 
@@ -318,26 +415,27 @@ static int disconnect_cmd(void* handle, int argc, char* argv[])
     return CMD_OK;
 }
 
-static int start_cmd(void* handle, int argc, char* argv[])
+static int start_service_by_id(int service_id)
 {
-    if (argc < 1)
-        return CMD_PARAM_NOT_ENOUGH;
-
     gatts_handle_t service_handle;
     gatt_srv_db_t* service_db;
-    int service_id = atoi(argv[0]);
+    bool* started;
+
     switch (service_id) {
     case GATT_SERVICE_DIS:
         service_handle = g_dis_handle;
         service_db = &s_dis_service_db;
+        started = &g_dis_started;
         break;
     case GATT_SERVICE_BAS:
         service_handle = g_bas_handle;
         service_db = &s_bas_service_db;
+        started = &g_bas_started;
         break;
     case GATT_SERVICE_CUSTOM:
         service_handle = g_custom_handle;
         service_db = &s_iot_service_db;
+        started = &g_custom_started;
         break;
     default:
         PRINT("invalid service id: %d", service_id);
@@ -349,10 +447,26 @@ static int start_cmd(void* handle, int argc, char* argv[])
         return CMD_ERROR;
     }
 
+    if (*started) {
+        PRINT("service[%d] has started", service_id);
+        return CMD_OK;
+    }
+
     if (bt_gatts_add_attr_table(service_handle, service_db) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
+    *started = true;
+    PRINT("start service successful, service_id: %d", service_id);
     return CMD_OK;
+}
+
+static int start_cmd(void* handle, int argc, char* argv[])
+{
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    int service_id = atoi(argv[0]);
+    return start_service_by_id(service_id);
 }
 
 static int stop_cmd(void* handle, int argc, char* argv[])
@@ -388,6 +502,20 @@ static int stop_cmd(void* handle, int argc, char* argv[])
 
     if (bt_gatts_remove_attr_table(service_handle, attr_handle) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
+
+    switch (service_id) {
+    case GATT_SERVICE_DIS:
+        g_dis_started = false;
+        break;
+    case GATT_SERVICE_BAS:
+        g_bas_started = false;
+        break;
+    case GATT_SERVICE_CUSTOM:
+        g_custom_started = false;
+        break;
+    default:
+        break;
+    }
 
     return CMD_OK;
 }
@@ -629,8 +757,7 @@ static void connect_callback(void* srv_handle, bt_address_t* addr)
 
 static void disconnect_callback(void* srv_handle, bt_address_t* addr)
 {
-    gatts_device_t* device = find_gatts_device(addr);
-    remove_gatts_device(device);
+    remove_gatts_devices(addr);
     PRINT_ADDR("gatts_disconnect_callback, addr:%s", addr);
 }
 
@@ -740,6 +867,33 @@ static int register_cmd(void* handle, int argc, char* argv[])
     return CMD_OK;
 }
 
+static int ensure_service_registered(void* handle, int service_id)
+{
+    char id[4];
+    char* argv[] = { id };
+
+    snprintf(id, sizeof(id), "%d", service_id);
+    return register_cmd(handle, 1, argv);
+}
+
+static int init_cmd(void* handle, int argc, char* argv[])
+{
+    int service_ids[] = { GATT_SERVICE_DIS, GATT_SERVICE_BAS, GATT_SERVICE_CUSTOM };
+
+    for (int i = 0; i < ARRAY_SIZE(service_ids); i++) {
+        int ret = ensure_service_registered(handle, service_ids[i]);
+        if (ret != CMD_OK)
+            return ret;
+
+        ret = start_service_by_id(service_ids[i]);
+        if (ret != CMD_OK)
+            return ret;
+    }
+
+    PRINT("gatts demo services ready");
+    return CMD_OK;
+}
+
 static int unregister_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
@@ -751,6 +905,23 @@ static int unregister_cmd(void* handle, int argc, char* argv[])
 
     if (bt_gatts_unregister_service(service_handle) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
+
+    switch (service_id) {
+    case GATT_SERVICE_DIS:
+        g_dis_handle = NULL;
+        g_dis_started = false;
+        break;
+    case GATT_SERVICE_BAS:
+        g_bas_handle = NULL;
+        g_bas_started = false;
+        break;
+    case GATT_SERVICE_CUSTOM:
+        g_custom_handle = NULL;
+        g_custom_started = false;
+        break;
+    default:
+        break;
+    }
 
     PRINT("unregister service successful, service_id: %d", service_id);
     return CMD_OK;
@@ -765,14 +936,20 @@ int gatts_command_uninit(void* handle)
 {
     if (g_dis_handle) {
         bt_gatts_unregister_service(g_dis_handle);
+        g_dis_handle = NULL;
+        g_dis_started = false;
     }
 
     if (g_bas_handle) {
         bt_gatts_unregister_service(g_bas_handle);
+        g_bas_handle = NULL;
+        g_bas_started = false;
     }
 
     if (g_custom_handle) {
         bt_gatts_unregister_service(g_custom_handle);
+        g_custom_handle = NULL;
+        g_custom_started = false;
     }
 
     return 0;

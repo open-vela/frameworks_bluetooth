@@ -26,11 +26,6 @@
 #define L2CAP_TRANS_MPS_CFG 251
 #define L2CAP_TRANS_CREDIT_CFG 30
 
-#define L2CAP_LE_MTU_MIN 23
-#define L2CAP_LE_MPS_MIN 23
-#define L2CAP_LE_MPS_MAX 65533
-#define L2CAP_LE_CREDIT_MIN 1
-
 typedef struct {
     struct list_node node;
     euv_pipe_t* pipe;
@@ -155,7 +150,7 @@ static bool bulk_buf_gen(uint8_t** buf, uint32_t length)
         return false;
     }
 
-    memcpy(bulk_buf->delimiter, "Vela", 4);
+    strncpy(bulk_buf->delimiter, "Vela", 4);
     bulk_buf->length = length;
     data_len = length - sizeof(struct bulk_buf_t);
     for (uint32_t i = 0; i < data_len; i++) {
@@ -432,28 +427,6 @@ static void do_l2cap_speed_test(void* data)
     PRINT("transmit start, waiting for %" PRIu32 " bytes transmit done", trans_ctx->trans_total_size);
 }
 
-static void do_l2cap_flow_control(void* data)
-{
-    l2cap_msg_t* msg = (l2cap_msg_t*)data;
-    l2cap_chnl_t* channel;
-    int err;
-    uint16_t id = msg->id;
-    bool start_recv = msg->is_listening;
-    const char* action;
-
-    free(msg);
-    channel = find_channel_by_id(id);
-    if (channel == NULL || channel->pipe == NULL) {
-        PRINT("L2CAP channel(id: %" PRIu16 ") not found or pipe disconnected", id);
-        return;
-    }
-
-    action = start_recv ? "start" : "stop";
-    err = start_recv ? euv_pipe_read_start(channel->pipe, 2048, read_complete_cb, NULL)
-                     : euv_pipe_read_stop(channel->pipe);
-    PRINT("%s L2CAP channel(id: %" PRIu16 ") receive %s", action, id, err ? "failed" : "success");
-}
-
 static void on_connected(void* handle, l2cap_connect_params_t* params)
 {
     l2cap_msg_t* msg;
@@ -518,31 +491,6 @@ static l2cap_callbacks_t l2cap_callback = {
     .on_disconnected = on_disconnected,
 };
 
-static int validate_l2cap_params(uint16_t mtu, uint16_t mps, uint16_t credits)
-{
-    if (mtu < L2CAP_LE_MTU_MIN) {
-        PRINT("invalid mtu:%" PRIu16 ", min:%d", mtu, L2CAP_LE_MTU_MIN);
-        return -1;
-    }
-
-    if (mps < L2CAP_LE_MPS_MIN || mps > L2CAP_LE_MPS_MAX) {
-        PRINT("invalid mps:%" PRIu16 ", range:%d~%d", mps, L2CAP_LE_MPS_MIN, L2CAP_LE_MPS_MAX);
-        return -1;
-    }
-
-    if (credits < L2CAP_LE_CREDIT_MIN) {
-        PRINT("invalid credits:%" PRIu16 ", min:%d", credits, L2CAP_LE_CREDIT_MIN);
-        return -1;
-    }
-
-    if (mps > mtu) {
-        PRINT("invalid params: mps(%" PRIu16 ") > mtu(%" PRIu16 ")", mps, mtu);
-        return -1;
-    }
-
-    return 0;
-}
-
 static int connect_cmd(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
@@ -567,16 +515,12 @@ static int connect_cmd(void* handle, int argc, char* argv[])
     }
 
     conn_option.psm = strtoul(argv[1], NULL, 0);
+    // defaule param
     conn_option.transport = BT_TRANSPORT_BLE;
     conn_option.mode = L2CAP_CHANNEL_MODE_LE_CREDIT_BASED_FLOW_CONTROL;
-    conn_option.mtu = (argc > 2) ? strtoul(argv[2], NULL, 0) : L2CAP_TRANS_MTU_CFG;
-    conn_option.le_mps = (argc > 3) ? strtoul(argv[3], NULL, 0) : L2CAP_TRANS_MPS_CFG;
-    conn_option.init_credits = (argc > 4) ? strtoul(argv[4], NULL, 0) : L2CAP_TRANS_CREDIT_CFG;
-    if (validate_l2cap_params(conn_option.mtu, conn_option.le_mps, conn_option.init_credits) < 0) {
-        free(msg);
-        return CMD_INVALID_PARAM;
-    }
-
+    conn_option.mtu = L2CAP_TRANS_MTU_CFG;
+    conn_option.le_mps = L2CAP_TRANS_MPS_CFG;
+    conn_option.init_credits = L2CAP_TRANS_CREDIT_CFG;
     if (bt_l2cap_connect(handle, g_l2cap_handle, &addr, &conn_option) != BT_STATUS_SUCCESS) {
         PRINT("connect %s failed", argv[0]);
         free(msg);
@@ -616,16 +560,12 @@ static int listen_cmd(void* handle, int argc, char* argv[])
         return CMD_ERROR;
     }
 
+    // default param
     conn_option.transport = BT_TRANSPORT_BLE;
     conn_option.mode = L2CAP_CHANNEL_MODE_LE_CREDIT_BASED_FLOW_CONTROL;
-    conn_option.mtu = (argc > 1) ? strtoul(argv[1], NULL, 0) : L2CAP_TRANS_MTU_CFG;
-    conn_option.le_mps = (argc > 2) ? strtoul(argv[2], NULL, 0) : L2CAP_TRANS_MPS_CFG;
-    conn_option.init_credits = (argc > 3) ? strtoul(argv[3], NULL, 0) : L2CAP_TRANS_CREDIT_CFG;
-    if (validate_l2cap_params(conn_option.mtu, conn_option.le_mps, conn_option.init_credits) < 0) {
-        free(msg);
-        return CMD_INVALID_PARAM;
-    }
-
+    conn_option.mtu = L2CAP_TRANS_MTU_CFG;
+    conn_option.le_mps = L2CAP_TRANS_MPS_CFG;
+    conn_option.init_credits = L2CAP_TRANS_CREDIT_CFG;
     if (bt_l2cap_listen(handle, g_l2cap_handle, &conn_option) != BT_STATUS_SUCCESS) {
         PRINT("listen 0x%" PRIx16 " failed", conn_option.psm);
         free(msg);
@@ -752,7 +692,7 @@ static int speed_test_cmd(void* handle, int argc, char* argv[])
 
     msg->id = strtoul(argv[0], NULL, 10);
     msg->len = strtoul(argv[1], NULL, 10);
-    if (msg->len == 0) {
+    if (msg->id < 0 || msg->len <= 0) {
         PRINT("invalid param");
         free(msg);
         return CMD_ERROR;
@@ -771,67 +711,13 @@ static int speed_test_cmd(void* handle, int argc, char* argv[])
     return CMD_OK;
 }
 
-static int stop_receive_cmd(void* handle, int argc, char* argv[])
-{
-    l2cap_msg_t* msg;
-
-    if (!handle || !g_l2cap_handle) {
-        PRINT("L2CAP tool not ready!");
-        return CMD_ERROR;
-    }
-
-    if (argc < 1) {
-        return CMD_PARAM_NOT_ENOUGH;
-    }
-
-    msg = (l2cap_msg_t*)malloc(sizeof(l2cap_msg_t));
-    if (!msg) {
-        PRINT("allocate msg failed");
-        return CMD_ERROR;
-    }
-
-    msg->id = strtoul(argv[0], NULL, 10);
-    msg->is_listening = false; /* stop receive*/
-    do_in_thread_loop(&g_l2cap_thread, do_l2cap_flow_control, msg);
-
-    return CMD_OK;
-}
-
-static int start_receive_cmd(void* handle, int argc, char* argv[])
-{
-    l2cap_msg_t* msg;
-
-    if (!handle || !g_l2cap_handle) {
-        PRINT("L2CAP tool not ready!");
-        return CMD_ERROR;
-    }
-
-    if (argc < 1) {
-        return CMD_PARAM_NOT_ENOUGH;
-    }
-
-    msg = (l2cap_msg_t*)malloc(sizeof(l2cap_msg_t));
-    if (!msg) {
-        PRINT("allocate msg failed");
-        return CMD_ERROR;
-    }
-
-    msg->id = strtoul(argv[0], NULL, 10);
-    msg->is_listening = true; /* start receive*/
-    do_in_thread_loop(&g_l2cap_thread, do_l2cap_flow_control, msg);
-
-    return CMD_OK;
-}
-
 static bt_command_t g_l2cap_commands[] = {
-    { "connect", connect_cmd, 0, "\"connect l2cap channel      param: <address> <psm> [mtu] [mps] [credits]\"" },
-    { "listen", listen_cmd, 0, "\"listen l2cap channel        param: <psm> [mtu] [mps] [credits]\"" },
+    { "connect", connect_cmd, 0, "\"connect l2cap channel      param: <address> <psm>\"" },
+    { "listen", listen_cmd, 0, "\"listen l2cap channel        param: <psm>\"" },
     { "disconnect", disconnect_cmd, 0, "\"disconnect l2cap channel  param: <id>\"" },
     { "stoplisten", stop_listen_cmd, 0, "\"stop listen l2cap channel  param: <psm>\"" },
     { "write", write_cmd, 0, "\"write data to peer   param: <id> <data>\"" },
     { "speed", speed_test_cmd, 0, "\"speed test l2cap channel    param: <id> <iteration>\"" },
-    { "stoprecv", stop_receive_cmd, 0, "\"stop receive data from specified L2CAP channel  param: <id>\"" },
-    { "startrecv", start_receive_cmd, 0, "\"start receive data from specified L2CAP channel  param: <id>\"" },
 };
 
 static void usage(void)

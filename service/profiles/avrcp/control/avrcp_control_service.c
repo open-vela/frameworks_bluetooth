@@ -212,7 +212,6 @@ static void bt_avrcp_absolute_volume_changed_notification(void* context, int vol
     bt_status_t status;
     avrcp_ct_device_t* device = (avrcp_ct_device_t*)context;
 
-    BT_LOGD("%s, media volume:%d", __func__, volume);
     uv_mutex_lock(&device->lock);
     if (device->set_abs_vol_cnt) {
         device->set_abs_vol_cnt--;
@@ -223,10 +222,8 @@ static void bt_avrcp_absolute_volume_changed_notification(void* context, int vol
     uv_mutex_unlock(&device->lock);
 
     avrcp_volume = bt_media_volume_media_to_avrcp(volume);
-    bt_pm_busy(PROFILE_AVRCP_CT, &device->addr);
     status = bt_sal_avrcp_control_volume_changed_notify(PRIMARY_ADAPTER, &device->addr,
         avrcp_volume);
-    bt_pm_idle(PROFILE_AVRCP_CT, &device->addr);
     if (status != BT_STATUS_SUCCESS) {
         BT_LOGW("notified absolute volume failed, status: %d, volume: %d.", status, volume);
     }
@@ -403,9 +400,9 @@ static void handle_avrcp_register_notification_response(avrcp_msg_t* msg)
     if (!device)
         return;
 
-    BT_LOGD("register_notification evt: %d", msg->data.notify_rsp.event);
     switch (msg->data.notify_rsp.event) {
     case NOTIFICATION_EVT_PALY_STATUS_CHANGED: {
+        BT_LOGD("register_notification evt: %d", msg->data.notify_rsp.event);
         bt_media_status_t status = msg->data.notify_rsp.value;
         BT_LOGD("playback status changed: %s, get status now...", bt_media_status_str(status));
         bt_media_player_set_status(device->player, status);
@@ -413,7 +410,6 @@ static void handle_avrcp_register_notification_response(avrcp_msg_t* msg)
         break;
     }
     case NOTIFICATION_EVT_PLAY_POS_CHANGED: {
-        BT_LOGD("song position is: %" PRIu32, msg->data.notify_rsp.value);
         bt_media_player_set_position(device->player, msg->data.notify_rsp.value);
         break;
     }
@@ -422,7 +418,6 @@ static void handle_avrcp_register_notification_response(avrcp_msg_t* msg)
         break;
     }
     case NOTIFICATION_EVT_TRACK_CHANGED: {
-        BT_LOGD("track changed, get track info now...");
         bt_sal_avrcp_control_get_element_attributes(PRIMARY_ADAPTER, addr, 0, NULL);
         break;
     }

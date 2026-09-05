@@ -20,6 +20,7 @@
 #include "btsnoop_log.h"
 #include "btsnoop_writer.h"
 #include "log.h"
+#include "service_loop.h"
 
 #ifndef CONFIG_BLUETOOTH_SNOOP_LOG
 #define CONFIG_BLUETOOTH_SNOOP_LOG 1
@@ -28,29 +29,69 @@
 static pthread_mutex_t snoop_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool snoop_enable = false;
 
-void btsnoop_log_capture(uint8_t recieve, uint8_t* hci_pkt, uint32_t hci_pkt_size)
+typedef struct {
+    uint8_t receive;
+    uint8_t pad[3];
+    uint32_t hci_pkt_size;
+    uint8_t hci_pkt[];
+} btsnoop_hci_command_t;
+
+static void write_log(service_work_t* work, void* userdata)
+{
+    btsnoop_hci_command_t* hci_command = (btsnoop_hci_command_t*)userdata;
+
+    if (hci_command == NULL) {
+        BT_LOGE("hci_pkt is null");
+        return;
+    }
+
+    writer_write_log(hci_command->receive, hci_command->hci_pkt, hci_command->hci_pkt_size);
+}
+
+static void write_log_complete(service_work_t* work, void* userdata)
+{
+    free(userdata);
+}
+
+void btsnoop_log_capture(uint8_t receive, uint8_t* hci_pkt, uint32_t hci_pkt_size)
 {
 #if CONFIG_BLUETOOTH_SNOOP_LOG
+    btsnoop_hci_command_t* hci_command;
     pthread_mutex_lock(&snoop_lock);
 
     if (!snoop_enable) {
-        pthread_mutex_unlock(&snoop_lock);
-        return;
-    }
-    if (filter_can_filter(recieve, hci_pkt, hci_pkt_size)) {
-        pthread_mutex_unlock(&snoop_lock);
-        return;
+        goto error;
     }
 
+    if (filter_can_filter(receive, hci_pkt, hci_pkt_size)) {
+        goto error;
+    }
+
+    hci_command = (btsnoop_hci_command_t*)malloc(sizeof(btsnoop_hci_command_t) + hci_pkt_size);
+    if (hci_command == NULL) {
+        BT_LOGE("malloc fail");
+        goto error;
+    }
+
+    hci_command->receive = receive;
+    hci_command->hci_pkt_size = hci_pkt_size;
+    memcpy(hci_command->hci_pkt, hci_pkt, hci_pkt_size);
+
+    if (service_loop_work(hci_command, write_log, write_log_complete) == NULL) {
+        write_log_complete(NULL, hci_command);
+    }
+
+error:
     pthread_mutex_unlock(&snoop_lock);
-    writer_write_log(recieve, hci_pkt, hci_pkt_size);
 #endif
 }
 
-int btsnoop_log_init(void)
+int btsnoop_log_init(char* path)
 {
     if (pthread_mutex_init(&snoop_lock, NULL) < 0)
         return BT_STATUS_FAIL;
+
+    set_snoop_file_path(path);
     return BT_STATUS_SUCCESS;
 }
 
@@ -74,6 +115,11 @@ int btsnoop_log_enable(void)
         pthread_mutex_unlock(&snoop_lock);
         return BT_STATUS_FAIL;
     }
+
+    /* filter out the following snoop logs by default. */
+    filter_set_filter_flag(BTSNOOP_FILTER_A2DP_AUDIO);
+    filter_set_filter_flag(BTSNOOP_FILTER_SPP);
+    filter_set_filter_flag(BTSNOOP_FILTER_NOCP);
 
     snoop_enable = true;
 

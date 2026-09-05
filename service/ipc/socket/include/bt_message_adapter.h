@@ -18,6 +18,7 @@
 BT_ADAPTER_MESSAGE_START,
     BT_ADAPTER_ENABLE,
     BT_ADAPTER_DISABLE,
+    BT_ADAPTER_DISABLE_SAFE,
     BT_ADAPTER_ENABLE_LE,
     BT_ADAPTER_DISABLE_LE,
     BT_ADAPTER_GET_STATE,
@@ -121,6 +122,7 @@ BT_ADAPTER_MESSAGE_START,
     typedef union {
         struct {
             bt_address_t addr;
+            uint8_t type;
         } _bt_adapter_get_address,
             _bt_adapter_set_le_address,
             _bt_adapter_le_add_whitelist,

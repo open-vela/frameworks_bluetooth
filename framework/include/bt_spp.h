@@ -46,8 +46,6 @@ extern "C" {
  */
 #define BT_UUID_SERVCLASS_SERIAL_PORT 0x1101
 
-#define SPP_PORT_TYPE_TTY 1
-
 /**
  * @brief Spp proxy state
  *
@@ -58,6 +56,10 @@ typedef enum {
     SPP_PROXY_STATE_CONNECTING,
     SPP_PROXY_STATE_CLOSING,
 } spp_proxy_state_t;
+
+/**
+ * @endcond
+ */
 
 /**
  * @brief Callback used to notify SPP connection states.
@@ -146,8 +148,11 @@ void spp_proxy_state_cb(void* handle, bt_address_t* addr, spp_proxy_state_t stat
 typedef void (*spp_proxy_state_callback)(void* handle, bt_address_t* addr, spp_proxy_state_t state, uint16_t scn, uint16_t port, char* name);
 
 /**
+ * @cond
+ */
+
+/**
  * @brief SPP event callbacks structure
- *
  */
 typedef struct {
     size_t size;
@@ -326,8 +331,8 @@ bt_status_t BTSYMBOLS(bt_spp_unregister_app)(bt_instance_t* ins, void* handle);
  * on other devices.
  *
  * @param ins - Bluetooth client instance.
- * @param handle - SPP application handle.
- * @param scn - Server channel number, range in 1-28.
+ * @param handle - SPP APP handle.
+ * @param scn - Server channel number, range in <1-28>.
  * @param uuid - Server uuid, default:0x1101.
  * @param max_connection - Maximum of client connections.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
@@ -364,8 +369,8 @@ bt_status_t BTSYMBOLS(bt_spp_server_start)(bt_instance_t* ins, void* handle, uin
  * will have stopped the SPP server.
  *
  * @param ins - Bluetooth client instance.
- * @param handle - SPP application handle.
- * @param scn - Server channel number, range in 1-28.
+ * @param handle - SPP APP handle.
+ * @param scn - Server channel number, range in <1-28>.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  *
  * **Example:**
@@ -396,9 +401,9 @@ bt_status_t BTSYMBOLS(bt_spp_server_stop)(bt_instance_t* ins, void* handle, uint
  * an SPP connection will be established with the remote device.
  *
  * @param[in] ins - Bluetooth client instance.
- * @param[in] handle - SPP application handle.
- * @param[in] addr - The Bluetooth address of the peer device.
- * @param[in] scn - Server channel number, range in 1-28.
+ * @param[in] handle - SPP APP handle.
+ * @param[in] addr - address of peer device.
+ * @param[in] scn - Server channel number, range in <1-28>.
  *                - UNKNOWN_SERVER_CHANNEL_NUM: Not specify scn.
  * @param[in] uuid - Server uuid, default:0x1101.
  * @param[out] port - The unique port of connection.

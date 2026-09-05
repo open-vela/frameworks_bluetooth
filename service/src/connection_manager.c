@@ -18,7 +18,6 @@
 #include "connection_manager.h"
 #include "adapter_internel.h"
 #include "bluetooth.h"
-#include "bt_time.h"
 #include "hci_error.h"
 #include "power_manager.h"
 #include "service_loop.h"
@@ -49,9 +48,7 @@
 
 #define CM_RECONNECT_INTERVAL (12000) /* reconnect Interval */
 #define PROFILE_CONNECT_INTERVAL (500) /* Interval between HFP and A2DP */
-#define CM_RECONNECT_TIMES ((60 * 30 * 1000) / CM_RECONNECT_INTERVAL) /* Continuous 30-mins reconnect */
-#define CM_RSSI_UPDATE_INTERVAL_MS (5 * 1000)
-#define CM_RSSI_DUMP_INTERVAL_MS (60 * 1000)
+#define CM_RECONNECT_TIMES ((60 * 30) / 8) /* Continuous 30-mins reconnect */
 
 #define FLAG_NONE (0)
 #define FLAG_HFP_HF (1 << (PROFILE_HFP_HF))
@@ -73,8 +70,6 @@ typedef struct {
     uint32_t profile_flags;
     bt_cm_timer_t cm_timer;
     service_timer_t* a2dp_conn_timer;
-    service_timer_t* rssi_update_timer;
-    uint32_t last_rssi_dump_time_ms;
 } bt_connection_manager_t;
 
 typedef struct {
@@ -279,7 +274,6 @@ void bt_cm_init(void)
     bt_cm_enable_conn();
     bt_cm_set_flags(FLAG_NONE);
     manager->reconnect_enable = false;
-    manager->rssi_update_timer = NULL;
     manager->inited = true;
 }
 
@@ -295,10 +289,6 @@ void bt_cm_cleanup(void)
 #endif
 
     manager->inited = false;
-    if (manager->rssi_update_timer) {
-        service_loop_cancel_timer(manager->rssi_update_timer);
-        manager->rssi_update_timer = NULL;
-    }
 }
 
 static bool bt_cm_allocator(void** data, uint32_t size)
@@ -490,13 +480,12 @@ static bool bt_cm_start_timer(bt_address_t* peer_addr)
         service_loop_cancel_timer(cm_timer->timer);
     }
 
-    cm_timer->timer = service_loop_timer(CM_RECONNECT_INTERVAL, CM_RECONNECT_INTERVAL,
-        bt_cm_timeout_cb, cm_timer);
+    cm_timer->timer = service_loop_timer(CM_RECONNECT_INTERVAL, CM_RECONNECT_INTERVAL, bt_cm_timeout_cb, cm_timer);
 
     return true;
 }
 
-static void bt_cm_process_reconnection(bt_address_t* addr, uint8_t hci_reason_code)
+static void bt_cm_process_reconnection(bt_address_t* addr, uint32_t hci_reason_code)
 {
     bt_connection_manager_t* manager = &g_connection_manager;
     bt_cm_timer_t* cm_timer = &manager->cm_timer;
@@ -520,14 +509,9 @@ static void bt_cm_process_reconnection(bt_address_t* addr, uint8_t hci_reason_co
         bt_cm_profile_connect(addr, BT_TRANSPORT_BREDR);
 }
 
-void bt_cm_process_disconnect_event(bt_address_t* addr, uint8_t transport, int8_t rssi,
-    uint8_t hci_reason_code)
+void bt_cm_process_disconnect_event(bt_address_t* addr, uint8_t transport, uint32_t hci_reason_code)
 {
     bt_connection_manager_t* manager = &g_connection_manager;
-
-    if (manager->rssi_update_timer) /**< rssi is updating */
-        BT_ADDR_LOG("acl disconnected at %s, transport: %d, rssi: %d, reason: 0x%02" PRIx8, addr,
-            transport, rssi, hci_reason_code);
 
     if (transport == BT_TRANSPORT_BLE) {
 #ifdef CONFIG_LE_DLF_SUPPORT
@@ -565,6 +549,7 @@ static inline int sniff_param_table_index_from_mode(bt_enhanced_mode_t mode)
 
 static bt_status_t bt_cm_apply_bredr_sniff_mode(bt_address_t* addr, uint8_t table_idx)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     bt_pm_mode_t sniff_params;
     bt_cm_sniff_param_t* p;
 
@@ -581,6 +566,9 @@ static bt_status_t bt_cm_apply_bredr_sniff_mode(bt_address_t* addr, uint8_t tabl
     bt_cm_sniff_param_to_pm_mode(p, &sniff_params);
 
     return bt_pm_set_app_profile_sniff(addr, &sniff_params);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 bt_status_t bt_cm_enable_enhanced_mode(bt_address_t* addr, uint8_t mode)
@@ -615,98 +603,13 @@ bt_status_t bt_cm_disable_enhanced_mode(bt_address_t* addr, uint8_t mode)
 
     case EM_BR_LOW_LATENCY:
     case EM_BR_ULTRA_LOW_LATENCY:
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
         return bt_pm_set_app_profile_sniff(addr, NULL);
+#else
+        return BT_STATUS_NOT_SUPPORTED;
+#endif
 
     default:
         return BT_STATUS_NOT_SUPPORTED;
     }
-}
-
-static void rssi_update(service_timer_t* timer, void* userdata)
-{
-    bt_status_t status;
-    uint32_t curr_time_ms;
-    bt_connection_manager_t* manager = &g_connection_manager;
-    int i, num_le = 0, num_classic = 0;
-    bt_address_t* addrs_classic = NULL;
-    bt_address_t* addrs_le = NULL;
-
-#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    status = adapter_get_connected_devices(BT_TRANSPORT_BREDR, &addrs_classic, &num_classic,
-        bt_cm_allocator);
-    if (status == BT_STATUS_SUCCESS) {
-        for (i = 0; i < num_classic; i++)
-            adapter_read_remote_rssi(&addrs_classic[i], BT_TRANSPORT_BREDR);
-
-        free(addrs_classic);
-        addrs_classic = NULL;
-    }
-#endif
-
-#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
-    status = adapter_get_connected_devices(BT_TRANSPORT_BLE, &addrs_le, &num_le, bt_cm_allocator);
-    if (status == BT_STATUS_SUCCESS) {
-        for (i = 0; i < num_le; i++)
-            adapter_read_remote_rssi(&addrs_le[i], BT_TRANSPORT_BLE);
-
-        free(addrs_le);
-        addrs_le = NULL;
-    }
-#endif
-
-    if ((num_classic + num_le) == 0)
-        return;
-
-    curr_time_ms = bt_get_os_timestamp_ms();
-    if ((curr_time_ms - manager->last_rssi_dump_time_ms) < CM_RSSI_DUMP_INTERVAL_MS)
-        return;
-
-#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    if (num_classic > 0)
-        adapter_dump_rssi(BT_TRANSPORT_BREDR);
-#endif
-
-#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
-    if (num_le > 0)
-        adapter_dump_rssi(BT_TRANSPORT_BLE);
-#endif
-
-    manager->last_rssi_dump_time_ms = curr_time_ms;
-}
-
-bt_status_t bt_cm_enable_rssi_statistic(void)
-{
-    bt_connection_manager_t* manager = &g_connection_manager;
-
-    BT_LOGD("%s", __func__);
-
-    if (manager->rssi_update_timer) {
-        BT_LOGW("already enabled");
-        return BT_STATUS_SUCCESS;
-    }
-
-    manager->last_rssi_dump_time_ms = bt_get_os_timestamp_ms();
-    manager->rssi_update_timer = service_loop_timer(CM_RSSI_UPDATE_INTERVAL_MS,
-        CM_RSSI_UPDATE_INTERVAL_MS, rssi_update, NULL);
-    if (!manager->rssi_update_timer)
-        return BT_STATUS_NOMEM;
-
-    return BT_STATUS_SUCCESS;
-}
-
-bt_status_t bt_cm_disable_rssi_statistic(void)
-{
-    bt_connection_manager_t* manager = &g_connection_manager;
-
-    BT_LOGD("%s", __func__);
-
-    if (!manager->rssi_update_timer) {
-        BT_LOGW("already disabled");
-        return BT_STATUS_SUCCESS;
-    }
-
-    service_loop_cancel_timer(manager->rssi_update_timer);
-    manager->rssi_update_timer = NULL;
-
-    return BT_STATUS_SUCCESS;
 }

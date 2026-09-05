@@ -16,15 +16,18 @@
 
 include $(APPDIR)/Make.defs
 
+# Keep the bluetooth service headers ahead of the generic utils headers so
+# service-local logging macros are used by the original framework sources.
+CFLAGS := ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service $(CFLAGS)
+CXXFLAGS := ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service $(CXXFLAGS)
+
 ifeq ($(CONFIG_BLUETOOTH), y)
 
 CSRCS += framework/common/*.c
 CSRCS += framework/api/bluetooth.c
 CSRCS += framework/api/bt_adapter.c
 CSRCS += framework/api/bt_device.c
-ifeq ($(CONFIG_BLUETOOTH_LE_CS), y)
-CSRCS += framework/api/bt_cs.c
-endif #CONFIG_BLUETOOTH_LE_CS
+
 ifeq ($(CONFIG_BLUETOOTH_A2DP_SINK), y)
 CSRCS += framework/api/bt_a2dp_sink.c
 endif #CONFIG_BLUETOOTH_A2DP_SINK
@@ -162,11 +165,6 @@ CSRCS += framework/socket/bt_trace.c
 CSRCS += service/ipc/socket/src/bt_socket_log.c
 endif #CONFIG_BLUETOOTH_BLE_AUDIO
 
-ifeq ($(CONFIG_BLUETOOTH_LE_CS), y)
-CSRCS += framework/socket/bt_cs.c
-CSRCS += service/ipc/socket/src/bt_socket_cs.c
-endif #CONFIG_BLUETOOTH_LE_CS
-
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/ipc/socket/include
 ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK_ASYNC), y)
 CSRCS += framework/socket/async/*.c
@@ -184,7 +182,7 @@ endif #CONFIG_BLUETOOTH_CONNECTION_MANAGER
 ifeq ($(CONFIG_BLUETOOTH_STORAGE_PROPERTY_SUPPORT), y)
 CSRCS += service/common/storage_property.c
 else
-CSRCS += service/common/storage.c
+CSRCS += service/common/bt_storage.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_STORAGE_UPDATE), y)
@@ -196,7 +194,7 @@ ifeq ($(CONFIG_BLUETOOTH_DEBUG_MEMORY),y)
 CSRCS += debug/bt_memory.c
 endif
 
-ifeq ($(CONFIG_BLUETOOTH_LOG), y)
+ifeq ($(CONFIG_BLUETOOTH_DEBUG_TRACE), y)
 CSRCS += service/debug/bt_trace.c
 endif
 
@@ -237,12 +235,26 @@ ifneq ($(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE)$(CONFIG_BLUETOOTH_STACK_LE_ZBLUE),)
 	ifeq ($(CONFIG_BLUETOOTH_CONNECTION_MANAGER), y)
 	CSRCS += service/stacks/zephyr/sal_connection_manager.c
 	endif
+ifeq ($(CONFIG_BLUETOOTH_SPP), y)
+	CSRCS += service/stacks/zephyr/sal_spp_interface.c
+endif #CONFIG_BLUETOOTH_SPP
 ifeq ($(CONFIG_BLUETOOTH_A2DP), y)
 	CSRCS += service/stacks/zephyr/sal_a2dp_interface.c
 endif #CONFIG_BLUETOOTH_A2DP
 ifneq ($(CONFIG_BLUETOOTH_AVRCP_CONTROL)$(CONFIG_BLUETOOTH_AVRCP_TARGET),)
 	CSRCS += service/stacks/zephyr/sal_avrcp_interface.c
 endif #CONFIG_BLUETOOTH_AVRCP_CONTROL/CONFIG_BLUETOOTH_AVRCP_TARGET
+
+ifeq ($(CONFIG_BLUETOOTH_HFP_HF), y)
+	CSRCS += service/stacks/zephyr/sal_hfp_hf_interface.c
+endif #CONFIG_BLUETOOTH_HFP_HF
+ifeq ($(CONFIG_BLUETOOTH_HFP_AG), y)
+	CSRCS += service/stacks/zephyr/sal_hfp_ag_interface.c
+endif #CONFIG_BLUETOOTH_HFP_AG
+
+ifeq ($(CONFIG_BLUETOOTH_HID_DEVICE), y)
+	CSRCS += service/stacks/zephyr/sal_hid_device_interface.c
+endif #CONFIG_BLUETOOTH_HID_DEVICE
 
 ifeq ($(CONFIG_BLUETOOTH_STACK_LE_ZBLUE), y)
 	CSRCS += service/stacks/zephyr/sal_adapter_le_interface.c
@@ -258,9 +270,6 @@ endif #CONFIG_BLUETOOTH_GATT_CLIENT
 ifeq ($(CONFIG_BLUETOOTH_GATT_SERVER), y)
 	CSRCS += service/stacks/zephyr/sal_gatt_server_interface.c
 endif #CONFIG_BLUETOOTH_GATT_SERVER
-ifeq ($(CONFIG_BLUETOOTH_LE_CS), y)
-	CSRCS += service/stacks/zephyr/sal_le_cs_interface.c
-endif #CONFIG_BLUETOOTH_LE_CS
 endif #CONFIG_BLUETOOTH_STACK_LE_ZBLUE
 
 endif
@@ -275,7 +284,11 @@ endif #CONFIG_BLUETOOTH_A2DP
 ifeq ($(findstring y, $(CONFIG_BLUETOOTH_A2DP)_$(CONFIG_BLUETOOTH_HFP_AG)_$(CONFIG_BLUETOOTH_HFP_HF)_$(CONFIG_BLUETOOTH_BLE_AUDIO)), )
 	CSRCS := $(filter-out $(wildcard service/profiles/system/media_system.c),$(wildcard $(CSRCS)))
 else
-	CSRCS += service/profiles/audio_interface/*.c
+	CSRCS += service/profiles/audio_interface/audio_control.c
+ifeq ($(CONFIG_AUDIOUTILS_TINYCOMPRESS), y)
+	CSRCS += service/profiles/audio_interface/audio_transport.c
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/service/profiles/audio_interface/include
+endif #CONFIG_AUDIOUTILS_TINYCOMPRESS
 endif #CONFIG_BLUETOOTH_A2DP/CONFIG_BLUETOOTH_HFP_AG/CONFIG_BLUETOOTH_HFP_HF
 ifeq ($(CONFIG_MICO_MEDIA_MAIN_PLAYER),y)
 	CFLAGS += ${INCDIR_PREFIX}${TOPDIR}/../vendor/xiaomi/miai/mediaplayer/include
@@ -283,9 +296,6 @@ endif #CONFIG_MICO_MEDIA_MAIN_PLAYER
 ifeq ($(CONFIG_BLUETOOTH_GATT_CLIENT), y)
 	CSRCS += service/profiles/gatt/gattc_event.c
 	CSRCS += service/profiles/gatt/gattc_service.c
-ifeq ($(CONFIG_BLUETOOTH_GATT_CLIENT_DEBUG), y)
-	CSRCS += service/profiles/gatt/gattc_debug.c
-endif
 endif #CONFIG_BLUETOOTH_GATT_CLIENT
 ifeq ($(CONFIG_BLUETOOTH_GATT_SERVER), y)
 	CSRCS += service/profiles/gatt/gatts_event.c
@@ -323,6 +333,11 @@ endif #CONFIG_BLUETOOTH_HFP_HF
 
 ifeq ($(CONFIG_BLUETOOTH_HFP_AG), y)
 	CSRCS += service/profiles/hfp_ag/*.c
+	ifeq ($(CONFIG_PHONE_SERVICE), y)
+		CSRCS := $(filter-out $(wildcard service/profiles/system/telephony_interface.c) $(wildcard service/profiles/hfp_ag/hfp_ag_tele_service.c), $(wildcard $(CSRCS)))
+	else
+		CSRCS := $(filter-out $(wildcard service/profiles/hfp_ag/hfp_ag_tele_phone_service.c),$(wildcard $(CSRCS)))
+	endif
 endif #CONFIG_BLUETOOTH_HFP_AG
 
 ifeq ($(CONFIG_BLUETOOTH_SPP), y)
@@ -382,11 +397,6 @@ CSRCS += service/utils/btsnoop_writer.c
 CSRCS += service/utils/btsnoop_filter.c
 endif #CONFIG_BLUETOOTH_LOG
 
-ifeq ($(CONFIG_BLUETOOTH_LE_CS), y)
-CSRCS += service/profiles/cs/*.c
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/profiles/cs
-endif #CONFIG_BLUETOOTH_LE_CS
-
 ifeq ($(CONFIG_BLUETOOTH_HCI_FILTER), y)
 CSRCS += service/vhal/bt_hci_filter.c
 endif
@@ -419,7 +429,6 @@ endif #CONFIG_APP_BT_SAMPLE_CODE
 
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	CSRCS += tools/utils.c
-	CSRCS += tools/uv_thread_loop.c
 ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK_ASYNC), y)
 	CSRCS += tools/async/gap.c
 	CSRCS += tools/async/log.c
@@ -439,6 +448,9 @@ endif
 ifeq ($(CONFIG_BLUETOOTH_BLE_SCAN), y)
 	CSRCS += tools/scan.c
 endif
+ifeq ($(CONFIG_BLUETOOTH_L2CAP), y)
+	CSRCS += tools/l2cap.c
+endif #CONFIG_BLUETOOTH_L2CAP
 ifeq ($(CONFIG_BLUETOOTH_A2DP_SINK), y)
 	CSRCS += tools/a2dp_sink.c
 endif #CONFIG_BLUETOOTH_A2DP_SINK
@@ -509,15 +521,10 @@ ifeq ($(CONFIG_BLUETOOTH_STORAGE_UPDATE), y)
 	CSRCS += tools/storage_update/storage_tool.c
 endif #CONFIG_BLUETOOTH_STORAGE_UPDATE
 
-ifeq ($(CONFIG_BLUETOOTH_LE_CS), y)
-	CSRCS += tools/le_cs.c
-endif
-
 endif
 
 # framework/service/stack/tools dependence
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/framework/include
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/framework/common
 
 ifneq ($(CONFIG_LIB_DBUS_RPMSG_SERVER_CPUNAME)$(CONFIG_OFONO),)
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/dbus/dbus
@@ -537,6 +544,8 @@ CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/st
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/stacks/include
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/vendor
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/dfx
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/system/utils/uv/include
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/ipc/socket/include
 
 ifeq ($(CONFIG_BLUETOOTH_SERVICE), y)
 ifneq ($(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET)$(CONFIG_BLUETOOTH_STACK_LE_BLUELET),)
@@ -547,9 +556,12 @@ endif
 ifneq ($(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE)$(CONFIG_BLUETOOTH_STACK_LE_ZBLUE),)
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/stacks/zephyr/include
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/port/include/
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/include
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/include/zephyr/sys
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/misc/generated
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/arch/common/include
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/subsys/bluetooth/host
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/subsys/settings/include/settings
-	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/subsys/bluetooth
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/port/include/kernel/include
 endif
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/ipc
@@ -630,8 +642,10 @@ endif #CONFIG_APP_BT_SAMPLE_CODE
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	PROGNAME += bttool
 	MAINSRC  += tools/bt_tools.c
-	PROGNAME += adapter_test
-	MAINSRC  += tests/adapter_test.c
+ifeq ($(CONFIG_BLUETOOTH_SERVICE_TEST), y)
+PROGNAME += adapter_test
+MAINSRC  += tests/adapter_test.c
+endif
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_UPGRADE), y)
@@ -654,6 +668,7 @@ NOEXPORTSRCS = $(ASRCS)$(CSRCS)$(CXXSRCS)$(MAINSRC)
 
 ifeq ($(CONFIG_BLUETOOTH_FEATURE),y)
 CFLAGS    += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/feature/include
+CFLAGS    += ${INCDIR_PREFIX}$(APPDIR)/frameworks/runtimes/feature/include
 
 CSRCS     += feature/src/system_bluetooth.c
 CSRCS     += feature/src/system_bluetooth_impl.c
@@ -671,6 +686,13 @@ CSRCS     += feature/src/system_bluetooth_bt_avrcpcontrol.c
 CSRCS     += feature/src/system_bluetooth_bt_avrcpcontrol_impl.c
 endif
 
+ifneq ($(CONFIG_BLUETOOTH_DFX),)
+  DFX_XML=$(APPDIR)/frameworks/system/dfx/src/onetrack/xml
+  BLUETOOTH_XML=$(APPDIR)/frameworks/connectivity/bluetooth/dfx/event_bt.xml
+context::
+	@cp $(BLUETOOTH_XML) $(DFX_XML)
+endif
+
 depend::
 	$(APPDIR)/../prebuilts/tools/rust/bin/jidl/jidl_gen_cpp \
 		$(APPDIR)/frameworks/connectivity/bluetooth/feature/jidl/bluetooth.jidl --out-dir \
@@ -684,9 +706,9 @@ ifeq ($(CONFIG_BLUETOOTH_A2DP_SINK), y)
 		$(APPDIR)/frameworks/connectivity/bluetooth/feature/src --header system_bluetooth_bt_a2dpsink.h --source system_bluetooth_bt_a2dpsink.c
 endif
 ifeq ($(CONFIG_BLUETOOTH_AVRCP_CONTROL), y)
-	@python3 $(APPDIR)/frameworks/runtimes/feature/tools/jidl/jsongensource.py \
-		$(APPDIR)/frameworks/connectivity/bluetooth/feature/jidl/bluetooth_bt_avrcpcontrol.jidl -out-dir \
-		$(APPDIR)/frameworks/connectivity/bluetooth/feature/src -header system_bluetooth_bt_avrcpcontrol.h -source system_bluetooth_bt_avrcpcontrol.c
+	$(APPDIR)/../prebuilts/tools/rust/bin/jidl/jidl_gen_cpp \
+		$(APPDIR)/frameworks/connectivity/bluetooth/feature/jidl/bluetooth_bt_avrcpcontrol.jidl --out-dir \
+		$(APPDIR)/frameworks/connectivity/bluetooth/feature/src --header system_bluetooth_bt_avrcpcontrol.h --source system_bluetooth_bt_avrcpcontrol.c
 endif
 else ifeq ($(CONFIG_BLUETOOTH_FEATURE_ASYNC), y)
 include $(APPDIR)/frameworks/runtimes/feature/Make.defs
@@ -713,4 +735,3 @@ BIN := $(APPDIR)/staging/libbluetooth.a
 endif
 
 include $(APPDIR)/Application.mk
-

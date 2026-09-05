@@ -33,25 +33,20 @@ typedef enum {
     EUV_RPMSG_SERVER_PIPE_OPENED = 1 << 2,
 } euv_pipe_status_t;
 
-typedef struct euv_pipe euv_pipe_t;
-
-typedef void (*euv_read_cb)(euv_pipe_t* handle, const uint8_t* buf, ssize_t size);
-typedef void (*euv_write_cb)(euv_pipe_t* handle, uint8_t* buf, int status);
-typedef void (*euv_alloc_cb)(euv_pipe_t* handle, uint8_t** buf, size_t* len);
-typedef void (*euv_connect_cb)(euv_pipe_t* handle, int status, void* user_data);
-typedef void (*euv_close_cb)(euv_pipe_t* handle);
-
-struct euv_pipe {
+typedef struct euv_pipe {
     uv_pipe_t cli_pipe;
     uv_pipe_t srv_pipe[2];
     euv_pipe_mode_t mode;
     euv_pipe_status_t status;
     void* data;
-    euv_close_cb close_cb;
-};
+} euv_pipe_t;
+
+typedef void (*euv_read_cb)(euv_pipe_t* handle, const uint8_t* buf, ssize_t size);
+typedef void (*euv_write_cb)(euv_pipe_t* handle, uint8_t* buf, int status);
+typedef void (*euv_alloc_cb)(euv_pipe_t* handle, uint8_t** buf, size_t* len);
+typedef void (*euv_connect_cb)(euv_pipe_t* handle, int status, void* user_data);
 
 euv_pipe_t* euv_pipe_open(uv_loop_t* loop, const char* path, euv_connect_cb cb, void* user_data);
-void euv_pipe_close_with_cb(euv_pipe_t* handle, euv_close_cb cb);
 void euv_pipe_close(euv_pipe_t* handle);
 euv_pipe_t* euv_pipe_connect(uv_loop_t* loop, const char* path, euv_connect_cb cb, void* user_data);
 #ifdef CONFIG_NET_RPMSG

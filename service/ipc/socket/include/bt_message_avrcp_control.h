@@ -83,7 +83,6 @@ BT_AVRCP_CONTROL_MESSAGE_START,
         struct {
             bt_address_t addr;
             uint8_t event;
-            uint8_t pad[1];
             uint32_t interval;
         } _bt_avrcp_control_register_notification;
     } bt_message_avrcp_control_t;

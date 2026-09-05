@@ -138,10 +138,6 @@ static void euv_close_callback(uv_handle_t* hdl)
 #endif
 
     if (handle->status == EUV_ALL_PIPE_CLOSED) {
-        if (handle->close_cb) {
-            handle->close_cb(handle);
-        }
-
         // all pipe closed, free handle
         BT_LOGD("%s, free handle 0x%p", __func__, handle);
         free(handle);
@@ -203,16 +199,6 @@ int euv_pipe_read_start(euv_pipe_t* handle, uint16_t read_size, euv_read_cb read
     euv_read_t* reader;
     int ret;
 
-    if (!handle) {
-        BT_LOGE("%s, handle null", __func__);
-        return -EINVAL;
-    }
-
-    if (uv_is_closing((uv_handle_t*)&handle->cli_pipe)) {
-        BT_LOGE("%s, handle %p is closing", __func__, handle);
-        return -EPERM;
-    }
-
     if (uv_is_active((uv_handle_t*)&handle->cli_pipe)) {
         BT_LOGE("%s, client is active", __func__);
         return 0;
@@ -246,12 +232,6 @@ int euv_pipe_read_stop(euv_pipe_t* handle)
         return -EINVAL;
     }
 
-    if (uv_is_closing((uv_handle_t*)&handle->cli_pipe)) {
-        /* uv_pipe is closing; cli_pipe.data has been set to handle for cleanup, so don't free it here */
-        BT_LOGE("%s, handle %p is closing", __func__, handle);
-        return -EPERM;
-    }
-
     if (handle->cli_pipe.data) {
         free(handle->cli_pipe.data);
         handle->cli_pipe.data = NULL;
@@ -259,6 +239,11 @@ int euv_pipe_read_stop(euv_pipe_t* handle)
 
     if (!uv_is_active((uv_handle_t*)&handle->cli_pipe)) {
         BT_LOGW("%s, cli_pipe is inactive", __func__);
+        return 0;
+    }
+
+    if (uv_is_closing((uv_handle_t*)&handle->cli_pipe)) {
+        BT_LOGE("%s, uv_is_closing", __func__);
         return 0;
     }
 
@@ -495,14 +480,13 @@ errout_with_handle:
     return NULL;
 }
 
-void euv_pipe_close_with_cb(euv_pipe_t* handle, euv_close_cb cb)
+void euv_pipe_close(euv_pipe_t* handle)
 {
     if (!handle) {
         BT_LOGE("%s, invalid arg", __func__);
         return;
     }
 
-    handle->close_cb = cb;
     if (handle->mode == EUV_PIPE_TYPE_UNKNOWN) {
         BT_LOGE("%s, unkown mode", __func__);
         handle->srv_pipe[EUV_PIPE_TYPE_SERVER_LOCAL].data = handle;
@@ -523,11 +507,6 @@ void euv_pipe_close_with_cb(euv_pipe_t* handle, euv_close_cb cb)
 
     handle->srv_pipe[handle->mode].data = handle;
     uv_close((uv_handle_t*)&handle->srv_pipe[handle->mode], euv_close_callback);
-}
-
-void euv_pipe_close(euv_pipe_t* handle)
-{
-    euv_pipe_close_with_cb(handle, NULL);
 }
 
 void euv_pipe_disconnect(euv_pipe_t* handle)

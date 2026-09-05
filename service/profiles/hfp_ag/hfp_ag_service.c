@@ -23,11 +23,12 @@
 #include <kvdb.h>
 #endif
 
-#include "audio_control.h"
+// #include "audio_control.h"
 #include "bt_hfp_ag.h"
 #include "bt_profile.h"
 #include "bt_vendor.h"
 #include "callbacks_list.h"
+#include "hfp_ag_audio.h"
 #include "hfp_ag_event.h"
 #include "hfp_ag_service.h"
 #include "hfp_ag_state_machine.h"
@@ -221,6 +222,7 @@ static void ag_startup(profile_on_startup_t on_startup)
 
     service->max_connections = CONFIG_HFP_AG_MAX_CONNECTIONS;
     service->ag_devices = bt_list_new((bt_list_free_cb_t)ag_device_delete);
+    service->callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
     if (!service->ag_devices || !service->callbacks) {
         status = BT_STATUS_NOMEM;
         goto fail;
@@ -242,6 +244,8 @@ static void ag_startup(profile_on_startup_t on_startup)
 fail:
     bt_list_free(service->ag_devices);
     service->ag_devices = NULL;
+    bt_callbacks_list_free(service->callbacks);
+    service->callbacks = NULL;
     pthread_mutex_destroy(&service->device_lock);
     on_startup(PROFILE_HFP_AG, false);
 }
@@ -260,6 +264,8 @@ static void ag_shutdown(profile_on_shutdown_t on_shutdown)
     g_ag_service.ag_devices = NULL;
     pthread_mutex_unlock(&g_ag_service.device_lock);
     pthread_mutex_destroy(&g_ag_service.device_lock);
+    bt_callbacks_list_free(g_ag_service.callbacks);
+    g_ag_service.callbacks = NULL;
     bt_sal_hfp_ag_cleanup();
     on_shutdown(PROFILE_HFP_AG, true);
 }
@@ -350,13 +356,13 @@ bool hfp_ag_on_sco_start(void)
     }
 
     if (!g_ag_service.offloading) {
-        audio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STARTED);
+        hfp_ag_on_started();
         return true;
     }
 
     if (hfp_ag_send_event(&device->addr, AG_OFFLOAD_START_REQ) != BT_STATUS_SUCCESS) {
         BT_LOGE("%s: failed to send msg", __func__);
-        audio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_START_FAIL);
+        hfp_ag_on_stopped();
         return true;
     }
 
@@ -376,13 +382,13 @@ bool hfp_ag_on_sco_stop(void)
     }
 
     if (!g_ag_service.offloading) {
-        audio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
+        hfp_ag_on_stopped();
         return true;
     }
 
     if (hfp_ag_send_event(&device->addr, AG_OFFLOAD_STOP_REQ) != BT_STATUS_SUCCESS) {
         BT_LOGE("%s: failed to send msg", __func__);
-        audio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
+        hfp_ag_on_stopped();
         return true;
     }
 
@@ -393,32 +399,12 @@ bool hfp_ag_on_sco_stop(void)
 
 static bt_status_t hfp_ag_init(void)
 {
-    bt_status_t ret;
-
-    if (g_ag_service.callbacks)
-        return BT_STATUS_SUCCESS;
-
-    g_ag_service.callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
-    if (!g_ag_service.callbacks) {
-        return BT_STATUS_NOMEM;
-    }
-
-    ret = audio_ctrl_init();
-    if (ret != BT_STATUS_SUCCESS) {
-        BT_LOGE("%s: failed to start audio control channel", __func__);
-        bt_callbacks_list_free(g_ag_service.callbacks);
-        g_ag_service.callbacks = NULL;
-        return ret;
-    }
-
-    return ret;
+    return BT_STATUS_SUCCESS;
 }
 
 static void hfp_ag_cleanup(void)
 {
-    audio_ctrl_cleanup();
-    bt_callbacks_list_free(g_ag_service.callbacks);
-    g_ag_service.callbacks = NULL;
+    hfp_ag_audio_cleanup();
 }
 
 static bt_status_t hfp_ag_startup(profile_on_startup_t cb)
@@ -471,7 +457,7 @@ static int hfp_ag_get_state(void)
 
 static void* hfp_ag_register_callbacks(void* remote, const hfp_ag_callbacks_t* callbacks)
 {
-    if (!g_ag_service.callbacks)
+    if (!g_ag_service.started)
         return NULL;
 
     return bt_remote_callbacks_register(g_ag_service.callbacks, remote, (void*)callbacks);
@@ -479,7 +465,7 @@ static void* hfp_ag_register_callbacks(void* remote, const hfp_ag_callbacks_t* c
 
 static bool hfp_ag_unregister_callbacks(void** remote, void* cookie)
 {
-    if (!g_ag_service.callbacks)
+    if (!g_ag_service.started)
         return false;
 
     return bt_remote_callbacks_unregister(g_ag_service.callbacks, remote, cookie);
@@ -681,6 +667,13 @@ bt_status_t hfp_ag_send_at_command(bt_address_t* addr, const char* at_command)
     return hfp_ag_send_message(msg);
 }
 
+bt_status_t hfp_ag_send_clcc_response(bt_address_t* addr, uint32_t index, hfp_call_direction_t dir,
+    hfp_ag_call_state_t state, hfp_call_mode_t mode, hfp_call_mpty_type_t mpty,
+    hfp_call_addrtype_t type, const char* number)
+{
+    return bt_sal_hfp_ag_clcc_response(addr, index, dir, state, mode, mpty, type, number);
+}
+
 bt_status_t hfp_ag_send_vendor_specific_at_command(bt_address_t* addr, const char* command, const char* value)
 {
     if (!command || !value)
@@ -694,13 +687,6 @@ bt_status_t hfp_ag_send_vendor_specific_at_command(bt_address_t* addr, const cha
     AG_MSG_ADD_STR(msg, 2, value, strlen(value));
 
     return hfp_ag_send_message(msg);
-}
-
-bt_status_t hfp_ag_send_clcc_response(bt_address_t* addr, uint32_t index, hfp_call_direction_t dir,
-    hfp_ag_call_state_t state, hfp_call_mode_t mode, hfp_call_mpty_type_t mpty,
-    hfp_call_addrtype_t type, const char* number)
-{
-    return bt_sal_hfp_ag_clcc_response(addr, index, dir, state, mode, mpty, type, number);
 }
 
 bt_status_t hfp_ag_send_cind_response(bt_address_t* addr, hfp_network_state_t network,
@@ -739,8 +725,8 @@ static const hfp_ag_interface_t agInterface = {
     .volume_control = hfp_ag_volume_control,
     .dial_response = hfp_ag_dial_result,
     .send_at_command = hfp_ag_send_at_command,
-    .send_vendor_specific_at_command = hfp_ag_send_vendor_specific_at_command,
     .send_clcc_response = hfp_ag_send_clcc_response,
+    .send_vendor_specific_at_command = hfp_ag_send_vendor_specific_at_command,
     .send_cind_response = hfp_ag_send_cind_response,
 };
 
@@ -812,16 +798,15 @@ void ag_service_notify_cmd_received(bt_address_t* addr, const char* at_cmd)
     AG_CALLBACK_FOREACH(g_ag_service.callbacks, at_cmd_cb, addr, at_cmd);
 }
 
-void ag_service_notify_vendor_specific_cmd(bt_address_t* addr, const char* command, uint16_t company_id, const char* value)
-{
-    BT_LOGD("%s, command:%s, value:%s", __func__, command, value);
-    AG_CALLBACK_FOREACH(g_ag_service.callbacks, vender_specific_at_cmd_cb, addr, command, company_id, value);
-}
-
 void ag_service_notify_clcc_cmd(bt_address_t* addr)
 {
     BT_LOGD("%s", __func__);
     AG_CALLBACK_FOREACH(g_ag_service.callbacks, clcc_cmd_cb, addr);
+}
+void ag_service_notify_vendor_specific_cmd(bt_address_t* addr, const char* command, uint16_t company_id, const char* value)
+{
+    BT_LOGD("%s, command:%s, value:%s", __func__, command, value);
+    AG_CALLBACK_FOREACH(g_ag_service.callbacks, vender_specific_at_cmd_cb, addr, command, company_id, value);
 }
 
 void ag_service_notify_cind_cmd(bt_address_t* addr)
@@ -925,7 +910,7 @@ void hfp_ag_on_hangup_call(bt_address_t* addr)
     hfp_ag_send_event(addr, AG_STACK_EVENT_HANGUP_CALL);
 }
 
-void hfp_ag_on_received_at_cmd(bt_address_t* addr, const char* at_string, uint16_t at_length)
+void hfp_ag_on_received_at_cmd(bt_address_t* addr, char* at_string, uint16_t at_length)
 {
     hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_STACK_EVENT_AT_COMMAND, addr);
     if (!msg)
@@ -992,11 +977,6 @@ void hfp_ag_on_received_nrec_request(bt_address_t* addr, uint8_t nrec)
 
     msg->data.valueint1 = nrec;
     hfp_ag_send_message(msg);
-}
-
-void hfp_ag_on_call_sync(bt_address_t* addr)
-{
-    hfp_ag_send_event(addr, AG_STACK_EVENT_CALL_SYNC);
 }
 
 static const profile_service_t hfp_ag_service = {

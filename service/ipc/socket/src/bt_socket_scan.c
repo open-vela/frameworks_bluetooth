@@ -277,18 +277,14 @@ int bt_socket_client_scan_callback(service_poll_t* poll,
         ble_scan_result_t* tmp = malloc(sizeof(ble_scan_result_t) + result->length);
         memcpy(tmp, result, sizeof(ble_scan_result_t));
         memcpy(tmp->adv_data, packet->scan_cb._on_scan_result_cb.adv_data, result->length);
-        CALLBACK_REMOTE(scan, scanner_callbacks_t,
-            on_scan_result,
-            tmp);
+        scan->callback->on_scan_result(scan, tmp);
         free(tmp);
         break;
     }
     case BT_LE_ON_SCAN_START_STATUS: {
         bt_scan_remote_t* scan = INT2PTR(bt_scan_remote_t*) packet->scan_cb._on_scan_status_cb.scanner;
 
-        CALLBACK_REMOTE(scan, scanner_callbacks_t,
-            on_scan_start_status,
-            packet->scan_cb._on_scan_status_cb.status);
+        scan->callback->on_scan_start_status(scan, packet->scan_cb._on_scan_status_cb.status);
         if (packet->scan_cb._on_scan_status_cb.status != 0)
             free(scan);
         break;
@@ -296,8 +292,7 @@ int bt_socket_client_scan_callback(service_poll_t* poll,
     case BT_LE_ON_SCAN_STOPPED: {
         bt_scan_remote_t* scan = INT2PTR(bt_scan_remote_t*) packet->scan_cb._on_scan_stopped_cb.scanner;
 
-        CALLBACK_REMOTE(scan, scanner_callbacks_t,
-            on_scan_stopped);
+        scan->callback->on_scan_stopped(scan);
         free(scan);
         break;
     }
@@ -321,9 +316,7 @@ int bt_socket_client_scan_callback(service_poll_t* poll,
                 memcpy(tmp, result, sizeof(ble_scan_result_t));
                 memcpy(tmp->adv_data, packet->scan_batch_cb.results[i].adv_data, len);
 
-                CALLBACK_REMOTE(scan, scanner_callbacks_t,
-                    on_scan_result,
-                    tmp);
+                scan->callback->on_scan_result(scan, tmp);
             }
             break;
         }

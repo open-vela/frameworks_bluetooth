@@ -47,6 +47,8 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
+#define CALLBACK_FOREACH(_list, _struct, _cback, ...) \
+    BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
 #define CBLIST (__async ? __async->adapter_callbacks : ins->adapter_callbacks)
 
 /****************************************************************************
@@ -272,6 +274,10 @@ void bt_socket_server_adapter_process(service_poll_t* poll,
         packet->adpt_r.status = BTSYMBOLS(bt_adapter_disable)(ins);
         break;
     }
+    case BT_ADAPTER_DISABLE_SAFE: {
+        packet->adpt_r.status = BTSYMBOLS(bt_adapter_disable_safe)(ins);
+        break;
+    }
     case BT_ADAPTER_ENABLE_LE: {
         packet->adpt_r.status = BTSYMBOLS(bt_adapter_enable_le)(ins);
         break;
@@ -476,12 +482,13 @@ void bt_socket_server_adapter_process(service_poll_t* poll,
     }
     case BT_ADAPTER_LE_REMOVE_WHITELIST: {
         packet->adpt_r.status = BTSYMBOLS(bt_adapter_le_remove_whitelist)(ins,
-            &packet->adpt_pl._bt_adapter_le_add_whitelist.addr);
+            &packet->adpt_pl._bt_adapter_le_remove_whitelist.addr);
         break;
     }
     case BT_ADAPTER_LE_ADD_WHITELIST: {
-        packet->adpt_r.status = BTSYMBOLS(bt_adapter_le_add_whitelist)(ins,
-            &packet->adpt_pl._bt_adapter_le_remove_whitelist.addr);
+        packet->adpt_r.status = BTSYMBOLS(bt_adapter_le_add_whitelist_with_type)(ins,
+            &packet->adpt_pl._bt_adapter_le_add_whitelist.addr,
+            (ble_addr_type_t)packet->adpt_pl._bt_adapter_le_add_whitelist.type);
         break;
     }
     case BT_ADAPTER_REGISTER_CALLBACK: {

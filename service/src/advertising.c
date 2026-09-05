@@ -24,6 +24,7 @@
 #include "bt_list.h"
 #include "index_allocator.h"
 #include "sal_interface.h"
+#include "sal_le_advertise_interface.h"
 #include "service_loop.h"
 #include "utils/log.h"
 
@@ -175,6 +176,7 @@ static void start_advertising_timeout(service_timer_t* timer, void* userdata)
         return;
     }
 
+    syslog(LOG_ERR, "BT adv start timeout: adv_id=%u adver=%p\n", adver->adv_id, adver);
     delete_advertiser(adver);
     adver->callbacks.on_advertising_start(get_adver(adver), 0, BT_ADV_STATUS_START_TIMEOUT);
     destroy_advertiser(adver);
@@ -199,10 +201,11 @@ static void advertiser_start_event(void* data)
     }
 
     adver->adv_id = adv_id + 1;
-    if (bt_sal_le_start_adv(0, adver->adv_id, &adv_info->params, adv_info->adv_data,
+    if (bt_sal_le_start_adv(PRIMARY_ADAPTER, adver->adv_id, &adv_info->params, adv_info->adv_data,
             adv_info->adv_len, adv_info->scan_rsp_data,
             adv_info->scan_rsp_len)
         != BT_STATUS_SUCCESS) {
+        syslog(LOG_ERR, "BT adv start request failed: adv_id=%u adver=%p\n", adver->adv_id, adver);
         adver->callbacks.on_advertising_start(get_adver(adver), 0, BT_ADV_STATUS_STACK_ERR);
         goto fail;
     }
@@ -241,7 +244,7 @@ static void advertiser_stop_event(void* data)
         }
     }
 
-    bt_sal_le_stop_adv(0, adver->adv_id);
+    bt_sal_le_stop_adv(PRIMARY_ADAPTER, adver->adv_id);
 }
 
 static void advertiser_notify_state(void* data)
@@ -255,6 +258,8 @@ static void advertiser_notify_state(void* data)
 
     adver = get_advertiser_if_exist(advstate->adv_id);
     if (!adver) {
+        syslog(LOG_WARNING, "BT adv state for unknown id: adv_id=%u state=%u\n",
+            advstate->adv_id, advstate->state);
         goto exit;
     }
 
@@ -283,7 +288,7 @@ static void advertisers_cleanup(void* data)
     list_for_every_safe(&adv_manager.advertiser_list, node, tmp)
     {
         advertiser_t* adver = (advertiser_t*)node;
-        bt_sal_le_stop_adv(0, adver->adv_id);
+        bt_sal_le_stop_adv(PRIMARY_ADAPTER, adver->adv_id);
         delete_advertiser(adver);
         adver->callbacks.on_advertising_stopped(get_adver(adver), adver->adv_id);
         destroy_advertiser(adver);
@@ -388,5 +393,5 @@ void adv_manager_init(void)
 
 void adv_manager_cleanup(void)
 {
-    do_in_service_loop(advertisers_cleanup, NULL);
+    advertisers_cleanup(NULL);
 }

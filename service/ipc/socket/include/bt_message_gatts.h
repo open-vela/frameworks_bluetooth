@@ -71,7 +71,7 @@ BT_GATT_SERVER_MESSAGE_START,
     typedef struct {
         bt_instance_t* ins;
         gatts_callbacks_t* callbacks;
-        void* cookie;
+        uint64_t cookie;
         void** user_phandle;
         bt_list_t* db_list;
     } bt_gatts_remote_t;
@@ -117,6 +117,7 @@ BT_GATT_SERVER_MESSAGE_START,
 
         struct {
             uint64_t handle; /* gatts_handle_t */
+            int32_t attr_num_offset;
             int32_t attr_num;
             struct {
                 bt_uuid_t uuid;

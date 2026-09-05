@@ -238,4 +238,42 @@ static inline bool actions_lea_offload_stop_builder(lea_offload_config_t* config
     return true;
 }
 
+static inline bool actions_dlf_enable_command_builder(le_dlf_config_t* config, uint8_t* data, size_t* size)
+{
+    uint8_t* param = data;
+
+    UINT8_TO_STREAM(param, 0x3f); // fill ogf
+    UINT16_TO_STREAM(param, 0x00d7); // fill ocf
+
+    // vendor specified fields
+    UINT8_TO_STREAM(param, 0x05); // data length
+    UINT8_TO_STREAM(param, 0x01); // subcode
+    UINT8_TO_STREAM(param, (uint8_t)config->connection_handle);
+    UINT8_TO_STREAM(param, 0x00);
+    UINT16_TO_STREAM(param, config->dlf_timeout);
+
+    *size = param - data;
+
+    return true;
+}
+
+static inline bool actions_dlf_disable_command_builder(le_dlf_config_t* config, uint8_t* data, size_t* size)
+{
+    uint8_t* param = data;
+
+    UINT8_TO_STREAM(param, 0x3f); // fill ogf
+    UINT16_TO_STREAM(param, 0x00d7); // fill ocf
+
+    // vendor specified fields
+    UINT8_TO_STREAM(param, 0x05); // data length
+    UINT8_TO_STREAM(param, 0x01); // subcode
+    UINT8_TO_STREAM(param, (uint8_t)config->connection_handle);
+    UINT8_TO_STREAM(param, 0x01);
+    UINT16_TO_STREAM(param, 0x0000);
+
+    *size = param - data;
+
+    return true;
+}
+
 #endif /* _BT_CONTROLLER_VENDOR_H__ */
