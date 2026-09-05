@@ -23,11 +23,11 @@
 #include <kvdb.h>
 #endif
 
-#include "audio_control.h"
 #include "bt_hfp_hf.h"
 #include "bt_profile.h"
 #include "bt_vendor.h"
 #include "callbacks_list.h"
+#include "hfp_hf_audio.h"
 #include "hfp_hf_service.h"
 #include "hfp_hf_state_machine.h"
 #include "sal_hfp_hf_interface.h"
@@ -197,6 +197,7 @@ static void hf_startup(profile_on_startup_t on_startup)
 
     service->max_connections = CONFIG_HFP_HF_MAX_CONNECTIONS;
     service->hf_devices = bt_list_new((bt_list_free_cb_t)hf_device_delete);
+    service->callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
     if (!service->hf_devices || !service->callbacks) {
         status = BT_STATUS_NOMEM;
         goto fail;
@@ -213,6 +214,8 @@ static void hf_startup(profile_on_startup_t on_startup)
 fail:
     bt_list_free(service->hf_devices);
     service->hf_devices = NULL;
+    bt_callbacks_list_free(service->callbacks);
+    service->callbacks = NULL;
     on_startup(PROFILE_HFP_HF, false);
 }
 
@@ -228,6 +231,8 @@ static void hf_shutdown(profile_on_shutdown_t on_shutdown)
     service->started = false;
     bt_list_free(service->hf_devices);
     service->hf_devices = NULL;
+    bt_callbacks_list_free(service->callbacks);
+    service->callbacks = NULL;
     bt_sal_hfp_hf_cleanup();
     on_shutdown(PROFILE_HFP_HF, true);
 }
@@ -325,18 +330,17 @@ bool hfp_hf_on_sco_start(void)
     }
 
     if (!g_hfp_service.offloading) {
-        audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STARTED);
+        hfp_hf_on_started();
         return true;
     }
 
     if (hfp_hf_send_event(&device->addr, HF_OFFLOAD_START_REQ) != BT_STATUS_SUCCESS) {
         BT_LOGE("%s: failed to send msg", __func__);
-        audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
+        hfp_hf_on_stopped();
         return true;
     }
 
     BT_LOGD("%s: send sco offload start", __func__);
-    /* AUDIO_CTRL_EVT_STARTED would be generated at HF_OFFLOAD_START_EVT */
     return true;
 }
 
@@ -351,49 +355,28 @@ bool hfp_hf_on_sco_stop(void)
     }
 
     if (!g_hfp_service.offloading) {
-        audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
+        hfp_hf_on_stopped();
         return true;
     }
 
     if (hfp_hf_send_event(&device->addr, HF_OFFLOAD_STOP_REQ) != BT_STATUS_SUCCESS) {
         BT_LOGE("%s: failed to send msg", __func__);
-        audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
+        hfp_hf_on_stopped();
         return true;
     }
 
     BT_LOGD("%s: send sco offload stop", __func__);
-    /* AUDIO_CTRL_EVT_STOPPED would be generated at HF_OFFLOAD_STOP_EVT */
     return true;
 }
 
 static bt_status_t hfp_hf_init(void)
 {
-    bt_status_t ret;
-
-    if (g_hfp_service.callbacks)
-        return BT_STATUS_SUCCESS;
-
-    g_hfp_service.callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
-    if (!g_hfp_service.callbacks) {
-        return BT_STATUS_NOMEM;
-    }
-
-    ret = audio_ctrl_init(PROFILE_HFP_HF);
-    if (ret != BT_STATUS_SUCCESS) {
-        BT_LOGE("%s: failed to start audio control channel", __func__);
-        bt_callbacks_list_free(g_hfp_service.callbacks);
-        g_hfp_service.callbacks = NULL;
-        return ret;
-    }
-
-    return ret;
+    return BT_STATUS_SUCCESS;
 }
 
 static void hfp_hf_cleanup(void)
 {
-    audio_ctrl_cleanup(PROFILE_HFP_HF);
-    bt_callbacks_list_free(g_hfp_service.callbacks);
-    g_hfp_service.callbacks = NULL;
+    hfp_hf_audio_cleanup();
 }
 
 static bt_status_t hfp_hf_startup(profile_on_startup_t cb)
@@ -446,7 +429,7 @@ static int hfp_hf_get_state(void)
 
 static void* hfp_hf_register_callbacks(void* remote, const hfp_hf_callbacks_t* callbacks)
 {
-    if (!g_hfp_service.callbacks)
+    if (!g_hfp_service.started)
         return NULL;
 
     return bt_remote_callbacks_register(g_hfp_service.callbacks, remote, (void*)callbacks);
@@ -454,7 +437,7 @@ static void* hfp_hf_register_callbacks(void* remote, const hfp_hf_callbacks_t* c
 
 static bool hfp_hf_unregister_callbacks(void** remote, void* cookie)
 {
-    if (!g_hfp_service.callbacks)
+    if (!g_hfp_service.started)
         return false;
 
     return bt_remote_callbacks_unregister(g_hfp_service.callbacks, remote, cookie);

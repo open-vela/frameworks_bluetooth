@@ -78,13 +78,13 @@ typedef enum {
     AG_STACK_EVENT_CALL_CONTROL,
     AG_STACK_EVENT_AT_COMMAND,
     AG_STACK_EVENT_SEND_DTMF,
-    AG_STACK_EVENT_NREC_REQ,
-    AG_STACK_EVENT_CALL_SYNC
+    AG_STACK_EVENT_NREC_REQ
 } hfp_ag_event_t;
 
 typedef struct
 {
     bt_address_t addr;
+    void* func;
     uint32_t valueint1;
     uint32_t valueint2;
     uint32_t valueint3;

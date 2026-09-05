@@ -81,54 +81,6 @@ static struct bt_le_ext_adv_cb g_adv_cb = {
     .connected = ext_adv_connected,
 };
 
-static bt_status_t parse_bt_adv_data(uint8_t* raw, uint16_t raw_len,
-    struct bt_data* out, size_t out_max, size_t* out_size)
-{
-    size_t index;
-    uint8_t item_len;
-
-    if (!out || !out_size || out_max == 0) {
-        return BT_STATUS_PARM_INVALID;
-    }
-
-    *out_size = 0;
-
-    if (!raw || raw_len == 0) {
-        return BT_STATUS_SUCCESS;
-    }
-
-    for (index = 0; index < raw_len;) {
-        item_len = raw[index];
-        if (item_len == 0) {
-            break;
-        }
-
-        if (item_len < 2) {
-            BT_LOGE("%s, invalid adv data item len:%d", __func__, item_len);
-            return BT_STATUS_PARM_INVALID;
-        }
-
-        if (index + 1 + item_len > raw_len) {
-            BT_LOGE("%s, adv data overflow: raw_len=%d idx=%d item_len=%d", __func__,
-                raw_len, index, item_len);
-            return BT_STATUS_PARM_INVALID;
-        }
-
-        if (*out_size >= out_max) {
-            BT_LOGE("too many segments: out_max=%d idx=%d", out_max, index);
-            return BT_STATUS_PARM_INVALID;
-        }
-
-        out[*out_size].data_len = item_len - 1;
-        out[*out_size].type = raw[index + 1];
-        out[*out_size].data = &raw[index + 2];
-        index += out[*out_size].data_len + 2;
-        (*out_size)++;
-    }
-
-    return BT_STATUS_SUCCESS;
-}
-
 static void ext_adv_terminated_cb(struct bt_le_ext_adv* adv)
 {
     int index;
@@ -239,22 +191,6 @@ static bt_status_t zblue_le_ext_convert_param(ble_adv_params_t* params, struct b
     default:
         BT_LOGE("%s, le ext adv convert fail, invalid channel_map:%d", __func__, params->channel_map);
         return BT_STATUS_PARM_INVALID;
-    }
-
-    switch (params->filter_policy) {
-    case BT_LE_ADV_FILTER_WHITE_LIST_FOR_SCAN:
-        param->options |= BT_LE_ADV_OPT_FILTER_SCAN_REQ;
-        break;
-    case BT_LE_ADV_FILTER_WHITE_LIST_FOR_CONNECTION:
-        param->options |= BT_LE_ADV_OPT_FILTER_CONN;
-        break;
-    case BT_LE_ADV_FILTER_WHITE_LIST_FOR_ALL:
-        param->options |= BT_LE_ADV_OPT_FILTER_SCAN_REQ;
-        param->options |= BT_LE_ADV_OPT_FILTER_CONN;
-        break;
-    case BT_LE_ADV_FILTER_WHITE_LIST_FOR_NONE:
-    default:
-        param->options |= BT_LE_ADV_OPT_NONE;
     }
 
     param->interval_min = params->interval;
@@ -384,6 +320,7 @@ static bt_status_t zblue_le_ext_adv_set_data(struct bt_le_ext_adv* adv, uint8_t*
 
     return BT_STATUS_SUCCESS;
 }
+
 static sal_adapter_req_t* sal_adapter_req(bt_controller_id_t id, uint8_t adv_id, sal_func_t func)
 {
     sal_adapter_req_t* req = calloc(sizeof(sal_adapter_req_t), 1);
@@ -498,59 +435,30 @@ static void STACK_CALL(start_adv)(void* args)
     sal_adapter_req_t* req = args;
     struct bt_le_ext_adv* adv = NULL;
     int ret;
-    struct bt_data ad[CONFIG_BT_EXT_ADV_MAX_ADV_SEGMENT] = { 0 };
-    struct bt_data sd[CONFIG_BT_EXT_ADV_MAX_ADV_SEGMENT] = { 0 };
-    size_t ad_size = 0;
-    size_t sd_size = 0;
-    bool ext_supported = bt_le_ext_adv_is_supported();
 
-    ret = parse_bt_adv_data(req->adpt.start_adv.adv_data, req->adpt.start_adv.adv_len,
-        ad, ARRAY_SIZE(ad), &ad_size);
+    ret = zblue_le_ext_create(&req->adpt.start_adv.param, &adv, req->adv_id);
     if (ret) {
-        BT_LOGE("%s, parse adv_data fail, err:%d", __func__, ret);
+        BT_LOGE("%s, zblue le ext adv create fail, err:%d", __func__, ret);
+        ret = BT_STATUS_FAIL;
         goto done;
     }
 
-    ret = parse_bt_adv_data(req->adpt.start_adv.scan_rsp_data, req->adpt.start_adv.scan_rsp_len,
-        sd, ARRAY_SIZE(sd), &sd_size);
+    ret = zblue_le_ext_adv_set_data(adv, req->adpt.start_adv.adv_data, req->adpt.start_adv.adv_len,
+        req->adpt.start_adv.scan_rsp_data, req->adpt.start_adv.scan_rsp_len);
     if (ret) {
-        BT_LOGE("%s, parse scan_rsp_data fail, ret:%d", __func__, ret);
+        BT_LOGE("%s, le ext adv set fail, err:%d", __func__, ret);
+        zblue_le_ext_delete(zblue_le_ext_find_adv(req->adv_id));
+        ret = BT_STATUS_FAIL;
         goto done;
     }
 
-    if (ext_supported) {
-        ret = zblue_le_ext_create(&req->adpt.start_adv.param, &adv, req->adv_id);
-        if (ret) {
-            BT_LOGE("%s, zblue le ext adv create fail, err:%d", __func__, ret);
-            ret = BT_STATUS_FAIL;
-            goto done;
-        }
-
-        ret = bt_le_ext_adv_set_data(adv, ad_size > 0 ? ad : NULL, ad_size,
-            sd_size > 0 ? sd : NULL, sd_size);
-        if (ret) {
-            BT_LOGE("%s, le ext adv set fail, err:%d", __func__, ret);
-            zblue_le_ext_delete(zblue_le_ext_find_adv(req->adv_id));
-            ret = BT_STATUS_FAIL;
-            goto done;
-        }
-
-        ret = bt_le_ext_adv_start(adv, &req->adpt.start_adv.ext_param);
-        if (ret) {
-            BT_LOGE("%s, le ext adv start fail, err:%d", __func__, ret);
-            bt_le_ext_adv_stop(adv);
-            zblue_le_ext_delete(zblue_le_ext_find_adv(req->adv_id));
-            ret = BT_STATUS_FAIL;
-            goto done;
-        }
-    } else {
-        ret = bt_le_adv_start(&req->adpt.start_adv.param, ad_size > 0 ? ad : NULL, ad_size,
-            sd_size > 0 ? sd : NULL, sd_size);
-        if (ret) {
-            BT_LOGE("%s, legacy adv start fail, err:%d", __func__, ret);
-            ret = BT_STATUS_FAIL;
-            goto done;
-        }
+    ret = bt_le_ext_adv_start(adv, &req->adpt.start_adv.ext_param);
+    if (ret) {
+        BT_LOGE("%s, le ext adv start fail, err:%d", __func__, ret);
+        bt_le_ext_adv_stop(adv);
+        zblue_le_ext_delete(zblue_le_ext_find_adv(req->adv_id));
+        ret = BT_STATUS_FAIL;
+        goto done;
     }
 
     advertising_on_state_changed(req->adv_id, LE_ADVERTISING_STARTED);
@@ -568,7 +476,6 @@ bt_status_t bt_sal_le_start_adv(bt_controller_id_t id, uint8_t adv_id, ble_adv_p
     sal_adapter_req_t* req;
     int ret;
     bool ext_adv;
-    bool ext_supported;
 
     req = sal_adapter_req(id, adv_id, STACK_CALL(start_adv));
     if (!req) {
@@ -583,18 +490,10 @@ bt_status_t bt_sal_le_start_adv(bt_controller_id_t id, uint8_t adv_id, ble_adv_p
         goto error;
     }
 
-    ext_supported = bt_le_ext_adv_is_supported();
     ext_adv = (req->adpt.start_adv.param.options & BT_LE_ADV_OPT_EXT_ADV) ? true : false;
 
-    if (ext_adv && !ext_supported) {
-        BT_LOGE("%s, controller not support ext adv", __func__);
-        ret = BT_STATUS_UNSUPPORTED;
-        goto error;
-    }
-
-    if (((!(req->adpt.start_adv.param.options & BT_LE_ADV_OPT_SCANNABLE) && ext_adv)
-            || !ext_adv)
-        && adv_data && adv_len > 0) {
+    if ((!(req->adpt.start_adv.param.options & BT_LE_ADV_OPT_SCANNABLE) && ext_adv)
+        || !ext_adv) {
         req->adpt.start_adv.adv_data = malloc(adv_len);
         if (!req->adpt.start_adv.adv_data) {
             BT_LOGE("%s, malloc fail", __func__);
@@ -609,9 +508,8 @@ bt_status_t bt_sal_le_start_adv(bt_controller_id_t id, uint8_t adv_id, ble_adv_p
         req->adpt.start_adv.adv_len = 0;
     }
 
-    if ((((req->adpt.start_adv.param.options & BT_LE_ADV_OPT_SCANNABLE) && ext_adv)
-            || !ext_adv)
-        && scan_rsp_data && scan_rsp_len > 0) {
+    if (((req->adpt.start_adv.param.options & BT_LE_ADV_OPT_SCANNABLE) && ext_adv)
+        || !ext_adv) {
         req->adpt.start_adv.scan_rsp_data = malloc(scan_rsp_len);
         if (!req->adpt.start_adv.scan_rsp_data) {
             BT_LOGE("%s, malloc fail", __func__);
@@ -639,26 +537,13 @@ error:
         free(req->adpt.start_adv.scan_rsp_data);
     free(req);
     return ret;
-}
+};
 
 static void STACK_CALL(stop_adv)(void* args)
 {
     sal_adapter_req_t* req = args;
     struct bt_le_adv_set* adv_set;
     int ret;
-    bool ext_supported;
-
-    ext_supported = bt_le_ext_adv_is_supported();
-
-    if (!ext_supported) {
-        ret = bt_le_adv_stop();
-        if (ret) {
-            BT_LOGE("%s, legacy adv stop fail", __func__);
-            return;
-        } else {
-            goto stopped;
-        }
-    }
 
     adv_set = zblue_le_ext_find_adv(req->adv_id);
     if (!adv_set) {
@@ -678,7 +563,6 @@ static void STACK_CALL(stop_adv)(void* args)
         return;
     }
 
-stopped:
     advertising_on_state_changed(req->adv_id, LE_ADVERTISING_STOPPED);
 }
 

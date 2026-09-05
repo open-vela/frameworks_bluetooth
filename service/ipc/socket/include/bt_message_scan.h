@@ -41,8 +41,8 @@ BT_SCAN_MESSAGE_START,
 #endif
 
 #include "bluetooth.h"
-#include "bt_ipc_code.h"
 #include "bt_le_scan.h"
+#include "bt_ipc_code.h"
 
     enum {
         BLE_SCAN_SUBCODE_START = 0,
@@ -83,7 +83,7 @@ BT_SCAN_MESSAGE_START,
     typedef struct {
         uint64_t remote;
         bt_instance_t* ins;
-        scanner_callbacks_t* callbacks;
+        scanner_callbacks_t* callback;
         bt_message_batch_scan_result_callbacks_t scan_result_cache;
         void* flush_ctrl;
     } bt_scan_remote_t;

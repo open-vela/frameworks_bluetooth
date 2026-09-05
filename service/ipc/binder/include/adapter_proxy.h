@@ -60,7 +60,7 @@ bt_status_t BpBtAdapter_SetLeIOCapability(BpBtAdapter* bpBinder, uint32_t le_io_
 uint32_t BpBtAdapter_getLeIOCapability(BpBtAdapter* bpBinder);
 bt_status_t BpBtAdapter_getLeAddress(BpBtAdapter* bpBinder, bt_address_t* addr, ble_addr_type_t* type);
 bt_status_t BpBtAdapter_setLeAddress(BpBtAdapter* bpBinder, bt_address_t* addr);
-bt_status_t BpBtAdapter_setLeIdentityAddress(BpBtAdapter* bpBinder, bt_address_t* addr, bool public);
+bt_status_t BpBtAdapter_setLeIdentityAddress(BpBtAdapter* bpBinder, bt_address_t* addr, bool is_public);
 bt_status_t BpBtAdapter_setLeAppearance(BpBtAdapter* bpBinder, uint16_t appearance);
 uint16_t BpBtAdapter_getLeAppearance(BpBtAdapter* bpBinder);
 bt_status_t BpBtAdapter_getBondedDevices(BpBtAdapter* bpBinder, bt_address_t** addr, int* num, bt_allocator_t allocator);

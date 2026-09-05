@@ -24,6 +24,9 @@
 #include "bt_tools.h"
 
 #define THROUGHTPUT_HORIZON 5
+#define ATT_HEADER_SIZE 3
+#define MAX_ATTRIBUTE_SIZE 512
+#define RW_CHAR_SIZE_DEFAULT 11
 
 typedef struct {
     struct list_node node;
@@ -45,6 +48,8 @@ static int indicate_cus_cmd(void* handle, int argc, char* argv[]);
 static int read_phy_cmd(void* handle, int argc, char* argv[]);
 static int update_phy_cmd(void* handle, int argc, char* argv[]);
 static int throughput_cmd(void* handle, int argc, char* argv[]);
+
+static gatts_device_t* find_gatts_device(bt_address_t* addr);
 
 static gatts_handle_t g_dis_handle = NULL;
 static gatts_handle_t g_bas_handle = NULL;
@@ -106,9 +111,15 @@ enum {
     IOT_SERVICE_TX_CHR_CCC_ID,
     IOT_SERVICE_RX_CHR_ID,
     IOT_SERVICE_READ_CHR_ID,
+    IOT_SERVICE_PTS_MTU_CHR_ID,
+    IOT_SERVICE_SIGN_RW_CHR_ID,
+    IOT_SERVICE_AUTH_CHR_ID,
 };
 
-uint8_t read_char_value[] = { 'H', 'e', 'l', 'l', 'o', ' ', 'V', 'E', 'L', 'A', '!' };
+uint8_t read_pts_char_value[] = { 'H', 'e', 'l', 'l', 'o', ' ', 'P', 'T', 'S', '!' };
+uint8_t read_only_char_value[] = { 'H', 'e', 'l', 'l', 'o', ' ', 'V', 'E', 'L', 'A', '!' };
+uint8_t read_write_char_value[MAX_ATTRIBUTE_SIZE] = { 'H', 'e', 'l', 'l', 'o', ' ', 'V', 'E', 'L', 'A', '!' };
+uint16_t read_write_char_len = RW_CHAR_SIZE_DEFAULT;
 
 uint16_t tx_char_ccc_changed(void* srv_handle, bt_address_t* addr, uint16_t attr_handle, const uint8_t* value, uint16_t length, uint16_t offset)
 {
@@ -119,18 +130,73 @@ uint16_t tx_char_ccc_changed(void* srv_handle, bt_address_t* addr, uint16_t attr
     return length;
 }
 
+uint16_t rx_pts_char_on_read(void* srv_handle, bt_address_t* addr, uint16_t attr_handle, uint32_t req_handle)
+{
+    gatts_device_t* device;
+    uint16_t payload_len;
+    uint16_t mtu = 23;
+
+    PRINT_ADDR("gatts service PTS RX char received read request, addr:%s", addr);
+
+    device = find_gatts_device(addr);
+    if (device) {
+        mtu = device->gatt_mtu;
+    }
+
+    /* GATT/SR/GAC/BV-01-C: return payload len = ATT_MTU - 1 */
+    payload_len = mtu + ATT_HEADER_SIZE - 1;
+
+    /* Allocate response buffer from heap */
+    uint8_t* rsp_data = (uint8_t*)malloc(payload_len);
+    if (!rsp_data) {
+        PRINT("malloc rsp_data failed, size: %" PRIu16, payload_len);
+        return 0;
+    }
+
+    memset(rsp_data, 0xAA, payload_len);
+
+    bt_status_t ret = bt_gatts_response(srv_handle, addr, req_handle, rsp_data, payload_len);
+    PRINT("gatts service PTS RX char response. status: %d", ret);
+
+    free(rsp_data);
+    return 0;
+}
+
 uint16_t rx_char_on_read(void* srv_handle, bt_address_t* addr, uint16_t attr_handle, uint32_t req_handle)
 {
+    gatts_device_t* device;
+    uint16_t mtu = 23;
+
     PRINT_ADDR("gatts service RX char received read request, addr:%s", addr);
-    bt_status_t ret = bt_gatts_response(srv_handle, addr, req_handle, read_char_value, sizeof(read_char_value));
+
+    device = find_gatts_device(addr);
+    if (device) {
+        mtu = device->gatt_mtu;
+    }
+
+    bt_status_t ret = bt_gatts_response(srv_handle, addr, req_handle, read_write_char_value,
+        MIN(read_write_char_len, mtu));
     PRINT("gatts service RX char response. status: %d", ret);
     return 0;
 }
 
 uint16_t rx_char_on_write(void* srv_handle, bt_address_t* addr, uint16_t attr_handle, const uint8_t* value, uint16_t length, uint16_t offset)
 {
+    if (offset + length > sizeof(read_write_char_value)) {
+        PRINT("invalid offset (%u) or too long length (%u)", offset, length);
+        return 0;
+    }
+
+    if (!offset) {
+        memset(read_write_char_value, 0, length);
+    }
+
+    memcpy(read_write_char_value + offset, value, length);
+    read_write_char_len = offset + length;
+
     PRINT_ADDR("gatts service RX char received write request, addr:%s", addr);
     lib_dumpbuffer("write value:", value, length);
+
     return length;
 }
 
@@ -176,9 +242,15 @@ static gatt_attr_db_t s_iot_attr_db[] = {
     /* Client Characteristic Configuration Descriptor - 0x2902 */
     GATT_H_CCCD(GATT_PERM_READ | GATT_PERM_WRITE | GATT_PERM_AUTHEN_REQUIRED, tx_char_ccc_changed, IOT_SERVICE_TX_CHR_CCC_ID),
     /* Private Characteristic for RX - 0xFF02 */
-    GATT_H_CHARACTERISTIC_USER_RSP(BT_UUID_DECLARE_16(0xFF02), GATT_PROP_READ | GATT_PROP_WRITE_NR, GATT_PERM_READ | GATT_PERM_WRITE, rx_char_on_read, rx_char_on_write, IOT_SERVICE_RX_CHR_ID),
+    GATT_H_CHARACTERISTIC_USER_RSP(BT_UUID_DECLARE_16(0xFF02), GATT_PROP_READ | GATT_PROP_WRITE_NR | GATT_PROP_WRITE, GATT_PERM_READ | GATT_PERM_WRITE, rx_char_on_read, rx_char_on_write, IOT_SERVICE_RX_CHR_ID),
     /* Private Characteristic for read operation demo - 0xFF05 */
-    GATT_H_CHARACTERISTIC_AUTO_RSP(BT_UUID_DECLARE_16(0xFF05), GATT_PROP_READ, GATT_PERM_READ, read_char_value, sizeof(read_char_value), IOT_SERVICE_READ_CHR_ID),
+    GATT_H_CHARACTERISTIC_AUTO_RSP(BT_UUID_DECLARE_16(0xFF05), GATT_PROP_READ, GATT_PERM_READ, read_only_char_value, sizeof(read_only_char_value), IOT_SERVICE_READ_CHR_ID),
+    /* PTS: MTU-1 Read characteristic - 0xFF06 */
+    GATT_H_CHARACTERISTIC_USER_RSP(BT_UUID_DECLARE_16(0xFF06), GATT_PROP_READ, GATT_PERM_READ, rx_pts_char_on_read, NULL, IOT_SERVICE_PTS_MTU_CHR_ID),
+    /* Private Characteristic for read and Signed write demo - 0xFF07 */
+    GATT_H_CHARACTERISTIC_USER_RSP(BT_UUID_DECLARE_16(0xFF07), GATT_PROP_READ | GATT_PROP_SIGNED_WRITE, GATT_PERM_READ | GATT_PERM_WRITE, rx_char_on_read, rx_char_on_write, IOT_SERVICE_SIGN_RW_CHR_ID),
+    /* Private Characteristic for Auth R/W demo - 0xFF08 */
+    GATT_H_CHARACTERISTIC_USER_RSP(BT_UUID_DECLARE_16(0xFF08), GATT_PROP_READ | GATT_PROP_WRITE, GATT_PERM_READ | GATT_PERM_WRITE | GATT_PERM_AUTHEN_REQUIRED, rx_char_on_read, rx_char_on_write, IOT_SERVICE_AUTH_CHR_ID),
 };
 
 static gatt_srv_db_t s_iot_service_db = {

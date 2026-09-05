@@ -118,3 +118,69 @@ bt_status_t bt_avrcp_control_send_passthrough_cmd(bt_instance_t* ins, bt_address
 
     return packet.avrcp_control_r.status;
 }
+
+bt_status_t bt_avrcp_control_get_unit_info(bt_instance_t* ins, bt_address_t* addr)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    memcpy(&packet.avrcp_control_pl._bt_avrcp_control_get_unit_info.addr, addr, sizeof(packet.avrcp_control_pl._bt_avrcp_control_get_unit_info.addr));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_AVRCP_CT_GET_UNIT_INFO_CMD);
+    if (status != BT_STATUS_SUCCESS) {
+        return status;
+    }
+
+    return packet.avrcp_control_r.status;
+}
+
+bt_status_t bt_avrcp_control_get_subunit_info(bt_instance_t* ins, bt_address_t* addr)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    memcpy(&packet.avrcp_control_pl._bt_avrcp_control_get_subunit_info.addr, addr, sizeof(packet.avrcp_control_pl._bt_avrcp_control_get_subunit_info.addr));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_AVRCP_CT_GET_SUBUNIT_INFO_CMD);
+    if (status != BT_STATUS_SUCCESS) {
+        return status;
+    }
+
+    return packet.avrcp_control_r.status;
+}
+
+bt_status_t bt_avrcp_control_get_playback_state(bt_instance_t* ins, bt_address_t* addr)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    memcpy(&packet.avrcp_control_pl._bt_avrcp_control_get_playback_state.addr, addr, sizeof(packet.avrcp_control_pl._bt_avrcp_control_get_playback_state.addr));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_AVRCP_CT_GET_PLAYBACK_STATE_CMD);
+    if (status != BT_STATUS_SUCCESS) {
+        return status;
+    }
+
+    return packet.avrcp_control_r.status;
+}
+
+bt_status_t bt_avrcp_control_register_notification(bt_instance_t* ins, bt_address_t* addr, uint8_t event, uint32_t interval)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    memcpy(&packet.avrcp_control_pl._bt_avrcp_control_register_notification.addr, addr, sizeof(packet.avrcp_control_pl._bt_avrcp_control_register_notification.addr));
+    packet.avrcp_control_pl._bt_avrcp_control_register_notification.event = event;
+    packet.avrcp_control_pl._bt_avrcp_control_register_notification.interval = interval;
+    status = bt_socket_client_sendrecv(ins, &packet, BT_AVRCP_CT_REGISTER_NOTIFICATION_CMD);
+    if (status != BT_STATUS_SUCCESS) {
+        return status;
+    }
+
+    return packet.avrcp_control_r.status;
+}

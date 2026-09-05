@@ -26,13 +26,13 @@
 #include <zephyr/bluetooth/l2cap.h>
 #include <zephyr/bluetooth/uuid.h>
 
-#ifdef CONFIG_BLUETOOTH_BLE_SCAN
 #include "sal_interface.h"
 #include "sal_le_scan_interface.h"
 #include "service_loop.h"
 
 #include "utils/log.h"
 
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
 #define STACK_CALL(func) zblue_##func
 
 typedef bt_status_t (*sal_func_t)(void* args);
@@ -152,16 +152,11 @@ static bt_status_t STACK_CALL(stop_scan)(void* args)
 bt_status_t bt_sal_le_set_scan_parameters(bt_controller_id_t id, ble_scan_params_t* params)
 {
     memset(&scan_param, 0, sizeof(scan_param));
-    scan_param.type = (uint8_t)params->scan_type;
+    scan_param.type = params->scan_type;
     scan_param.interval = params->scan_interval;
     scan_param.window = params->scan_window;
     scan_param.options = BT_LE_SCAN_OPT_FILTER_DUPLICATE;
     if (params->filter_type == BT_LE_SCAN_POLICY_ONLY_WHITE_LIST) {
-        scan_param.options |= BT_LE_SCAN_OPT_FILTER_ACCEPT_LIST;
-    }
-
-    if (params->filter_type == BT_LE_SCAN_POLICY_ONLY_WHITE_LIST ||
-        params->filter_type == BT_LE_SCAN_POLICY_ONLY_WHITE_LIST_AND_RPA) {
         scan_param.options |= BT_LE_SCAN_OPT_FILTER_ACCEPT_LIST;
     }
 

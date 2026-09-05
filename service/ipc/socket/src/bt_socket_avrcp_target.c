@@ -44,6 +44,8 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
+#define CALLBACK_FOREACH(_list, _struct, _cback, ...) \
+    BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
 #define CBLIST (__async ? __async->avrcp_target_callbacks : ins->avrcp_target_callbacks)
 
 /****************************************************************************

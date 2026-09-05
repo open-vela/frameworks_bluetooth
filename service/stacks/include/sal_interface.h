@@ -22,8 +22,6 @@
 #include "sal_adapter_classic_interface.h"
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
 #include "sal_adapter_le_interface.h"
-#include "sal_gatt_client_interface.h"
-#include "sal_gatt_server_interface.h"
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
 #include "sal_le_advertise_interface.h"
 #endif
@@ -70,6 +68,17 @@ typedef struct bt_stack_info {
         int __ret = cond;                               \
         if (__ret != expect) {                          \
             BT_LOGE("[%s] return:%d", __func__, __ret); \
+            return BT_STATUS_FAIL;                      \
+        }                                               \
+    }
+
+#define SAL_CHECK_RET_WITH_CONN(cond, expect, conn)     \
+    {                                                   \
+        int __ret = cond;                               \
+        if (__ret != expect) {                          \
+            BT_LOGE("[%s] return:%d", __func__, __ret); \
+            if (conn)                                   \
+                bt_conn_unref(conn);                    \
             return BT_STATUS_FAIL;                      \
         }                                               \
     }

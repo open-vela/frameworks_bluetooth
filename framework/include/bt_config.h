@@ -1,13 +1,6 @@
 #ifndef __INCLUDE_BT_CONFIG_H
 #define __INCLUDE_BT_CONFIG_H
 
-// Platform: 32-bit or 64-bit
-#if defined(CONFIG_ARCH_ARM64) || defined(ARCH_X86_64) || defined(ANDROID) || (!defined(CONFIG_SIM_M32) && defined(CONFIG_ARCH_SIM))
-#define CONFIG_CPU_BIT64 1
-#elif defined(ARCH_ARM) || defined(ARCH_X86) || defined(__NuttX__)
-#define CONFIG_CPU_BIT32 1
-#endif
-
 // Configuration of Bluetooth Framework/Service/Stack
 #if defined(__NuttX__)
 
@@ -62,7 +55,7 @@
 #define CONFIG_BLUETOOTH_LEA_SOURCE_DATA_PATH "lea_source_data"
 #define CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN 80
 #define CONFIG_BLUETOOTH_SCO_CTRL_PATH "sco_ctrl"
-// #define CONFIG_BLUETOOTH_L2CAP 1
+#define CONFIG_BLUETOOTH_L2CAP 1
 #define CONFIG_BLUETOOTH_L2CAP_OUTGOING_MTU 2048
 #define CONFIG_BLUETOOTH_GATTC_MAX_CONNECTIONS 8
 #ifndef CONFIG_BLUETOOTH_GATTS_MAX_ATTRIBUTE_NUM
@@ -81,14 +74,14 @@
 #define CONFIG_BLUETOOTH_SPP_SERVER_MAX_CONNECTIONS 8
 #define CONFIG_BLUETOOTH_MAX_REGISTER_NUM 4
 #define CONFIG_BLUETOOTH_FRAMEWORK 1
-// #define CONFIG_BLUETOOTH_FRAMEWORK_LOCAL 1
+//#define CONFIG_BLUETOOTH_FRAMEWORK_LOCAL 1
 #define CONFIG_BLUETOOTH_FRAMEWORK_SOCKET_IPC 1
 #define CONFIG_BLUETOOTH_SOCKET_PORT 6001
 #define CONFIG_BLUETOOTH_SERVICE 1
-// #define CONFIG_BLUETOOTH_SERVER 1
+//#define CONFIG_BLUETOOTH_SERVER 1
 #define CONFIG_BLUETOOTH_SERVER_NAME "bluetoothd"
 #define CONFIG_BLUETOOTH_IPC_JOIN_LOOP 1
-// #define CONFIG_BLUETOOTH_SERVICE_LOG_LEVEL 7
+//#define CONFIG_BLUETOOTH_SERVICE_LOG_LEVEL 7
 #define CONFIG_BLUETOOTH_SERVICE_HCI_UART_NAME "/dev/ttyHCI0"
 #define CONFIG_BLUETOOTH_STACK_BREDR_BLUELET 1
 #define CONFIG_BLUETOOTH_STACK_LE_BLUELET 1
@@ -101,17 +94,14 @@
 #define CONFIG_NET_RPMSG 1
 
 // Socket: via IPv4
-// #define CONFIG_NET_IPv4 1
-// #define CONFIG_BLUETOOTH_NET_IPv4 1
+//#define CONFIG_NET_IPv4 1
+//#define CONFIG_BLUETOOTH_NET_IPv4 1
 #define CONFIG_INADDR_LOOPBACK 0x0A000202
 // SPP
 #define CONFIG_RPMSG_UART 1
 
 // SPP via RPMsg UART "/dev/ttyDROID"
-// #define CONFIG_RPMSG_UART 1
-
-// SPP via RPMsg socket/pipe
-#define CONFIG_BLUETOOTH_SPP_RPMSG_NET 1
+//#define CONFIG_RPMSG_UART 1
 
 /********************* O95 Project Only *********************/
 #if defined(ANDROID_12)
@@ -119,7 +109,7 @@
 #define CONFIG_BLUETOOTH_RPMSG_CPUNAME "ap"
 
 /********************* O61 Project Only *********************/
-#elif defined(ANDROID_14)
+#elif defined(ANDROID_14) || defined(ANDROID_15)
 // Socket: RPMsg
 #define CONFIG_BLUETOOTH_RPMSG_CPUNAME "cp"
 // A2DP
@@ -133,7 +123,14 @@
 
 #endif
 
-// ############################################################################
+// Platform: 32-bit or 64-bit
+#if defined(CONFIG_ARCH_ARM64) || defined(ARCH_X86_64) || defined(ANDROID) || (!defined(CONFIG_SIM_M32) && defined(CONFIG_ARCH_SIM)) || defined(CONFIG_ARCH_X86_64)
+#define CONFIG_CPU_BIT64 1
+#elif defined(ARCH_ARM) || defined(ARCH_X86)
+#define CONFIG_CPU_BIT32 1
+#endif
+
+//############################################################################
 #define CONFIG_y 1
 #define CONFIG_m 2
 

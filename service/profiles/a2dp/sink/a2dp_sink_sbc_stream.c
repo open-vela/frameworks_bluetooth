@@ -48,11 +48,11 @@ static a2dp_sink_packet_t* sink_sbc_repackage(uint8_t* data, uint16_t length)
 {
     a2dp_sink_packet_t* packet = NULL;
 
-    if (length < 2) { 
+    if (length < 2) {
         BT_LOGE("%s, invaild length: %d", __func__, length);
         return NULL;
     }
-    if (data[1] != A2DP_SBC_SYNCWORD) { 
+    if (data[1] != A2DP_SBC_SYNCWORD) {
         BT_LOGE("%s, sbc syncword error: %02x", __func__, data[1]);
         return NULL;
     }

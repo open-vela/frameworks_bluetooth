@@ -41,6 +41,7 @@ typedef struct {
     uint32_t time_stamp;
     uint16_t seq;
     uint16_t length;
+    bool is_partial;
     uint8_t data[0];
 } a2dp_sink_packet_t;
 
@@ -51,17 +52,15 @@ typedef struct {
 
 a2dp_sink_packet_t* a2dp_sink_new_packet(uint32_t timestamp,
     uint16_t seq, uint8_t* data, uint16_t length);
-void a2dp_sink_packet_recieve(a2dp_sink_packet_t* packet);
+void a2dp_sink_packet_receive(a2dp_sink_packet_t* packet);
 bool a2dp_sink_on_connection_changed(bool connected);
 void a2dp_sink_on_started(bool started);
 void a2dp_sink_on_stopped(void);
-void a2dp_sink_prepare_suspend(void);
-void a2dp_sink_mute(void);
-void a2dp_sink_resume(void);
 void a2dp_sink_setup_codec(bt_address_t* bd_addr);
 void a2dp_sink_audio_init(void);
 void a2dp_sink_audio_cleanup(void);
 
+void a2dp_sink_audio_open();
 extern const a2dp_sink_stream_interface_t* get_a2dp_sink_sbc_stream_interface(void);
 extern const a2dp_sink_stream_interface_t* get_a2dp_sink_aac_stream_interface(void);
 

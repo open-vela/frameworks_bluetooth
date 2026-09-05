@@ -30,7 +30,7 @@
 typedef enum {
     GATTC_EVENT_CONNECT_CHANGE,
     GATTC_EVENT_DISCOVER_RESULT,
-    GATTC_EVENT_DISCOVER_CMPL,
+    GATTC_EVENT_DISOCVER_CMPL,
     GATTC_EVENT_READ,
     GATTC_EVENT_WRITE,
     GATTC_EVENT_SUBSCRIBE,
@@ -78,7 +78,7 @@ typedef struct
         } discover_res;
 
         /**
-         * @brief GATTC_EVENT_DISCOVER_CMPL
+         * @brief GATTC_EVENT_DISOCVER_CMPL
          */
         struct gattc_discover_complete_evt_param {
             gatt_status_t status;
@@ -187,7 +187,6 @@ typedef struct
         struct gattc_discover_req_param {
             void* conn_handle;
             gatt_discover_type_t type;
-            bt_uuid_t filter_uuid;
         } discover;
 
         /**

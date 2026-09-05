@@ -49,6 +49,7 @@ a2dp_peer_t* a2dp_sink_find_peer(bt_address_t* addr);
 bool a2dp_sink_stream_ready(void);
 bool a2dp_sink_stream_started(void);
 void a2dp_sink_codec_state_change(void);
+void a2dp_sink_service_audio_open(bt_address_t* addr);
 
 void a2dp_sink_service_notify_connection_state_changed(bt_address_t* addr, profile_connection_state_t state);
 void a2dp_sink_service_notify_audio_state_changed(bt_address_t* addr, a2dp_audio_state_t state);

@@ -41,8 +41,6 @@ void if_gattc_on_rssi_read(bt_address_t* addr, int32_t rssi, gatt_status_t statu
 void if_gattc_on_connection_parameter_updated(bt_address_t* addr, uint16_t connection_interval, uint16_t peripheral_latency,
     uint16_t supervision_timeout, bt_status_t status);
 
-uint16_t if_gattc_find_ccc_handle_by_value_handle(bt_address_t* addr, uint16_t value_handle);
-
 /*
  * gattc remote
  */

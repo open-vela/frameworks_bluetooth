@@ -17,7 +17,7 @@
 #include <kvdb.h>
 
 #include "bluetooth_define.h"
-#include "storage.h"
+#include "bt_storage.h"
 #include "bt_utils.h"
 #include "storage_update.h"
 #include "storage_version_4.h"
@@ -60,7 +60,7 @@ bt_storage_update_properties_t* bt_storage_load_info_unqlite(void)
 
         if (value_length != sizeof(key_header_t) + unqlite_value->key_length) {
             syslog(LOG_ERR, "%s load info[%d], length mismatch([%d] != [%d])\n", __func__, i,
-                value_length, sizeof(key_header_t) + unqlite_value->key_length);
+                value_length, (uint16_t)sizeof(key_header_t) + unqlite_value->key_length);
             free(unqlite_value);
             goto error;
         }

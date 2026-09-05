@@ -259,7 +259,6 @@ static bool g_cmd_had_inited = false;
 extern bt_instance_t* g_bttool_ins;
 extern bool g_auto_accept_pair;
 extern bond_state_t g_bond_state;
-extern uv_loop_t* g_bttool_loop;
 
 static void status_cb(bt_instance_t* ins, bt_status_t status, void* userdata)
 {
@@ -1227,8 +1226,8 @@ static void get_uuids_cb(bt_instance_t* ins, bt_status_t status, bt_uuid_t* uuid
 {
     PRINT("\tUUIDs:[%d]", uuid_cnt);
     for (int i = 0; i < uuid_cnt; i++) {
-        char uuid_str[BT_UUID_STR_LENGTH] = { 0 };
-        bt_uuid_to_string(uuids + i, uuid_str, BT_UUID_STR_LENGTH);
+        char uuid_str[40] = { 0 };
+        bt_uuid_to_string(uuids + i, uuid_str, 40);
         PRINT("\t\tuuid[%-2d]: %s", i, uuid_str);
     }
 }
@@ -1574,14 +1573,14 @@ static void on_remote_cod_changed_cb(void* cookie, bt_address_t* addr, uint32_t 
 
 static void on_remote_uuids_changed_cb(void* cookie, bt_address_t* addr, bt_uuid_t* uuids, uint16_t size)
 {
-    char uuid_str[BT_UUID_STR_LENGTH] = { 0 };
+    char uuid_str[40] = { 0 };
 
     PRINT_ADDR("Device [%s] uuids changed", addr);
 
     if (size) {
         PRINT("UUIDs:[%d]", size);
         for (int i = 0; i < size; i++) {
-            bt_uuid_to_string(uuids + i, uuid_str, BT_UUID_STR_LENGTH);
+            bt_uuid_to_string(uuids + i, uuid_str, 40);
             PRINT("\tuuid[%-2d]: %s", i, uuid_str);
         }
     }
@@ -1633,12 +1632,7 @@ static void ipc_disconnected(bt_instance_t* ins, void* userdata, int status)
 
 int bttool_async_ins_init(bttool_t* bttool)
 {
-    if (g_bttool_loop == NULL) {
-        PRINT("%s: g_bttool_loop is not initialized", __func__);
-        return -1;
-    }
-
-    g_bttool_ins = bluetooth_create_async_instance(g_bttool_loop, ipc_connected, ipc_disconnected, (void*)bttool);
+    g_bttool_ins = bluetooth_create_async_instance(&bttool->loop, ipc_connected, ipc_disconnected, (void*)bttool);
     if (g_bttool_ins == NULL) {
         PRINT("create instance error\n");
         return -1;
