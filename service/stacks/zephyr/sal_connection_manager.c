@@ -18,12 +18,23 @@
 #include "sal_interface.h"
 #include "service_loop.h"
 
+
+#undef BT_LE_SCAN_TYPE_PASSIVE
+#undef BT_LE_SCAN_TYPE_ACTIVE
 #include <zephyr/bluetooth/conn.h>
 
 #include "utils/log.h"
 
 bt_status_t bt_sal_disconnect_internal(bt_controller_id_t id, bt_address_t* addr, uint8_t reason);
 bt_status_t bt_sal_remove_bond_internal(bt_controller_id_t id, bt_address_t* addr);
+
+#ifndef CONFIG_BT_CLASSIC
+static inline struct bt_conn *bt_conn_lookup_addr_br(const bt_addr_t *peer)
+{
+    (void)peer;
+    return NULL;
+}
+#endif
 
 typedef struct {
     bt_address_t device_addr;

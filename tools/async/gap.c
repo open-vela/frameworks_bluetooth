@@ -1505,7 +1505,12 @@ static void on_pair_display_cb(void* cookie, bt_address_t* addr, bt_transport_t 
         sprintf(buff1, "[SSP][ENTRY][%" PRIu32 "], please reply:", passkey);
         break;
     case PAIR_TYPE_CONSENT:
-        sprintf(buff1, "[SSP][CONSENT]");
+        if (!g_auto_accept_pair) {
+            sprintf(buff1, "[SSP][CONSENT] please reply:");
+            break;
+        }
+        ret = bt_device_set_pairing_confirmation_async(g_bttool_ins, addr, transport, true, status_cb, NULL);
+        sprintf(buff1, "[SSP][CONSENT] Auto confirm %s", ret == BT_STATUS_SUCCESS ? "SUCCESS" : "FAILED");
         break;
     case PAIR_TYPE_PASSKEY_NOTIFICATION:
         sprintf(buff1, "[SSP][NOTIFY][%" PRIu32 "]", passkey);

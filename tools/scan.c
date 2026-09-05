@@ -73,11 +73,15 @@ static void on_scan_result_cb(bt_scanner_t* scanner, ble_scan_result_t* result)
 static void on_scan_start_status_cb(bt_scanner_t* scanner, uint8_t status)
 {
     PRINT("%s, scanner:%p, status:%d", __func__, scanner, status);
+    if (status != BT_SCAN_STATUS_SUCCESS && g_scanner == scanner)
+        g_scanner = NULL;
 }
 
 static void on_scan_stopped_cb(bt_scanner_t* scanner)
 {
     PRINT("%s, scanner:%p", __func__, scanner);
+    if (g_scanner == scanner)
+        g_scanner = NULL;
 }
 
 static const scanner_callbacks_t scanner_callbacks = {
@@ -91,7 +95,7 @@ static int start_scan_cmd(void* handle, int argc, char* argv[])
 {
     int opt;
     ble_scan_filter_t filter = {};
-    ble_scan_settings_t settings = { BT_SCAN_MODE_LOW_POWER, 0, BT_LE_SCAN_TYPE_PASSIVE, BT_LE_1M_PHY, { 0 } };
+    ble_scan_settings_t settings = { BT_SCAN_MODE_LOW_POWER, 0, BT_LE_SCAN_TYPE_ACTIVE, BT_LE_1M_PHY, { 0 } };
 
     if (g_scanner)
         return CMD_ERROR;

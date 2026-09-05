@@ -619,10 +619,27 @@ bt_status_t bt_adapter_le_add_whitelist(bt_instance_t* ins, bt_address_t* addr)
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     memcpy(&packet.adpt_pl._bt_adapter_le_add_whitelist.addr, addr, sizeof(*addr));
+    packet.adpt_pl._bt_adapter_le_add_whitelist.type = BT_LE_ADDR_TYPE_UNKNOWN;
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_LE_ADD_WHITELIST);
     if (status != BT_STATUS_SUCCESS) {
         return status;
     }
+
+    return packet.adpt_r.status;
+}
+
+bt_status_t bt_adapter_le_add_whitelist_with_type(bt_instance_t* ins, bt_address_t* addr, ble_addr_type_t type)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    memcpy(&packet.adpt_pl._bt_adapter_le_add_whitelist.addr, addr, sizeof(*addr));
+    packet.adpt_pl._bt_adapter_le_add_whitelist.type = type;
+    status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_LE_ADD_WHITELIST);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
 
     return packet.adpt_r.status;
 }

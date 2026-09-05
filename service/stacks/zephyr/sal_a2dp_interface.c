@@ -41,6 +41,9 @@
 #undef BT_UUID_DECLARE_16
 #undef BT_UUID_DECLARE_32
 #undef BT_UUID_DECLARE_128
+
+#undef BT_LE_SCAN_TYPE_PASSIVE
+#undef BT_LE_SCAN_TYPE_ACTIVE
 #include <zephyr/bluetooth/classic/sdp.h>
 
 #include <zephyr/bluetooth/classic/a2dp.h>

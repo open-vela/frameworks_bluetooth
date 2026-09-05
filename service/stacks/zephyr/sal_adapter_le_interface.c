@@ -27,6 +27,9 @@
 #include "sal_zephyr_interface.h"
 #include "service_loop.h"
 
+#undef BT_LE_SCAN_TYPE_PASSIVE
+#undef BT_LE_SCAN_TYPE_ACTIVE
+
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/hci.h>
@@ -35,6 +38,7 @@
 #include <settings_zblue.h>
 #include <zephyr/settings/settings.h>
 
+#include "conn_internal.h"
 #include "keys.h"
 
 #include "utils/log.h"
@@ -71,7 +75,15 @@ typedef struct {
     ble_addr_type_t addr_type;
     sal_func_t func;
     sal_adapter_args_t adpt;
+    bool wait;
+    uv_sem_t done;
+    bt_status_t status;
 } sal_adapter_req_t;
+
+typedef struct {
+    uv_sem_t done;
+    int result;
+} sal_le_disable_req_t;
 
 typedef struct {
     remote_device_le_properties_t* props;
@@ -84,8 +96,8 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err);
 static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason);
 #ifdef CONFIG_BT_SMP
 static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level, enum bt_security_err err);
-static void zblue_on_pairing_complete_ctkd(struct bt_conn* conn, bool is_link_key);
 #endif
+static void zblue_on_pairing_complete_ctkd(struct bt_conn* conn, bool is_link_key);
 static void zblue_on_pairing_complete(struct bt_conn* conn, bool bonding_flag);
 static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err reason);
 static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer);
@@ -196,6 +208,22 @@ static uint8_t zblue_convert_addr_type(ble_addr_type_t addr_type)
     }
 
     return type;
+}
+
+static bool zblue_convert_filter_accept_list_addr_type(ble_addr_type_t addr_type, uint8_t* type)
+{
+    switch (addr_type) {
+    case BT_LE_ADDR_TYPE_PUBLIC:
+    case BT_LE_ADDR_TYPE_PUBLIC_ID:
+        *type = BT_ADDR_LE_PUBLIC;
+        return true;
+    case BT_LE_ADDR_TYPE_RANDOM:
+    case BT_LE_ADDR_TYPE_RANDOM_ID:
+        *type = BT_ADDR_LE_RANDOM;
+        return true;
+    default:
+        return false;
+    }
 }
 
 #if defined(CONFIG_SETTINGS_ZBLUE)
@@ -1491,7 +1519,10 @@ static void sal_invoke_async(service_work_t* work, void* userdata)
 
     SAL_ASSERT(req);
     req->func(req);
-    free(userdata);
+    if (req->wait)
+        uv_sem_post(&req->done);
+    else
+        free(userdata);
 }
 
 static bt_status_t sal_send_req(sal_adapter_req_t* req)
@@ -1510,6 +1541,48 @@ static bt_status_t sal_send_req(sal_adapter_req_t* req)
     return BT_STATUS_SUCCESS;
 }
 
+static bt_status_t sal_send_req_sync(sal_adapter_req_t* req)
+{
+    bt_status_t status;
+
+    if (!req) {
+        BT_LOGE("%s, req null", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    if (uv_sem_init(&req->done, 0) != 0) {
+        BT_LOGE("%s, sem init failed", __func__);
+        free(req);
+        return BT_STATUS_FAIL;
+    }
+
+    req->wait = true;
+    req->status = BT_STATUS_FAIL;
+    if (!service_loop_work((void*)req, sal_invoke_async, NULL)) {
+        BT_LOGE("%s, service_loop_work failed", __func__);
+        uv_sem_destroy(&req->done);
+        free(req);
+        return BT_STATUS_FAIL;
+    }
+
+    uv_sem_wait(&req->done);
+    status = req->status;
+    uv_sem_destroy(&req->done);
+    free(req);
+
+    return status;
+}
+
+static le_conn_info_t* le_conn_find(const bt_address_t* addr)
+{
+    for (int i = 0; i < CONFIG_BT_MAX_CONN; i++) {
+        if (!bt_addr_compare(&g_le_conn_info[i].addr, addr)) {
+            return &g_le_conn_info[i];
+        }
+    }
+
+    return NULL;
+}
 bt_status_t get_le_addr_from_conn(struct bt_conn* conn, bt_address_t* addr)
 {
     struct bt_conn_info info;
@@ -1584,26 +1657,52 @@ bt_status_t bt_sal_le_enable(bt_controller_id_t id)
     return BT_STATUS_SUCCESS;
 }
 
-static void STACK_CALL(le_disable)(void* args)
+static void sal_le_disable_sync(service_work_t* work, void* userdata)
 {
+    sal_le_disable_req_t* req = userdata;
+
     zblue_unregister_callback();
-    bt_disable();
+    req->result = bt_disable();
+    uv_sem_post(&req->done);
 }
 
 bt_status_t bt_sal_le_disable(bt_controller_id_t id)
 {
-    sal_adapter_req_t* req;
+    sal_le_disable_req_t* req;
+    int ret;
 
     if (!bt_is_ready()) {
         adapter_on_adapter_state_changed(BLE_STACK_STATE_OFF);
         return BT_STATUS_SUCCESS;
     }
 
-    req = sal_adapter_req(id, NULL, STACK_CALL(le_disable));
+    req = calloc(1, sizeof(*req));
     if (!req) {
         return BT_STATUS_NOMEM;
     }
-    sal_send_req(req);
+
+    ret = uv_sem_init(&req->done, 0);
+    if (ret != 0) {
+        free(req);
+        return BT_STATUS_FAIL;
+    }
+
+    if (!service_loop_work(req, sal_le_disable_sync, NULL)) {
+        uv_sem_destroy(&req->done);
+        free(req);
+        return BT_STATUS_FAIL;
+    }
+
+    uv_sem_wait(&req->done);
+    ret = req->result;
+    uv_sem_destroy(&req->done);
+    free(req);
+
+    if (ret != 0) {
+        BT_LOGE("%s, bt_disable failed:%d", __func__, ret);
+        return BT_STATUS_FAIL;
+    }
+
     adapter_on_adapter_state_changed(BLE_STACK_STATE_OFF);
 
     return BT_STATUS_SUCCESS;
@@ -1806,6 +1905,7 @@ bt_status_t bt_sal_le_get_address(bt_controller_id_t id, bt_address_t* addr)
 
 static void STACK_CALL(le_set_bond)(void* args)
 {
+#ifdef CONFIG_BT_SMP
     sal_adapter_req_t* req = args;
     bt_addr_le_t le_addr;
 
@@ -1814,6 +1914,7 @@ static void STACK_CALL(le_set_bond)(void* args)
 #ifdef CONFIG_SETTINGS_ZBLUE
     bt_settings_load(req->id, req->adpt.le_set_bond.id, req->adpt.le_set_bond.key, &le_addr);
     bt_settings_commit(req->id, req->adpt.le_set_bond.id, req->adpt.le_set_bond.key, &le_addr);
+#endif
 #endif
 }
 
@@ -1847,6 +1948,7 @@ bt_status_t bt_sal_le_set_bonded_devices(bt_controller_id_t id, remote_device_le
 
 static void STACK_CALL(security_connect)(void* args)
 {
+#ifdef CONFIG_BT_SMP
     sal_adapter_req_t* req = args;
     struct bt_conn* conn;
     int err;
@@ -1862,6 +1964,7 @@ static void STACK_CALL(security_connect)(void* args)
         BT_LOGE("%s, start le encryption fail err:%d", __func__, err);
         return;
     }
+#endif
 }
 
 static void STACK_CALL(conn_connect)(void* args)
@@ -1974,9 +2077,11 @@ bt_status_t bt_sal_le_disconnect(bt_controller_id_t id, bt_address_t* addr)
 
 static void STACK_CALL(set_bondable)(void* args)
 {
+#ifdef CONFIG_BT_SMP
     sal_adapter_req_t* req = args;
 
     bt_set_bondable_mc(req->id, req->adpt.bondable);
+#endif
 }
 
 bt_status_t bt_sal_le_set_bondable(bt_controller_id_t id, bool enable)
@@ -1999,17 +2104,34 @@ static void STACK_CALL(create_bond)(void* args)
 {
     sal_adapter_req_t* req = args;
     struct bt_conn* conn;
+    struct bt_keys* keys;
     int err;
 
     conn = get_le_conn_from_addr(&req->addr);
     if (!conn) {
         BT_LOGE("%s, conn null", __func__);
+        adapter_on_bond_state_changed(&req->addr, BOND_STATE_NONE,
+            BT_TRANSPORT_BLE, BT_STATUS_DEVICE_NOT_FOUND, false);
         return;
     }
 
-    err = bt_conn_set_security(conn, g_security_level);
+    keys = conn->le.keys;
+    if (!keys)
+        keys = bt_keys_find_addr(conn->hdev, conn->id, &conn->le.dst);
+
+    if (keys) {
+        BT_LOGW("%s, clear stale key pool entry type:0x%04x before explicit pairing",
+            __func__, keys->keys);
+        bt_keys_clear(conn->hdev, keys);
+    }
+    conn->le.keys = NULL;
+
+    err = bt_conn_set_security(conn,
+        (bt_security_t)(g_security_level | BT_SECURITY_FORCE_PAIR));
     if (err) {
         BT_LOGE("%s, bond fail err:%d", __func__, err);
+        adapter_on_bond_state_changed(&req->addr, BOND_STATE_NONE,
+            BT_TRANSPORT_BLE, BT_STATUS_FAIL, false);
         return;
     }
 }
@@ -2194,28 +2316,24 @@ bt_status_t bt_sal_le_get_local_oob_data(bt_controller_id_t id, bt_address_t* ad
 static void STACK_CALL(add_white_list)(void* args)
 {
     sal_adapter_req_t* req = args;
-    bt_address_t id_addr;
     bt_addr_le_t addr;
     int err;
 
-    if (adapter_get_remote_identity_address(&req->addr, &id_addr) == BT_STATUS_SUCCESS) {
-        memcpy(&addr.a, &id_addr, sizeof(addr.a));
-        /** TODO: consider random (static) identity address */
-        addr.type = BT_LE_ADDR_TYPE_PUBLIC;
-    } else {
-        memcpy(&addr.a, &req->addr, sizeof(addr.a));
-        addr.type = adapter_get_le_remote_address_type(&req->addr);
-        BT_LOGD("%s, no public identity address", __func__);
+    if (!zblue_convert_filter_accept_list_addr_type(req->addr_type, &addr.type)) {
+        BT_LOGE("%s, invalid addr type:%d", __func__, req->addr_type);
+        req->status = BT_STATUS_PARM_INVALID;
+        return;
     }
+    memcpy(&addr.a, &req->addr, sizeof(addr.a));
 
     err = bt_le_filter_accept_list_add(&addr);
     if (err) {
         BT_LOGE("%s, add white list fail, err:%d", __func__, err);
-        adapter_on_whitelist_update(&req->addr, true, BT_STATUS_FAIL);
+        req->status = BT_STATUS_FAIL;
         return;
     }
 
-    adapter_on_whitelist_update(&req->addr, true, BT_STATUS_SUCCESS);
+    req->status = BT_STATUS_SUCCESS;
 }
 #endif
 
@@ -2231,7 +2349,7 @@ bt_status_t bt_sal_le_add_white_list(bt_controller_id_t id, bt_address_t* addres
     }
 
     req->addr_type = addr_type;
-    return sal_send_req(req);
+    return sal_send_req_sync(req);
 #else
     SAL_NOT_SUPPORT;
 #endif
@@ -2241,28 +2359,24 @@ bt_status_t bt_sal_le_add_white_list(bt_controller_id_t id, bt_address_t* addres
 static void STACK_CALL(remove_white_list)(void* args)
 {
     sal_adapter_req_t* req = args;
-    bt_address_t id_addr;
     bt_addr_le_t addr;
     int err;
 
-    if (adapter_get_remote_identity_address(&req->addr, &id_addr) == BT_STATUS_SUCCESS) {
-        memcpy(&addr.a, &id_addr, sizeof(addr.a));
-        addr.type = BT_LE_ADDR_TYPE_PUBLIC;
-        /** TODO: consider random (static) identity address */
-    } else {
-        memcpy(&addr.a, &req->addr, sizeof(addr.a));
-        addr.type = adapter_get_le_remote_address_type(&req->addr);
-        BT_LOGD("%s, no public identity address", __func__);
+    if (!zblue_convert_filter_accept_list_addr_type(req->addr_type, &addr.type)) {
+        BT_LOGE("%s, invalid addr type:%d", __func__, req->addr_type);
+        req->status = BT_STATUS_PARM_INVALID;
+        return;
     }
+    memcpy(&addr.a, &req->addr, sizeof(addr.a));
 
     err = bt_le_filter_accept_list_remove(&addr);
     if (err) {
         BT_LOGE("%s, remove white list fail, err:%d", __func__, err);
-        adapter_on_whitelist_update(&req->addr, false, BT_STATUS_FAIL);
+        req->status = BT_STATUS_FAIL;
         return;
     }
 
-    adapter_on_whitelist_update(&req->addr, false, BT_STATUS_SUCCESS);
+    req->status = BT_STATUS_SUCCESS;
 }
 #endif
 
@@ -2278,7 +2392,7 @@ bt_status_t bt_sal_le_remove_white_list(bt_controller_id_t id, bt_address_t* add
     }
 
     req->addr_type = addr_type;
-    return sal_send_req(req);
+    return sal_send_req_sync(req);
 #else
     SAL_NOT_SUPPORT;
 #endif

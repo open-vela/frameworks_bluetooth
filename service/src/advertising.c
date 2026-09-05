@@ -175,6 +175,7 @@ static void start_advertising_timeout(service_timer_t* timer, void* userdata)
         return;
     }
 
+    syslog(LOG_ERR, "BT adv start timeout: adv_id=%u adver=%p\n", adver->adv_id, adver);
     delete_advertiser(adver);
     adver->callbacks.on_advertising_start(get_adver(adver), 0, BT_ADV_STATUS_START_TIMEOUT);
     destroy_advertiser(adver);
@@ -203,6 +204,7 @@ static void advertiser_start_event(void* data)
             adv_info->adv_len, adv_info->scan_rsp_data,
             adv_info->scan_rsp_len)
         != BT_STATUS_SUCCESS) {
+        syslog(LOG_ERR, "BT adv start request failed: adv_id=%u adver=%p\n", adver->adv_id, adver);
         adver->callbacks.on_advertising_start(get_adver(adver), 0, BT_ADV_STATUS_STACK_ERR);
         goto fail;
     }
@@ -255,6 +257,8 @@ static void advertiser_notify_state(void* data)
 
     adver = get_advertiser_if_exist(advstate->adv_id);
     if (!adver) {
+        syslog(LOG_WARNING, "BT adv state for unknown id: adv_id=%u state=%u\n",
+            advstate->adv_id, advstate->state);
         goto exit;
     }
 

@@ -352,6 +352,7 @@ bt_status_t adapter_le_set_phy(bt_address_t* addr,
     ble_phy_type_t rx_phy);
 bt_status_t adapter_le_enable_key_derivation(bool brkey_to_lekey,
     bool lekey_to_brkey);
+bt_status_t adapter_le_add_whitelist_with_type(bt_address_t* addr, ble_addr_type_t type);
 bt_status_t adapter_le_add_whitelist(bt_address_t* addr);
 bt_status_t adapter_le_remove_whitelist(bt_address_t* addr);
 bt_status_t adapter_create_bond(bt_address_t* addr, bt_transport_t transport);

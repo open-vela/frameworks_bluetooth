@@ -60,10 +60,11 @@
 
 #define CALLBACK_FOREACH(_list, _struct, _cback, ...) BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
 
-#define CHECK_ADAPTER_READY()                                     \
-    if (g_adapter_service.adapter_state != BT_ADAPTER_STATE_ON) { \
-        status = BT_STATUS_NOT_ENABLED;                           \
-        goto error;                                               \
+#define CHECK_ADAPTER_READY()                                      \
+    if ((g_adapter_service.adapter_state != BT_ADAPTER_STATE_ON) && \
+        (g_adapter_service.adapter_state != BT_ADAPTER_STATE_BLE_ON)) { \
+        status = BT_STATUS_NOT_ENABLED;                            \
+        goto error;                                                \
     }
 
 #define CBLIST (g_adapter_service.adapter_callbacks)
@@ -328,6 +329,14 @@ static bt_device_t* adapter_find_create_le_device(bt_address_t* addr, ble_addr_t
 
     return device;
 }
+
+static bool adapter_is_valid_le_whitelist_addr_type(ble_addr_type_t type)
+{
+    return type == BT_LE_ADDR_TYPE_PUBLIC ||
+        type == BT_LE_ADDR_TYPE_RANDOM ||
+        type == BT_LE_ADDR_TYPE_PUBLIC_ID ||
+        type == BT_LE_ADDR_TYPE_RANDOM_ID;
+}
 #endif
 
 static void adapter_delete_device(void* data)
@@ -535,17 +544,45 @@ static void whitelist_device_loaded(void* data, uint16_t length, uint16_t items)
     if (data && items) {
         char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
         remote_device_le_properties_t* remote = (remote_device_le_properties_t*)data;
-        BT_LOGD("load whitelist device successfully:");
         for (int i = 0; i < items; i++) {
-            bt_device_t* device = adapter_find_create_le_device(&remote->addr, remote->addr_type);
-            device_set_flags(device, DFLAG_WHITELIST_ADDED);
+            bt_device_t* device;
+            ble_addr_type_t restore_type = remote->addr_type;
+            bt_status_t status;
+
+            adapter_lock();
+            device = adapter_find_device(&remote->addr, BT_TRANSPORT_BLE);
+            if (!adapter_is_valid_le_whitelist_addr_type(restore_type)) {
+                if (device && adapter_is_valid_le_whitelist_addr_type(device_get_address_type(device)))
+                    restore_type = device_get_address_type(device);
+                else
+                    restore_type = BT_LE_ADDR_TYPE_PUBLIC;
+            }
+            adapter_unlock();
+
             bt_addr_ba2str(&remote->addr, addr_str);
-            BT_LOGD("LE WHITELIST[%d] [%s]", i, addr_str);
-            bt_sal_le_add_white_list(PRIMARY_ADAPTER, &remote->addr, remote->addr_type);
+            status = bt_sal_le_add_white_list(PRIMARY_ADAPTER, &remote->addr, restore_type);
+            if (status == BT_STATUS_SUCCESS) {
+                adapter_lock();
+                device = adapter_find_device(&remote->addr, BT_TRANSPORT_BLE);
+                if (!device)
+                    device = adapter_find_create_le_device(&remote->addr, restore_type);
+                if (device)
+                    device_set_address_type(device, restore_type);
+                if (device)
+                    device_set_flags(device, DFLAG_WHITELIST_ADDED);
+                adapter_unlock();
+            } else {
+                adapter_lock();
+                device = adapter_find_device(&remote->addr, BT_TRANSPORT_BLE);
+                if (device)
+                    device_clear_flag(device, DFLAG_WHITELIST_ADDED);
+                adapter_unlock();
+                BT_LOGE("LE whitelist restore failed addr:%s type:%" PRIu8 " status:%d",
+                    addr_str, (uint8_t)restore_type, status);
+            }
             remote++;
         }
     }
-    BT_LOGD("ble whitelist device cnt: %" PRIu16, items);
 }
 
 static void le_bonded_device_loaded(void* data, uint16_t length, uint16_t items)
@@ -1224,6 +1261,8 @@ static void process_le_whitelist_update_evt(bt_address_t* addr, bool is_add, bt_
     BT_LOGD("%s, %s isadded:%d, status:%d", __func__, addr_str, is_add, status);
 
     if (status != BT_STATUS_SUCCESS) {
+        BT_LOGE("LE whitelist update failed addr:%s isadded:%d status:%d",
+            addr_str, is_add, status);
         return;
     }
 
@@ -1231,7 +1270,6 @@ static void process_le_whitelist_update_evt(bt_address_t* addr, bool is_add, bt_
 
     bt_device_t* device = adapter_find_device(addr, BT_TRANSPORT_BLE);
     if (device == NULL) {
-        bt_sal_le_remove_white_list(PRIMARY_ADAPTER, addr, device_get_address_type(device));
         goto out;
     }
 
@@ -1268,7 +1306,8 @@ static void process_le_bonded_device_update_evt(remote_device_le_properties_t* p
             device_delete_smp_key(device);
         }
 
-        device_set_address_type(device, prop->addr_type);
+        if (!device_check_flag(device, DFLAG_WHITELIST_ADDED))
+            device_set_address_type(device, prop->addr_type);
         /* store smp key to mapped device struct */
         device_set_smp_key(device, prop->smp_key);
         device_set_identity_address(device, (bt_address_t*)prop->smp_key);
@@ -2062,7 +2101,7 @@ bt_status_t adapter_disable(uint8_t opt)
     }
 
     if (opt == SYS_SET_BT_ALL)
-        send_to_state_machine((state_machine_t*)adapter->stm, SYS_TURN_OFF_SAFE, NULL);
+        send_to_state_machine((state_machine_t*)adapter->stm, SYS_TURN_OFF, NULL);
     else
         send_to_state_machine((state_machine_t*)adapter->stm, TURN_OFF_BLE, NULL);
 
@@ -2202,7 +2241,8 @@ bt_status_t adapter_cancel_discovery(void)
     adapter_service_t* adapter = &g_adapter_service;
 
     adapter_lock();
-    if (adapter->adapter_state != BT_ADAPTER_STATE_ON) {
+    if ((adapter->adapter_state != BT_ADAPTER_STATE_ON) &&
+        (adapter->adapter_state != BT_ADAPTER_STATE_BLE_ON)) {
         adapter_unlock();
         return BT_STATUS_NOT_ENABLED;
     }
@@ -2236,7 +2276,11 @@ bool adapter_is_discovering(void)
 void adapter_get_address(bt_address_t* addr)
 {
     adapter_lock();
+#if defined(CONFIG_BLUETOOTH_BLE_SUPPORT) && !defined(CONFIG_BLUETOOTH_BREDR_SUPPORT)
+    memcpy(addr, &g_adapter_service.le_properties.addr, sizeof(bt_address_t));
+#else
     memcpy(addr, &g_adapter_service.properties.addr, sizeof(bt_address_t));
+#endif
     adapter_unlock();
 }
 
@@ -2301,12 +2345,17 @@ bt_status_t adapter_set_scan_mode(bt_scan_mode_t mode, bool bondable)
     if (adapter->properties.scan_mode == mode && adapter->properties.bondable == bondable)
         goto error;
 
+#if defined(CONFIG_BLUETOOTH_BLE_SUPPORT) && !defined(CONFIG_BLUETOOTH_BREDR_SUPPORT)
+    adapter->properties.scan_mode = mode;
+    adapter->properties.bondable = bondable;
+#else
     status = bt_sal_set_scan_mode(PRIMARY_ADAPTER, mode, bondable);
     if (status != BT_STATUS_SUCCESS)
         goto error;
 
     adapter->properties.scan_mode = mode;
     adapter->properties.bondable = bondable;
+#endif
 
 error:
     BT_LOGI("scanmode: %d, bondable: %d", (int)adapter->properties.scan_mode, (int)adapter->properties.bondable);
@@ -2336,12 +2385,17 @@ bt_status_t adapter_set_device_class(uint32_t cod)
     if (adapter->properties.class_of_device == cod)
         goto error;
 
+#if defined(CONFIG_BLUETOOTH_BLE_SUPPORT) && !defined(CONFIG_BLUETOOTH_BREDR_SUPPORT)
+    adapter->properties.class_of_device = cod;
+    adapter_save_properties();
+#else
     status = bt_sal_set_device_class(PRIMARY_ADAPTER, cod);
     if (status != BT_STATUS_SUCCESS)
         goto error;
 
     adapter->properties.class_of_device = cod;
     adapter_save_properties();
+#endif
 error:
     adapter_unlock();
     return status;
@@ -2369,12 +2423,17 @@ bt_status_t adapter_set_io_capability(bt_io_capability_t cap)
     if (adapter->properties.io_capability == cap)
         goto error;
 
+#if defined(CONFIG_BLUETOOTH_BLE_SUPPORT) && !defined(CONFIG_BLUETOOTH_BREDR_SUPPORT)
+    adapter->properties.io_capability = cap;
+    adapter_save_properties();
+#else
     status = bt_sal_set_io_capability(PRIMARY_ADAPTER, cap);
     if (status != BT_STATUS_SUCCESS)
         goto error;
 
     adapter->properties.io_capability = cap;
     adapter_save_properties();
+#endif
 
 error:
     adapter_unlock();
@@ -2397,14 +2456,22 @@ bt_status_t adapter_set_inquiry_scan_parameters(bt_scan_type_t type,
     uint16_t interval,
     uint16_t window)
 {
+#if defined(CONFIG_BLUETOOTH_BLE_SUPPORT) && !defined(CONFIG_BLUETOOTH_BREDR_SUPPORT)
+    return BT_STATUS_SUCCESS;
+#else
     return bt_sal_set_inquiry_scan_parameters(PRIMARY_ADAPTER, type, interval, window);
+#endif
 }
 
 bt_status_t adapter_set_page_scan_parameters(bt_scan_type_t type,
     uint16_t interval,
     uint16_t window)
 {
+#if defined(CONFIG_BLUETOOTH_BLE_SUPPORT) && !defined(CONFIG_BLUETOOTH_BREDR_SUPPORT)
+    return BT_STATUS_SUCCESS;
+#else
     return bt_sal_set_page_scan_parameters(PRIMARY_ADAPTER, type, interval, window);
+#endif
 }
 
 bt_status_t adapter_get_le_address(bt_address_t* addr, ble_addr_type_t* type)
@@ -2438,11 +2505,9 @@ bt_status_t adapter_set_le_identity_address(bt_address_t* addr, bool is_public)
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     // adapter_service_t *adapter = &g_adapter_service;
     if (is_public)
-        bt_sal_le_set_public_identity(PRIMARY_ADAPTER, addr);
+        return bt_sal_le_set_public_identity(PRIMARY_ADAPTER, addr);
     else
-        bt_sal_le_set_static_identity(PRIMARY_ADAPTER, addr);
-
-    return BT_STATUS_SUCCESS;
+        return bt_sal_le_set_static_identity(PRIMARY_ADAPTER, addr);
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif
@@ -2452,14 +2517,17 @@ bt_status_t adapter_set_le_io_capability(uint32_t le_io_cap)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     adapter_service_t* adapter = &g_adapter_service;
+    bt_status_t status;
+
+    status = bt_sal_le_set_io_capability(PRIMARY_ADAPTER, le_io_cap);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
 
     adapter_lock();
     adapter->le_properties.le_io_capability = le_io_cap;
     /* TODO update storage */
     /* TODO notify properties changed */
     adapter_unlock();
-    bt_sal_le_set_io_capability(PRIMARY_ADAPTER, le_io_cap);
-
     return BT_STATUS_SUCCESS;
 #else
     return BT_STATUS_NOT_SUPPORTED;
@@ -3125,26 +3193,68 @@ bt_status_t adapter_le_enable_key_derivation(bool brkey_to_lekey,
 #endif
 }
 
-bt_status_t adapter_le_add_whitelist(bt_address_t* addr)
+bt_status_t adapter_le_add_whitelist_with_type(bt_address_t* addr, ble_addr_type_t type)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     adapter_service_t* adapter = &g_adapter_service;
     bt_device_t* device;
+    ble_addr_type_t resolved_type;
+    ble_addr_type_t previous_type = BT_LE_ADDR_TYPE_UNKNOWN;
+    bool previous_whitelist = false;
+    bool type_changed = false;
+    bt_status_t status;
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     adapter_lock();
-    if (adapter->adapter_state != BT_ADAPTER_STATE_ON) {
+    if ((adapter->adapter_state != BT_ADAPTER_STATE_ON) &&
+        (adapter->adapter_state != BT_ADAPTER_STATE_BLE_ON)) {
         adapter_unlock();
         return BT_STATUS_NOT_ENABLED;
     }
 
-    device = adapter_find_create_le_device(addr, BT_LE_ADDR_TYPE_PUBLIC);
+    /* Reuse the recorded address type when the caller does not provide one. */
+    device = adapter_find_device(addr, BT_TRANSPORT_BLE);
+    if (type == BT_LE_ADDR_TYPE_UNKNOWN) {
+        if (device) {
+            resolved_type = device_get_address_type(device);
+            if ((resolved_type != BT_LE_ADDR_TYPE_PUBLIC) &&
+                (resolved_type != BT_LE_ADDR_TYPE_RANDOM) &&
+                (resolved_type != BT_LE_ADDR_TYPE_PUBLIC_ID) &&
+                (resolved_type != BT_LE_ADDR_TYPE_RANDOM_ID)) {
+                resolved_type = BT_LE_ADDR_TYPE_PUBLIC;
+            }
+        } else {
+            resolved_type = BT_LE_ADDR_TYPE_PUBLIC;
+        }
+    } else {
+        resolved_type = type;
+    }
+
+    if ((resolved_type != BT_LE_ADDR_TYPE_PUBLIC) &&
+        (resolved_type != BT_LE_ADDR_TYPE_RANDOM) &&
+        (resolved_type != BT_LE_ADDR_TYPE_PUBLIC_ID) &&
+        (resolved_type != BT_LE_ADDR_TYPE_RANDOM_ID)) {
+        adapter_unlock();
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    if (!device) {
+        device = adapter_find_create_le_device(addr, resolved_type);
+    } else if (device_get_address_type(device) != resolved_type) {
+        previous_type = device_get_address_type(device);
+        previous_whitelist = device_check_flag(device, DFLAG_WHITELIST_ADDED);
+        type_changed = true;
+        bt_addr_ba2str(addr, addr_str);
+    }
+    if (!device)
+        device = adapter_find_create_le_device(addr, resolved_type);
     if (!device) {
         adapter_unlock();
         return BT_STATUS_NOMEM;
     }
 
-    if (device_check_flag(device, DFLAG_WHITELIST_ADDED)) {
+    if (device_check_flag(device, DFLAG_WHITELIST_ADDED) && !type_changed) {
+        resolved_type = device_get_address_type(device);
         adapter_unlock();
         return BT_STATUS_SUCCESS;
     }
@@ -3152,12 +3262,59 @@ bt_status_t adapter_le_add_whitelist(bt_address_t* addr)
     adapter_unlock();
 
     bt_addr_ba2str(addr, addr_str);
-    BT_LOGD("%s, %s", __func__, addr_str);
+    if (type_changed && previous_whitelist) {
+        status = bt_sal_le_remove_white_list(PRIMARY_ADAPTER, addr, previous_type);
+        if (status != BT_STATUS_SUCCESS) {
+            BT_LOGE("LE whitelist replace remove failed addr:%s type:%" PRIu8 " status:%d",
+                addr_str, (uint8_t)previous_type, status);
+            return status;
+        }
+    }
 
-    return bt_sal_le_add_white_list(PRIMARY_ADAPTER, addr, device_get_address_type(device));
+    status = bt_sal_le_add_white_list(PRIMARY_ADAPTER, addr, resolved_type);
+
+    if (status == BT_STATUS_SUCCESS) {
+        adapter_lock();
+        device = adapter_find_device(addr, BT_TRANSPORT_BLE);
+        if (device == NULL)
+            device = adapter_find_create_le_device(addr, resolved_type);
+        if (device != NULL) {
+            device_set_address_type(device, resolved_type);
+            device_set_flags(device, DFLAG_WHITELIST_ADDED);
+            adapter_update_whitelist();
+        }
+        adapter_unlock();
+    } else if (type_changed && previous_whitelist) {
+        bt_status_t rollback_status = bt_sal_le_add_white_list(PRIMARY_ADAPTER, addr, previous_type);
+        BT_LOGE("LE whitelist add failed addr:%s type:%" PRIu8 " status:%d",
+            addr_str, (uint8_t)resolved_type, status);
+        if (rollback_status != BT_STATUS_SUCCESS)
+            BT_LOGE("LE whitelist replace rollback failed addr:%s type:%" PRIu8 " status:%d",
+                addr_str, (uint8_t)previous_type, rollback_status);
+
+        adapter_lock();
+        device = adapter_find_device(addr, BT_TRANSPORT_BLE);
+        if (device != NULL) {
+            if (rollback_status == BT_STATUS_SUCCESS) {
+                device_set_address_type(device, previous_type);
+                device_set_flags(device, DFLAG_WHITELIST_ADDED);
+            } else {
+                device_clear_flag(device, DFLAG_WHITELIST_ADDED);
+                adapter_update_whitelist();
+            }
+        }
+        adapter_unlock();
+    }
+
+    return status;
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif
+}
+
+bt_status_t adapter_le_add_whitelist(bt_address_t* addr)
+{
+    return adapter_le_add_whitelist_with_type(addr, BT_LE_ADDR_TYPE_UNKNOWN);
 }
 
 bt_status_t adapter_le_remove_whitelist(bt_address_t* addr)
@@ -3165,10 +3322,12 @@ bt_status_t adapter_le_remove_whitelist(bt_address_t* addr)
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     adapter_service_t* adapter = &g_adapter_service;
     bt_device_t* device;
+    ble_addr_type_t addr_type;
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     adapter_lock();
-    if (adapter->adapter_state != BT_ADAPTER_STATE_ON) {
+    if ((adapter->adapter_state != BT_ADAPTER_STATE_ON) &&
+        (adapter->adapter_state != BT_ADAPTER_STATE_BLE_ON)) {
         adapter_unlock();
         return BT_STATUS_NOT_ENABLED;
     }
@@ -3179,6 +3338,7 @@ bt_status_t adapter_le_remove_whitelist(bt_address_t* addr)
         return BT_STATUS_DEVICE_NOT_FOUND;
     }
 
+    addr_type = device_get_address_type(device);
     if (!device_check_flag(device, DFLAG_WHITELIST_ADDED)) {
         adapter_unlock();
         return BT_STATUS_SUCCESS;
@@ -3189,7 +3349,18 @@ bt_status_t adapter_le_remove_whitelist(bt_address_t* addr)
     bt_addr_ba2str(addr, addr_str);
     BT_LOGD("%s, %s", __func__, addr_str);
 
-    return bt_sal_le_remove_white_list(PRIMARY_ADAPTER, addr, device_get_address_type(device));
+    bt_status_t status = bt_sal_le_remove_white_list(PRIMARY_ADAPTER, addr, addr_type);
+    if (status == BT_STATUS_SUCCESS) {
+        adapter_lock();
+        device = adapter_find_device(addr, BT_TRANSPORT_BLE);
+        if (device != NULL && device_check_flag(device, DFLAG_WHITELIST_ADDED)) {
+            device_clear_flag(device, DFLAG_WHITELIST_ADDED);
+            adapter_update_whitelist();
+        }
+        adapter_unlock();
+    }
+
+    return status;
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif
@@ -3242,9 +3413,17 @@ bt_status_t adapter_create_bond(bt_address_t* addr, bt_transport_t transport)
 {
     adapter_service_t* adapter = &g_adapter_service;
     bt_device_t* device;
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
+    bt_status_t status;
+#endif
 
     adapter_lock();
-    if (adapter->adapter_state != BT_ADAPTER_STATE_ON) {
+    if (adapter->adapter_state != BT_ADAPTER_STATE_ON
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
+        && !(transport == BT_TRANSPORT_BLE
+            && adapter->adapter_state == BT_ADAPTER_STATE_BLE_ON)
+#endif
+    ) {
         adapter_unlock();
         return BT_STATUS_NOT_ENABLED;
     }
@@ -3276,6 +3455,13 @@ bt_status_t adapter_create_bond(bt_address_t* addr, bt_transport_t transport)
         return BT_STATUS_FAIL;
     }
 
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
+    if (transport == BT_TRANSPORT_BLE) {
+        device_set_bond_initiate_local(device, true);
+        device_set_bond_state(device, BOND_STATE_BONDING, false, adapter_notify_bond_state);
+    }
+#endif
+
     adapter_unlock();
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     if (transport == BT_TRANSPORT_BREDR)
@@ -3283,8 +3469,16 @@ bt_status_t adapter_create_bond(bt_address_t* addr, bt_transport_t transport)
     else
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
-        if (transport == BT_TRANSPORT_BLE)
-        return bt_sal_le_create_bond(PRIMARY_ADAPTER, addr, device_get_address_type(device));
+        if (transport == BT_TRANSPORT_BLE) {
+        status = bt_sal_le_create_bond(PRIMARY_ADAPTER, addr, device_get_address_type(device));
+        if (status != BT_STATUS_SUCCESS) {
+            adapter_lock();
+            if (device_get_bond_state(device) == BOND_STATE_BONDING)
+                device_set_bond_state(device, BOND_STATE_NONE, false, adapter_notify_bond_state);
+            adapter_unlock();
+        }
+        return status;
+    }
     else
 #endif
         return BT_STATUS_PARM_INVALID;

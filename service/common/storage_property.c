@@ -68,6 +68,7 @@ static int storage_set_key(const char* key, void* data, size_t length)
     ret = property_set_binary(key, data, length, true);
     if (ret < 0) {
         BT_LOGE("key %s set error!", key);
+        syslog(LOG_ERR, "BT storage set key failed: %s ret:%d", key, ret);
         return ret;
     }
     service_loop_work(NULL, storage_commit, NULL);

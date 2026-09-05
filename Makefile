@@ -16,6 +16,11 @@
 
 include $(APPDIR)/Make.defs
 
+# Keep the bluetooth service headers ahead of the generic utils headers so
+# service-local logging macros are used by the original framework sources.
+CFLAGS := ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service $(CFLAGS)
+CXXFLAGS := ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service $(CXXFLAGS)
+
 ifeq ($(CONFIG_BLUETOOTH), y)
 
 CSRCS += framework/common/*.c
@@ -419,7 +424,6 @@ endif #CONFIG_APP_BT_SAMPLE_CODE
 
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	CSRCS += tools/utils.c
-	CSRCS += tools/uv_thread_loop.c
 ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK_ASYNC), y)
 	CSRCS += tools/async/gap.c
 	CSRCS += tools/async/log.c
@@ -537,6 +541,8 @@ CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/st
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/stacks/include
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/vendor
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/dfx
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/system/utils/uv/include
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/ipc/socket/include
 
 ifeq ($(CONFIG_BLUETOOTH_SERVICE), y)
 ifneq ($(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET)$(CONFIG_BLUETOOTH_STACK_LE_BLUELET),)
@@ -547,6 +553,10 @@ endif
 ifneq ($(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE)$(CONFIG_BLUETOOTH_STACK_LE_ZBLUE),)
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/stacks/zephyr/include
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/port/include/
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/include
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/include/zephyr/sys
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/misc/generated
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/arch/common/include
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/subsys/bluetooth/host
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/subsys/settings/include/settings
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/subsys/bluetooth
@@ -630,8 +640,10 @@ endif #CONFIG_APP_BT_SAMPLE_CODE
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	PROGNAME += bttool
 	MAINSRC  += tools/bt_tools.c
-	PROGNAME += adapter_test
-	MAINSRC  += tests/adapter_test.c
+ifeq ($(CONFIG_BLUETOOTH_SERVICE_TEST), y)
+PROGNAME += adapter_test
+MAINSRC  += tests/adapter_test.c
+endif
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_UPGRADE), y)
@@ -713,4 +725,3 @@ BIN := $(APPDIR)/staging/libbluetooth.a
 endif
 
 include $(APPDIR)/Application.mk
-
