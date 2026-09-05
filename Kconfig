@@ -19,7 +19,6 @@ menuconfig BLUETOOTH
 	bool "Bluetooth"
 	default n
 	depends on LIBUV
-	depends on LIBUV_EXTENSION
 
 if BLUETOOTH
 menuconfig BLUETOOTH_FRAMEWORK
@@ -93,10 +92,12 @@ config BLUETOOTH_BLE_SUPPORT
 config BLUETOOTH_BLE_ADV
 	bool "LE Advertising support"
 	default n
+	depends on BLUETOOTH_BLE_SUPPORT
 
 config BLUETOOTH_BLE_SCAN
 	bool "LE Scan support"
 	default n
+	depends on BLUETOOTH_BLE_SUPPORT
 
 config BLUETOOTH_BLE_SCAN_FILTER
 	bool "LE Scan Filter support"
@@ -825,6 +826,13 @@ config BLUETOOTH_TOOLS
 	bool "Bluetooth profile test tools (BT_TOOLS)"
 	default n
 	select BLUETOOTH_FRAMEWORK
+
+config BLUETOOTH_SERVICE_TEST
+	bool "Bluetooth service adapter test"
+	default n
+	depends on BLUETOOTH_TOOLS
+	---help---
+		Build the Bluetooth service adapter test application.
 
 menuconfig APP_BT_SAMPLE_CODE
 	bool "Sample Code"

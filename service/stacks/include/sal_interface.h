@@ -16,6 +16,7 @@
 #ifndef __SAL_ADAPTER_H_
 #define __SAL_ADAPTER_H_
 
+#include <nuttx/config.h>
 #include "bluetooth_define.h"
 
 #include "sal_adapter_classic_interface.h"

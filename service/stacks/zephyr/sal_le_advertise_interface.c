@@ -15,6 +15,9 @@
  ***************************************************************************/
 #define LOG_TAG "adver"
 
+#include <pthread.h>
+#include <syslog.h>
+
 #include "include/sal_le_advertise_interface.h"
 
 #include "advertising.h"
@@ -22,6 +25,10 @@
 #include "service_loop.h"
 #include "utils/log.h"
 
+
+#undef BT_LE_SCAN_TYPE_PASSIVE
+#undef BT_LE_SCAN_TYPE_ACTIVE
+#include <zephyr/kernel.h>
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/hci.h>
@@ -158,18 +165,26 @@ static bt_status_t zblue_le_ext_convert_param(ble_adv_params_t* params, struct b
 
     switch (params->adv_type) {
     case BT_LE_ADV_IND:
+        param->options |= BT_LE_ADV_OPT_CONN;
+        param->options |= BT_LE_ADV_OPT_SCANNABLE;
+        break;
     case BT_LE_EXT_ADV_IND:
         param->options |= BT_LE_ADV_OPT_CONN;
         param->options |= BT_LE_ADV_OPT_EXT_ADV;
         param->options |= BT_LE_ADV_OPT_NO_2M;
         break;
     case BT_LE_ADV_SCAN_IND:
+        param->options |= BT_LE_ADV_OPT_SCANNABLE;
+        break;
     case BT_LE_EXT_ADV_SCAN_IND:
         param->options |= BT_LE_ADV_OPT_SCANNABLE;
         param->options |= BT_LE_ADV_OPT_EXT_ADV;
         param->options |= BT_LE_ADV_OPT_NO_2M;
         break;
     case BT_LE_ADV_DIRECT_IND:
+        param->options |= BT_LE_ADV_OPT_CONN;
+        param->options |= BT_LE_ADV_OPT_DIR_MODE_LOW_DUTY;
+        break;
     case BT_LE_EXT_ADV_DIRECT_IND:
         param->options |= BT_LE_ADV_OPT_CONN;
         param->options |= BT_LE_ADV_OPT_EXT_ADV;
@@ -177,8 +192,9 @@ static bt_status_t zblue_le_ext_convert_param(ble_adv_params_t* params, struct b
         param->options |= BT_LE_ADV_OPT_DIR_MODE_LOW_DUTY;
         break;
     case BT_LE_SCAN_RSP:
-    case BT_LE_EXT_SCAN_RSP:
     case BT_LE_ADV_NONCONN_IND:
+        break;
+    case BT_LE_EXT_SCAN_RSP:
     case BT_LE_EXT_ADV_NONCONN_IND:
         param->options |= BT_LE_ADV_OPT_EXT_ADV;
         param->options |= BT_LE_ADV_OPT_NO_2M;
@@ -189,6 +205,7 @@ static bt_status_t zblue_le_ext_convert_param(ble_adv_params_t* params, struct b
         break;
     case BT_LE_LEGACY_ADV_DIRECT_IND:
         param->options |= BT_LE_ADV_OPT_CONN;
+        param->options |= BT_LE_ADV_OPT_DIR_MODE_LOW_DUTY;
         break;
     case BT_LE_LEGACY_ADV_SCAN_IND:
         param->options |= BT_LE_ADV_OPT_SCANNABLE;
@@ -321,6 +338,52 @@ static struct bt_le_adv_set* zblue_le_ext_find_adv(uint8_t adv_id)
     return NULL;
 }
 
+static bt_status_t zblue_le_ext_adv_set_data(struct bt_le_ext_adv* adv, uint8_t* adv_data, uint16_t adv_len, uint8_t* scan_rsp_data, uint16_t scan_rsp_len)
+{
+    size_t index;
+    struct bt_data ad[CONFIG_BT_EXT_ADV_MAX_ADV_SEGMENT] = { 0 };
+    struct bt_data sd[CONFIG_BT_EXT_ADV_MAX_ADV_SEGMENT] = { 0 };
+    size_t ad_size = 0;
+    size_t sd_size = 0;
+    int ret;
+
+    for (index = 0; index < adv_len;) {
+        if (adv_data[index] == 0 || index + adv_data[index] >= adv_len + 1
+            || ad_size >= CONFIG_BT_EXT_ADV_MAX_ADV_SEGMENT) {
+            BT_LOGE("%s, invalid adv data", __func__);
+            return BT_STATUS_PARM_INVALID;
+        }
+
+        ad[ad_size].data_len = adv_data[index] - 1;
+        ad[ad_size].type = adv_data[index + 1];
+        ad[ad_size].data = &adv_data[index + 2];
+        index += ad[ad_size].data_len + 2;
+        ad_size++;
+    }
+
+    for (index = 0; index < scan_rsp_len;) {
+        if (scan_rsp_data[index] == 0 || index + scan_rsp_data[index] >= scan_rsp_len + 1
+            || sd_size >= CONFIG_BT_EXT_ADV_MAX_ADV_SEGMENT) {
+            BT_LOGE("%s, invalid scan rsp data", __func__);
+            return BT_STATUS_PARM_INVALID;
+        }
+
+        sd[sd_size].data_len = scan_rsp_data[index] - 1;
+        sd[sd_size].type = scan_rsp_data[index + 1];
+        sd[sd_size].data = &scan_rsp_data[index + 2];
+        index += sd[sd_size].data_len + 2;
+        sd_size++;
+    }
+
+    ret = bt_le_ext_adv_set_data(adv, ad_size > 0 ? ad : NULL, ad_size,
+        sd_size > 0 ? sd : NULL, sd_size);
+    if (ret) {
+        BT_LOGE("%s, le ext adv set data fail, err:%d", __func__, ret);
+        return BT_STATUS_FAIL;
+    }
+
+    return BT_STATUS_SUCCESS;
+}
 static sal_adapter_req_t* sal_adapter_req(bt_controller_id_t id, uint8_t adv_id, sal_func_t func)
 {
     sal_adapter_req_t* req = calloc(sizeof(sal_adapter_req_t), 1);
@@ -334,26 +397,97 @@ static sal_adapter_req_t* sal_adapter_req(bt_controller_id_t id, uint8_t adv_id,
     return req;
 }
 
-static void sal_invoke_async(service_work_t* work, void* userdata)
+static void* sal_invoke_thread(void* userdata)
 {
     sal_adapter_req_t* req = userdata;
+    int priority;
+    int ret;
 
     SAL_ASSERT(req);
+    priority = CONFIG_BLUETOOTH_SERVICE_LOOP_THREAD_PRIORITY + 10;
+    ret = pthread_setschedprio(pthread_self(), priority);
+    if (ret != 0)
+        BT_LOGE("%s, pthread_setschedprio failed: %d", __func__, ret);
     req->func(req);
-    free(userdata);
+    free(req);
+
+    return NULL;
 }
 
-static bt_status_t sal_send_req(sal_adapter_req_t* req)
+static bt_status_t sal_send_req(sal_adapter_req_t* req, bool wait)
 {
+    pthread_attr_t attr;
+    pthread_t thread;
+    struct sched_param schedparam;
+    uint8_t adv_id;
+    int ret;
+
     if (!req) {
         BT_LOGE("%s, req null", __func__);
         return BT_STATUS_PARM_INVALID;
     }
 
-    if (!service_loop_work((void*)req, sal_invoke_async, NULL)) {
-        BT_LOGE("%s, service_loop_work failed", __func__);
+    adv_id = req->adv_id;
+
+    ret = pthread_attr_init(&attr);
+    if (ret != 0) {
+        BT_LOGE("%s, pthread_attr_init failed: %d", __func__, ret);
+        free(req->adpt.start_adv.adv_data);
+        free(req->adpt.start_adv.scan_rsp_data);
         free(req);
         return BT_STATUS_FAIL;
+    }
+
+    ret = pthread_attr_setstacksize(&attr, CONFIG_BLUETOOTH_SERVICE_LOOP_THREAD_STACK_SIZE);
+    if (ret != 0) {
+        BT_LOGE("%s, pthread_attr_setstacksize failed: %d", __func__, ret);
+        pthread_attr_destroy(&attr);
+        free(req->adpt.start_adv.adv_data);
+        free(req->adpt.start_adv.scan_rsp_data);
+        free(req);
+        return BT_STATUS_FAIL;
+    }
+
+    ret = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
+    if (ret != 0) {
+        BT_LOGE("%s, pthread_attr_setinheritsched failed: %d", __func__, ret);
+        pthread_attr_destroy(&attr);
+        free(req->adpt.start_adv.adv_data);
+        free(req->adpt.start_adv.scan_rsp_data);
+        free(req);
+        return BT_STATUS_FAIL;
+    }
+
+    schedparam.sched_priority = CONFIG_BLUETOOTH_SERVICE_LOOP_THREAD_PRIORITY + 10;
+    ret = pthread_attr_setschedparam(&attr, &schedparam);
+    if (ret != 0) {
+        BT_LOGE("%s, pthread_attr_setschedparam failed: %d", __func__, ret);
+        pthread_attr_destroy(&attr);
+        free(req->adpt.start_adv.adv_data);
+        free(req->adpt.start_adv.scan_rsp_data);
+        free(req);
+        return BT_STATUS_FAIL;
+    }
+
+    ret = pthread_create(&thread, &attr, sal_invoke_thread, req);
+    pthread_attr_destroy(&attr);
+    if (ret != 0) {
+        BT_LOGE("%s, pthread_create failed: %d", __func__, ret);
+        syslog(LOG_ERR, "BT adv SAL request create failed id=%u ret=%d\n", adv_id, ret);
+        free(req->adpt.start_adv.adv_data);
+        free(req->adpt.start_adv.scan_rsp_data);
+        free(req);
+        return BT_STATUS_FAIL;
+    }
+
+    if (wait) {
+        ret = pthread_join(thread, NULL);
+        if (ret != 0) {
+            BT_LOGE("%s, pthread_join failed: %d", __func__, ret);
+            return BT_STATUS_FAIL;
+        }
+    } else {
+        pthread_detach(thread);
     }
 
     return BT_STATUS_SUCCESS;
@@ -362,7 +496,7 @@ static bt_status_t sal_send_req(sal_adapter_req_t* req)
 static void STACK_CALL(start_adv)(void* args)
 {
     sal_adapter_req_t* req = args;
-    struct bt_le_ext_adv* adv;
+    struct bt_le_ext_adv* adv = NULL;
     int ret;
     struct bt_data ad[CONFIG_BT_EXT_ADV_MAX_ADV_SEGMENT] = { 0 };
     struct bt_data sd[CONFIG_BT_EXT_ADV_MAX_ADV_SEGMENT] = { 0 };
@@ -396,6 +530,7 @@ static void STACK_CALL(start_adv)(void* args)
             sd_size > 0 ? sd : NULL, sd_size);
         if (ret) {
             BT_LOGE("%s, le ext adv set fail, err:%d", __func__, ret);
+            zblue_le_ext_delete(zblue_le_ext_find_adv(req->adv_id));
             ret = BT_STATUS_FAIL;
             goto done;
         }
@@ -403,6 +538,8 @@ static void STACK_CALL(start_adv)(void* args)
         ret = bt_le_ext_adv_start(adv, &req->adpt.start_adv.ext_param);
         if (ret) {
             BT_LOGE("%s, le ext adv start fail, err:%d", __func__, ret);
+            bt_le_ext_adv_stop(adv);
+            zblue_le_ext_delete(zblue_le_ext_find_adv(req->adv_id));
             ret = BT_STATUS_FAIL;
             goto done;
         }
@@ -493,7 +630,7 @@ bt_status_t bt_sal_le_start_adv(bt_controller_id_t id, uint8_t adv_id, ble_adv_p
         req->adpt.start_adv.ext_param.timeout = params->duration;
     }
 
-    return sal_send_req(req);
+    return sal_send_req(req, false);
 
 error:
     if (req->adpt.start_adv.adv_data)
@@ -555,6 +692,6 @@ bt_status_t bt_sal_le_stop_adv(bt_controller_id_t id, uint8_t adv_id)
         return BT_STATUS_NOMEM;
     }
 
-    return sal_send_req(req);
+    return sal_send_req(req, true);
 }
 #endif /*CONFIG_BLUETOOTH_BLE_ADV*/

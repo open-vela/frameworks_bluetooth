@@ -1135,6 +1135,8 @@ bt_status_t BTSYMBOLS(bt_adapter_le_enable_key_derivation)(bt_instance_t* ins,
  */
 bt_status_t BTSYMBOLS(bt_adapter_le_add_whitelist)(bt_instance_t* ins, bt_address_t* addr);
 
+bt_status_t BTSYMBOLS(bt_adapter_le_add_whitelist_with_type)(bt_instance_t* ins, bt_address_t* addr, ble_addr_type_t type);
+
 /**
  * @brief Remove a device from the BLE whitelist.
  *

@@ -15,8 +15,11 @@
  ***************************************************************************/
 #define LOG_TAG "sal_zblue"
 
-#include "sal_zblue.h"
 #include "sal_interface.h"
+
+#undef BT_LE_SCAN_TYPE_PASSIVE
+#undef BT_LE_SCAN_TYPE_ACTIVE
+#include "sal_zblue.h"
 #include "sal_zephyr_interface.h"
 #include "utils/log.h"
 

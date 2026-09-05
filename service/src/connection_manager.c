@@ -565,6 +565,7 @@ static inline int sniff_param_table_index_from_mode(bt_enhanced_mode_t mode)
 
 static bt_status_t bt_cm_apply_bredr_sniff_mode(bt_address_t* addr, uint8_t table_idx)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     bt_pm_mode_t sniff_params;
     bt_cm_sniff_param_t* p;
 
@@ -581,6 +582,9 @@ static bt_status_t bt_cm_apply_bredr_sniff_mode(bt_address_t* addr, uint8_t tabl
     bt_cm_sniff_param_to_pm_mode(p, &sniff_params);
 
     return bt_pm_set_app_profile_sniff(addr, &sniff_params);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 bt_status_t bt_cm_enable_enhanced_mode(bt_address_t* addr, uint8_t mode)
@@ -615,13 +619,16 @@ bt_status_t bt_cm_disable_enhanced_mode(bt_address_t* addr, uint8_t mode)
 
     case EM_BR_LOW_LATENCY:
     case EM_BR_ULTRA_LOW_LATENCY:
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
         return bt_pm_set_app_profile_sniff(addr, NULL);
+#else
+        return BT_STATUS_NOT_SUPPORTED;
+#endif
 
     default:
         return BT_STATUS_NOT_SUPPORTED;
     }
 }
-
 static void rssi_update(service_timer_t* timer, void* userdata)
 {
     bt_status_t status;

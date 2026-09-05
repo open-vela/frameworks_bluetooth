@@ -17,6 +17,8 @@
 #include <stdio.h>
 
 #include <zephyr/bluetooth/att.h>
+#undef BT_LE_SCAN_TYPE_PASSIVE
+#undef BT_LE_SCAN_TYPE_ACTIVE
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/classic/sdp.h>
 #include <zephyr/bluetooth/conn.h>

@@ -38,9 +38,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <syslog.h>
 #include <unistd.h>
 #include <zephyr/sys/byteorder.h>
 
+
+#undef BT_LE_SCAN_TYPE_PASSIVE
+#undef BT_LE_SCAN_TYPE_ACTIVE
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/hci.h>
 #include <zephyr/drivers/bluetooth.h>
@@ -67,10 +71,43 @@ struct h4_data {
     pthread_mutex_t mutex;
     bt_hci_recv_t recv;
     void* hci_data;
+    const struct device* dev;
+    uint8_t frame[1026];
+    size_t frame_size;
+    pthread_t recv_thread;
+    bool recv_thread_running;
+    bool recv_thread_valid;
 };
 
-static const struct device* bt_dev;
-static service_poll_t* hci_handle;
+static void h4_trace_command(const char* direction, const uint8_t* data, size_t len)
+{
+    uint16_t opcode;
+
+    if (len < 4) {
+        return;
+    }
+
+    if (data[0] == BT_HCI_H4_CMD && len >= 4) {
+        opcode = data[1] | ((uint16_t)data[2] << 8);
+        syslog(LOG_INFO, "BT H4 %s cmd opcode=0x%04x len=%u\n",
+            direction, opcode, (unsigned int)len);
+        return;
+    }
+
+    if (data[0] != BT_HCI_H4_EVT || len < 7) {
+        return;
+    }
+
+    if (data[1] == BT_HCI_EVT_CMD_COMPLETE && len >= 7) {
+        opcode = data[4] | ((uint16_t)data[5] << 8);
+        syslog(LOG_INFO, "BT H4 %s complete opcode=0x%04x ncmd=%u status=0x%02x\n",
+            direction, opcode, data[3], data[6]);
+    } else if (data[1] == BT_HCI_EVT_CMD_STATUS && len >= 7) {
+        opcode = data[5] | ((uint16_t)data[6] << 8);
+        syslog(LOG_INFO, "BT H4 %s status opcode=0x%04x ncmd=%u status=0x%02x\n",
+            direction, opcode, data[4], data[3]);
+    }
+}
 
 static void h4_data_dump(const char* tag, uint8_t type, uint8_t* data, uint32_t len)
 {
@@ -99,6 +136,9 @@ static int h4_send_data(int fd, uint8_t* buf, int count)
             } else
                 return ret;
         }
+
+        if (ret == 0)
+            return -EIO;
 
         nwritten += ret;
     }
@@ -216,46 +256,49 @@ static int32_t hci_packet_complete(const uint8_t* buf, uint16_t buf_len)
     return (int32_t)header_len + payload_len;
 }
 
-static void bt_sal_hci_transport_recv(void)
+static int bt_sal_hci_transport_recv(struct h4_data* h4)
 {
-    struct h4_data* h4 = bt_dev->data;
-    static uint8_t frame[1026];
     struct net_buf* buf;
     size_t buf_tailroom;
     size_t buf_add_len;
     ssize_t len;
-    const uint8_t* frame_start = frame;
-    static ssize_t frame_size = 0;
+    const size_t frame_capacity = 1026;
+    const uint8_t* frame_start = h4->frame;
 
-    len = read(h4->fd, frame + frame_size, sizeof(frame) - frame_size);
+    len = read(h4->fd, h4->frame + h4->frame_size,
+               frame_capacity - h4->frame_size);
     if (len < 0) {
         BT_LOGE("Reading hci failed, errno %d", errno);
-        close(h4->fd);
-        h4->fd = -1;
-        return;
+        h4->frame_size = 0;
+        return -errno;
     }
 
-    frame_size += len;
+    if (len == 0) {
+        return -EIO;
+    }
 
-    while (frame_size > 0) {
+    h4->frame_size += len;
+
+    while (h4->frame_size > 0) {
         const uint8_t* buf_add;
         const uint8_t packet_type = frame_start[0];
-        const int32_t decoded_len = hci_packet_complete(frame_start, frame_size);
+        const int32_t decoded_len = hci_packet_complete(frame_start,
+                                                         h4->frame_size);
 
         if (decoded_len == -1) {
             BT_LOGE("HCI Packet type is invalid, length could not be decoded");
-            frame_size = 0; /* Drop buffer */
+            h4->frame_size = 0; /* Drop buffer */
             break;
         }
 
         if (decoded_len == 0) {
-            if (frame_size == sizeof(frame)) {
+            if (h4->frame_size == frame_capacity) {
                 BT_LOGE("HCI Packet is too big for frame");
-                frame_size = 0; /* Drop buffer */
+                h4->frame_size = 0; /* Drop buffer */
                 break;
             }
-            if (frame_start != frame) {
-                memmove(frame, frame_start, frame_size);
+            if (frame_start != h4->frame) {
+                memmove(h4->frame, frame_start, h4->frame_size);
             }
             /* Read more */
             break;
@@ -266,7 +309,9 @@ static void bt_sal_hci_transport_recv(void)
 
         buf = get_rx(frame_start);
 
-        frame_size -= decoded_len;
+        h4_trace_command("RX", frame_start, decoded_len);
+
+        h4->frame_size -= decoded_len;
         frame_start += decoded_len;
 
         if (!buf) {
@@ -285,8 +330,10 @@ static void bt_sal_hci_transport_recv(void)
         net_buf_add_mem(buf, buf_add, buf_add_len);
 
         h4_data_dump("BT RX", packet_type, buf->data, buf_add_len);
-        h4->recv(bt_dev, buf, h4->hci_data);
+        h4->recv(h4->dev, buf, h4->hci_data);
     }
+
+    return 0;
 }
 
 int bt_sal_hci_transport_init(const bt_vhal_interface* vhal)
@@ -296,39 +343,68 @@ int bt_sal_hci_transport_init(const bt_vhal_interface* vhal)
 
 void bt_sal_hci_transport_cleanup(void)
 {
-    struct h4_data* h4 = bt_dev->data;
-
-    close(h4->fd);
-    h4->fd = -1;
+    return;
 }
 
-static void hci_remove_recv(void* data)
+static void* hci_recv_thread(void* arg)
 {
-    (void)data;
+    struct h4_data* h4 = arg;
+    struct pollfd pfd = {
+        .fd = h4->fd,
+        .events = POLLIN,
+        .revents = 0,
+    };
 
-    BT_LOGD("%s", __func__);
-    service_loop_remove_poll(hci_handle);
-    hci_handle = NULL;
-}
+    while (h4->recv_thread_running) {
+        int ret = poll(&pfd, 1, 100);
+        if (ret < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
 
-static void hci_poll_recv(service_poll_t* poll, int revent, void* userdata)
-{
-    (void)poll;
-    (void)userdata;
+            BT_LOGE("H4 poll failed, errno %d", errno);
+            break;
+        }
 
-    if (revent & (POLL_ERROR | POLL_DISCONNECT))
-        hci_remove_recv(NULL);
+        if (ret == 0) {
+            continue;
+        }
 
-    if (revent & POLL_READABLE)
-        bt_sal_hci_transport_recv();
+        if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) {
+            BT_LOGE("H4 poll disconnected, events 0x%x", pfd.revents);
+            break;
+        }
+
+        if ((pfd.revents & POLLIN) && bt_sal_hci_transport_recv(h4) < 0) {
+            break;
+        }
+
+        pfd.revents = 0;
+    }
+
+    h4->recv_thread_running = false;
+    return NULL;
 }
 
 static int h4_open(const struct device* dev, bt_hci_recv_t recv, void* hci_data)
 {
+    int ret;
     int fd;
     struct h4_data* h4;
+    char dev_name[32];
 
-    fd = open(CONFIG_BT_UART_ON_DEV_NAME, O_RDWR | O_BINARY | O_CLOEXEC);
+    if (dev->name == NULL) {
+        BT_LOGE("No device name");
+        return -EINVAL;
+    }
+
+    ret = snprintf(dev_name, sizeof(dev_name), "%s", dev->name);
+    if (ret < 0 || ret >= sizeof(dev_name)) {
+        BT_LOGE("dev_name:%s snprintf failed, ret %d, ", dev->name, ret);
+        return -EINVAL;
+    }
+
+    fd = open(dev_name, O_RDWR | O_BINARY | O_CLOEXEC);
     if (fd < 0) {
         BT_LOGE("H4: Failed to open %s: %d", CONFIG_BT_UART_ON_DEV_NAME, errno);
         return fd;
@@ -338,15 +414,41 @@ static int h4_open(const struct device* dev, bt_hci_recv_t recv, void* hci_data)
     h4->fd = fd;
     h4->recv = recv;
     h4->hci_data = hci_data;
+    h4->dev = dev;
+    h4->frame_size = 0;
 
-    bt_dev = dev;
     BT_LOGE("H4: %s opened as fd:%d", CONFIG_BT_UART_ON_DEV_NAME, h4->fd);
 
-    hci_handle = service_loop_poll_fd(h4->fd, POLL_READABLE, hci_poll_recv, NULL);
-    if (!hci_handle) {
-        BT_LOGD("hci fd:%d add poll failed", h4->fd);
-        return -1;
+    h4->recv_thread_running = true;
+    ret = pthread_create(&h4->recv_thread, NULL, hci_recv_thread, h4);
+    if (ret != 0) {
+        h4->recv_thread_running = false;
+        close(h4->fd);
+        h4->fd = -1;
+        BT_LOGE("H4 receive thread create failed: %d", ret);
+        return -ret;
     }
+
+    h4->recv_thread_valid = true;
+
+    return 0;
+}
+
+static int h4_close(const struct device* dev)
+{
+    struct h4_data* h4 = dev->data;
+
+    h4->recv_thread_running = false;
+    if (h4->recv_thread_valid) {
+        pthread_join(h4->recv_thread, NULL);
+        h4->recv_thread_valid = false;
+    }
+
+    pthread_mutex_lock(&h4->mutex);
+    h4->frame_size = 0;
+    close(h4->fd);
+    h4->fd = -1;
+    pthread_mutex_unlock(&h4->mutex);
 
     return 0;
 }
@@ -355,7 +457,7 @@ static int h4_send(const struct device* dev, struct net_buf* buf)
 {
     int len;
     int ret;
-    struct h4_data* h4 = bt_dev->data;
+    struct h4_data* h4 = dev->data;
 
     switch (bt_buf_get_type(buf)) {
     case BT_BUF_ACL_OUT:
@@ -371,9 +473,18 @@ static int h4_send(const struct device* dev, struct net_buf* buf)
         }
     default:
         BT_LOGE("Unknown buffer type");
+        net_buf_unref(buf);
         return -EINVAL;
     }
 
+    pthread_mutex_lock(&h4->mutex);
+    if (h4->fd < 0) {
+        pthread_mutex_unlock(&h4->mutex);
+        net_buf_unref(buf);
+        return -ENODEV;
+    }
+
+    h4_trace_command("TX", buf->data, buf->len);
     h4_data_dump("BT TX", buf->data[0], buf->data, buf->len);
 
     len = buf->len;
@@ -383,6 +494,8 @@ static int h4_send(const struct device* dev, struct net_buf* buf)
         ret = -EINVAL;
     }
 
+    pthread_mutex_unlock(&h4->mutex);
+
     net_buf_unref(buf);
 
     return ret < 0 ? ret : 0;
@@ -390,6 +503,7 @@ static int h4_send(const struct device* dev, struct net_buf* buf)
 
 const struct bt_hci_driver_api h4_drv_api = {
     .open = h4_open,
+    .close = h4_close,
     .send = h4_send,
 };
 
@@ -410,4 +524,6 @@ static int h4_init(const struct device* dev)
         CONFIG_KERNEL_INIT_PRIORITY_DEVICE, &h4_drv_api)
 
 H4_DEVICE_INIT(0);
+#ifdef CONFIG_BT_MC_DEVICE_INST
 H4_DEVICE_INIT(1);
+#endif

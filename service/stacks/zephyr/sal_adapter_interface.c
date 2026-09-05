@@ -29,6 +29,9 @@
 #include "power_manager.h"
 #include "service_loop.h"
 
+
+#undef BT_LE_SCAN_TYPE_PASSIVE
+#undef BT_LE_SCAN_TYPE_ACTIVE
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/classic/hfp_hf.h>
 #include <zephyr/bluetooth/conn.h>
@@ -808,8 +811,8 @@ static void STACK_CALL(set_name)(void* args)
 
 bt_status_t bt_sal_set_name(bt_controller_id_t id, char* name)
 {
-#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     sal_adapter_req_t* req;
 
     req = sal_adapter_req(id, NULL, STACK_CALL(set_name));
@@ -819,6 +822,8 @@ bt_status_t bt_sal_set_name(bt_controller_id_t id, char* name)
     strlcpy(req->adpt.name, name, BT_LOC_NAME_MAX_LEN);
 
     return sal_send_req(req);
+#elif defined(CONFIG_BLUETOOTH_BLE_SUPPORT)
+    return bt_set_name(name) == 0 ? BT_STATUS_SUCCESS : BT_STATUS_FAIL;
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif

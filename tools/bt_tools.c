@@ -463,13 +463,21 @@ static const char* cmd_err_str(int err_code)
 
 static int enable_cmd(void* handle, int argc, char** argv)
 {
+#if defined(CONFIG_BLUETOOTH_BLE_SUPPORT) && !defined(CONFIG_BLUETOOTH_BREDR_SUPPORT)
+    bt_adapter_enable_le(handle);
+#else
     bt_adapter_enable(handle);
+#endif
     return CMD_OK;
 }
 
 static int disable_cmd(void* handle, int argc, char** argv)
 {
+#if defined(CONFIG_BLUETOOTH_BLE_SUPPORT) && !defined(CONFIG_BLUETOOTH_BREDR_SUPPORT)
+    bt_adapter_disable_le(handle);
+#else
     bt_adapter_disable_safe(handle);
+#endif
     return CMD_OK;
 }
 
@@ -481,6 +489,20 @@ static int get_state_cmd(void* handle, int argc, char** argv)
 
 static int discovery_cmd(void* handle, int argc, char** argv)
 {
+#if defined(CONFIG_BLUETOOTH_BLE_SUPPORT) && !defined(CONFIG_BLUETOOTH_BREDR_SUPPORT)
+    if (argc >= 1 && !strcmp(argv[0], "start")) {
+        char* scan_argv[] = { "start", "-t", "1", "-m", "2", "-l", "1" };
+
+        PRINT("BR/EDR inquiry unsupported; start LE scan instead");
+        return scan_command_exec(handle, ARRAY_SIZE(scan_argv), scan_argv);
+    }
+
+    if (argc >= 1 && !strcmp(argv[0], "stop")) {
+        char* scan_argv[] = { "stop" };
+
+        return scan_command_exec(handle, ARRAY_SIZE(scan_argv), scan_argv);
+    }
+#endif
     int limited = 0;
 
     if (argc < 1)
@@ -1591,11 +1613,8 @@ static int get_bonded_devices_cmd(void* handle, int argc, char** argv)
 {
     bt_address_t* addrs = NULL;
     int num = 0;
+    int transport = argc < 1 ? BT_TRANSPORT_BLE : atoi(argv[0]);
 
-    if (argc < 1)
-        return CMD_PARAM_NOT_ENOUGH;
-
-    int transport = atoi(argv[0]);
     if (transport != BT_TRANSPORT_BREDR && transport != BT_TRANSPORT_BLE)
         return CMD_INVALID_PARAM;
 
@@ -1613,11 +1632,8 @@ static int get_connected_devices_cmd(void* handle, int argc, char** argv)
 {
     bt_address_t* addrs = NULL;
     int num = 0;
+    int transport = argc < 1 ? BT_TRANSPORT_BLE : atoi(argv[0]);
 
-    if (argc < 1)
-        return CMD_PARAM_NOT_ENOUGH;
-
-    int transport = atoi(argv[0]);
     if (transport != BT_TRANSPORT_BREDR && transport != BT_TRANSPORT_BLE)
         return CMD_INVALID_PARAM;
 
@@ -1736,10 +1752,13 @@ static void bttool_uninit(void)
 static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
 {
     PRINT("Context:%p, Adapter state changed: %d", cookie, state);
-    if (state == BT_ADAPTER_STATE_ON) {
+    if (state == BT_ADAPTER_STATE_ON || state == BT_ADAPTER_STATE_BLE_ON) {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
         char name[64 + 1];
 
+#endif
         bt_tool_init(g_bttool_ins);
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
         /* get name */
         bt_adapter_get_name(g_bttool_ins, name, 64);
         /* get io cap */
@@ -1752,10 +1771,15 @@ static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
         bt_adapter_le_enable_key_derivation(g_bttool_ins, true, true);
         bt_adapter_set_page_scan_parameters(g_bttool_ins, BT_BR_SCAN_TYPE_INTERLACED, 0x400, 0x24);
         PRINT("Adapter Name: %s, Cap: %d, Class: 0x%08" PRIX32 ", Mode:%d", name, cap, class, mode);
+#else
+        PRINT("Adapter BLE enabled");
+#endif
     } else if (state == BT_ADAPTER_STATE_TURNING_OFF) {
         bttool_uninit();
     } else if (state == BT_ADAPTER_STATE_OFF) {
-        /* do something */
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
+        scan_command_uninit(g_bttool_ins);
+#endif
     }
 }
 
@@ -1943,7 +1967,8 @@ static int bttool_ins_init(bttool_t* bttool)
     }
 
     adapter_callback = bt_adapter_register_callback(g_bttool_ins, &g_adapter_cbs);
-    if (bt_adapter_get_state(g_bttool_ins) == BT_ADAPTER_STATE_ON)
+    if (bt_adapter_get_state(g_bttool_ins) == BT_ADAPTER_STATE_ON ||
+        bt_adapter_get_state(g_bttool_ins) == BT_ADAPTER_STATE_BLE_ON)
         bt_tool_init(g_bttool_ins);
 
     return 0;
@@ -1984,6 +2009,12 @@ static void bttool_execute_command_cb(uv_async_queue_t* handle, void* buffer)
 
     // 1. split command
     while ((tmpstr = strtok_r(tmpstr, " ", &saveptr)) != NULL) {
+        if (_argc >= ARRAY_SIZE(_argv)) {
+            PRINT("too many command arguments (max %zu)", ARRAY_SIZE(_argv));
+            free(buffer);
+            return;
+        }
+
         _argv[_argc] = tmpstr;
         _argc++;
         tmpstr = NULL;
@@ -2115,7 +2146,8 @@ int main(int argc, char** argv)
     int opt;
     char* buffer = NULL;
     int ret;
-    size_t len, size = 0;
+    ssize_t len;
+    size_t size = 0;
     bttool_t bttool = { .async_api = false };
 
     while ((opt = getopt_long(argc, argv, "a-h-v-d", main_options, NULL)) != -1) {
@@ -2164,6 +2196,31 @@ int main(int argc, char** argv)
         free(g_bttool_loop);
         g_bttool_loop = NULL;
         return ret;
+    }
+
+    if (optind < argc) {
+        size_t initial_len = 1;
+        char* initial_cmd;
+        int i;
+
+        for (i = optind; i < argc; i++)
+            initial_len += strlen(argv[i]) + 1;
+
+        initial_cmd = malloc(initial_len);
+        if (initial_cmd == NULL) {
+            bttool_quit(&bttool);
+            uv_thread_join(&bttool.thread);
+            return -1;
+        }
+
+        initial_cmd[0] = '\0';
+        for (i = optind; i < argc; i++) {
+            if (i != optind)
+                strcat(initial_cmd, " ");
+            strcat(initial_cmd, argv[i]);
+        }
+
+        uv_async_queue_send(&bttool.async, initial_cmd);
     }
 
     while (1) {
@@ -2240,7 +2297,6 @@ int main(int argc, char** argv)
 
         memset(_argv, 0, sizeof(_argv));
         len = getline(&buffer, &size, stdin);
-        buffer[len] = '\0';
         if (len < 0)
             goto quit;
 
@@ -2258,6 +2314,12 @@ int main(int argc, char** argv)
         char* tmpstr = buffer;
 
         while ((tmpstr = strtok_r(tmpstr, " ", &saveptr)) != NULL) {
+            if (_argc >= ARRAY_SIZE(_argv)) {
+                PRINT("too many command arguments (max %zu)", ARRAY_SIZE(_argv));
+                _argc = 0;
+                break;
+            }
+
             _argv[_argc] = tmpstr;
             _argc++;
             tmpstr = NULL;

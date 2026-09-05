@@ -702,6 +702,9 @@ if(CONFIG_BLUETOOTH)
 
   list(APPEND INCDIR ${BLUETOOTH_DIR}/dfx)
 
+  list(APPEND INCDIR ${NUTTX_APPS_DIR}/frameworks/system/utils/uv/include)
+  list(APPEND INCDIR ${BLUETOOTH_DIR}/service/ipc/socket/include)
+
   if(CONFIG_BLUETOOTH_SERVICE)
     if(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET
        OR CONFIG_BLUETOOTH_STACK_LE_BLUELET)
@@ -716,6 +719,16 @@ if(CONFIG_BLUETOOTH)
 
     if(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE OR CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
       nuttx_add_dependencies(TARGET libbluetooth DEPENDS zblue)
+      list(APPEND INCDIR ${BLUETOOTH_DIR}/service/stacks/zephyr/include)
+      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/port/include/)
+      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/include)
+      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/include/zephyr/sys)
+      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/misc/generated)
+      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/arch/common/include)
+      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/subsys/bluetooth/host)
+      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/subsys/settings/include/settings)
+      list(APPEND INCDIR
+           ${NUTTX_APPS_DIR}/external/zblue/zblue/port/include/kernel/include)
     endif()
 
     list(APPEND INCDIR ${BLUETOOTH_DIR}/service/ipc)
@@ -888,21 +901,23 @@ if(CONFIG_BLUETOOTH)
       DEPENDS
       libbluetooth)
 
-    nuttx_add_application(
-      NAME
-      adapter_test
-      SRCS
-      ${BLUETOOTH_DIR}/tests/adapter_test.c
-      INCLUDE_DIRECTORIES
-      ${INCDIR}
-      STACKSIZE
-      8192
-      PRIORITY
-      ${SCHED_PRIORITY_DEFAULT}
-      COMPILE_FLAGS
-      ${CFLAGS}
-      DEPENDS
-      libbluetooth)
+    if(CONFIG_BLUETOOTH_SERVICE_TEST)
+      nuttx_add_application(
+        NAME
+        adapter_test
+        SRCS
+        ${BLUETOOTH_DIR}/tests/adapter_test.c
+        INCLUDE_DIRECTORIES
+        ${INCDIR}
+        STACKSIZE
+        8192
+        PRIORITY
+        ${SCHED_PRIORITY_DEFAULT}
+        COMPILE_FLAGS
+        ${CFLAGS}
+        DEPENDS
+        libbluetooth)
+    endif()
   endif()
 
   if(CONFIG_BLUETOOTH_UPGRADE)

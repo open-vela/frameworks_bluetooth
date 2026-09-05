@@ -59,14 +59,24 @@ enum {
 #define SCAN_MODE_BALANCED_INTERVAL 0x500
 #define SCAN_MODE_BALANCED_WINDOW 0x140
 #define SCAN_MODE_LOW_LATENCY_INTERVAL 0xA0
-#define SCAN_MODE_LOW_LATENCY_WINDOW 0xA0
+#define SCAN_MODE_LOW_LATENCY_WINDOW 0x50
 
 typedef void bt_scanner_t;
 
+#ifdef CONFIG_BLUETOOTH_STACK_LE_ZBLUE
+typedef uint8_t ble_scan_type_t;
+#ifndef BT_LE_SCAN_TYPE_PASSIVE
+#define BT_LE_SCAN_TYPE_PASSIVE 0
+#endif
+#ifndef BT_LE_SCAN_TYPE_ACTIVE
+#define BT_LE_SCAN_TYPE_ACTIVE 1
+#endif
+#else
 typedef enum {
     BT_LE_SCAN_TYPE_PASSIVE = 0,
     BT_LE_SCAN_TYPE_ACTIVE
 } ble_scan_type_t;
+#endif
 
 /**
  * @brief Scan filter policy
