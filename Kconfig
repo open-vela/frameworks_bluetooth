@@ -213,6 +213,7 @@ choice
 		select LIB_BLUELET
 	config BLUETOOTH_STACK_BREDR_ZBLUE
 		bool "Classic BT stack use zblue"
+		select BT_CLASSIC
 	config BLUETOOTH_STACK_NOT_SUPPORT_CLASSIC_BT
 		bool "Not support classic BT stack"
 endchoice
@@ -763,6 +764,7 @@ endif #BLUETOOTH_SPP
 config BLUETOOTH_HID_DEVICE
 	bool "Human Interface Device Profile (HID)"
 	default n
+	select BT_HID_DEVICE if BLUETOOTH_STACK_BREDR_ZBLUE
 
 config BLUETOOTH_PAN
 	bool "Personal Area Network Profile (PAN)"
