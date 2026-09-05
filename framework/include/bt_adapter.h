@@ -598,6 +598,12 @@ if (bt_adapter_disable(ins) == BT_STATUS_SUCCESS) {
  */
 bt_status_t BTSYMBOLS(bt_adapter_disable)(bt_instance_t* ins);
 
+/**
+ * @brief Disable bluetooth adapter safely
+ *
+ * @param ins - bluetooth client instance.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
 bt_status_t BTSYMBOLS(bt_adapter_disable_safe)(bt_instance_t* ins);
 
 /**
@@ -651,6 +657,17 @@ bt_device_type_t BTSYMBOLS(bt_adapter_get_type)(bt_instance_t* ins);
 bt_status_t BTSYMBOLS(bt_adapter_set_discovery_filter)(bt_instance_t* ins);
 
 /**
+ * @brief Start device limited discovery.
+ *
+ * Initiates the device limited discovery process to find nearby Bluetooth devices.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param timeout - Maximum amount of time to perform discovery (Time = N * 1.28s, Range: 1.28s to 61.44s).
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
+ */
+bt_status_t BTSYMBOLS(bt_adapter_start_limited_discovery)(bt_instance_t* ins, uint32_t timeout);
+
+/**
  * @brief Start device discovery.
  *
  * Initiates the device discovery process to find nearby Bluetooth devices.
@@ -669,8 +686,6 @@ if (bt_adapter_start_discovery(ins, 10) == BT_STATUS_SUCCESS) {
  * @endcode
  */
 bt_status_t BTSYMBOLS(bt_adapter_start_discovery)(bt_instance_t* ins, uint32_t timeout);
-
-bt_status_t BTSYMBOLS(bt_adapter_start_limited_discovery)(bt_instance_t* ins, uint32_t timeout);
 
 /**
  * @brief Cancel device discovery.
@@ -1135,6 +1150,17 @@ bt_status_t BTSYMBOLS(bt_adapter_le_enable_key_derivation)(bt_instance_t* ins,
  */
 bt_status_t BTSYMBOLS(bt_adapter_le_add_whitelist)(bt_instance_t* ins, bt_address_t* addr);
 
+/**
+ * @brief Add a device to the BLE whitelist with specified address type.
+ *
+ * Adds a device address to the BLE whitelist, allowing the caller to specify the address type
+ * (e.g., public or random address).
+ *
+ * @param ins Bluetooth client instance, see @ref bt_instance_t.
+ * @param addr Address of the device to add, see @ref bt_address_t.
+ * @param type Address type of the device, see @ref ble_addr_type_t.
+ * @return bt_status_t BT_STATUS_SUCCESS on success; a negative error code on failure.
+ */
 bt_status_t BTSYMBOLS(bt_adapter_le_add_whitelist_with_type)(bt_instance_t* ins, bt_address_t* addr, ble_addr_type_t type);
 
 /**
@@ -1173,8 +1199,71 @@ bt_status_t BTSYMBOLS(bt_adapter_set_afh_channel_classification)(bt_instance_t* 
  */
 bt_status_t BTSYMBOLS(bt_adapter_set_auto_sniff)(bt_instance_t* ins, bt_auto_sniff_params_t* params);
 
+// async
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_ASYNC
+#include "bt_async.h"
+
+typedef void (*bt_register_callback_cb_t)(bt_instance_t* ins, bt_status_t status, void* cookie, void* userdata);
+typedef void (*bt_adapter_get_state_cb_t)(bt_instance_t* ins, bt_status_t status, bt_adapter_state_t state, void* userdata);
+typedef void (*bt_adapter_get_device_type_cb_t)(bt_instance_t* ins, bt_status_t status, bt_device_type_t type, void* userdata);
+typedef void (*bt_adapter_get_address_cb_t)(bt_instance_t* ins, bt_status_t status, bt_address_t* addr, void* userdata);
+typedef void (*bt_adapter_get_io_capability_cb_t)(bt_instance_t* ins, bt_status_t status, bt_io_capability_t cap, void* userdata);
+typedef void (*bt_adapter_get_scan_mode_cb_t)(bt_instance_t* ins, bt_status_t status, bt_scan_mode_t mode, void* userdata);
+typedef void (*bt_adapter_get_devices_cb_t)(bt_instance_t* ins, bt_status_t status, bt_address_t* addr, int num, void* userdata);
+typedef void (*bt_adapter_get_uuids_cb_t)(bt_instance_t* ins, bt_status_t status, bt_uuid_t* uuids, uint16_t size, void* userdata);
+typedef void (*bt_adapter_get_le_address_cb_t)(bt_instance_t* ins, bt_status_t status, bt_address_t* addr, ble_addr_type_t type, void* userdata);
+
+bt_status_t bt_adapter_register_callback_async(bt_instance_t* ins,
+    const adapter_callbacks_t* adapter_cbs, bt_register_callback_cb_t cb, void* userdata);
+bt_status_t bt_adapter_unregister_callback_async(bt_instance_t* ins, void* cookie, bt_bool_cb_t cb, void* userdata);
+bt_status_t bt_adapter_enable_async(bt_instance_t* ins, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_adapter_disable_async(bt_instance_t* ins, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_adapter_enable_le_async(bt_instance_t* ins, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_adapter_disable_le_async(bt_instance_t* ins, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_adapter_get_state_async(bt_instance_t* ins, bt_adapter_get_state_cb_t get_state_cb, void* userdata);
+bt_status_t bt_adapter_is_le_enabled_async(bt_instance_t* ins, bt_bool_cb_t cb, void* userdata);
+bt_status_t bt_adapter_get_type_async(bt_instance_t* ins, bt_device_type_cb_t get_dtype_cb, void* userdata);
+bt_status_t bt_adapter_set_discovery_filter_async(bt_instance_t* ins, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_adapter_start_discovery_async(bt_instance_t* ins, uint32_t timeout, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_adapter_cancel_discovery_async(bt_instance_t* ins, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_adapter_is_discovering_async(bt_instance_t* ins, bt_bool_cb_t cb, void* userdata);
+bt_status_t bt_adapter_get_address_async(bt_instance_t* ins, bt_address_cb_t cb, void* userdata);
+bt_status_t bt_adapter_set_name_async(bt_instance_t* ins, const char* name, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_adapter_get_name_async(bt_instance_t* ins, bt_string_cb_t get_name_cb, void* userdata);
+bt_status_t bt_adapter_get_uuids_async(bt_instance_t* ins, bt_uuids_cb_t get_uuids_cb, void* userdata);
+bt_status_t bt_adapter_set_scan_mode_async(bt_instance_t* ins, bt_scan_mode_t mode, bool bondable, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_adapter_get_scan_mode_async(bt_instance_t* ins, bt_adapter_get_scan_mode_cb_t get_scan_mode_cb, void* userdata);
+bt_status_t bt_adapter_set_device_class_async(bt_instance_t* ins, uint32_t cod, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_adapter_get_device_class_async(bt_instance_t* ins, bt_u32_cb_t get_cod_cb, void* userdata);
+bt_status_t bt_adapter_set_io_capability_async(bt_instance_t* ins, bt_io_capability_t cap, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_adapter_get_io_capability_async(bt_instance_t* ins, bt_adapter_get_io_capability_cb_t get_ioc_cb, void* userdata);
+bt_status_t bt_adapter_set_inquiry_scan_parameters_async(bt_instance_t* ins, bt_scan_type_t type,
+    uint16_t interval, uint16_t window, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_adapter_set_page_scan_parameters_async(bt_instance_t* ins, bt_scan_type_t type,
+    uint16_t interval, uint16_t window, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_adapter_set_le_io_capability_async(bt_instance_t* ins, uint32_t le_io_cap, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_adapter_get_le_io_capability_async(bt_instance_t* ins, bt_u32_cb_t get_le_ioc_cb, void* userdata);
+bt_status_t bt_adapter_get_le_address_async(bt_instance_t* ins, bt_adapter_get_le_address_cb_t cb, void* userdata);
+bt_status_t bt_adapter_set_le_address_async(bt_instance_t* ins, bt_address_t* addr, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_adapter_set_le_identity_address_async(bt_instance_t* ins, bt_address_t* addr, bool is_public, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_adapter_set_le_appearance_async(bt_instance_t* ins, uint16_t appearance, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_adapter_get_le_appearance_async(bt_instance_t* ins, bt_u16_cb_t cb, void* userdata);
+bt_status_t bt_adapter_le_enable_key_derivation_async(bt_instance_t* ins,
+    bool brkey_to_lekey, bool lekey_to_brkey, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_adapter_le_add_whitelist_async(bt_instance_t* ins, bt_address_t* addr, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_adapter_le_remove_whitelist_async(bt_instance_t* ins, bt_address_t* addr, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_adapter_get_bonded_devices_async(bt_instance_t* ins, bt_transport_t transport, bt_adapter_get_devices_cb_t get_bonded_cb, void* userdata);
+bt_status_t bt_adapter_get_connected_devices_async(bt_instance_t* ins, bt_transport_t transport, bt_adapter_get_devices_cb_t get_connected_cb, void* userdata);
+bt_status_t bt_adapter_set_afh_channel_classification_async(bt_instance_t* ins, uint16_t central_frequency,
+    uint16_t band_width, uint16_t number, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_adapter_set_auto_sniff_async(bt_instance_t* ins, bt_auto_sniff_params_t* params, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_adapter_disconnect_all_devices_async(bt_instance_t* ins, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_adapter_is_support_bredr_async(bt_instance_t* ins, bt_bool_cb_t cb, void* userdata);
+bt_status_t bt_adapter_is_support_le_async(bt_instance_t* ins, bt_bool_cb_t cb, void* userdata);
+bt_status_t bt_adapter_is_support_leaudio_async(bt_instance_t* ins, bt_bool_cb_t cb, void* userdata);
+#endif /* CONFIG_BLUETOOTH_FRAMEWORK_ASYNC */
+
 #ifdef __cplusplus
 }
 #endif
-
 #endif /* __BT_ADAPTER_H__ */

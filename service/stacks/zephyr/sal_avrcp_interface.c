@@ -91,6 +91,7 @@ static void zblue_on_ct_passthrough_rsp(struct bt_avrcp_ct* ct, uint8_t tid, bt_
 static void zblue_on_ct_notification_rsp(struct bt_avrcp_ct* ct, uint8_t tid, uint8_t status, uint8_t event_id, struct bt_avrcp_event_data* data);
 static void zblue_on_ct_get_element_attrs_rsp(struct bt_avrcp_ct* ct, uint8_t tid, uint8_t status, struct net_buf* buf);
 static void zblue_on_ct_get_play_status_rsp(struct bt_avrcp_ct* ct, uint8_t tid, uint8_t status, struct net_buf* buf);
+static bt_status_t avrcp_control_disconnect(bt_controller_id_t id, bt_address_t* bd_addr, void* user_data);
 #endif
 
 #ifdef CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME
@@ -148,8 +149,6 @@ static struct bt_avrcp_tg_cb avrcp_tg_cbks = {
 #endif
 };
 #endif /* CONFIG_BLUETOOTH_AVRCP_TARGET || CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME */
-
-static bt_status_t bt_sal_avrcp_disconnect(bt_controller_id_t id, bt_address_t* bd_addr, void* user_data);
 
 #ifdef AVRCP_SDP_BY_APP
 #if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME)
@@ -243,13 +242,8 @@ static struct bt_sdp_record avrcp_tg_rec = BT_SDP_RECORD(avrcp_tg_attrs);
 #endif
 
 static bt_list_t* bt_avrcp_conn = NULL;
-#if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME)
 static bool avrcp_ct_registered = false;
-#endif
-
-#if defined(CONFIG_BLUETOOTH_AVRCP_TARGET) || defined(CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME)
 static bool avrcp_tg_registered = false;
-#endif
 
 NET_BUF_POOL_DEFINE(bt_avrcp_tx_pool, CONFIG_BT_MAX_CONN,
     BT_L2CAP_BUF_SIZE(CONFIG_BT_L2CAP_TX_MTU),
@@ -718,16 +712,10 @@ static zblue_avrcp_info_t* bt_avrcp_create_avrcp_info(struct bt_conn* conn)
 }
 
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
-static void avrcp_on_connection_state_changed(bt_address_t* bd_addr,
-    profile_connection_state_t state);
 static void zblue_on_ct_connected(struct bt_conn* conn, struct bt_avrcp_ct* ct)
 {
     zblue_avrcp_info_t* avrcp_info;
-
-    if (!bt_avrcp_conn) {
-        BT_LOGW("%s, bt_avrcp_conn not initialized", __func__);
-        return;
-    }
+    avrcp_msg_t* msg;
 
     avrcp_info = bt_list_find(bt_avrcp_conn, bt_avrcp_info_find_by_conn, conn);
     if (!avrcp_info)
@@ -738,19 +726,18 @@ static void zblue_on_ct_connected(struct bt_conn* conn, struct bt_avrcp_ct* ct)
 
     avrcp_info->ct = ct;
 
-    avrcp_on_connection_state_changed(&avrcp_info->bd_addr, PROFILE_STATE_CONNECTED);
+    msg = avrcp_msg_new(AVRC_CONNECTION_STATE_CHANGED, &avrcp_info->bd_addr);
+    msg->data.conn_state.conn_state = PROFILE_STATE_CONNECTED;
+    msg->data.conn_state.reason = PROFILE_REASON_UNSPECIFIED;
+    bt_sal_avrcp_control_event_callback(msg);
     bt_sal_cm_profile_connected_callback(&avrcp_info->bd_addr, PROFILE_AVRCP_CT, CONN_ID_DEFAULT);
-    bt_sal_profile_disconnect_register(&avrcp_info->bd_addr, PROFILE_AVRCP_CT, CONN_ID_DEFAULT, PRIMARY_ADAPTER, bt_sal_avrcp_disconnect, NULL);
+    bt_sal_profile_disconnect_register(&avrcp_info->bd_addr, PROFILE_AVRCP_CT, CONN_ID_DEFAULT, PRIMARY_ADAPTER, avrcp_control_disconnect, NULL);
 }
 
 static void zblue_on_ct_disconnected(struct bt_avrcp_ct* ct)
 {
     zblue_avrcp_info_t* avrcp_info;
-
-    if (!bt_avrcp_conn) {
-        BT_LOGW("%s, bt_avrcp_conn not initialized", __func__);
-        return;
-    }
+    avrcp_msg_t* msg;
 
     avrcp_info = bt_list_find(bt_avrcp_conn, bt_avrcp_info_find_by_ct, ct);
     if (!avrcp_info) {
@@ -760,7 +747,10 @@ static void zblue_on_ct_disconnected(struct bt_avrcp_ct* ct)
 
     avrcp_info->ct = NULL;
 
-    avrcp_on_connection_state_changed(&avrcp_info->bd_addr, PROFILE_STATE_DISCONNECTED);
+    msg = avrcp_msg_new(AVRC_CONNECTION_STATE_CHANGED, &avrcp_info->bd_addr);
+    msg->data.conn_state.conn_state = PROFILE_STATE_DISCONNECTED;
+    msg->data.conn_state.reason = PROFILE_REASON_UNSPECIFIED;
+    bt_sal_avrcp_control_event_callback(msg);
     bt_sal_cm_profile_disconnected_callback(&avrcp_info->bd_addr, PROFILE_AVRCP_CT, CONN_ID_DEFAULT);
 
     bt_list_remove_avrcp_info(avrcp_info);
@@ -1045,11 +1035,6 @@ static void zblue_on_tg_connected(struct bt_conn* conn, struct bt_avrcp_tg* tg)
 {
     zblue_avrcp_info_t* avrcp_info;
 
-    if (!bt_avrcp_conn) {
-        BT_LOGW("%s, bt_avrcp_conn not initialized", __func__);
-        return;
-    }
-
     avrcp_info = bt_list_find(bt_avrcp_conn, bt_avrcp_info_find_by_conn, conn);
     if (!avrcp_info)
         avrcp_info = bt_avrcp_create_avrcp_info(conn);
@@ -1065,20 +1050,12 @@ static void zblue_on_tg_connected(struct bt_conn* conn, struct bt_avrcp_tg* tg)
     msg->data.conn_state.conn_state = PROFILE_STATE_CONNECTED;
     msg->data.conn_state.reason = PROFILE_REASON_UNSPECIFIED;
     bt_sal_avrcp_target_event_callback(msg);
-
-    bt_sal_cm_profile_connected_callback(&avrcp_info->bd_addr, PROFILE_AVRCP_TG, CONN_ID_DEFAULT);
-    bt_sal_profile_disconnect_register(&avrcp_info->bd_addr, PROFILE_AVRCP_TG, CONN_ID_DEFAULT, PRIMARY_ADAPTER, bt_sal_avrcp_disconnect, NULL);
 #endif
 }
 
 static void zblue_on_tg_disconnected(struct bt_avrcp_tg* tg)
 {
     zblue_avrcp_info_t* avrcp_info;
-
-    if (!bt_avrcp_conn) {
-        BT_LOGW("%s, bt_avrcp_conn not initialized", __func__);
-        return;
-    }
 
     avrcp_info = bt_list_find(bt_avrcp_conn, bt_avrcp_info_find_by_tg, tg);
     if (!avrcp_info) {
@@ -1094,8 +1071,6 @@ static void zblue_on_tg_disconnected(struct bt_avrcp_tg* tg)
     msg->data.conn_state.conn_state = PROFILE_STATE_DISCONNECTED;
     msg->data.conn_state.reason = PROFILE_REASON_UNSPECIFIED;
     bt_sal_avrcp_target_event_callback(msg);
-
-    bt_sal_cm_profile_disconnected_callback(&avrcp_info->bd_addr, PROFILE_AVRCP_TG, CONN_ID_DEFAULT);
 #endif
 
     bt_list_remove_avrcp_info(avrcp_info);
@@ -1322,8 +1297,8 @@ static void zblue_on_tg_passthrough_req(struct bt_avrcp_tg* tg, uint8_t tid, str
     case PASSTHROUGH_CMD_ID_PLAY:
     case PASSTHROUGH_CMD_ID_STOP:
     case PASSTHROUGH_CMD_ID_PAUSE:
-    case PASSTHROUGH_CMD_ID_FORWARD:
-    case PASSTHROUGH_CMD_ID_BACKWARD:
+    case PASSTHROUGH_CMD_ID_RECORD:
+    case PASSTHROUGH_CMD_ID_REWIND:
         break;
     default:
         BT_LOGW("%s, operation 0x%x not recognized", __func__, opid);
@@ -1409,32 +1384,13 @@ static void zblue_on_tg_get_play_status_req(struct bt_avrcp_tg* tg, uint8_t tid)
 #endif
 
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
-static void avrcp_on_connection_state_changed(bt_address_t* bd_addr,
-    profile_connection_state_t state)
-{
-    avrcp_msg_t* msg;
-
-    msg = avrcp_msg_new(AVRC_CONNECTION_STATE_CHANGED, bd_addr);
-    if (!msg) {
-        BT_LOGE("%s, avrcp_msg_new failed", __func__);
-        return;
-    }
-
-    msg->data.conn_state.conn_state = state;
-    msg->data.conn_state.reason = PROFILE_REASON_UNSPECIFIED;
-    bt_sal_avrcp_control_event_callback(msg);
-}
-
 static bt_status_t avrcp_control_connect(bt_controller_id_t id, bt_address_t* bd_addr, void* user_data)
 {
     int err;
-    struct bt_conn* conn;
+    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)bd_addr);
 
-    conn = bt_conn_lookup_addr_br((bt_addr_t*)bd_addr);
     if (!conn) {
-        BT_LOGW("BR/EDR connection not found for AVRCP connect");
-        avrcp_on_connection_state_changed(bd_addr, PROFILE_STATE_DISCONNECTED);
-        bt_sal_cm_profile_disconnected_callback(bd_addr, PROFILE_AVRCP_CT, CONN_ID_DEFAULT);
+        BT_LOGW("avrcp_info not found");
         return BT_STATUS_FAIL;
     }
 
@@ -1442,11 +1398,8 @@ static bt_status_t avrcp_control_connect(bt_controller_id_t id, bt_address_t* bd
 
     bt_conn_unref(conn);
 
-    if (err < 0) {
-        avrcp_on_connection_state_changed(bd_addr, PROFILE_STATE_DISCONNECTED);
-        bt_sal_cm_profile_disconnected_callback(bd_addr, PROFILE_AVRCP_CT, CONN_ID_DEFAULT);
+    if (err < 0)
         return BT_STATUS_FAIL;
-    }
 
     return BT_STATUS_SUCCESS;
 }
@@ -1461,15 +1414,11 @@ bt_status_t bt_sal_avrcp_control_connect(bt_controller_id_t id, bt_address_t* ad
 #endif
 }
 
-static bt_status_t bt_sal_avrcp_disconnect(bt_controller_id_t id, bt_address_t* bd_addr, void* user_data)
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+static bt_status_t avrcp_control_disconnect(bt_controller_id_t id, bt_address_t* bd_addr, void* user_data)
 {
     zblue_avrcp_info_t* avrcp_info;
     int err;
-
-    if (!bt_avrcp_conn || !bd_addr) {
-        BT_LOGW("%s, invalid params", __func__);
-        return BT_STATUS_PARM_INVALID;
-    }
 
     avrcp_info = bt_list_find(bt_avrcp_conn, bt_avrcp_info_find_addr, bd_addr);
     if (!avrcp_info) {
@@ -1493,11 +1442,12 @@ failed:
     bt_list_remove(bt_avrcp_conn, avrcp_info);
     return BT_STATUS_FAIL;
 }
+#endif
 
 bt_status_t bt_sal_avrcp_control_disconnect(bt_controller_id_t id, bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
-    return bt_sal_profile_disconnect_request(addr, PROFILE_AVRCP_CT, CONN_ID_DEFAULT, id, bt_sal_avrcp_disconnect, NULL);
+    return bt_sal_profile_disconnect_request(addr, PROFILE_AVRCP_CT, CONN_ID_DEFAULT, id, avrcp_control_disconnect, NULL);
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif
@@ -1540,7 +1490,6 @@ bt_status_t bt_sal_avrcp_control_send_pass_through_cmd(bt_controller_id_t id,
 #endif
 }
 
-#if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME)
 static void bt_avrcp_control_notification_cb(struct bt_avrcp_ct* ct, uint8_t event_id, struct bt_avrcp_event_data* data)
 {
     zblue_avrcp_info_t* avrcp_info;
@@ -1552,7 +1501,9 @@ static void bt_avrcp_control_notification_cb(struct bt_avrcp_ct* ct, uint8_t eve
         return;
     }
 
+#if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME)
     zblue_on_ct_notification_rsp(ct, 0, BT_AVRCP_STATUS_SUCCESS, event_id, data);
+#endif
 
     switch (event_id) {
     case BT_AVRCP_EVT_PLAYBACK_STATUS_CHANGED:
@@ -1581,7 +1532,6 @@ static void bt_avrcp_control_notification_cb(struct bt_avrcp_ct* ct, uint8_t eve
 
     bt_avrcp_ct_register_notification(ct, get_next_ct_tid(avrcp_info), event_id, interval, bt_avrcp_control_notification_cb);
 }
-#endif
 
 bt_status_t bt_sal_avrcp_control_register_notification(bt_controller_id_t id,
     bt_address_t* bd_addr, avrcp_notification_event_t event, uint32_t interval)

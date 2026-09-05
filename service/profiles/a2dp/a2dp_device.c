@@ -63,7 +63,7 @@ a2dp_device_t* a2dp_device_new(void* ctx, uint8_t peer_sep, bt_address_t* bd_add
     a2dp_device_t* device;
     a2dp_state_machine_t* a2dp_sm;
 
-    device = (a2dp_device_t*)zalloc(sizeof(a2dp_device_t));
+    device = (a2dp_device_t*)malloc(sizeof(a2dp_device_t));
     if (!device)
         return NULL;
 

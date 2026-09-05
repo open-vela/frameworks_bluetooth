@@ -120,11 +120,6 @@ typedef enum {
     HFP_ROAM_STATE_ROAMING,
 } hfp_roaming_state_t;
 
-typedef enum {
-    HFP_HF_SERVICE_VOICE = 4,
-    HFP_HF_SERVICE_FAX = 5,
-} hfp_subscriber_number_service_t;
-
 /**
  * @endcond
  */

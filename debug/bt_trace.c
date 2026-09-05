@@ -15,7 +15,6 @@
  ***************************************************************************/
 #include "bt_sched_trace.h"
 
-#include <inttypes.h>
 #include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
@@ -24,9 +23,6 @@
 
 #include "utils/log.h"
 
-#ifndef CONFIG_BLUETOOTH_TRACE_BUFFER_SIZE
-#define CONFIG_BLUETOOTH_TRACE_BUFFER_SIZE 64
-#endif
 #define DUMP_THRESHOLD 256
 
 typedef struct {
@@ -68,7 +64,7 @@ void bt_note_stop(void)
         bt_latency_record_t* p = &trace_manager->buffer[trace_manager->tail % CONFIG_BLUETOOTH_TRACE_BUFFER_SIZE];
 
         written += snprintf(log_buf + written, sizeof(log_buf) - written,
-            "[TAG=%s][TS=%" PRIu64 "][LAT=%" PRIu32 "us]\n",
+            "[TAG=%s][TS=%lu][LAT=%uus]\n",
             p->tag, p->timestamp, p->latency_us);
         trace_manager->tail = (trace_manager->tail + 1) % CONFIG_BLUETOOTH_TRACE_BUFFER_SIZE;
         written = written % DUMP_THRESHOLD;

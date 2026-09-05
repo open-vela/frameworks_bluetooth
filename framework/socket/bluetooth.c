@@ -23,6 +23,10 @@
 #include "manager_service.h"
 #include "service_loop.h"
 
+#ifdef CONFIG_NET_RPMSG
+#include <netpacket/rpmsg.h>
+#endif
+
 bt_instance_t* bluetooth_create_instance(void)
 {
     bt_status_t status;
@@ -107,8 +111,8 @@ bt_instance_t* bluetooth_create_async_instance(uv_loop_t* loop, bt_ipc_connected
         return NULL;
     }
 
-    status = manager_create_instance(PTR2INT(uint64_t) ins, BLUETOOTH_SYSTEM,
-        "local", getpid(), 0, &ins->app_id);
+    status = manager_create_async_instance(PTR2INT(uint64_t) ins, BLUETOOTH_SYSTEM,
+        "local", getpid(), (uid_t)pthread_self(), &ins->app_id);
     if (status != BT_STATUS_SUCCESS) {
         bt_socket_client_deinit(ins);
         free(ins);
@@ -129,12 +133,34 @@ bt_instance_t* bluetooth_find_instance(pid_t pid)
     return INT2PTR(bt_instance_t*) handle;
 }
 
+bt_instance_t* bluetooth_find_async_instance(pid_t pid)
+{
+    bt_status_t status;
+    uint64_t handle;
+
+    status = manager_get_async_instance("local", pid, &handle);
+    if (status != BT_STATUS_SUCCESS) {
+        return NULL;
+    }
+    return INT2PTR(bt_instance_t*) handle;
+}
+
 bt_instance_t* bluetooth_get_instance(void)
 {
     bt_instance_t* bluetooth_ins = bluetooth_find_instance(getpid());
 
     if (bluetooth_ins == NULL)
         return bluetooth_create_instance();
+    else
+        return bluetooth_ins;
+}
+
+bt_instance_t* bluetooth_get_async_instance(uv_loop_t* loop, bt_ipc_connected_cb_t connected, bt_ipc_disconnected_cb_t disconnected, void* user_data)
+{
+    bt_instance_t* bluetooth_ins = bluetooth_find_async_instance(getpid());
+
+    if (bluetooth_ins == NULL)
+        return bluetooth_create_async_instance(loop, connected, disconnected, user_data);
     else
         return bluetooth_ins;
 }

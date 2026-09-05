@@ -46,6 +46,7 @@
 #include "bluetooth.h"
 #include "bt_adapter.h"
 #include "bt_debug.h"
+#include "bt_dfx.h"
 #include "bt_message.h"
 #include "bt_socket.h"
 #include "callbacks_list.h"
@@ -72,7 +73,7 @@ typedef struct _work_msg {
  * Private Functions
  ****************************************************************************/
 
-typedef void (*bt_socket_callback_t)(void*, int, bt_instance_t*, bt_message_packet_t*);
+typedef void (*bt_socket_callback_t)(void*, int, bt_instance_t*, bt_message_packet_t*, bool);
 
 static void bt_socket_client_callback_process(bt_instance_t* ins, bt_message_packet_t* packet, bool is_async)
 {
@@ -97,11 +98,15 @@ static void bt_socket_client_callback_process(bt_instance_t* ins, bt_message_pac
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
         { BT_A2DP_SOURCE_CALLBACK_START, BT_A2DP_SOURCE_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_a2dp_source_callback },
-        { BT_IPC_CODE_CALLBACK_A2DP_SRC_BEGIN, BT_IPC_CODE_CALLBACK_A2DP_SRC_END, (bt_socket_callback_t)bt_socket_client_a2dp_sink_callback },
+        { BT_IPC_CODE_CALLBACK_A2DP_SRC_BEGIN, BT_IPC_CODE_CALLBACK_A2DP_SRC_END, (bt_socket_callback_t)bt_socket_client_a2dp_source_callback },
 #endif
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
         { BT_AVRCP_TARGET_CALLBACK_START, BT_AVRCP_TARGET_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_avrcp_target_callback },
         { BT_IPC_CODE_CALLBACK_AVRCP_TG_BEGIN, BT_IPC_CODE_CALLBACK_AVRCP_TG_END, (bt_socket_callback_t)bt_socket_client_avrcp_target_callback },
+#endif
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+        { BT_AVRCP_CONTROL_CALLBACK_START, BT_AVRCP_CONTROL_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_avrcp_control_callback },
+        { BT_IPC_CODE_CALLBACK_AVRCP_CT_BEGIN, BT_IPC_CODE_CALLBACK_AVRCP_CT_END, (bt_socket_callback_t)bt_socket_client_avrcp_control_callback },
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
         { BT_ADVERTISER_CALLBACK_START, BT_ADVERTISER_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_advertiser_callback },
@@ -139,7 +144,7 @@ static void bt_socket_client_callback_process(bt_instance_t* ins, bt_message_pac
 
     for (size_t i = 0; i < sizeof(callback_map) / sizeof(callback_map[0]); ++i) {
         if (BT_IPC_CODE_CHECK_RANGE(packet->code, callback_map[i].start, callback_map[i].end)) {
-            callback_map[i].callback(NULL, -1, ins, packet);
+            callback_map[i].callback(NULL, -1, ins, packet, is_async);
             return;
         }
     }
@@ -251,17 +256,23 @@ static int bt_socket_client_receive(uv_poll_t* poll, int fd, void* userdata)
         ins->offset = 0;
     }
 
-    if (packet->code > BT_MESSAGE_START && packet->code < BT_MESSAGE_END) {
+    if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_MESSAGE_START, BT_MESSAGE_END)
+        || (BT_IPC_CODE_CHECK_TYPE(packet->code, BT_IPC_CODE_TYPE_COMMAND)
+            && !BT_IPC_CODE_CHECK_GROUP(packet->code, BT_IPC_CODE_GROUP_LEGACY))) {
         if (ins->cpacket == NULL)
             return BT_STATUS_SUCCESS;
 
         memcpy(ins->cpacket, packet, sizeof(*packet));
         uv_sem_post(&ins->message_processed);
         return BT_STATUS_SUCCESS;
-    } else if (packet->code > BT_CALLBACK_START && packet->code < BT_CALLBACK_END) {
+    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_CALLBACK_START, BT_CALLBACK_END)
+        || (BT_IPC_CODE_CHECK_TYPE(packet->code, BT_IPC_CODE_TYPE_CALLBACK)
+            && !BT_IPC_CODE_CHECK_GROUP(packet->code, BT_IPC_CODE_GROUP_LEGACY))) {
         bt_client_msg_t* msg = malloc(sizeof(*msg));
-        if (!msg)
+        if (!msg) {
+            BT_DFX_IPC_ALLOC_ERROR(BT_DFXE_CLIENT_MSG_ALLOC_FAIL, packet->code);
             return BT_STATUS_NOMEM;
+        }
 
         msg->ins = ins;
         memcpy(&msg->packet, packet, sizeof(*packet));
@@ -297,6 +308,7 @@ static void bt_socket_client_handle_event(uv_poll_t* poll, int status, int event
     }
 
     if (status != 0 || events & UV_DISCONNECT) {
+        uv_sem_post(&ins->message_processed);
         thread_loop_remove_poll(poll);
         if (ins && ins->disconnected) {
             BT_LOGE("%s socket disconnect, status = %d, events = %d", __func__, status, events);
@@ -448,6 +460,7 @@ int bt_socket_client_init(bt_instance_t* ins, int family,
         ins->peer_fd = bt_socket_client_connect(family, name, cpu, port);
         if (ins->peer_fd <= 0 && !retry) {
             /* connect fail, go out */
+            BT_DFX_IPC_CONN_ERROR(BT_DFXE_CLIENT_CONNECT_FAIL, BT_DFXE_FILE_DESCRIPTOR_ERROR);
             bt_socket_client_deinit(ins);
             return BT_STATUS_PARM_INVALID;
         } else if (ins->peer_fd <= 0) {
@@ -504,6 +517,11 @@ void bt_socket_client_deinit(bt_instance_t* ins)
         bt_socket_sync_close(ins);
     else
         do_in_thread_loop_sync(ins->client_loop, bt_socket_sync_close, ins);
+
+    /* Dispatch an empty work to ensure all pending work have completed, while
+    `bt_socket_sync_close` guarantees no new work will enter the queue. */
+    if (uv_loop_alive(ins->client_loop))
+        thread_loop_work_sync(ins->client_loop, NULL, NULL, NULL);
 
     if (ins->external_loop && ins->external_async) {
         struct list_node* node;
@@ -570,7 +588,9 @@ static int bt_socket_async_client_handle_packet(bt_instance_t* ins, bt_message_p
 {
     bt_socket_async_client_t* priv = ins->priv;
 
-    if (packet->code > BT_MESSAGE_START && packet->code < BT_MESSAGE_END) {
+    if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_MESSAGE_START, BT_MESSAGE_END)
+        || (BT_IPC_CODE_CHECK_TYPE(packet->code, BT_IPC_CODE_TYPE_COMMAND)
+            && !BT_IPC_CODE_CHECK_GROUP(packet->code, BT_IPC_CODE_GROUP_LEGACY))) {
         bt_message_context_t* ctx = (bt_message_context_t*)(uintptr_t)packet->context;
         bt_message_context_t* head = bt_list_node(bt_list_head(priv->pending_queue));
 
@@ -580,7 +600,9 @@ static int bt_socket_async_client_handle_packet(bt_instance_t* ins, bt_message_p
             ctx->reply_cb(ins, packet, ctx->cb, ctx->userdata);
 
         bt_list_remove_node(priv->pending_queue, bt_list_head(priv->pending_queue));
-    } else if (packet->code > BT_CALLBACK_START && packet->code < BT_CALLBACK_END) {
+    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_CALLBACK_START, BT_CALLBACK_END)
+        || (BT_IPC_CODE_CHECK_TYPE(packet->code, BT_IPC_CODE_TYPE_CALLBACK)
+            && !BT_IPC_CODE_CHECK_GROUP(packet->code, BT_IPC_CODE_GROUP_LEGACY))) {
         bt_socket_client_callback_process(ins, packet, true);
     } else {
         assert(0);
@@ -610,7 +632,9 @@ static void bt_socket_read_cb(uv_stream_t* stream,
 
 static void bt_socket_close_cb(uv_handle_t* handle)
 {
+    bt_socket_async_client_t* priv = uv_handle_get_data(handle);
     free(handle);
+    free(priv);
 }
 
 static void bt_socket_connect_cb(uv_connect_t* req, int status)
@@ -619,6 +643,7 @@ static void bt_socket_connect_cb(uv_connect_t* req, int status)
 
     if (status != 0) {
         BT_LOGE("bt async client connect failed: %s", uv_strerror(status));
+        BT_DFX_IPC_CONN_ERROR(BT_DFXE_ASYNC_CLIENT_CONN_FAIL, uv_strerror(status));
         if (priv->disconnected)
             priv->disconnected(priv->ins, priv->user_data, status);
     } else {
@@ -690,6 +715,7 @@ int bt_socket_async_client_init(bt_instance_t* ins, uv_loop_t* loop, int family,
 {
     int ret;
     bt_socket_async_client_t* priv;
+    bt_status_t status = BT_STATUS_FAIL;
 
     if (ins == NULL || loop == NULL)
         return BT_STATUS_PARM_INVALID;
@@ -698,6 +724,7 @@ int bt_socket_async_client_init(bt_instance_t* ins, uv_loop_t* loop, int family,
     if (priv == NULL)
         return BT_STATUS_NOMEM;
 
+    ins->priv = priv;
     priv->user_data = user_data;
     priv->loop = loop;
     priv->ins = ins;
@@ -732,16 +759,15 @@ int bt_socket_async_client_init(bt_instance_t* ins, uv_loop_t* loop, int family,
         }
 #endif
         else {
-            return BT_STATUS_NOT_SUPPORTED;
+            status = BT_STATUS_NOT_SUPPORTED;
+            goto fail;
         }
     }
-
-    ins->priv = priv;
 
     return BT_STATUS_SUCCESS;
 fail:
     bt_socket_async_client_deinit(ins);
-    return BT_STATUS_FAIL;
+    return status;
 }
 
 static void bt_socket_invoke_async_cb(bt_instance_t* ins, bt_list_t* list)
@@ -766,7 +792,8 @@ void bt_socket_async_client_deinit(bt_instance_t* ins)
     if (priv == NULL)
         return;
 
-    uv_read_stop((uv_stream_t*)priv->pipe);
+    if (priv->pipe)
+        uv_read_stop((uv_stream_t*)priv->pipe);
 
     if (priv->pending_queue) {
         bt_socket_invoke_async_cb(ins, priv->pending_queue);
@@ -774,10 +801,12 @@ void bt_socket_async_client_deinit(bt_instance_t* ins)
         priv->pending_queue = NULL;
     }
 
-    if (priv->pipe)
+    if (priv->pipe) {
         uv_close((uv_handle_t*)priv->pipe, bt_socket_close_cb);
+        free(priv->packet);
+        return;
+    }
 
     free(priv->packet);
     free(priv);
-    ins->priv = NULL;
 }

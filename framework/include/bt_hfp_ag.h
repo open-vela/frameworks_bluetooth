@@ -285,29 +285,6 @@ void hfp_ag_at_cmd_received_cb(void* cookie, bt_address_t* addr, const char* at_
 typedef void (*hfp_ag_at_cmd_received_callback)(void* cookie, bt_address_t* addr, const char* at_command);
 
 /**
- * @brief Callback for HFP AG received vendor specific AT command.
- *
- * This callback is used to notify the application of the vendor specific AT command. During
- * HFP AG initialization, callback functions will be registered. This callback will be triggered
- * when AG receives a vendor specific AT command.
- *
- * @param cookie - Callback cookie.
- * @param addr - The Bluetooth address of the peer device.
- * @param command - The prefix of the AT command.
- * @param company_id - Bluetooth company ID.
- * @param value - AT command value.
- *
- * **Example:**
- * @code
- void hfp_ag_vend_spec_at_cmd_received_cb(void* cookie, bt_address_t* addr, const char* command, uint16_t company_id, const char* value)
- {
-        printf("hfp_ag_vend_spec_at_cmd_received_cb, command: %s, company_id: %d, value: %s\n", command, company_id, value);
- }
- * @endcode
- */
-typedef void (*hfp_ag_vend_spec_at_cmd_received_callback)(void* cookie, bt_address_t* addr, const char* command, uint16_t company_id, const char* value);
-
-/**
  * @brief HFP CLCC command received callback
  *
  * @param cookie - callback cookie.
@@ -342,6 +319,17 @@ typedef void (*hfp_ag_cind_cmd_received_callback)(void* cookie, bt_address_t* ad
 /**
  * @cond
  */
+
+/**
+ * @brief HFP vendor specific AT command received callback
+ *
+ * @param cookie - callback cookie.
+ * @param command - The prefix of the AT command.
+ * @param company_id - Bluetooth company ID.
+ * @param value - AT command value.
+ * @param addr - address of peer HF device.
+ */
+typedef void (*hfp_ag_vend_spec_at_cmd_received_callback)(void* cookie, bt_address_t* addr, const char* command, uint16_t company_id, const char* value);
 
 /**
  * @brief HFP AG callback structure
@@ -407,7 +395,7 @@ void app_init_hfp_ag(bt_instance_t* ins)
     else
         printf("register callbacks success\n");
 }
-* @endcode
+ * @endcode
  */
 void* BTSYMBOLS(bt_hfp_ag_register_callbacks)(bt_instance_t* ins, const hfp_ag_callbacks_t* callbacks);
 
@@ -846,7 +834,7 @@ int app_send_specific_volume_control(bt_instance_t* ins, bt_address_t* addr);
 bt_status_t BTSYMBOLS(bt_hfp_ag_volume_control)(bt_instance_t* ins, bt_address_t* addr, hfp_volume_type_t type, uint8_t volume);
 
 /**
- * @brief Send an AT Command to HF device.
+ * @brief Send an AT Command to HF device [Deprecated].
  *
  * This function is used to send specific AT commands to the specified HF device. The
  * address parameter is used to specify the peer HF device.
@@ -875,36 +863,6 @@ int app_send_specific_at_command(bt_instance_t* ins, bt_address_t* addr);
  * @endcode
  */
 bt_status_t BTSYMBOLS(bt_hfp_ag_send_at_command)(bt_instance_t* ins, bt_address_t* addr, const char* at_command);
-
-/**
- * @brief Send a vendor specific AT Command
- *
- * This function is used to send specific vendor AT commands to the specified HF device. The
- * address parameter is used to specify the peer HF device.
- *
- * @param ins - The Bluetooth client instance.
- * @param addr - The Bluetooth address of the peer device.
- * @param command - The prefix of the AT command to be send.
- * @param value - The value of the AT command to be send.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
- *
- * **Example:**
- * @code
-int app_send_specific_at_command(bt_instance_t* ins, bt_address_t* addr);
-{
-    bt_status_t status;
-    char at_command[] = "+XIAOMI";
-    char value[] = "123456";
-
-    status = bt_hfp_ag_send_at_command(ins, addr, at_command, value);
-    if (status != BT_STATUS_SUCCESS)
-        printf("send AT command failed\n");
-
-    return status;
-}
- * @endcode
- */
-bt_status_t BTSYMBOLS(bt_hfp_ag_send_vendor_specific_at_command)(bt_instance_t* ins, bt_address_t* addr, const char* command, const char* value);
 
 /**
  * @brief Send CLCC Response
@@ -949,6 +907,17 @@ int bt_hfp_ag_send_clcc_response(bt_instance_t* ins, bt_address_t* addr, uint32_
 bt_status_t BTSYMBOLS(bt_hfp_ag_send_clcc_response)(bt_instance_t* ins, bt_address_t* addr,
     uint32_t index, hfp_call_direction_t dir, hfp_ag_call_state_t state, hfp_call_mode_t mode,
     hfp_call_mpty_type_t mpty, hfp_call_addrtype_t type, const char* number);
+
+/**
+ * @brief Send vendor specific AT Command
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer HF device.
+ * @param command - the prefix of the AT command to be send.
+ * @param value - the value of the AT command to be send.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_hfp_ag_send_vendor_specific_at_command)(bt_instance_t* ins, bt_address_t* addr, const char* command, const char* value);
 
 /**
  * @brief Send CIND Response

@@ -22,6 +22,7 @@
 #include <bt_player.h>
 #include <bt_utils.h>
 
+#include "bt_dfx.h"
 #include "utils/log.h"
 
 typedef struct bt_media_controller {
@@ -144,12 +145,14 @@ bt_media_controller_t* bt_media_controller_create(void* context, bt_media_notify
     controller->mediasession = media_session_open(NULL);
     if (!controller->mediasession) {
         free(controller);
+        BT_DFX_AVRCP_CTRL_ERROR(BT_DFXE_MEDIA_SESSION_OPEN_FAIL);
         return NULL;
     }
 
     ret = media_session_set_event_callback(controller->mediasession,
         controller, media_session_event_cb);
     if (ret != 0) {
+        BT_DFX_AVRCP_CTRL_ERROR(BT_DFXE_MEDIA_SESSION_SET_EVENT_CB_FAIL);
         media_session_close(controller->mediasession);
         free(controller);
         return NULL;
@@ -179,8 +182,10 @@ bt_status_t bt_media_player_play(bt_media_controller_t* controller)
     if (!controller)
         return BT_STATUS_PARM_INVALID;
 
-    if (media_session_start(controller->mediasession) != 0)
+    if (media_session_start(controller->mediasession) != 0) {
+        BT_DFX_AVRCP_CTRL_ERROR(BT_DFXE_MEDIA_SESSION_START_FAIL);
         return BT_STATUS_FAIL;
+    }
 
     return BT_STATUS_SUCCESS;
 }
@@ -190,8 +195,10 @@ bt_status_t bt_media_player_pause(bt_media_controller_t* controller)
     if (!controller)
         return BT_STATUS_PARM_INVALID;
 
-    if (media_session_pause(controller->mediasession) != 0)
+    if (media_session_pause(controller->mediasession) != 0) {
+        BT_DFX_AVRCP_CTRL_ERROR(BT_DFXE_MEDIA_SESSION_PAUSE_FAIL);
         return BT_STATUS_FAIL;
+    }
 
     return BT_STATUS_SUCCESS;
 }
@@ -201,8 +208,10 @@ bt_status_t bt_media_player_stop(bt_media_controller_t* controller)
     if (!controller)
         return BT_STATUS_PARM_INVALID;
 
-    if (media_session_stop(controller->mediasession) != 0)
+    if (media_session_stop(controller->mediasession) != 0) {
+        BT_DFX_AVRCP_CTRL_ERROR(BT_DFXE_MEDIA_SESSION_STOP_FAIL);
         return BT_STATUS_FAIL;
+    }
 
     return BT_STATUS_SUCCESS;
 }
@@ -212,8 +221,10 @@ bt_status_t bt_media_player_next(bt_media_controller_t* controller)
     if (!controller)
         return BT_STATUS_PARM_INVALID;
 
-    if (media_session_next_song(controller->mediasession) != 0)
+    if (media_session_next_song(controller->mediasession) != 0) {
+        BT_DFX_AVRCP_CTRL_ERROR(BT_DFXE_MEDIA_SESSION_NEXT_SONG_FAIL);
         return BT_STATUS_FAIL;
+    }
 
     return BT_STATUS_SUCCESS;
 }
@@ -223,8 +234,10 @@ bt_status_t bt_media_player_prev(bt_media_controller_t* controller)
     if (!controller)
         return BT_STATUS_PARM_INVALID;
 
-    if (media_session_prev_song(controller->mediasession) != 0)
+    if (media_session_prev_song(controller->mediasession) != 0) {
+        BT_DFX_AVRCP_CTRL_ERROR(BT_DFXE_MEDIA_SESSION_PREV_SONG_FAIL);
         return BT_STATUS_FAIL;
+    }
 
     return BT_STATUS_SUCCESS;
 }
@@ -310,6 +323,7 @@ bt_media_player_t* bt_media_player_create(void* context, bt_media_player_callbac
     player->mediasession = media_session_register(player, media_control_event_cb);
     if (!player->mediasession) {
         free(player);
+        BT_DFX_AVRCP_CTRL_ERROR(BT_DFXE_MEDIA_PLAYER_CREATE_FAIL);
         return NULL;
     }
     player->cb = cb;

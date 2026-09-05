@@ -205,8 +205,10 @@ static void a2dp_source_sbc_send_frames(uint16_t header_reserve, uint64_t timest
 
     a2dp_sbc_get_num_frame_iteration(&num_of_iterations, &num_of_frames,
         timestamp);
-    if (num_of_frames == 0)
+    if (num_of_frames == 0) {
+        BT_LOGD("%s, no frame to send", __func__);
         return;
+    }
 
     for (int i = 0; i < num_of_iterations; i++) {
         a2dp_sbc_send_frames(header_reserve, num_of_frames);
@@ -247,12 +249,18 @@ static int a2dp_source_sbc_interval_ms(void)
     return A2DP_SBC_ENCODER_INTERVAL_MS;
 }
 
+static int a2dp_source_sbc_get_min_frame_size(void)
+{
+    return sbc_stream.frames_len;
+}
+
 static const a2dp_source_stream_interface_t a2dp_source_stream_sbc = {
     a2dp_source_sbc_stream_init,
     a2dp_source_sbc_stream_reset,
     NULL,
     a2dp_source_sbc_send_frames,
     a2dp_source_sbc_interval_ms,
+    a2dp_source_sbc_get_min_frame_size,
 };
 
 const a2dp_source_stream_interface_t* get_a2dp_source_sbc_stream_interface(void)

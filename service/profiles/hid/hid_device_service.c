@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "bt_dfx.h"
 #include "bt_profile.h"
 #include "callbacks_list.h"
 #include "power_manager.h"
@@ -129,6 +130,7 @@ typedef struct {
  * Private Data
  ****************************************************************************/
 static hid_device_handle_t g_hidd_handle = { .started = false };
+static bool hid_device_unregister_callbacks(void** remote, void* cookie);
 
 /****************************************************************************
  * Private Functions
@@ -291,6 +293,24 @@ static void hid_device_cleanup(void)
     pthread_mutex_destroy(&g_hidd_handle.hid_lock);
 }
 
+static void hid_device_process_msg(profile_msg_t* msg)
+{
+    switch (msg->event) {
+    case PROFILE_EVT_REMOTE_DETACH: {
+        bt_instance_t* ins = msg->data.data;
+
+        if (ins->hidd_cookie) {
+            BT_LOGD("%s PROFILE_EVT_REMOTE_DETACH", __func__);
+            hid_device_unregister_callbacks((void**)&ins, ins->hidd_cookie);
+            ins->hidd_cookie = NULL;
+        }
+        break;
+    }
+    default:
+        break;
+    }
+}
+
 static int hid_device_get_state(void)
 {
     return 1;
@@ -391,6 +411,7 @@ static bt_status_t hid_device_connect(bt_address_t* addr)
 
     if (!bt_addr_is_empty(&g_hidd_handle.peer_addr)) {
         BT_ADDR_LOG("HID device has connected to %s, %s!", &g_hidd_handle.peer_addr, __func__);
+        BT_DFX_HID_CONN_ERROR(BT_DFXE_HID_CONNECT_BUSY);
         status = BT_STATUS_BUSY;
         goto exit;
     }
@@ -652,7 +673,7 @@ static const profile_service_t hid_device_service = {
     .init = hid_device_init,
     .startup = hid_device_startup,
     .shutdown = hid_device_shutdown,
-    .process_msg = NULL,
+    .process_msg = hid_device_process_msg,
     .get_state = hid_device_get_state,
     .get_profile_interface = get_device_profile_interface,
     .cleanup = hid_device_cleanup,

@@ -77,14 +77,13 @@ static bool tele_support_interface(const char* interface)
     return false;
 }
 
-static gboolean proxy_filter(GDBusClient* client, const char* path,
-    const char* interface)
+static gboolean proxy_filter(const char* path, const char* interface, void* user_data)
 {
     /* only support interface isn't filter out and will create proxy */
     return tele_support_interface(interface) ? FALSE : TRUE;
 }
 
-static gboolean object_filter(GDBusProxy* proxy)
+static gboolean object_filter(GDBusProxy* proxy, void* user_data)
 {
     const char* interface = g_dbus_proxy_get_interface(proxy);
     if (interface == NULL)
@@ -250,6 +249,7 @@ static void voicecall_proxy_remove(tele_modem_t* modem, GDBusProxy* proxy)
         if (call->proxy == proxy) {
             bt_list_remove_node(list, node);
             tele_voicecall_delete(call);
+            dbus_proxy_unref(proxy);
             break;
         }
     }
@@ -491,8 +491,12 @@ static void voicecall_manager_signal_process(tele_client_t* tele,
             tele->cbs->call_added_cb(tele, call);
     } else if (!strcmp(signal, "CallRemoved")) {
         /* notify user call removed */
-        if (tele->cbs && tele->cbs->call_removed_cb)
-            tele->cbs->call_removed_cb(tele, call);
+        if (call) {
+            if (tele->cbs && tele->cbs->call_removed_cb) {
+                tele->cbs->call_removed_cb(tele, call);
+            }
+            voicecall_proxy_remove(modem, proxy);
+        }
     }
 }
 
@@ -507,7 +511,7 @@ static void voicecall_signal_process(tele_client_t* tele,
     GDBusProxy* proxy = g_dbus_proxy_new(tele->dbus_client, path, OFONO_VOICECALL_INTERFACE);
     if (!dbus_message_iter_init(message, &iter)) {
         BT_LOGE("%s, message has no arguments", __func__);
-        return;
+        goto end;
     }
 
     dbus_message_iter_get_basic(&iter, &basic);
@@ -516,19 +520,21 @@ static void voicecall_signal_process(tele_client_t* tele,
         tele_modem_t* modem = modem_find_by_path(tele, path);
         if (!modem) {
             BT_LOGE("%s, failed to find modem, path:%s", __func__, path);
-            return;
+            goto end;
         }
 
         tele_call_t* call = find_voicecall(modem, proxy);
         if (!call) {
             BT_LOGE("%s, failed to find call", __func__);
-            return;
+            goto end;
         }
 
         tele_call_callbacks_t* cbs = call->call_cbs;
         if (cbs)
             cbs->call_disconnect_reason_cb(tele, call, reason);
     }
+end:
+    dbus_proxy_unref(proxy);
 }
 
 static void ofono_interface_signal_callback(DBusConnection* connection,
@@ -562,13 +568,14 @@ static void modem_based_proxy_added(tele_client_t* tele, GDBusProxy* proxy)
     if (!strcmp(interface, OFONO_VOICECALL_MANAGER_INTERFACE))
         modem->voicecall_managers = proxy;
     else if (!strcmp(interface, OFONO_VOICECALL_INTERFACE)) {
-        tele_call_t* call = voicecall_proxy_added(modem, proxy);
-        tele_call_get_call_info(tele, call);
-/* notify user call added */
-#if 0
-        if (tele->cbs && tele->cbs->call_added_cb)
-            tele->cbs->call_added_cb(tele, call);
-#endif
+        tele_call_t* call = find_voicecall(modem, proxy);
+        if (!call) {
+            call = voicecall_proxy_added(modem, proxy);
+            tele_call_get_call_info(tele, call);
+            /* notify user call added */
+            if (tele->cbs && tele->cbs->call_added_cb)
+                tele->cbs->call_added_cb(tele, call);
+        }
     } else if (!strcmp(interface, OFONO_NETWORK_REGISTRATION_INTERFACE))
         modem->network_registration = proxy;
     else if (!strcmp(interface, OFONO_NETWORK_OPERATOR_INTERFACE))
@@ -590,14 +597,12 @@ static void modem_based_proxy_removed(tele_client_t* tele, GDBusProxy* proxy)
     if (!strcmp(interface, OFONO_VOICECALL_MANAGER_INTERFACE))
         modem->voicecall_managers = NULL;
     else if (!strcmp(interface, OFONO_VOICECALL_INTERFACE)) {
-        voicecall_proxy_remove(modem, proxy);
-#if 0
-        tele_call_t *call = find_voicecall(modem, proxy);
-        if (tele->cbs && tele->cbs->call_removed_cb)
-            tele->cbs->call_removed_cb(tele, call);
-        bt_list_remove(modem->voicecalls, call);
-        tele_voicecall_delete(call);
-#endif
+        tele_call_t* call = find_voicecall(modem, proxy);
+        if (call) {
+            if (tele->cbs && tele->cbs->call_removed_cb)
+                tele->cbs->call_removed_cb(tele, call);
+            voicecall_proxy_remove(modem, proxy);
+        }
     } else if (!strcmp(interface, OFONO_NETWORK_REGISTRATION_INTERFACE))
         modem->network_registration = NULL;
     else if (!strcmp(interface, OFONO_NETWORK_OPERATOR_INTERFACE))
@@ -770,10 +775,11 @@ tele_client_t* teleif_client_connect(const char* name)
         return NULL;
     }
 
-    /* Set disconnect handler to avoid the thread being killed after dbus_connection_close() */
-    g_dbus_set_disconnect_function(tele->dbus_sys, system_bus_disconnected, NULL, NULL);
-
     dbus_client = g_dbus_client_new(tele->dbus_sys, OFONO_SERVICE, OFONO_MANAGER_PATH);
+
+    /* Set disconnect handler to avoid the thread being killed after dbus_connection_close() */
+    dbus_client_add_disconnect_watch(dbus_client, system_bus_disconnected, NULL, NULL);
+
     tele->dbus_client = dbus_client;
     g_dbus_client_set_proxy_filter(dbus_client, proxy_filter, tele);
     g_dbus_client_set_connect_watch(dbus_client, ofono_connect_handler, tele);

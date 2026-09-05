@@ -29,7 +29,9 @@
 #include "bt_device.h"
 #include "bt_list.h"
 #include "bt_utils.h"
+#include "bt_uuid.h"
 #include "device.h"
+#include "service_loop.h"
 #include "utils/log.h"
 
 #define BASE_UUID16_OFFSET 12
@@ -65,6 +67,9 @@ typedef struct remote_device {
     uint8_t local_csrk[16];
     ble_phy_type_t tx_phy;
     ble_phy_type_t rx_phy;
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+    uint8_t gatt_hash[BT_GATT_HASH_LEN];
+#endif
     // uint8_t scan_repetition_mode;
     // uint16_t clock_offset;
 } remote_device_t;
@@ -200,7 +205,7 @@ uint32_t device_get_device_class(bt_device_t* device)
 
 bool device_set_device_class(bt_device_t* device, uint32_t cod)
 {
-    if (device->remote.device_class == cod) {
+    if (device->remote.device_class == cod || cod == 0) {
         return false;
     }
 
@@ -349,20 +354,28 @@ bond_state_t device_get_bond_state(bt_device_t* device)
     return device->remote.bond_state;
 }
 
-void device_set_bond_state(bt_device_t* device, bond_state_t state, bool is_ctkd, void (*notify)(void*))
+void device_set_bond_state(bt_device_t* device, bond_state_t state, bool is_ctkd, void* notify_change)
 {
-    bond_state_t previous = device->remote.bond_state;
-    device->remote.bond_state = state;
+    bond_state_change_message_t* msg;
+    bond_state_t prev_state = device->remote.bond_state;
 
-    if (notify) {
-        bond_state_change_message_t* msg = zalloc(sizeof(*msg));
-        if (msg) {
-            msg->device = device;
-            msg->previous_state = previous;
-            msg->is_ctkd = is_ctkd;
-            notify(msg);
-        }
+    if (prev_state == state)
+        return;
+
+    device->remote.bond_state = state;
+    if (!notify_change)
+        return;
+
+    msg = zalloc(sizeof(bond_state_change_message_t));
+    if (!msg) {
+        BT_LOGE("%s malloc failed", __func__);
+        return;
     }
+
+    msg->device = device;
+    msg->previous_state = prev_state;
+    msg->is_ctkd = is_ctkd;
+    do_in_service_loop(notify_change, msg);
 }
 
 bool device_is_bonded(bt_device_t* device)
@@ -374,6 +387,13 @@ uint8_t* device_get_link_key(bt_device_t* device)
 {
     return device->remote.link_key;
 }
+
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+uint8_t* device_get_gatt_hash(bt_device_t* device)
+{
+    return device->remote.gatt_hash;
+}
+#endif
 
 void device_set_link_key(bt_device_t* device, bt_128key_t link_key)
 {
@@ -423,14 +443,15 @@ static void device_get_remote_uuids(bt_device_t* device, remote_device_propertie
     uint8_t count_uuid16 = 0;
     uint8_t count_uuid128 = 0;
     uint8_t* uuids_prop = prop->uuids;
-    uint8_t* p;
-    uint8_t* q;
+    uint8_t* p = NULL;
+    uint8_t* q = NULL;
     bt_uuid_t bt_uuid128_base = {
         .type = BT_UUID128_TYPE,
         .val.u128 = { 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
             0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
     };
 
+    memset(prop->uuids, 0, sizeof(prop->uuids));
     if (device->remote.uuids.uuid_cnt == 0) {
         BT_LOGD("%s, No uuids found", __func__);
         return;
@@ -561,6 +582,15 @@ void device_get_le_property(bt_device_t* device, remote_device_le_properties_t* 
     memcpy(prop->local_csrk, device->remote.local_csrk, 16);
 }
 
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+void device_get_gatt_hash_property(bt_device_t* device, remote_device_gatt_properties_t* prop)
+{
+    memcpy(&prop->addr, &device->remote.addr, sizeof(bt_address_t));
+    prop->addr_type = device->remote.addr_type;
+    memcpy(prop->hash, device->remote.gatt_hash, sizeof(prop->hash));
+}
+#endif
+
 void device_set_flags(bt_device_t* device, uint32_t flags)
 {
     device->flags |= flags;
@@ -593,6 +623,18 @@ void device_delete_smp_key(bt_device_t* device)
     memset(device->remote.smp_data, 0, sizeof(device->remote.smp_data));
 }
 
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+void device_set_gatt_hash(bt_device_t* device, const uint8_t* hash)
+{
+    memcpy(device->remote.gatt_hash, hash, sizeof(device->remote.gatt_hash));
+}
+
+void device_delete_gatt_hash(bt_device_t* device)
+{
+    memset(device->remote.gatt_hash, 0, sizeof(device->remote.gatt_hash));
+}
+#endif
+
 static int linkkey_dump(bt_device_t* device, char* str)
 {
     uint8_t* lk = device->remote.link_key;
@@ -607,7 +649,7 @@ void device_dump(bt_device_t* device)
 {
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
     char link_key_str[40] = { 0 };
-    char uuid_str[BT_UUID_STR_LENGTH] = { 0 };
+    char uuid_str[40] = { 0 };
 
     bt_addr_ba2str(&device->remote.addr, addr_str);
     printf("device: %s\n", addr_str);
@@ -626,7 +668,7 @@ void device_dump(bt_device_t* device)
         printf("\tUUIDs:\n");
         bt_uuid_t* uuid = device->remote.uuids.uuids;
         for (int i = 0; i < device->remote.uuids.uuid_cnt; i++) {
-            bt_uuid_to_string(uuid, uuid_str, BT_UUID_STR_LENGTH);
+            bt_uuid_to_string(uuid, uuid_str, 40);
             printf("\t\tuuid[%-2d]: %s\n", i, uuid_str);
             uuid++;
         }

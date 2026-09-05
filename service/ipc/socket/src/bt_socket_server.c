@@ -45,11 +45,13 @@
 #include "adapter_internel.h"
 #include "bluetooth.h"
 #include "bt_adapter.h"
+#include "bt_dfx.h"
 #include "bt_internal.h"
 #include "bt_message.h"
 #include "bt_socket.h"
 #include "callbacks_list.h"
 #include "service_loop.h"
+#include "service_manager.h"
 
 #include "utils/log.h"
 
@@ -250,10 +252,6 @@ static int bt_socket_server_receive(service_poll_t* poll, int fd, void* userdata
         || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_LOG_BEGIN, BT_IPC_CODE_COMMAND_LOG_END)) {
         bt_socket_server_log_process(poll, fd, ins, packet);
 #endif
-#ifdef CONFIG_BLUETOOTH_LE_CS
-    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_CS_BEGIN, BT_IPC_CODE_COMMAND_CS_END)) {
-        bt_socket_server_cs_process(poll, fd, ins, packet);
-#endif /* CONFIG_BLUETOOTH_LE_CS */
     } else {
         BT_LOGE("%s, Unhandled message:%" PRIu32, __func__, packet->code);
         assert(0);
@@ -263,10 +261,29 @@ static int bt_socket_server_receive(service_poll_t* poll, int fd, void* userdata
     return bt_socket_server_send(ins, packet, packet->code);
 }
 
+static void bt_unregister_callbacks(bt_instance_t* ins)
+{
+    bt_message_packet_t packet;
+    profile_msg_t msg;
+
+    // unreigster adapter callback
+    packet.code = BT_ADAPTER_UNREGISTER_CALLBACK;
+    bt_socket_server_adapter_process(ins->poll, ins->peer_fd, ins, &packet);
+
+    // unregsiter profile callback
+    msg.event = PROFILE_EVT_REMOTE_DETACH;
+    msg.data.data = ins;
+    service_manager_processmsg(&msg);
+
+    // TODO: unregister other Profile callback(GATT, LE ADV, LE SCAN)
+}
+
 static void bt_socket_server_ins_release(bt_instance_t* ins)
 {
     struct list_node* node;
     struct list_node* tmp;
+
+    bt_unregister_callbacks(ins);
 
     if (ins->poll)
         service_loop_remove_poll(ins->poll);
@@ -309,6 +326,7 @@ static void bt_socket_server_handle_event(service_poll_t* poll,
     }
 
     if (revent & POLL_ERROR || revent & POLL_DISCONNECT) {
+        BT_LOGE("%s, revent = %d", __func__, revent);
         bt_socket_server_ins_release(ins);
     } else if (revent & POLL_READABLE) {
         ret = bt_socket_server_receive(poll, fd, userdata);
@@ -357,7 +375,7 @@ static void bt_socket_server_callback(service_poll_t* poll,
 
     list_initialize(&remote_ins->msg_queue);
     remote_ins->peer_fd = fd;
-    remote_ins->poll = service_loop_poll_fd(fd, POLL_READABLE,
+    remote_ins->poll = service_loop_poll_fd(fd, POLL_READABLE | POLL_DISCONNECT,
         bt_socket_server_handle_event, remote_ins);
     if (!remote_ins->poll)
         goto error;
@@ -456,8 +474,10 @@ int bt_socket_server_send(bt_instance_t* ins, bt_message_packet_t* packet,
 
     if (ret != sizeof(*packet) && ins->poll) {
         cache = malloc(sizeof(*cache));
-        if (cache == NULL)
+        if (cache == NULL) {
+            BT_DFX_IPC_ALLOC_ERROR(BT_DFXE_SERVER_CACHE_ALLOC_FAIL, code);
             return BT_STATUS_NOMEM;
+        }
 
         list_add_tail(&ins->msg_queue, &cache->node);
         memcpy(&cache->packet, packet, sizeof(*packet));

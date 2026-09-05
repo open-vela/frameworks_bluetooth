@@ -51,7 +51,6 @@ static int get_le_addr_cmd(void* handle, int argc, char** argv);
 static int set_identity_addr_cmd(void* handle, int argc, char** argv);
 static int set_scan_parameters_cmd(void* handle, int argc, char** argv);
 static int set_debug_mode_cmd(void* handle, int argc, char** argv);
-static int set_ctkd_mode_cmd(void* handle, int argc, char** argv);
 static int get_local_name_cmd(void* handle, int argc, char** argv);
 static int set_local_name_cmd(void* handle, int argc, char** argv);
 static int get_local_cod_cmd(void* handle, int argc, char** argv);
@@ -72,6 +71,8 @@ static int le_disconnect_cmd(void* handle, int argc, char** argv);
 static int create_bond_cmd(void* handle, int argc, char** argv);
 static int cancel_bond_cmd(void* handle, int argc, char** argv);
 static int remove_bond_cmd(void* handle, int argc, char** argv);
+static int remove_white_cmd(void* handle, int argc, char** argv);
+static int add_white_cmd(void* handle, int argc, char** argv);
 static int device_show_cmd(void* handle, int argc, char** argv);
 static int device_set_alias_cmd(void* handle, int argc, char** argv);
 static int get_bonded_devices_cmd(void* handle, int argc, char** argv);
@@ -83,14 +84,12 @@ static int set_phy_cmd(void* handle, int argc, char** argv);
 static int enhance_mode_cmd(void* handle, int argc, char** argv);
 static int dump_cmd(void* handle, int argc, char** argv);
 static int quit_cmd(void* handle, int argc, char** argv);
-static void bttool_ins_uninit(bttool_t* bttool);
 
 bt_instance_t* g_bttool_ins = NULL;
 static void* adapter_callback = NULL;
 static bool g_cmd_had_inited = false;
 bool g_auto_accept_pair = true;
 bond_state_t g_bond_state = BOND_STATE_NONE;
-uv_loop_t* g_bttool_loop = NULL;
 
 static struct {
     int cmd_err_code;
@@ -167,6 +166,8 @@ static bt_command_t g_cmd_tables[] = {
     { "createbond", create_bond_cmd, 0, "create bond, params: <addr> <transport>(0:BLE, 1:BREDR)" },
     { "cancelbond", cancel_bond_cmd, 0, "cancel bond, params: <addr>" },
     { "removebond", remove_bond_cmd, 0, "remove bond, params: <addr> <transport>(0:BLE, 1:BREDR)" },
+    { "addwhite", add_white_cmd, 0, "add device to white list, params: <addr> <address type>(0:public,1:random,2:public_id,3:random_id)" },
+    { "removewhite", remove_white_cmd, 0, "remove device from white list, params: <addr>" },
     { "setalias", device_set_alias_cmd, 0, "set device alias, params: <addr>" },
     { "device", device_show_cmd, 0, "show device information, params: <addr>" },
     { "search", search_cmd, 0, "service serach <addr>, Not implemented" },
@@ -241,9 +242,6 @@ static bt_command_t g_cmd_tables[] = {
 #ifdef CONFIG_BLUETOOTH_STORAGE_UPDATE
     { "storage", storage_command_exec, 0, "storage update cmd, input \'storage\' show usage" },
 #endif
-#ifdef CONFIG_BLUETOOTH_LE_CS
-    { "cs", le_cs_command_exec, 0, "le cs cmd, input \'cs\' show usage" },
-#endif
     { "dump", dump_cmd, 0, "dump adapter state" },
 #ifdef CONFIG_BLUETOOTH_LOG
     { "log", log_command, 0, "log control command" },
@@ -269,11 +267,7 @@ static bt_command_t g_set_cmd_tables[] = {
     { "security", set_security_level_cmd, 0, "set bond security level, params: <level> <transport>" },
     { "id", set_identity_addr_cmd, 0, "set ble identity addr, params: <identity addr> <addr type>" },
     { "scanparams", set_scan_parameters_cmd, 0, SET_SCANPARAMS_USAGE },
-    { "debug", set_debug_mode_cmd, 0, "set debug mode, params: <mode> <enable> (0: disable, 1: enable)\n"
-                                      "\t\t\t<mode>:\n"
-                                      "\t\t\t  \"pts\"\n"
-                                      "\t\t\t  \"rssi\"\n" },
-    { "ctkd", set_ctkd_mode_cmd, 0, "set ctkd mode, params: <br_to_le> <le_to_br> (0: disable, 1: enable)" },
+    { "debug", set_debug_mode_cmd, 0, "set debug mode, params: <mode> (e.g. pts) <enable> (0: disable, 1: enable)" },
     { "help", NULL, 0, "show set help info" },
     //{ "", , "set " },
 };
@@ -374,9 +368,6 @@ static void bt_tool_init(void* handle)
 #ifdef CONFIG_BLUETOOTH_STORAGE_UPDATE
     storage_command_init(handle);
 #endif
-#ifdef CONFIG_BLUETOOTH_LE_CS
-    le_cs_command_init(handle);
-#endif
     g_cmd_had_inited = true;
 }
 
@@ -444,9 +435,6 @@ static void bt_tool_uninit(void* handle)
 #endif
 #ifdef CONFIG_BLUETOOTH_STORAGE_UPDATE
     storage_command_uninit(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_LE_CS
-    le_cs_command_uninit(handle);
 #endif
     g_cmd_had_inited = false;
 }
@@ -665,14 +653,14 @@ static int set_le_iocap_cmd(void* handle, int argc, char** argv)
         return CMD_INVALID_PARAM;
     }
 
-    uint32_t iocap = *argv[0] - '0';
+    int iocap = *argv[0] - '0';
     if (iocap < BT_IO_CAPABILITY_DISPLAYONLY || iocap > BT_IO_CAPABILITY_KEYBOARDDISPLAY)
         return CMD_INVALID_PARAM;
 
     if (bt_adapter_set_le_io_capability(handle, iocap) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
-    PRINT("IO Capability:%" PRIu32 " set success", iocap);
+    PRINT("IO Capability:%d set success", iocap);
     return CMD_OK;
 }
 
@@ -838,8 +826,6 @@ static int set_debug_mode_cmd(void* handle, int argc, char** argv)
 
     if (!strncasecmp(argv[0], "pts", strlen("pts"))) {
         mode = BT_DEBUG_MODE_PTS;
-    } else if (!strncasecmp(argv[0], "rssi", strlen("rssi"))) {
-        mode = BT_DEBUG_MODE_RSSI;
     } else {
         PRINT("error mode: %s", argv[0]);
         return CMD_INVALID_PARAM;
@@ -1403,6 +1389,53 @@ static int remove_bond_cmd(void* handle, int argc, char** argv)
     return CMD_OK;
 }
 
+static int add_white_cmd(void* handle, int argc, char** argv)
+{
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    if (argc >= 2) {
+        int type = atoi(argv[1]);
+        if (type < 0 || type > 3) {
+            return CMD_INVALID_PARAM;
+        }
+
+        if (bt_adapter_le_add_whitelist_with_type(handle, &addr, type) != BT_STATUS_SUCCESS) {
+            return CMD_ERROR;
+        }
+
+        PRINT("Device [%s] with type %d added to whitelist", argv[0], type);
+    } else {
+        if (bt_adapter_le_add_whitelist(handle, &addr) != BT_STATUS_SUCCESS) {
+            return CMD_ERROR;
+        }
+
+        PRINT("Device [%s] added to whitelist", argv[0]);
+    }
+
+    return CMD_OK;
+}
+
+static int remove_white_cmd(void* handle, int argc, char** argv)
+{
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    if (BTSYMBOLS(bt_adapter_le_remove_whitelist)(handle, &addr) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    PRINT("Device [%s] removed from whitelist", argv[0]);
+    return CMD_OK;
+}
+
 static int set_phy_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 3)
@@ -1495,31 +1528,6 @@ static int enhance_mode_cmd(void* handle, int argc, char** argv)
     return CMD_OK;
 }
 
-static int set_ctkd_mode_cmd(void* handle, int argc, char** argv)
-{
-    if (argc < 2) {
-        PRINT("Usage: set ctkd mode <br_to_le> <le_to_br>");
-        PRINT("  br_to_le: 0=disable, 1=enable BR->LE CTKD");
-        PRINT("  le_to_br: 0=disable, 1=enable LE->BR CTKD");
-        return CMD_PARAM_NOT_ENOUGH;
-    }
-
-    bool br_to_le = atoi(argv[0]) != 0;
-    bool le_to_br = atoi(argv[1]) != 0;
-
-    bt_status_t status = bt_adapter_le_enable_key_derivation(g_bttool_ins, br_to_le, le_to_br);
-    if (status != BT_STATUS_SUCCESS) {
-        PRINT("Failed to set CTKD mode: %d", status);
-        return CMD_ERROR;
-    }
-
-    PRINT("CTKD mode set: BR->LE=%s, LE->BR=%s",
-        br_to_le ? "enabled" : "disabled",
-        le_to_br ? "enabled" : "disabled");
-
-    return CMD_OK;
-}
-
 static const char* bond_state_to_string(bond_state_t state)
 {
     switch (state) {
@@ -1536,7 +1544,7 @@ static const char* bond_state_to_string(bond_state_t state)
 
 static void device_dump(void* handle, bt_address_t* addr, bt_transport_t transport)
 {
-    char uuid_str[BT_UUID_STR_LENGTH] = { 0 };
+    char uuid_str[40] = { 0 };
     char name[64] = { 0 };
     bt_uuid_t* uuids = NULL;
     uint16_t uuid_cnt = 0;
@@ -1561,7 +1569,7 @@ static void device_dump(void* handle, bt_address_t* addr, bt_transport_t transpo
         if (uuid_cnt) {
             PRINT("\tUUIDs:[%d]", uuid_cnt);
             for (int i = 0; i < uuid_cnt; i++) {
-                bt_uuid_to_string(uuids + i, uuid_str, BT_UUID_STR_LENGTH);
+                bt_uuid_to_string(uuids + i, uuid_str, 40);
                 PRINT("\t\tuuid[%-2d]: %s", i, uuid_str);
             }
         }
@@ -1727,28 +1735,6 @@ static int execute_command(void* handle, int argc, char* argv[])
     return CMD_UNKNOWN;
 }
 
-static void bttool_uninit(void)
-{
-#ifdef CONFIG_LIBUV_EXTENSION
-    if (g_bttool_loop && g_bttool_loop->data && !uv_loop_is_close(g_bttool_loop)) {
-        bttool_t* bttool = g_bttool_loop->data;
-        char* cmd = strdup("_uninit");
-
-        if (!cmd) {
-            PRINT("%s: strdup failed, skip uninit", __func__);
-            return;
-        }
-
-        uv_async_queue_send(&bttool->async, cmd);
-    } else {
-        PRINT("%s: loop not ready (loop:%p, data:%p), skip uninit", __func__,
-            g_bttool_loop, g_bttool_loop ? g_bttool_loop->data : NULL);
-    }
-#else
-    bt_tool_uninit(g_bttool_ins);
-#endif
-}
-
 static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
 {
     PRINT("Context:%p, Adapter state changed: %d", cookie, state);
@@ -1775,7 +1761,8 @@ static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
         PRINT("Adapter BLE enabled");
 #endif
     } else if (state == BT_ADAPTER_STATE_TURNING_OFF) {
-        bttool_uninit();
+        /* code */
+        bt_tool_uninit(g_bttool_ins);
     } else if (state == BT_ADAPTER_STATE_OFF) {
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
         scan_command_uninit(g_bttool_ins);
@@ -1864,8 +1851,8 @@ static void on_bond_state_changed_cb(void* cookie, bt_address_t* addr, bt_transp
     bond_state_t previous_state, bond_state_t current_state, bool is_ctkd)
 {
     g_bond_state = current_state;
-    PRINT_ADDR("Device [%s][%s] bond state: %s -> %s, is_ctkd: %d", addr, LINK_TYPE(transport),
-        bond_state_to_string(previous_state), bond_state_to_string(current_state), is_ctkd);
+    PRINT_ADDR("Device [%s][%s] bond state: %s, previous state: %s is_ctkd: %d", addr, LINK_TYPE(transport),
+        bond_state_to_string(current_state), bond_state_to_string(previous_state), is_ctkd);
 }
 
 static void on_le_sc_local_oob_data_got_cb(void* cookie, bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val)
@@ -1902,14 +1889,14 @@ static void on_remote_cod_changed_cb(void* cookie, bt_address_t* addr, uint32_t 
 
 static void on_remote_uuids_changed_cb(void* cookie, bt_address_t* addr, bt_uuid_t* uuids, uint16_t size)
 {
-    char uuid_str[BT_UUID_STR_LENGTH] = { 0 };
+    char uuid_str[40] = { 0 };
 
     PRINT_ADDR("Device [%s] uuids changed", addr);
 
     if (size) {
         PRINT("UUIDs:[%d]", size);
         for (int i = 0; i < size; i++) {
-            bt_uuid_to_string(uuids + i, uuid_str, BT_UUID_STR_LENGTH);
+            bt_uuid_to_string(uuids + i, uuid_str, 40);
             PRINT("\tuuid[%-2d]: %s", i, uuid_str);
         }
     }
@@ -1998,13 +1985,6 @@ static void bttool_execute_command_cb(uv_async_queue_t* handle, void* buffer)
     char* tmpstr = buffer;
     bttool_t* bttool = handle->data;
 
-    /* handle internal uninit command from TURNING_OFF callback */
-    if (strcmp(buffer, "_uninit") == 0) {
-        bt_tool_uninit(g_bttool_ins);
-        free(buffer);
-        return;
-    }
-
     memset(_argv, 0, sizeof(_argv));
 
     // 1. split command
@@ -2053,12 +2033,10 @@ static void bttool_command_uvloop_run(bttool_t* bttool)
     int ret;
 
     /* This code is used to initialize the async queue. */
-    ret = uv_async_queue_init(g_bttool_loop, &bttool->async, bttool_execute_command_cb);
+    ret = uv_async_queue_init(&bttool->loop, &bttool->async, bttool_execute_command_cb);
     if (ret != 0) {
         PRINT("%s async error: %d", __func__, ret);
-        uv_loop_close(g_bttool_loop);
-        free(g_bttool_loop);
-        g_bttool_loop = NULL;
+        uv_loop_close(&bttool->loop);
         return;
     }
 
@@ -2066,30 +2044,23 @@ static void bttool_command_uvloop_run(bttool_t* bttool)
     uv_sem_post(&bttool->ready);
 
     /* This code is used to start the event loop until there are no more events to process. */
-    uv_run(g_bttool_loop, UV_RUN_DEFAULT);
+    uv_run(&bttool->loop, UV_RUN_DEFAULT);
 
     /* The assert() function is used to check the return value of uv_loop_close().
        If the return value is 0, it means that the loop is closed successfully,
        otherwise it means an error occurs.
     */
-    if (g_bttool_loop) {
-        assert(uv_loop_close(g_bttool_loop) == 0);
-        free(g_bttool_loop);
-        g_bttool_loop = NULL;
-    }
+    assert(uv_loop_close(&bttool->loop) == 0);
 }
 
 static void bttool_thread(void* data)
 {
     bttool_t* bttool = data;
 
-    /* g_bttool_loop is now initialized in main() function
-       before the thread starts, so it's already available here.
+    /* Initialize the event loop, the loop is available
+       before the asynchronous instance is created.
     */
-    if (!g_bttool_loop) {
-        PRINT("%s: g_bttool_loop is not initialized", __func__);
-        return;
-    }
+    uv_loop_init(&bttool->loop);
 
     /* initialize synchronous or asynchronous instance.
        and register callbacks.
@@ -2172,31 +2143,11 @@ int main(int argc, char** argv)
         }
     }
 
-    g_bttool_loop = zalloc(sizeof(uv_loop_t));
-    if (!g_bttool_loop) {
-        PRINT("%s: Failed to allocate uv_loop_t", __func__);
-        return -1;
-    }
-
-    ret = uv_loop_init(g_bttool_loop);
-    if (ret != 0) {
-        PRINT("%s: Failed to init uv_loop: %d", __func__, ret);
-        free(g_bttool_loop);
-        g_bttool_loop = NULL;
-        return -1;
-    }
-
-    g_bttool_loop->data = &bttool;
-
     // Call the bttool_create_thread function to create a new thread
     // If thread creation fails, the return value is non-zero
     ret = bttool_create_thread(&bttool);
-    if (ret != 0) {
-        uv_loop_close(g_bttool_loop);
-        free(g_bttool_loop);
-        g_bttool_loop = NULL;
+    if (ret != 0)
         return ret;
-    }
 
     if (optind < argc) {
         size_t initial_len = 1;
@@ -2255,12 +2206,6 @@ int main(int argc, char** argv)
     }
 
     uv_thread_join(&bttool.thread);
-
-    if (g_bttool_loop) {
-        uv_loop_close(g_bttool_loop);
-        free(g_bttool_loop);
-        g_bttool_loop = NULL;
-    }
 
     return 0;
 }

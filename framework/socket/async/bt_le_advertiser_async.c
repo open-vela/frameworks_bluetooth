@@ -34,15 +34,7 @@ static void le_advertiser_status_reply(bt_instance_t* ins, bt_message_packet_t* 
 {
     bt_status_cb_t ret_cb = (bt_status_cb_t)cb;
 
-    if (!ret_cb)
-        return;
-
-    if (!packet) {
-        ret_cb(ins, BT_STATUS_UNHANDLED, context);
-        return;
-    }
-
-    ret_cb(ins, packet->adv_r.status, context);
+    HANDLE_BT_ASTNC_CALLBACK(ret_cb, ins, packet, adv_r, context);
 }
 
 static void le_advertiser_bool_reply(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata)
@@ -109,7 +101,7 @@ bt_status_t bt_le_start_advertising_async(bt_instance_t* ins, ble_adv_params_t* 
         return BT_STATUS_NOMEM;
 
     adv->ins = ins;
-    adv->callbacks = adv_cbs;
+    adv->callback = adv_cbs;
     packet.adv_pl._bt_le_start_advertising.adver = PTR2INT(uint64_t) adv;
     memcpy(&packet.adv_pl._bt_le_start_advertising.params, params, sizeof(*params));
     if ((adv_len && (adv_len > sizeof(packet.adv_pl._bt_le_start_advertising.adv_data)))

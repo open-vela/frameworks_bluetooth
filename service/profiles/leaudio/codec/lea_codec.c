@@ -33,7 +33,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "lea_audio_common.h"
+#include "bt_lea_common.h"
 #include "lea_codec.h"
 
 enum {

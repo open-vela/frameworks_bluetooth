@@ -28,8 +28,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bt_lea_common.h"
 #include "bt_status.h"
-#include "lea_audio_common.h"
 #include "lea_codec.h"
 
 /****************************************************************************
