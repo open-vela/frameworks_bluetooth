@@ -33,6 +33,18 @@
 #include "sal_interface.h"
 #include "sal_zblue.h"
 
+#ifdef BT_HID_DEVICE_API_PREFIXED
+#define BT_HID_API(func) Z_API(func)
+#else
+#define BT_HID_API(func) func
+#endif
+
+#ifdef BT_HID_DEVICE_API_CONST_REPORT
+#define BT_HID_REPORT_DATA const uint8_t
+#else
+#define BT_HID_REPORT_DATA uint8_t
+#endif
+
 #define BT_HID_DEVICE_VERSION 0x0101
 #define BT_HID_PARSER_VERSION 0x0111
 #define BT_HID_DEVICE_SUBCLASS 0xc0
@@ -422,8 +434,19 @@ static void hid_connect_callback(struct bt_hid_device* hid)
     hid_conn = hid_find_connections_by_device(hid);
     if (!hid_conn) {
         hid_conn_unlock();
+#ifndef BT_HID_DEVICE_API_HAS_ACCEPT
+        hid_accept_callback(hid);
+        hid_conn_lock();
+        hid_conn = hid_find_connections_by_device(hid);
+        if (!hid_conn) {
+            hid_conn_unlock();
+            BT_LOGE("hid:%p not found", hid);
+            return;
+        }
+#else
         BT_LOGE("hid:%p not found", hid);
         return;
+#endif
     }
 
     hid_conn_unlock();
@@ -453,7 +476,7 @@ static void hid_disconnected_callback(struct bt_hid_device* hid)
     hid_conn_unlock();
 }
 
-void hid_set_report_callback(struct bt_hid_device* hid, const uint8_t* data, uint16_t len)
+void hid_set_report_callback(struct bt_hid_device* hid, BT_HID_REPORT_DATA* data, uint16_t len)
 {
     sal_hid_connection_t* hid_conn;
 
@@ -471,7 +494,7 @@ void hid_set_report_callback(struct bt_hid_device* hid, const uint8_t* data, uin
     hid_device_on_set_report(&hid_conn->addr, data[0], len - 1, (uint8_t*)&data[1]);
 }
 
-void hid_get_report_callback(struct bt_hid_device* hid, const uint8_t* data, uint16_t len)
+void hid_get_report_callback(struct bt_hid_device* hid, BT_HID_REPORT_DATA* data, uint16_t len)
 {
     sal_hid_connection_t* hid_conn;
 
@@ -499,7 +522,7 @@ void hid_get_protocol_callback(struct bt_hid_device* hid)
     uint8_t protocol = BT_HID_PROTOCOL_REPORT_MODE;
 
     BT_LOGD("hid:%p get protocol", hid);
-    Z_API(bt_hid_device_send_ctrl_data)
+    BT_HID_API(bt_hid_device_send_ctrl_data)
     (hid, BT_HID_REPORT_TYPE_OTHER, &protocol, sizeof(protocol));
 }
 
@@ -539,7 +562,9 @@ void hid_vc_unplug_callback(struct bt_hid_device* hid)
 }
 
 static struct bt_hid_device_cb hid_callback = {
+#ifdef BT_HID_DEVICE_API_HAS_ACCEPT
     .accept = hid_accept_callback,
+#endif
     .connected = hid_connect_callback,
     .disconnected = hid_disconnected_callback,
     .set_report = hid_set_report_callback,
@@ -555,7 +580,7 @@ bt_status_t bt_sal_hid_device_init()
     int err;
     sal_bt_hid_device_mgr_t* hid_mgr = &g_hid_device_mgr;
 
-    err = Z_API(bt_hid_device_register)(&hid_callback);
+    err = BT_HID_API(bt_hid_device_register)(&hid_callback);
     if (err != 0) {
         BT_LOGE("HID register cb fail,err:%d", err);
         return BT_STATUS_FAIL;
@@ -646,7 +671,7 @@ static bt_status_t hid_connect_handler(bt_controller_id_t id, bt_address_t* addr
     }
 
     BT_LOGD("HID device Connecting, addr:%s", bt_addr_bastr(addr));
-    hid_device = Z_API(bt_hid_device_connect)(hid_conn->conn);
+    hid_device = BT_HID_API(bt_hid_device_connect)(hid_conn->conn);
     if (!hid_device) {
         BT_LOGE("Failed to connect HID device");
         status = BT_STATUS_FAIL;
@@ -711,7 +736,7 @@ static bt_status_t hid_disconnect_handler(bt_controller_id_t id, bt_address_t* b
 
     BT_LOGD("HID disconnect handler, addr:%s", bt_addr_bastr(bd_addr));
 
-    ret = Z_API(bt_hid_device_disconnect)(hid_conn->hid_device);
+    ret = BT_HID_API(bt_hid_device_disconnect)(hid_conn->hid_device);
     if (ret < 0) {
         BT_LOGE("Failed to disconnect HID device: %d", ret);
         return BT_STATUS_FAIL;
@@ -777,7 +802,7 @@ bt_status_t bt_sal_hid_device_get_report_response(bt_address_t* addr, uint8_t rp
 
     hid_conn_unlock();
 
-    ret = Z_API(bt_hid_device_send_ctrl_data)(hid_conn->hid_device, rpt_type, rpt_data, rpt_size);
+    ret = BT_HID_API(bt_hid_device_send_ctrl_data)(hid_conn->hid_device, rpt_type, rpt_data, rpt_size);
     if (ret < 0) {
         BT_LOGE("Failed to send report: %d", ret);
         return BT_STATUS_FAIL;
@@ -801,7 +826,7 @@ bt_status_t bt_sal_hid_device_report_error(bt_address_t* addr, hid_status_error_
 
     hid_conn_unlock();
 
-    ret = Z_API(bt_hid_device_report_error)(hid_conn->hid_device, error);
+    ret = BT_HID_API(bt_hid_device_report_error)(hid_conn->hid_device, error);
     if (ret < 0) {
         BT_LOGE("Failed to send report: %d", ret);
         return BT_STATUS_FAIL;
@@ -825,7 +850,7 @@ bt_status_t bt_sal_hid_device_send_report(bt_address_t* addr, uint8_t rpt_id, ui
 
     hid_conn_unlock();
 
-    ret = Z_API(bt_hid_device_send_intr_data)(hid_conn->hid_device, BT_HID_REPORT_TYPE_INPUT, rpt_data, rpt_size);
+    ret = BT_HID_API(bt_hid_device_send_intr_data)(hid_conn->hid_device, BT_HID_REPORT_TYPE_INPUT, rpt_data, rpt_size);
     if (ret < 0) {
         BT_LOGE("Failed to send report: %d", ret);
         return BT_STATUS_FAIL;
@@ -849,7 +874,12 @@ bt_status_t bt_sal_hid_device_virtual_unplug(bt_address_t* addr)
 
     hid_conn_unlock();
 
-    ret = Z_API(bt_hid_device_virtual_unplug)(hid_conn->hid_device);
+#ifdef BT_HID_DEVICE_API_HAS_VIRTUAL_UNPLUG
+    ret = BT_HID_API(bt_hid_device_virtual_unplug)(hid_conn->hid_device);
+#else
+    BT_LOGW("HID virtual unplug is unavailable in the current ZBlue API");
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
     if (ret < 0) {
         BT_LOGE("Failed to send virtual unplug: %d", ret);
         return BT_STATUS_FAIL;
