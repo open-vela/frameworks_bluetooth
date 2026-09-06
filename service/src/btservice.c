@@ -40,6 +40,9 @@
 #ifdef CONFIG_BLUETOOTH_HID_DEVICE
 #include "hid_device_service.h"
 #endif
+#ifdef CONFIG_BLUETOOTH_HID_HOST
+#include "hid_host_service.h"
+#endif
 #ifdef CONFIG_BLUETOOTH_PAN
 #include "pan_service.h"
 #endif
@@ -137,6 +140,10 @@ void bt_profile_init(void)
 
 #ifdef CONFIG_BLUETOOTH_HID_DEVICE
     register_hid_device_service();
+#endif
+
+#ifdef CONFIG_BLUETOOTH_HID_HOST
+    register_hid_host_service();
 #endif
 
 #ifdef CONFIG_BLUETOOTH_PAN

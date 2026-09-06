@@ -136,6 +136,9 @@ static void bt_socket_client_callback_process(bt_instance_t* ins, bt_message_pac
         { BT_HID_DEVICE_CALLBACK_START, BT_HID_DEVICE_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_hid_device_callback },
         { BT_IPC_CODE_CALLBACK_HID_DEV_BEGIN, BT_IPC_CODE_CALLBACK_HID_DEV_END, (bt_socket_callback_t)bt_socket_client_hid_device_callback },
 #endif
+#ifdef CONFIG_BLUETOOTH_HID_HOST
+        { BT_IPC_CODE_CALLBACK_HID_HOST_BEGIN, BT_IPC_CODE_CALLBACK_HID_HOST_END, (bt_socket_callback_t)bt_socket_client_hid_host_callback },
+#endif
 #ifdef CONFIG_BLUETOOTH_L2CAP
         { BT_L2CAP_CALLBACK_START, BT_L2CAP_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_l2cap_callback },
         { BT_IPC_CODE_CALLBACK_L2CAP_BEGIN, BT_IPC_CODE_CALLBACK_L2CAP_END, (bt_socket_callback_t)bt_socket_client_l2cap_callback },

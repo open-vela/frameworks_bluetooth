@@ -142,6 +142,10 @@ int hidd_command_init(void* handle);
 void hidd_command_uninit(void* handle);
 int hidd_command_exec(void* handle, int argc, char* argv[]);
 
+int hidh_command_init(void* handle);
+void hidh_command_uninit(void* handle);
+int hidh_command_exec(void* handle, int argc, char* argv[]);
+
 int pan_command_init(void* handle);
 void pan_command_uninit(void* handle);
 int pan_command_exec(void* handle, int argc, char* argv[]);

@@ -790,6 +790,13 @@ config BLUETOOTH_HOGP_DEVICE
 	default n
 	depends on BLUETOOTH_HID_DEVICE
 
+config BLUETOOTH_HID_HOST
+	bool "HID Host (Classic HIDP + HOGP)"
+	default n
+	help
+		Enable HID Host profile. Supports both classic Bluetooth
+		HID Host (HIDP) and BLE HID over GATT Profile (HOGP) Host.
+
 config BLUETOOTH_PAN
 	bool "Personal Area Network Profile (PAN)"
 	default n

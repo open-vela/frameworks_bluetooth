@@ -26,9 +26,9 @@
     } while (0)
 
 #define BT_SOCKET_PTR_VALID(cb, ret) \
-    do {                            \
-        if (cb == NULL)             \
-            return ret;             \
+    do {                             \
+        if (cb == NULL)              \
+            return ret;              \
     } while (0)
 
 /* Macros for number of items.
@@ -63,6 +63,7 @@ typedef struct {
     callbacks_list_t* panu_callbacks;
     callbacks_list_t* spp_callbacks;
     callbacks_list_t* hidd_callbacks;
+    callbacks_list_t* hidh_callbacks;
     callbacks_list_t* l2cap_callbacks;
     callbacks_list_t* cs_callbacks;
 
@@ -224,8 +225,12 @@ int bt_socket_client_pan_callback(service_poll_t* poll,
 
 void bt_socket_server_hid_device_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+void bt_socket_server_hid_host_process(service_poll_t* poll,
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
 
 int bt_socket_client_hid_device_callback(service_poll_t* poll,
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async);
+int bt_socket_client_hid_host_callback(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async);
 
 /* L2CAP */

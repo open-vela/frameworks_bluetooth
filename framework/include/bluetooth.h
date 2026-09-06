@@ -495,12 +495,14 @@ typedef struct bt_instance {
     callbacks_list_t* panu_callbacks;
     callbacks_list_t* spp_callbacks;
     callbacks_list_t* hidd_callbacks;
+    callbacks_list_t* hidh_callbacks;
     callbacks_list_t* l2cap_callbacks;
     void* hfp_ag_cookie;
     void* hfp_hf_cookie;
     void* panu_cookie;
     void* spp_cookie;
     void* hidd_cookie;
+    void* hidh_cookie;
     void* l2cap_cookie;
 
     bt_list_t* gattc_remote_list;

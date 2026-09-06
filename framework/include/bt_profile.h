@@ -30,6 +30,7 @@ extern "C" {
 #define PROFILE_HFP_AG_NAME "HFP-AG"
 #define PROFILE_SPP_NAME "SPP"
 #define PROFILE_HID_DEV_NAME "HID-DEV"
+#define PROFILE_HID_HOST_NAME "HID-HOST"
 #define PROFILE_PANU_NAME "PANU"
 #define PROFILE_GATTC_NAME "GATTC"
 #define PROFILE_GATTS_NAME "GATTS"
@@ -64,6 +65,7 @@ enum profile_id {
     PROFILE_LEAUDIO_VMICP,
     PROFILE_CS, // TODO: remove this profile
     PROFILE_RAP,
+    PROFILE_HID_HOST,
     PROFILE_UNKOWN,
     PROFILE_MAX
 };

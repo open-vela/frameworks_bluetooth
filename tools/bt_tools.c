@@ -209,6 +209,9 @@ static bt_command_t g_cmd_tables[] = {
 #ifdef CONFIG_BLUETOOTH_HID_DEVICE
     { "hidd", hidd_command_exec, 0, "hid device cmd,    input \'hidd\' show usage" },
 #endif
+#ifdef CONFIG_BLUETOOTH_HID_HOST
+    { "hidh", hidh_command_exec, 0, "hid host cmd,      input \'hidh\' show usage" },
+#endif
 #ifdef CONFIG_BLUETOOTH_PAN
     { "pan", pan_command_exec, 0, "pan cmd,           input \'pan\' show usage" },
 #endif
@@ -343,6 +346,9 @@ static void bt_tool_init(void* handle)
 #ifdef CONFIG_BLUETOOTH_HID_DEVICE
     hidd_command_init(handle);
 #endif
+#ifdef CONFIG_BLUETOOTH_HID_HOST
+    hidh_command_init(handle);
+#endif
 #ifdef CONFIG_BLUETOOTH_PAN
     pan_command_init(handle);
 #endif
@@ -417,6 +423,9 @@ static void bt_tool_uninit(void* handle)
 #endif
 #ifdef CONFIG_BLUETOOTH_HID_DEVICE
     hidd_command_uninit(handle);
+#endif
+#ifdef CONFIG_BLUETOOTH_HID_HOST
+    hidh_command_uninit(handle);
 #endif
 #ifdef CONFIG_BLUETOOTH_PAN
     pan_command_uninit(handle);
