@@ -17,6 +17,15 @@
 #include "sal_adapter_le_interface.h"
 
 #include "adapter_internel.h"
+#include "service_trace.h"
+#include <stdatomic.h>
+#include <semaphore.h>
+
+static _Atomic bool g_le_disable_pending;
+static sem_t g_le_disable_done;
+static bool g_le_disable_sync;
+static _Atomic int g_le_cleanup_result;
+static _Atomic bool g_le_cleanup_complete;
 #include "cs_service.h"
 #include "gattc_service.h"
 #include "gatts_service.h"
@@ -1561,19 +1570,54 @@ struct bt_conn* get_le_conn_from_addr(bt_address_t* addr)
 
 bt_status_t bt_sal_le_init(const bt_vhal_interface* vhal)
 {
+    if (!g_le_disable_sync) { sem_init(&g_le_disable_done, 0, 0); g_le_disable_sync = true; }
 #ifndef CONFIG_BLUETOOTH_BREDR_SUPPORT
     z_sys_init();
 #endif
 
+    atomic_store(&g_le_cleanup_result, 0);
+    atomic_store(&g_le_cleanup_complete, false);
     return BT_STATUS_SUCCESS;
 }
 
 void bt_sal_le_cleanup(void)
 {
+    int result = 0;
+    atomic_store(&g_le_cleanup_complete, false);
+    /* Cleanup may run after READY has already transitioned to OFF while the
+     * host device slot is still initialized.  Ensure the real host disable
+     * path runs before service-loop teardown, so the next local instance can
+     * allocate the controller slot again. */
+    if (atomic_load(&g_le_disable_pending))
+      {
+        while (atomic_load(&g_le_disable_pending))
+          sem_wait(&g_le_disable_done);
+        result = atomic_load(&g_le_cleanup_result);
+      }
+    else if (bt_is_initialized_mc(0))
+      {
+          atomic_store(&g_le_disable_pending, true);
+          result = bt_disable();
+          atomic_store(&g_le_disable_pending, false);
+      }
+    atomic_store(&g_le_cleanup_result, result);
+    atomic_store(&g_le_cleanup_complete, true);
+}
+
+int bt_sal_le_cleanup_result(void)
+{
+    return atomic_load(&g_le_cleanup_result);
+}
+
+bool bt_sal_le_host_initialized(void)
+{
+    return bt_is_initialized_mc(0);
 }
 
 bt_status_t bt_sal_le_enable(bt_controller_id_t id)
 {
+    service_trace_note(20, 0, bt_is_ready(), id);
+    BT_LOGI("BTE1 INT bt_sal_le_enable id=%u ready=%d", id, bt_is_ready());
     if (bt_is_ready()) {
         adapter_on_adapter_state_changed(BLE_STACK_STATE_ON);
         return BT_STATUS_SUCCESS;
@@ -1587,7 +1631,12 @@ bt_status_t bt_sal_le_enable(bt_controller_id_t id)
 static void STACK_CALL(le_disable)(void* args)
 {
     zblue_unregister_callback();
-    bt_disable();
+    if (atomic_load(&g_le_disable_pending))
+      {
+        atomic_store(&g_le_cleanup_result, bt_disable());
+        atomic_store(&g_le_disable_pending, false);
+        sem_post(&g_le_disable_done);
+      }
 }
 
 bt_status_t bt_sal_le_disable(bt_controller_id_t id)
@@ -1595,6 +1644,12 @@ bt_status_t bt_sal_le_disable(bt_controller_id_t id)
     sal_adapter_req_t* req;
 
     if (!bt_is_ready()) {
+        /* A failed/partial enable can leave the controller slot allocated
+         * while READY is still false.  Release that real host state before
+         * allowing a subsequent enable; do not call bt_disable on an empty
+         * slot. */
+        if (bt_is_initialized_mc(id))
+            atomic_store(&g_le_cleanup_result, bt_disable());
         adapter_on_adapter_state_changed(BLE_STACK_STATE_OFF);
         return BT_STATUS_SUCCESS;
     }
@@ -1603,6 +1658,7 @@ bt_status_t bt_sal_le_disable(bt_controller_id_t id)
     if (!req) {
         return BT_STATUS_NOMEM;
     }
+    atomic_store(&g_le_disable_pending, true);
     sal_send_req(req);
     adapter_on_adapter_state_changed(BLE_STACK_STATE_OFF);
 

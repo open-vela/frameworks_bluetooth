@@ -27,6 +27,8 @@
 
 bt_status_t bt_sal_le_init(const bt_vhal_interface* vhal);
 void bt_sal_le_cleanup(void);
+int bt_sal_le_cleanup_result(void);
+bool bt_sal_le_host_initialized(void);
 bt_status_t bt_sal_le_enable(bt_controller_id_t id);
 bt_status_t bt_sal_le_disable(bt_controller_id_t id);
 bt_status_t bt_sal_le_set_io_capability(bt_controller_id_t id, bt_io_capability_t cap);

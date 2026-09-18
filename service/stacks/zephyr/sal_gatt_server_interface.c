@@ -29,6 +29,7 @@
 #include "bt_status.h"
 #include "gatt_define.h"
 #include "gatts_service.h"
+#include "sal_gatt_db_ownership.h"
 #include "sal_adapter_le_interface.h"
 #include "sal_connection_manager.h"
 #include "sal_interface.h"
@@ -183,6 +184,13 @@ static size_t svc_attr_count;
 
 static struct bt_gatt_service server_svcs[CONFIG_GATT_SERVER_MAX_SERVICES];
 static struct bt_gatt_attr server_db[CONFIG_GATT_SERVER_MAX_ATTRIBUTES];
+/*
+ * user_data ownership is not encoded by struct bt_gatt_attr.  In particular,
+ * characteristic value attributes borrow their gatt_element_t while CCC
+ * attributes own a separately allocated gatt_ccc_wrapper.  Keep ownership
+ * beside the compacted server_db so service removal frees only owned data.
+ */
+static bool server_db_user_data_owned[CONFIG_GATT_SERVER_MAX_ATTRIBUTES];
 static sal_gatt_sdp_record_t gatt_sdp_records[CONFIG_GATT_SERVER_MAX_SERVICES];
 
 static int find_free_service_index(void)
@@ -219,7 +227,9 @@ static void remove_from_server_db(const struct bt_gatt_attr* start, size_t count
     }
 
     for (i = 0; i < count; i++) {
-        free(start[i].user_data);
+        if (server_db_user_data_owned[index + i]) {
+            free(start[i].user_data);
+        }
         free((void*)start[i].uuid);
     }
 
@@ -229,6 +239,8 @@ static void remove_from_server_db(const struct bt_gatt_attr* start, size_t count
     }
 
     memset(&server_db[attr_count - count], 0, count * sizeof(struct bt_gatt_attr));
+    sal_gatt_db_ownership_remove(server_db_user_data_owned, attr_count,
+        index, count);
     attr_count -= count;
 }
 
@@ -330,7 +342,8 @@ static ssize_t write_value(struct bt_conn* conn, const struct bt_gatt_attr* attr
     return ret;
 }
 
-static struct bt_gatt_attr* gatt_db_add(const struct bt_gatt_attr* pattern, size_t user_data_len)
+static struct bt_gatt_attr* gatt_db_add(const struct bt_gatt_attr* pattern,
+    size_t user_data_len, bool take_borrowed_user_data)
 {
     struct bt_gatt_attr* attr = &server_db[attr_count];
 
@@ -342,6 +355,7 @@ static struct bt_gatt_attr* gatt_db_add(const struct bt_gatt_attr* pattern, size
     const union uuid* u = CONTAINER_OF(pattern->uuid, union uuid, uuid);
     size_t uuid_size = (u->uuid.type == BT_UUID_TYPE_16) ? sizeof(u->u16) : sizeof(u->u128);
 
+    server_db_user_data_owned[attr_count] = false;
     memcpy(attr, pattern, sizeof(*attr));
 
     attr->uuid = malloc(uuid_size);
@@ -353,6 +367,9 @@ static struct bt_gatt_attr* gatt_db_add(const struct bt_gatt_attr* pattern, size
 
     if (user_data_len == 0) {
         attr->user_data = pattern->user_data;
+        server_db_user_data_owned[attr_count] =
+            sal_gatt_db_user_data_is_owned(user_data_len,
+                take_borrowed_user_data);
     } else {
         attr->user_data = malloc(user_data_len);
         if (!attr->user_data) {
@@ -362,6 +379,9 @@ static struct bt_gatt_attr* gatt_db_add(const struct bt_gatt_attr* pattern, size
             return NULL;
         }
         memcpy(attr->user_data, pattern->user_data, user_data_len);
+        server_db_user_data_owned[attr_count] =
+            sal_gatt_db_user_data_is_owned(user_data_len,
+                take_borrowed_user_data);
     }
 
     BT_LOGD("user_data 0x%p, user_data_len: %zu", attr->user_data, user_data_len);
@@ -680,10 +700,10 @@ static void add_service(gatt_element_t* element, bool is_over_br)
 
     switch (element->type) {
     case GATT_PRIMARY_SERVICE:
-        attr_svc = gatt_db_add(&(struct bt_gatt_attr)BT_GATT_PRIMARY_SERVICE(&u.uuid), size);
+        attr_svc = gatt_db_add(&(struct bt_gatt_attr)BT_GATT_PRIMARY_SERVICE(&u.uuid), size, false);
         break;
     case GATT_SECONDARY_SERVICE:
-        attr_svc = gatt_db_add(&(struct bt_gatt_attr)BT_GATT_SECONDARY_SERVICE(&u.uuid), size);
+        attr_svc = gatt_db_add(&(struct bt_gatt_attr)BT_GATT_SECONDARY_SERVICE(&u.uuid), size, false);
         break;
     default:
         attr_svc = NULL;
@@ -702,7 +722,7 @@ static int alloc_characteristic(struct add_characteristic* ch)
     struct bt_gatt_chrc* chrc_data;
 
     /* Add Characteristic Declaration */
-    attr_chrc = gatt_db_add(&(struct bt_gatt_attr)BT_GATT_ATTRIBUTE(BT_UUID_GATT_CHRC, BT_GATT_PERM_READ, bt_gatt_attr_read_chrc, NULL, (&(struct bt_gatt_chrc) {})), sizeof(*chrc_data));
+    attr_chrc = gatt_db_add(&(struct bt_gatt_attr)BT_GATT_ATTRIBUTE(BT_UUID_GATT_CHRC, BT_GATT_PERM_READ, bt_gatt_attr_read_chrc, NULL, (&(struct bt_gatt_chrc) {})), sizeof(*chrc_data), false);
     if (!attr_chrc) {
         return -EINVAL;
     }
@@ -712,7 +732,7 @@ static int alloc_characteristic(struct add_characteristic* ch)
         return -EINVAL;
     }
 
-    attr_value = gatt_db_add(&(struct bt_gatt_attr)BT_GATT_ATTRIBUTE(ch->uuid, ch->permissions & GATT_PERM_MASK, read_value, write_value, ch->element), 0);
+    attr_value = gatt_db_add(&(struct bt_gatt_attr)BT_GATT_ATTRIBUTE(ch->uuid, ch->permissions & GATT_PERM_MASK, read_value, write_value, ch->element), 0, false);
     if (!attr_value) {
         BT_LOGE("%s, attr_value allocation failed", __func__);
         return -EINVAL;
@@ -852,7 +872,7 @@ static int alloc_descriptor(const struct bt_gatt_attr* attr, struct add_descript
                 .read = bt_gatt_attr_read_ccc,
                 .write = bt_sal_on_ccc_written,
                 .user_data = ccc },
-            0);
+            0, true);
 
         if (!attr_desc) {
             free(ccc_wrapper);
@@ -871,7 +891,7 @@ static int alloc_descriptor(const struct bt_gatt_attr* attr, struct add_descript
                 read_value,
                 write_value,
                 &user_data),
-            sizeof(user_data));
+            sizeof(user_data), false);
 
         if (!attr_desc) {
             BT_LOGE("%s, generic descriptor allocation failed", __func__);

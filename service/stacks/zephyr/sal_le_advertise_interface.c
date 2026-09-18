@@ -292,6 +292,8 @@ static bt_status_t zblue_le_ext_delete(struct bt_le_adv_set* adv_set)
     }
 
     ret = bt_le_ext_adv_delete(adv_set->adv);
+    BT_LOGI("adv lifecycle ext delete id=%u adv=%p ret=%d",
+        adv_set->adv_id, adv_set->adv, ret);
     if (ret) {
         BT_LOGE("%s, le ext adv delet fail, err:%d", __func__, ret);
         return BT_STATUS_FAIL;
@@ -369,6 +371,11 @@ static void STACK_CALL(start_adv)(void* args)
     size_t ad_size = 0;
     size_t sd_size = 0;
     bool ext_supported = bt_le_ext_adv_is_supported();
+    bool ext_requested =
+        (req->adpt.start_adv.param.options & BT_LE_ADV_OPT_EXT_ADV) != 0;
+
+    BT_LOGI("adv lifecycle start id=%u requested_ext=%u controller_ext=%u",
+        req->adv_id, ext_requested ? 1u : 0u, ext_supported ? 1u : 0u);
 
     ret = parse_bt_adv_data(req->adpt.start_adv.adv_data, req->adpt.start_adv.adv_len,
         ad, ARRAY_SIZE(ad), &ad_size);
@@ -384,7 +391,13 @@ static void STACK_CALL(start_adv)(void* args)
         goto done;
     }
 
-    if (ext_supported) {
+    /* Use the API requested advertising type.  The previous code selected
+     * extended advertising solely from controller capability, even when the
+     * caller requested BT_LE_LEGACY_ADV_*.  That created an implicit
+     * extended set and later forced stop into LE_REMOVE_ADV_SET (0x203c).
+     * A legacy request must stay on the legacy start/stop path. */
+    if (ext_requested && ext_supported) {
+        BT_LOGI("adv lifecycle start id=%u path=extended", req->adv_id);
         ret = zblue_le_ext_create(&req->adpt.start_adv.param, &adv, req->adv_id);
         if (ret) {
             BT_LOGE("%s, zblue le ext adv create fail, err:%d", __func__, ret);
@@ -406,7 +419,8 @@ static void STACK_CALL(start_adv)(void* args)
             ret = BT_STATUS_FAIL;
             goto done;
         }
-    } else {
+    } else if (!ext_requested) {
+        BT_LOGI("adv lifecycle start id=%u path=legacy", req->adv_id);
         ret = bt_le_adv_start(&req->adpt.start_adv.param, ad_size > 0 ? ad : NULL, ad_size,
             sd_size > 0 ? sd : NULL, sd_size);
         if (ret) {
@@ -414,6 +428,10 @@ static void STACK_CALL(start_adv)(void* args)
             ret = BT_STATUS_FAIL;
             goto done;
         }
+    } else {
+        ret = BT_STATUS_UNSUPPORTED;
+        BT_LOGE("%s, extended advertising requested but unsupported", __func__);
+        goto done;
     }
 
     advertising_on_state_changed(req->adv_id, LE_ADVERTISING_STARTED);
@@ -513,8 +531,14 @@ static void STACK_CALL(stop_adv)(void* args)
 
     ext_supported = bt_le_ext_adv_is_supported();
 
-    if (!ext_supported) {
+    /* adv_id values in g_adv_sets are only allocated for the explicit
+     * extended path.  Legacy requests are owned by the legacy stack API and
+     * must not be routed through LE_REMOVE_ADV_SET. */
+    adv_set = zblue_le_ext_find_adv(req->adv_id);
+    if (!adv_set) {
+        BT_LOGI("adv lifecycle stop id=%u path=legacy", req->adv_id);
         ret = bt_le_adv_stop();
+        BT_LOGI("adv lifecycle legacy stop id=%u ret=%d", req->adv_id, ret);
         if (ret) {
             BT_LOGE("%s, legacy adv stop fail", __func__);
             return;
@@ -523,11 +547,12 @@ static void STACK_CALL(stop_adv)(void* args)
         }
     }
 
-    adv_set = zblue_le_ext_find_adv(req->adv_id);
-    if (!adv_set) {
+    if (!ext_supported) {
         BT_LOGE("%s, le ext adv_set find fail", __func__);
         return;
     }
+
+    BT_LOGI("adv lifecycle stop id=%u path=extended", req->adv_id);
 
     ret = bt_le_ext_adv_stop(adv_set->adv);
     if (ret) {

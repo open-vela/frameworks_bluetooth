@@ -38,6 +38,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <syslog.h>
 #include <unistd.h>
 #include <zephyr/sys/byteorder.h>
 
@@ -48,6 +49,7 @@
 #define DT_DRV_COMPAT zephyr_bt_hci_ttyHCI
 
 #include "hci_h4.h"
+#include "service_trace.h"
 #include "vhal/bt_vhal.h"
 
 #define LOG_TAG "h4"
@@ -71,6 +73,9 @@ struct h4_data {
 
 static const struct device* bt_dev;
 static service_poll_t* hci_handle;
+
+static void hci_remove_recv(void* data);
+static int h4_close(const struct device* dev);
 
 static void h4_data_dump(const char* tag, uint8_t type, uint8_t* data, uint32_t len)
 {
@@ -264,6 +269,21 @@ static void bt_sal_hci_transport_recv(void)
         buf_add = frame_start + sizeof(packet_type);
         buf_add_len = decoded_len - sizeof(packet_type);
 
+#if OV_BLE_HCI_ADV_LIFECYCLE_HOST_DIAG
+        /* RESET is the only command traced here; retain the raw controller
+         * status before host mapping turns it into -EIO/-EINVAL/etc. */
+        if (packet_type == BT_HCI_H4_EVT && decoded_len >= 7 &&
+            frame_start[1] == BT_HCI_EVT_CMD_COMPLETE &&
+            frame_start[4] == (BT_HCI_OP_RESET & 0xff) &&
+            frame_start[5] == (BT_HCI_OP_RESET >> 8))
+          {
+            syslog(LOG_INFO,
+                   "BTE1 H4_RESET_RX event=0x%02x opcode=0x%04x status=0x%02x bytes=%ld\n",
+                   frame_start[1], BT_HCI_OP_RESET, frame_start[6],
+                   (long)decoded_len);
+          }
+#endif
+
         buf = get_rx(frame_start);
 
         frame_size -= decoded_len;
@@ -296,10 +316,25 @@ int bt_sal_hci_transport_init(const bt_vhal_interface* vhal)
 
 void bt_sal_hci_transport_cleanup(void)
 {
-    struct h4_data* h4 = bt_dev->data;
+    struct h4_data* h4;
 
-    close(h4->fd);
-    h4->fd = -1;
+    /* The poll handle belongs to the service loop and must be closed before
+     * the loop is stopped.  Closing only the UART leaves an active uv_poll
+     * in the old loop and a stale hci_handle for the next local instance. */
+    if (hci_handle != NULL)
+        hci_remove_recv(NULL);
+
+    if (bt_dev == NULL || bt_dev->data == NULL)
+        return;
+
+    h4 = bt_dev->data;
+
+    if (h4->fd >= 0)
+      {
+        close(h4->fd);
+        h4->fd = -1;
+      }
+    bt_dev = NULL;
 }
 
 static void hci_remove_recv(void* data)
@@ -323,12 +358,40 @@ static void hci_poll_recv(service_poll_t* poll, int revent, void* userdata)
         bt_sal_hci_transport_recv();
 }
 
+/* bt_hci_close() is the ownership boundary for the H4 transport.  Keep the
+ * poll registration and UART descriptor alive until this callback runs, then
+ * release each exactly once. */
+static int h4_close(const struct device* dev)
+{
+    struct h4_data* h4;
+    int ret = 0;
+
+    if (dev == NULL || dev->data == NULL)
+        return -EINVAL;
+
+    h4 = dev->data;
+    if (hci_handle != NULL)
+        hci_remove_recv(NULL);
+
+    if (h4->fd >= 0)
+      {
+        ret = close(h4->fd);
+        h4->fd = -1;
+      }
+
+    if (bt_dev == dev)
+        bt_dev = NULL;
+    return ret;
+}
+
 static int h4_open(const struct device* dev, bt_hci_recv_t recv, void* hci_data)
 {
     int fd;
     struct h4_data* h4;
 
     fd = open(CONFIG_BT_UART_ON_DEV_NAME, O_RDWR | O_BINARY | O_CLOEXEC);
+    service_trace_note(30, fd < 0 ? fd : 0, fd, 0);
+    BT_LOGI("BTE1 INT h4_open fd=%d prior_poll=%p", fd, hci_handle);
     if (fd < 0) {
         BT_LOGE("H4: Failed to open %s: %d", CONFIG_BT_UART_ON_DEV_NAME, errno);
         return fd;
@@ -343,6 +406,8 @@ static int h4_open(const struct device* dev, bt_hci_recv_t recv, void* hci_data)
     BT_LOGE("H4: %s opened as fd:%d", CONFIG_BT_UART_ON_DEV_NAME, h4->fd);
 
     hci_handle = service_loop_poll_fd(h4->fd, POLL_READABLE, hci_poll_recv, NULL);
+    service_trace_note(31, hci_handle ? 0 : -1, h4->fd, 0);
+    BT_LOGI("BTE1 INT h4_poll_registered handle=%p", hci_handle);
     if (!hci_handle) {
         BT_LOGD("hci fd:%d add poll failed", h4->fd);
         return -1;
@@ -377,7 +442,25 @@ static int h4_send(const struct device* dev, struct net_buf* buf)
     h4_data_dump("BT TX", buf->data[0], buf->data, buf->len);
 
     len = buf->len;
+#if OV_BLE_HCI_ADV_LIFECYCLE_HOST_DIAG
+    if (buf->data[0] == BT_HCI_H4_CMD && len >= 4 &&
+        buf->data[1] == (BT_HCI_OP_RESET & 0xff) &&
+        buf->data[2] == (BT_HCI_OP_RESET >> 8))
+      {
+        syslog(LOG_INFO, "BTE1 H4_RESET_TX opcode=0x%04x bytes=%d fd=%d\n",
+               BT_HCI_OP_RESET, len, h4->fd);
+      }
+#endif
     ret = h4_send_data(h4->fd, buf->data, buf->len);
+#if OV_BLE_HCI_ADV_LIFECYCLE_HOST_DIAG
+    if (buf->data[0] == BT_HCI_H4_CMD && len >= 4 &&
+        buf->data[1] == (BT_HCI_OP_RESET & 0xff) &&
+        buf->data[2] == (BT_HCI_OP_RESET >> 8))
+      {
+        syslog(LOG_INFO, "BTE1 H4_RESET_TX_RESULT opcode=0x%04x ret=%d\n",
+               BT_HCI_OP_RESET, ret);
+      }
+#endif
     if (ret != len) {
         BT_LOGE("H4: Failed to send %u bytes: %d", len, ret);
         ret = -EINVAL;
@@ -390,6 +473,7 @@ static int h4_send(const struct device* dev, struct net_buf* buf)
 
 const struct bt_hci_driver_api h4_drv_api = {
     .open = h4_open,
+    .close = h4_close,
     .send = h4_send,
 };
 
