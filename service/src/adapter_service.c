@@ -26,6 +26,7 @@
 #endif
 
 #include "adapter_internel.h"
+#include "service_trace.h"
 #include "bt_list.h"
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
 #include "advertising.h"
@@ -2039,6 +2040,8 @@ bt_status_t adapter_enable(uint8_t opt)
 {
     adapter_service_t* adapter = &g_adapter_service;
     bt_adapter_state_t state = adapter_get_state();
+    service_trace_note(10, 0, state, opt);
+    BT_LOGI("BTE1 INT adapter_enable opt=%u state=%d", opt, state);
 
     if (state == BT_ADAPTER_STATE_ON) {
         return BT_STATUS_DONE;
@@ -2048,6 +2051,8 @@ bt_status_t adapter_enable(uint8_t opt)
         send_to_state_machine((state_machine_t*)adapter->stm, SYS_TURN_ON, NULL);
     else
         send_to_state_machine((state_machine_t*)adapter->stm, TURN_ON_BLE, NULL);
+
+    BT_LOGI("BTE1 INT adapter_enable queued event=%u", opt == SYS_SET_BT_ALL ? SYS_TURN_ON : TURN_ON_BLE);
 
     return BT_STATUS_SUCCESS;
 }

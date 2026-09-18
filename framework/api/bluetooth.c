@@ -32,18 +32,47 @@ bt_instance_t* BTSYMBOLS(bluetooth_create_instance)(void)
 {
     uint32_t app_id;
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_LOCAL
-    service_loop_init();
-    bt_service_init();
-    service_loop_run(true, "bt_service");
+    int local_ret;
+
+    /* A local instance owns the shared service loop.  Propagate each
+     * lifecycle failure so callers never continue with a half-initialized
+     * adapter or a stale loop back-pointer after a previous run. */
+    local_ret = service_loop_init();
+    if (local_ret != 0)
+        return NULL;
+
+    local_ret = bt_service_init();
+    if (local_ret != 0)
+      {
+        bt_service_cleanup();
+        service_loop_exit();
+        return NULL;
+      }
+
+    local_ret = service_loop_run(true, "bt_service");
+    if (local_ret != 0)
+      {
+        bt_service_cleanup();
+        service_loop_exit();
+        return NULL;
+      }
 #endif
     bt_instance_t* ins = zalloc(sizeof(bt_instance_t));
     if (!ins) {
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_LOCAL
+        bt_service_cleanup();
+        service_loop_exit();
+#endif
         return NULL;
     }
 
     bt_status_t status = manager_create_instance(PTR2INT(uint64_t) ins, BLUETOOTH_SYSTEM, "local", getpid(), 0, &app_id);
     if (status != BT_STATUS_SUCCESS) {
         free(ins);
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_LOCAL
+        bt_service_cleanup();
+        service_loop_exit();
+#endif
         return NULL;
     }
 

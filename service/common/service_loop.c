@@ -28,7 +28,25 @@
 
 #include "bt_debug.h"
 #include "bt_list.h"
+#include "service_trace.h"
 #include "service_loop.h"
+#include "service_trace.h"
+#include <time.h>
+#include <pthread.h>
+#include <stdatomic.h>
+
+#define SERVICE_TRACE_CAP 64
+static struct service_trace_record g_service_trace[SERVICE_TRACE_CAP];
+static _Atomic uint32_t g_service_trace_head;
+static _Atomic uint32_t g_service_trace_dropped;
+static _Atomic uint32_t g_service_trace_seq;
+static uint64_t service_trace_now(void)
+{ struct timespec ts; if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) return 0; return (uint64_t)ts.tv_sec * 1000000ULL + (uint64_t)ts.tv_nsec / 1000ULL; }
+void service_trace_reset(void) { atomic_store(&g_service_trace_head, 0); atomic_store(&g_service_trace_dropped, 0); atomic_store(&g_service_trace_seq, 0); }
+void service_trace_note(uint16_t stage, int status, int state, uint32_t event)
+{ uint32_t n = atomic_fetch_add(&g_service_trace_head, 1); if (n >= SERVICE_TRACE_CAP) { atomic_fetch_add(&g_service_trace_dropped, 1); return; } g_service_trace[n] = (struct service_trace_record){ atomic_fetch_add(&g_service_trace_seq, 1) + 1, stage, (int16_t)status, state, event, (uintptr_t)pthread_self(), service_trace_now() }; }
+uint32_t service_trace_copy(struct service_trace_record *out, uint32_t cap, uint32_t *dropped)
+{ uint32_t n = atomic_load(&g_service_trace_head); if (n > SERVICE_TRACE_CAP) n = SERVICE_TRACE_CAP; if (dropped) *dropped = atomic_load(&g_service_trace_dropped); if (out && cap) { if (n > cap) n = cap; memcpy(out, g_service_trace, n * sizeof(*out)); } return n; }
 #include "utils/log.h"
 
 BT_DEBUG_MKTIMEVAL_S(service_message_callback);
@@ -106,6 +124,9 @@ static void service_message_callback(uv_async_t* handle)
     uv_loop_t* uvloop = handle->loop;
     service_loop_t* loop = uvloop->data;
     internel_msg_t* imsg;
+    service_trace_note(3, 0, loop != NULL, 0);
+
+    BT_LOGI("BTE1 INT async_callback loop=%p", loop);
 
     BT_DEBUG_ENTER_TIME_SECTION(service_message_callback);
 
@@ -196,6 +217,8 @@ int service_loop_init(void)
     int ret;
 
     uvloop = get_service_uv_loop();
+    service_trace_note(1, 0, uvloop->data != NULL, 0);
+    BT_LOGI("BTE1 INT service_loop_init data=%p", uvloop->data);
     if (uvloop->data != NULL)
         return -1;
 
@@ -222,6 +245,7 @@ int service_loop_init(void)
 
 fail:
     (void)uv_loop_close(uvloop);
+    uvloop->data = NULL;
     free(loop);
     return ret;
 }
@@ -230,6 +254,8 @@ int service_loop_run(bool start_thread, char* name)
 {
     uv_loop_t* handle = get_service_uv_loop();
     service_loop_t* loop = handle->data;
+    service_trace_note(2, 0, loop != NULL, start_thread);
+    BT_LOGI("BTE1 INT service_loop_run start_thread=%d loop=%p", start_thread, loop);
 
     if (start_thread) {
         int ret = uv_sem_init(&loop->ready, 0);
@@ -271,11 +297,18 @@ void service_loop_exit(void)
 {
     uv_loop_t* handle = get_service_uv_loop();
     service_loop_t* loop = handle->data;
+    service_trace_note(4, 0, loop != NULL, 0);
+    BT_LOGI("BTE1 INT service_loop_exit loop=%p", loop);
     struct list_node* node;
     struct list_node* tmp;
 
     if (loop == NULL) {
+        /* uv_loop_close() clears libuv's default-loop pointer, but in
+         * debug builds preserves loop->data.  Do not leave a dangling
+         * service_loop_t there: a later bluetooth_create_instance() would
+         * otherwise reject/reuse freed state. */
         (void)uv_loop_close(handle);
+        handle->data = NULL;
         return;
     }
 
@@ -314,6 +347,9 @@ void service_loop_exit(void)
     list_delete(&loop->deferred_queue);
     uv_mutex_unlock(&loop->msg_lock);
     uv_mutex_destroy(&loop->msg_lock);
+    /* The default uv loop is reused by a subsequent local Bluetooth
+     * instance.  Clear the back-pointer before releasing its owner. */
+    handle->data = NULL;
     free(loop);
 }
 
