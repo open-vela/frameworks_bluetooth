@@ -15,6 +15,7 @@
  ***************************************************************************/
 #define LOG_TAG "sal_adapter"
 #include <stdint.h>
+#include <syslog.h>
 
 #include "bluetooth.h"
 #include "bt_adapter.h"
@@ -188,6 +189,15 @@ static struct bt_conn_auth_info_cb g_conn_auth_info_cbs = {
 
 static struct bt_conn_auth_cb g_conn_auth_cbs = {
     .cancel = zblue_on_cancel,
+    .pairing_confirm = zblue_on_pairing_confirm,
+    /* R102: register passkey_display + passkey_confirm so get_io_capa()
+     * returns DisplayYesNo (0x01) instead of NoInputNoOutput (0x03).
+     * Without both set, HyperOS 3.0 falls back to legacy PIN entry
+     * (the phone reports a PIN mismatch), which has no handler on a
+     * headless board.
+     * passkey_confirm auto-accepts (headless device). */
+    .passkey_display = zblue_on_passkey_display,
+    .passkey_confirm = zblue_on_passkey_confirm,
     .pincode_entry = zblue_on_pincode_entry
 };
 
@@ -421,9 +431,13 @@ static void zblue_on_passkey_entry(struct bt_conn* conn)
 static void zblue_on_passkey_confirm(struct bt_conn* conn, unsigned int passkey)
 {
     bt_address_t addr;
-
     zblue_conn_get_addr(conn, &addr);
-    adapter_on_ssp_request(&addr, BT_TRANSPORT_BREDR, 0, PAIR_TYPE_PASSKEY_CONFIRMATION, passkey, NULL);
+    syslog(LOG_INFO, "[SAL] SSP passkey_confirm: %06u, auto-accepting (headless)\n", passkey);
+    /* R102: auto-accept SSP Numeric Comparison. The board is headless
+     * (no display/keyboard), so there is no user to confirm. This also
+     * upgrades IO capability from NoInputNoOutput (0x03) to DisplayYesNo
+     * (0x01), which HyperOS 3.0 requires for SSP instead of legacy PIN. */
+    bt_conn_auth_passkey_confirm(conn);
 }
 
 static void zblue_on_cancel(struct bt_conn* conn)
@@ -435,8 +449,13 @@ static void zblue_on_pairing_confirm(struct bt_conn* conn)
     bt_address_t addr;
 
     zblue_conn_get_addr(conn, &addr);
-    /* it's justworks */
+    /* Just-Works pairing: notify framework. The accept is handled by
+     * ssp_auth() which falls through to ssp_confirm_reply() when
+     * pairing_confirm returns without accepting. */
     adapter_on_ssp_request(&addr, BT_TRANSPORT_BREDR, 0, PAIR_TYPE_CONSENT, 0, NULL);
+    syslog(LOG_INFO, "[SAL] SSP Just-Works pairing request for %02x:%02x:%02x:%02x:%02x:%02x\n",
+        addr.addr[5], addr.addr[4], addr.addr[3],
+        addr.addr[2], addr.addr[1], addr.addr[0]);
 }
 
 static void zblue_on_pincode_entry(struct bt_conn* conn, bool highsec)
@@ -976,6 +995,10 @@ static void STACK_CALL(set_scan_mode)(void* args)
 
     ret = bt_br_set_visibility(iscan, pscan);
     if (ret != 0 && ret != -EALREADY) {
+        /* syslog so the failure is visible with BLUETOOTH_LOG=n: phone
+         * cannot see the device when inquiry/page scan stays disabled */
+        syslog(LOG_ERR, "sal set_scan_mode failed: iscan=%d pscan=%d ret=%d\n",
+            iscan, pscan, ret);
         BT_LOGE("%s set scanmode failed:%d", __func__, ret);
         return;
     }

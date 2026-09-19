@@ -31,6 +31,8 @@ extern "C" {
 #define BT_UUID_A2DP_SNK 0x110B
 #define BT_UUID_HFP 0x111E
 #define BT_UUID_HFP_AG 0x111F
+#define BT_UUID_PANU 0x1115
+#define BT_UUID_NAP 0x1116
 
 /* GATT Descriptor UUIDs (16-bit) */
 #define BT_UUID_GATT_CEPD 0x2900

@@ -22,6 +22,22 @@
 #include "state_machine.h"
 #include "storage.h"
 
+#include <fcntl.h>
+#include <syslog.h>
+#include <unistd.h>
+
+/* TEMP-DIAG: probe inode tree health by opening /dev/urandom (the exact
+ * path that hardfaults when the inode list is corrupted). */
+static void probe_inode(const char *tag)
+{
+  int fd = open("/dev/urandom", O_RDONLY | O_CLOEXEC);
+  syslog(LOG_INFO, "[probe] %s: open=%d", tag, fd);
+  if (fd >= 0)
+    {
+      close(fd);
+    }
+}
+
 #ifdef CONFIG_BLUETOOTH_HFP_HF
 #include "hfp_hf_service.h"
 #endif
@@ -248,21 +264,72 @@ void send_to_state_machine(state_machine_t* sm, uint16_t event_id, void* data)
     do_in_service_loop(bt_service_state_machine_event_dispatch, stm_msg);
 }
 
+#ifdef CONFIG_BLUETOOTH_AUTO_ENABLE
+/* Nothing in this tree calls bt_adapter_enable() on its own: bluetoothd only
+ * builds the stack, and the only client that wants the radio (ai_agent) just
+ * watches for a bt-pan address to appear. So a board that boots straight into
+ * the product image came up with Bluetooth off and stayed there until someone
+ * typed "bttool enable" on the console. Turn it on here instead.
+ *
+ * Deferred rather than called inline: adapter_enable() posts SYS_TURN_ON to
+ * the adapter state machine, and the whole turn-on path (HCI reset, LCPU
+ * command round-trips, profile bring-up) is the service loop's work. The loop
+ * is not running yet at bt_service_init() time - main() starts it right
+ * afterwards - so this arms a timer and lets the loop run it. uv_timer_start()
+ * accepts that and fires as soon as the loop comes up and the delay has
+ * elapsed.
+ */
+static void bt_auto_enable_timeout(service_timer_t* timer, void* userdata)
+{
+    bt_status_t status;
+
+    (void)userdata;
+    service_loop_cancel_timer(timer);
+
+    status = adapter_enable(SYS_SET_BT_ALL);
+    syslog(LOG_INFO, "bluetoothd auto-enable: adapter_enable=%d\n",
+        (int)status);
+}
+
+static void bt_auto_enable_arm(void)
+{
+    if (!service_loop_timer_no_repeating(CONFIG_BLUETOOTH_AUTO_ENABLE_DELAY_MS,
+            bt_auto_enable_timeout, NULL)) {
+        syslog(LOG_ERR, "bluetoothd auto-enable: no timer\n");
+    }
+}
+#endif
+
 int bt_service_init(void)
 {
+    probe_inode("btsvc-entry");
+
     if (create_bt_folder() != 0)
         return -1;
+
+    probe_inode("btsvc-folder");
 
 #ifdef CONFIG_BLUETOOTH_LOG
     bt_log_server_init();
 #endif
     bt_storage_init();
+    probe_inode("btsvc-storage");
+
     bt_profile_init();
+    probe_inode("btsvc-profile");
+
     adapter_init();
     manager_init();
+    probe_inode("btsvc-adapter-mgr");
 
     if (stack_manager_init() != BT_STATUS_SUCCESS)
         return -1;
+
+    probe_inode("btsvc-stackmgr");
+
+#ifdef CONFIG_BLUETOOTH_AUTO_ENABLE
+    bt_auto_enable_arm();
+#endif
 
     BT_LOGD("%s done", __func__);
     return 0;
