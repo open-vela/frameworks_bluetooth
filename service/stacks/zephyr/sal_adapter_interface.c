@@ -14,6 +14,7 @@
  * limitations under the License.
  ***************************************************************************/
 #define LOG_TAG "sal_adapter"
+#include <pthread.h>
 #include <stdint.h>
 #include <syslog.h>
 
@@ -36,6 +37,7 @@
 #include <zephyr/bluetooth/hci.h>
 #include <zephyr/bluetooth/hci_types.h>
 
+#include <zephyr/kernel.h>
 #include <zephyr/settings/settings.h>
 
 #include "sal_adapter_le_interface.h"
@@ -48,6 +50,13 @@
 #include <zephyr/settings/settings.h>
 
 #include "keys.h"
+
+/* zblue host-internal controller handle. keys.h (above) deliberately keeps
+ * `struct bt_dev` opaque and hci_core.h pulls in the whole host internals, so
+ * only the accessor needed by the link key bridge is declared here; zblue
+ * itself does the same in subsys/bluetooth/host/shell/bt.c. */
+struct bt_dev;
+struct bt_dev* bt_dev_get(uint8_t dev_id);
 
 #include "utils/log.h"
 
@@ -102,6 +111,13 @@ typedef union {
     } afh;
     int security_level;
     uint8_t map[10];
+    /* F3: BR/EDR link key snapshot (16B key + type) carried from the service
+     * thread down to host context, so the libuv worker never has to read the
+     * framework bond record (see zblue_restore_link_key_from_framework()). */
+    struct {
+        bt_128key_t key;
+        bt_link_key_type_t type;
+    } link_key;
 } sal_adapter_args_t;
 
 typedef struct {
@@ -146,6 +162,7 @@ static void zblue_on_br_pairing_complete_ctkd(struct bt_conn* conn, bool is_link
 static void zblue_on_br_pairing_complete(struct bt_conn* conn, bool bonding_flag);
 static void zblue_on_br_pairing_failed(struct bt_conn* conn, enum bt_security_err reason);
 static void zblue_on_br_bond_deleted(uint8_t id, const bt_addr_le_t* peer);
+static void zblue_store_link_key_to_framework(bt_address_t* addr, const char* tag);
 bt_status_t bt_sal_disconnect_internal(bt_controller_id_t id, bt_address_t* addr, uint8_t reason);
 bt_status_t bt_sal_remove_bond_internal(bt_controller_id_t id, bt_address_t* addr);
 static void zblue_register_callback(void);
@@ -345,6 +362,12 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
         __func__, info.state, level, g_security_level, err);
 
     if (level >= g_security_level && err == BT_SECURITY_ERR_SUCCESS) {
+        /* B1b: the link is encrypted, so the negotiated link key is guaranteed
+         * to be in the host pool by now. zblue_on_br_pairing_complete() may run
+         * before HCI_Link_Key_Notification arrives (Simple Pairing Complete is
+         * normally reported first), which is why the bridge is idempotently
+         * retried here. */
+        zblue_store_link_key_to_framework(&addr, "encrypted");
         encrypted = true;
         adapter_on_encryption_state_changed(&addr, encrypted, BT_TRANSPORT_BREDR);
         return;
@@ -556,6 +579,89 @@ static int zblue_on_link_key_load(bt_addr_le_t* addr, uint8_t* key_value, uint8_
 }
 #endif
 
+/* B1 (link key bridge, producer): once a BR/EDR pairing completed, mirror the
+ * negotiated link key from the zblue host key pool into the framework bond
+ * record, which is persisted by the service to UNQLITE. The file-backed pool
+ * (/data/misc/bt/br_key.bin) stays the primary persistence; this is the second
+ * copy that survives a lost/unreadable key file.
+ *
+ * Thread: this runs in HCI event context, i.e. on k_sys_work_q (sysworkq, prio
+ * 110, see rx_queue_put() in hci_core.c:4274 and CONFIG_BT_RECV_WORKQ_SYS=y).
+ * There is no "zblue host thread" in this port - zblue_main() is only declared.
+ * adapter_on_link_key_update() only queues an event on the service loop, so this
+ * does not block or re-enter the host. */
+static struct {
+    bool valid;
+    bt_address_t addr;
+    bt_128key_t key;
+} g_bridged_link_key;
+
+static void zblue_store_link_key_to_framework(bt_address_t* addr, const char* tag)
+{
+    struct bt_keys_link_key* link_key;
+    struct bt_dev* hdev;
+    bt_addr_t br_addr;
+    bt_128key_t key;
+    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+    int i;
+
+    bt_addr_ba2str(addr, addr_str);
+
+    hdev = bt_dev_get(0);
+    if (!hdev) {
+        syslog(LOG_WARNING, "[SAL] br_key bridge(%s): bt_dev_get(0) failed, %s\n", tag, addr_str);
+        return;
+    }
+
+    memcpy(br_addr.val, addr->addr, sizeof(br_addr.val));
+
+    /* Deliberately *not* bt_keys_get_link_key(): it creates the single pool
+     * slot with an all-zero key for an unknown address, which would then poison
+     * every following link key request. Look the key up without side effects. */
+    link_key = bt_keys_find_link_key(hdev, &br_addr);
+    if (!link_key) {
+        syslog(LOG_WARNING, "[SAL] br_key bridge(%s): no host link key for %s, skip\n", tag, addr_str);
+        return;
+    }
+
+    for (i = 0; i < (int)sizeof(key); i++) {
+        if (link_key->val[i]) {
+            break;
+        }
+    }
+    if (i == (int)sizeof(key)) {
+        syslog(LOG_WARNING, "[SAL] br_key bridge(%s): host link key is all-zero for %s, skip\n",
+            tag, addr_str);
+        return;
+    }
+
+    memcpy(key, link_key->val, sizeof(key));
+
+    /* Idempotent without touching the framework device list from this thread:
+     * the framework copy is only rewritten when the key differs from the last
+     * one bridged here. Every caller (security changed via hci_core.c encrypt
+     * change/key refresh, pairing complete via ssp.c) runs in the HCI event
+     * pump, i.e. on the one sysworkq thread (CONFIG_BT_RECV_WORKQ_SYS=y;
+     * bt_conn_set_security() does not notify inline), so this cache has a
+     * single writer and needs no lock. It is only a dedup hint: it is not
+     * invalidated on unpair, because re-pairing derives a fresh key and the
+     * comparison then simply misses. Reading the key back with
+     * adapter_get_link_key() was the hang: that walks g_adapter_service.devices,
+     * which the service thread mutates under adapter_lock
+     * (adapter_service.c: adapter_find_device()). */
+    if (g_bridged_link_key.valid && !memcmp(&g_bridged_link_key.addr, addr, sizeof(bt_address_t))
+        && !memcmp(g_bridged_link_key.key, key, sizeof(key))) {
+        return;
+    }
+
+    adapter_on_link_key_update(addr, key, (bt_link_key_type_t)link_key->key_type, false);
+    memcpy(&g_bridged_link_key.addr, addr, sizeof(bt_address_t));
+    memcpy(g_bridged_link_key.key, key, sizeof(key));
+    g_bridged_link_key.valid = true;
+    syslog(LOG_INFO, "[SAL] br_key bridge(%s): stored link key type %d for %s into framework\n",
+        tag, link_key->key_type, addr_str);
+}
+
 static void zblue_on_br_pairing_complete(struct bt_conn* conn, bool bonding_flag)
 {
     bt_address_t addr;
@@ -568,6 +674,7 @@ static void zblue_on_br_pairing_complete(struct bt_conn* conn, bool bonding_flag
 
     zblue_conn_get_addr(conn, &addr);
     adapter_on_bond_state_changed(&addr, BOND_STATE_BONDED, BT_TRANSPORT_BREDR, BT_STATUS_SUCCESS, false);
+    zblue_store_link_key_to_framework(&addr, "pairing");
 }
 
 static void zblue_on_br_pairing_failed(struct bt_conn* conn, enum bt_security_err reason)
@@ -1810,6 +1917,179 @@ bt_status_t bt_sal_get_remote_device_info(bt_controller_id_t id, bt_address_t* a
     return BT_STATUS_SUCCESS;
 }
 
+/* B2 (link key bridge, consumer): seed the zblue host key pool from the
+ * framework bond record loaded from UNQLITE, so a lost or unreadable
+ * /data/misc/bt/br_key.bin no longer forces a re-pairing.
+ *
+ * Thread: set_bond() is dispatched through sal_send_req() -> service_loop_work()
+ * -> uv_queue_work() (service/common/service_loop.c:464) and therefore runs on
+ * the libuv thread-pool worker (CONFIG_LIBUV_THREADPOOL_SIZE=1, prio 100, 8KB
+ * stack), *not* on a zblue/host thread - this port has none (zblue_main() is
+ * only declared). The 17-byte framework key snapshot therefore travels inside
+ * the request (sal_adapter_req_t.adpt.link_key): the framework device list is
+ * owned by the service thread under adapter_lock, so reading it from here
+ * (adapter_get_link_key()) would race that list and stall this worker behind the
+ * UNQLITE commits done under the same lock.
+ *
+ * The host key pool is only written from host context: the injection is handed
+ * to k_sys_work_q - the workqueue that runs the HCI event pump (rx_queue_put(),
+ * hci_core.c:4274, CONFIG_BT_RECV_WORKQ_SYS=y) and thus the one ssp.c/smp.c
+ * touch the pool from - which serializes it against host key handling. */
+typedef struct {
+    bt_controller_id_t id;
+    bt_address_t addr;
+    bt_128key_t key;
+    bt_link_key_type_t key_type;
+} br_key_inject_t;
+
+/* The pool write must happen in host context, but the request carrying the key
+ * arrives on the libuv worker, so payloads are handed over through this small
+ * queue. This mutex protects nothing else: it is never held while calling
+ * anything that can block or take another lock, and it has nothing to do with
+ * adapter_lock or with the host key pool.
+ *
+ * Neither side blocks. The producer only appends and re-arms the - static - work
+ * item the way rx_queue_put() does; the work handler drains the whole queue
+ * before returning. The item is static on purpose: the workqueue writes
+ * work->flags *after* the handler returns (kernel/work.c:697), so a per-request
+ * item freed from its own handler would be a use-after-free. */
+#define BR_KEY_INJECT_DEPTH 4
+static void zblue_br_key_inject(struct k_work* work);
+
+static struct {
+    pthread_mutex_t lock;
+    br_key_inject_t slots[BR_KEY_INJECT_DEPTH];
+    int head;
+    int count;
+    bool armed; /* a drain work item is queued or running */
+} s_br_key_inject = {
+    .lock = PTHREAD_MUTEX_INITIALIZER,
+};
+
+static K_WORK_DEFINE(s_br_key_inject_work, zblue_br_key_inject);
+
+static void zblue_br_key_inject(struct k_work* work)
+{
+    UNUSED(work);
+
+    for (;;) {
+        br_key_inject_t inject;
+        struct bt_keys_link_key* link_key;
+        struct bt_dev* hdev;
+        bt_addr_t br_addr;
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+        uint8_t flags;
+
+        pthread_mutex_lock(&s_br_key_inject.lock);
+        if (s_br_key_inject.count == 0) {
+            /* Nothing left: the next producer re-arms and submits again. */
+            s_br_key_inject.armed = false;
+            pthread_mutex_unlock(&s_br_key_inject.lock);
+            return;
+        }
+        inject = s_br_key_inject.slots[s_br_key_inject.head];
+        s_br_key_inject.head = (s_br_key_inject.head + 1) % BR_KEY_INJECT_DEPTH;
+        s_br_key_inject.count--;
+        pthread_mutex_unlock(&s_br_key_inject.lock);
+
+        bt_addr_ba2str(&inject.addr, addr_str);
+        memcpy(br_addr.val, inject.addr.addr, sizeof(br_addr.val));
+
+        hdev = bt_dev_get(inject.id);
+        if (!hdev) {
+            syslog(LOG_WARNING, "[SAL] br_key restore: bt_dev_get(%d) failed for %s, skip\n",
+                (int)inject.id, addr_str);
+            continue;
+        }
+
+        /* Also returns NULL before bt_keys_init() has created the pool
+         * (hdev->keys == NULL), while bt_dev_get() is already valid. */
+        link_key = bt_keys_get_link_key(hdev, &br_addr);
+        if (!link_key) {
+            syslog(LOG_WARNING,
+                "[SAL] br_key restore: host key pool not ready or no free slot (CONFIG_BT_MAX_PAIRED=%d) for %s, skip\n",
+                CONFIG_BT_MAX_PAIRED, addr_str);
+            continue;
+        }
+
+        /* Same flags reconstruction as the (dead) zblue_on_link_key_load(). */
+        switch (inject.key_type) {
+        case BT_LK_COMBINATION:
+        case BT_LK_AUTH_COMBINATION_P192:
+            flags = BT_LINK_KEY_AUTHENTICATED;
+            break;
+        case BT_LK_AUTH_COMBINATION_P256:
+            flags = BT_LINK_KEY_AUTHENTICATED | BT_LINK_KEY_SC;
+            break;
+        default:
+            flags = 0;
+            break;
+        }
+
+        bt_addr_copy(&link_key->addr, &br_addr);
+        link_key->key_type = (uint8_t)inject.key_type;
+        link_key->flags = flags;
+        memcpy(link_key->val, inject.key, sizeof(link_key->val));
+
+        syslog(LOG_INFO, "[SAL] br_key restore: injected framework link key type %d flags 0x%02x for %s\n",
+            inject.key_type, flags, addr_str);
+    }
+}
+
+static void zblue_restore_link_key_from_framework(sal_adapter_req_t* req)
+{
+    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+    bool dropped = false;
+    int tail;
+    int i;
+
+    bt_addr_ba2str(&req->addr, addr_str);
+
+    for (i = 0; i < (int)sizeof(req->adpt.link_key.key); i++) {
+        if (req->adpt.link_key.key[i]) {
+            break;
+        }
+    }
+    if (i == (int)sizeof(req->adpt.link_key.key)) {
+        syslog(LOG_WARNING, "[SAL] br_key restore: framework link key is all-zero for %s, skip\n",
+            addr_str);
+        return;
+    }
+
+    pthread_mutex_lock(&s_br_key_inject.lock);
+    if (s_br_key_inject.count >= BR_KEY_INJECT_DEPTH) {
+        s_br_key_inject.head = (s_br_key_inject.head + 1) % BR_KEY_INJECT_DEPTH;
+        s_br_key_inject.count--;
+        dropped = true;
+    }
+    tail = (s_br_key_inject.head + s_br_key_inject.count) % BR_KEY_INJECT_DEPTH;
+    s_br_key_inject.slots[tail].id = req->id;
+    memcpy(&s_br_key_inject.slots[tail].addr, &req->addr, sizeof(bt_address_t));
+    memcpy(s_br_key_inject.slots[tail].key, req->adpt.link_key.key,
+        sizeof(s_br_key_inject.slots[tail].key));
+    s_br_key_inject.slots[tail].key_type = req->adpt.link_key.type;
+    s_br_key_inject.count++;
+
+    if (s_br_key_inject.armed) {
+        /* A drain is queued or running and only clears armed once the queue is
+         * empty, so it will pick this payload up - no second submit needed. */
+        pthread_mutex_unlock(&s_br_key_inject.lock);
+    } else {
+        s_br_key_inject.armed = true;
+        pthread_mutex_unlock(&s_br_key_inject.lock);
+        if (k_work_submit(&s_br_key_inject_work) < 0) {
+            syslog(LOG_WARNING, "[SAL] br_key restore: k_work_submit failed for %s\n", addr_str);
+            pthread_mutex_lock(&s_br_key_inject.lock);
+            s_br_key_inject.armed = false;
+            pthread_mutex_unlock(&s_br_key_inject.lock);
+        }
+    }
+
+    if (dropped) {
+        syslog(LOG_WARNING, "[SAL] br_key restore: inject queue full, dropped oldest\n");
+    }
+}
+
 static void STACK_CALL(set_bond)(void* args)
 {
     sal_adapter_req_t* req = args;
@@ -1818,7 +2098,11 @@ static void STACK_CALL(set_bond)(void* args)
     memcpy(le_addr.a.val, req->addr.addr, sizeof(le_addr.a.val));
     le_addr.type = BT_LE_ADDR_TYPE_PUBLIC;
 
+    zblue_restore_link_key_from_framework(req);
+
 #ifdef CONFIG_SETTINGS_ZBLUE
+    /* Kept for compile compatibility only: this path has no Kconfig producer in
+     * shipped images and is superseded by the direct injection above. */
     bt_settings_load(req->id, 0, "link_key", &le_addr);
 #endif
 }
@@ -1835,6 +2119,12 @@ bt_status_t bt_sal_set_bonded_devices(bt_controller_id_t id, remote_device_prope
             BT_LOGE("%s, req null", __func__);
             return BT_STATUS_NOMEM;
         }
+
+        /* F3: hand the framework bond snapshot to the host with the request, so
+         * the libuv worker never reads the adapter device list (see
+         * zblue_restore_link_key_from_framework()). */
+        memcpy(req->adpt.link_key.key, props->link_key, sizeof(req->adpt.link_key.key));
+        req->adpt.link_key.type = (bt_link_key_type_t)props->link_key_type;
 
         status = sal_send_req(req);
         if (status) {
