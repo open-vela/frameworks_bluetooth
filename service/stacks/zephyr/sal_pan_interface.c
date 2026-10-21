@@ -1524,9 +1524,9 @@ bt_status_t bt_sal_pan_disconnect(bt_address_t* addr)
         return BT_STATUS_DEVICE_NOT_FOUND;
     }
 
-    if (conn->state < PAN_CONN_L2CAP_PENDING) {
-        /* ACL pending: there is no mounted channel to disconnect. Cancel
-         * the pending attempt and let the profile state machine recover. */
+    if (!conn->chan.chan.conn) {
+        /* ACL pending (or already released): there is no mounted channel
+         * to disconnect. Cancel the attempt and let the profile recover. */
         pan_conn_fail(conn, -ECANCELED);
         pan_conn_drop_list_ref(conn);
         pan_conn_put(conn);
