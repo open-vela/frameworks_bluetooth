@@ -1274,11 +1274,16 @@ bt_status_t bt_sal_pan_init(uint8_t max_connections, uint8_t role)
     }
 
     pan_conn_lock();
-    if (g_pan.conn_count > 0 || g_pan_worker_running) {
-        pan_conn_unlock();
+    bool conns_left = (g_pan.conn_count > 0);
+    pan_conn_unlock();
+    pthread_mutex_lock(&g_pan_worker_lock);
+    bool worker_alive = g_pan_worker_running;
+    pthread_mutex_unlock(&g_pan_worker_lock);
+    if (conns_left || worker_alive) {
         syslog(LOG_WARNING, "[pan] init: previous cleanup still running\n");
         return BT_STATUS_BUSY;
     }
+    pan_conn_lock();
     g_pan.closing = false;
     pan_conn_unlock();
 
