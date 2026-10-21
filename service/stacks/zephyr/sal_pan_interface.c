@@ -397,11 +397,20 @@ static void pan_setup_timer_arm_cb(void* data)
 {
     pan_conn_t* conn = data;
     service_timer_t* timer;
+    service_timer_t* old_timer = NULL;
     bool pending;
 
     pan_conn_lock();
     pending = (conn->state == PAN_CONN_BNEP_PENDING);
+    if (pending) {
+        old_timer = conn->setup_timer;
+        conn->setup_timer = NULL;
+    }
     pan_conn_unlock();
+    if (old_timer) {
+        service_loop_cancel_timer(old_timer);
+        pan_conn_put(conn); /* old timer reference */
+    }
     if (!pending) {
         pan_conn_put(conn); /* message reference */
         return;
