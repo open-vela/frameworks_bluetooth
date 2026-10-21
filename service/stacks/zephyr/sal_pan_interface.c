@@ -1475,6 +1475,7 @@ bt_status_t bt_sal_pan_connect(bt_address_t* addr, uint8_t dst_role,
     if (!conn) {
         return BT_STATUS_NOMEM;
     }
+    pan_conn_get_ptr(conn); /* candidate worker-slot reference */
     conn->chan.chan.ops = &g_pan_chan_ops;
     /* br_chan fields are calloc'd zero: zblue sends CONFIG_REQ with
      * MTU=0 unless rx.mtu is set (l2cap_br_conf checks != 672), which
@@ -1496,10 +1497,10 @@ bt_status_t bt_sal_pan_connect(bt_address_t* addr, uint8_t dst_role,
         pthread_mutex_unlock(&g_pan_worker_lock);
         pan_conn_fail(conn, -ENOSYS);
         pan_conn_drop_list_ref(conn);
+        pan_conn_put(conn); /* candidate slot reference */
         return BT_STATUS_NO_RESOURCES;
     }
-    pan_conn_get_ptr(conn); /* slot reference, consumed by the worker */
-    g_pan_worker_conn = conn;
+    g_pan_worker_conn = conn; /* candidate slot ref is transferred */
     pthread_cond_signal(&g_pan_worker_cond);
     pthread_mutex_unlock(&g_pan_worker_lock);
 
