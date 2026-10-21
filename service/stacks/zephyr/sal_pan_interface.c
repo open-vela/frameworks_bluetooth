@@ -490,12 +490,16 @@ static void pan_try_send_setup(pan_conn_t* conn)
     n = bnep_encode_setup_req(req, sizeof(req), dst_uuid, src_uuid);
     if (n <= 0) {
         syslog(LOG_ERR, "[pan] send_setup: encode failed %d\n", n);
+        pan_conn_fail(conn, n);
+        bt_l2cap_chan_disconnect(&conn->chan.chan);
         return;
     }
 
     buf = bt_l2cap_create_pdu_timeout(NULL, 0, K_NO_WAIT);
     if (!buf) {
         syslog(LOG_ERR, "[pan] send_setup: tx pool exhausted\n");
+        pan_conn_fail(conn, -ENOBUFS);
+        bt_l2cap_chan_disconnect(&conn->chan.chan);
         return;
     }
     net_buf_add_mem(buf, req, (size_t)n);
@@ -503,6 +507,8 @@ static void pan_try_send_setup(pan_conn_t* conn)
     if (ret < 0) {
         syslog(LOG_ERR, "[pan] send_setup: send failed %d\n", ret);
         net_buf_unref(buf);
+        pan_conn_fail(conn, ret);
+        bt_l2cap_chan_disconnect(&conn->chan.chan);
         return;
     }
     pan_conn_lock();
@@ -1058,7 +1064,6 @@ static void* pan_worker_thread(void* arg)
             continue;
         }
 
-        pan_conn_get_ptr(conn);
         pan_conn_lock();
         conn->in_worker = true;
         pan_conn_unlock();
@@ -1374,9 +1379,11 @@ void bt_sal_pan_cleanup(void)
      * synchronous HCI command and needs that poll thread to finish. */
     pthread_mutex_lock(&g_pan_worker_lock);
     g_pan_worker_run = false;
+    pan_conn_t* queued = g_pan_worker_conn;
     g_pan_worker_conn = NULL;
     pthread_cond_broadcast(&g_pan_worker_cond);
     pthread_mutex_unlock(&g_pan_worker_lock);
+    pan_conn_put(queued); /* slot reference, if any */
 
     /* Snapshot up to 8 conns (PAN_MAX_CONNECTIONS is 1) and take a ref
      * for each, so callbacks may remove/free them while we work. */
@@ -1491,6 +1498,7 @@ bt_status_t bt_sal_pan_connect(bt_address_t* addr, uint8_t dst_role,
         pan_conn_drop_list_ref(conn);
         return BT_STATUS_NO_RESOURCES;
     }
+    pan_conn_get_ptr(conn); /* slot reference, consumed by the worker */
     g_pan_worker_conn = conn;
     pthread_cond_signal(&g_pan_worker_cond);
     pthread_mutex_unlock(&g_pan_worker_lock);
