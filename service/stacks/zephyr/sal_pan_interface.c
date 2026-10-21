@@ -377,6 +377,25 @@ static void pan_setup_timer_cancel(pan_conn_t* conn)
     do_in_service_loop(pan_setup_timer_cancel_cb, conn);
 }
 
+/* Cleanup runs on the service loop, so it can release a one-shot timer
+ * synchronously. The async cancel path must not outlive adapter shutdown. */
+static void pan_setup_timer_cancel_now(pan_conn_t* conn)
+{
+    service_timer_t* timer;
+
+    if (!conn) {
+        return;
+    }
+    pan_conn_lock();
+    timer = conn->setup_timer;
+    conn->setup_timer = NULL;
+    pan_conn_unlock();
+    if (timer) {
+        service_loop_cancel_timer(timer);
+        pan_conn_put(conn); /* timer reference */
+    }
+}
+
 static void pan_setup_timeout(service_timer_t* timer, void* data)
 {
     pan_conn_t* conn = data;
@@ -408,13 +427,20 @@ static void pan_setup_timer_arm_cb(void* data)
     service_timer_t* old_timer = NULL;
     bool pending;
 
+    bool closing;
+
     pan_conn_lock();
-    pending = (conn->state == PAN_CONN_BNEP_PENDING);
+    closing = (g_pan.closing || !g_pan.initialized);
+    pending = !closing && (conn->state == PAN_CONN_BNEP_PENDING);
     if (pending) {
         old_timer = conn->setup_timer;
         conn->setup_timer = NULL;
     }
     pan_conn_unlock();
+    if (closing) {
+        pan_conn_put(conn); /* message reference; cleanup owns cancellation */
+        return;
+    }
     if (old_timer) {
         service_loop_cancel_timer(old_timer);
         pan_conn_put(conn); /* old timer reference */
@@ -1502,6 +1528,8 @@ void bt_sal_pan_cleanup(void)
         released = conn->released;
         pan_conn_unlock();
 
+        pan_setup_timer_cancel_now(conn);
+
         if (in_worker) {
             /* The worker is inside a synchronous HCI/L2CAP call. Do not
              * touch br_chan concurrently; it will run worker_finish()
@@ -1511,7 +1539,6 @@ void bt_sal_pan_cleanup(void)
         }
 
         pan_conn_fail(conn, 0);
-        pan_setup_timer_cancel(conn);
         if (started && !released) {
             if (conn->chan.chan.conn) {
                 bt_l2cap_chan_disconnect(&conn->chan.chan);
