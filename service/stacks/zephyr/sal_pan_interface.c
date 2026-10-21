@@ -68,8 +68,9 @@
  * match CONFIG_NET_ETH_PKTSIZE on the TAP side so neither direction can
  * be the short end. */
 #define PAN_ETH_FRAME_MAX 1514
-/* Worst-case BNEP header: General Ethernet = type(1)+dst(6)+src(6)+proto(2) */
-#define PAN_BNEP_HDR_MAX  15
+/* A whole Ethernet frame becomes BNEP General Ethernet: the 15-byte BNEP
+ * header replaces the 14-byte Ethernet header, so the frame grows by 1. */
+#define PAN_BNEP_OVERHEAD  1
 
 /* bt_l2cap_create_pdu_timeout is the exported zblue entry (l2cap.c,
  * unconditionally compiled); bt_l2cap_create_pdu is only a macro in the
@@ -99,6 +100,7 @@ typedef struct {
     int refs;                      /* list ref + transient users */
     bool linked;                   /* still on g_pan.conn_list */
     bool reported;                 /* DISCONNECTED already delivered */
+    bool l2cap_started;            /* connect/disconnect may own a zblue chan */
     bool released;                 /* zblue .released callback ran */
     bool in_worker;                /* worker holds this pointer */
 } pan_conn_t;
@@ -140,6 +142,7 @@ static struct {
     bool closing;
     bool server_registered;
     bool sdp_registered;
+    bool conn_cb_registered;
     bt_list_t* conn_list;
     int conn_count;
     struct bt_conn* acl_conn;  /* BR/EDR ACL under setup (unref'd on up/fail) */
@@ -316,8 +319,9 @@ static void pan_conn_drop_list_ref(pan_conn_t* conn)
     }
 }
 
-/* Allocate a linked conn with the list's reference already held. */
-static pan_conn_t* pan_conn_new(const bt_address_t* addr)
+/* Allocate but do NOT publish: callers must finish initialising all fields
+ * before pan_conn_link(), so cleanup can never see a half-built conn. */
+static pan_conn_t* pan_conn_alloc(const bt_address_t* addr)
 {
     pan_conn_t* conn = calloc(1, sizeof(pan_conn_t));
 
@@ -326,17 +330,21 @@ static pan_conn_t* pan_conn_new(const bt_address_t* addr)
     }
     memcpy(&conn->addr, addr, sizeof(bt_address_t));
     conn->refs = 1;
-    conn->linked = true;
+    return conn;
+}
+
+static bool pan_conn_link(pan_conn_t* conn)
+{
     pan_conn_lock();
     if (!g_pan.conn_list) {
         pan_conn_unlock();
-        free(conn);
-        return NULL;
+        return false;
     }
     bt_list_add_tail(g_pan.conn_list, conn);
+    conn->linked = true;
     g_pan.conn_count++;
     pan_conn_unlock();
-    return conn;
+    return true;
 }
 
 static void pan_setup_timeout(service_timer_t* timer, void* data);
@@ -436,6 +444,41 @@ static void pan_setup_timer_arm(pan_conn_t* conn)
     pan_setup_timer_cancel(conn);
     pan_conn_get_ptr(conn);
     do_in_service_loop(pan_setup_timer_arm_cb, conn);
+}
+
+/* Worker is about to drop its reference. If cleanup started while it was
+ * still inside a synchronous HCI command, the worker (not cleanup) owns
+ * the channel teardown; this avoids touching br_chan concurrently. */
+static void pan_conn_worker_finish(pan_conn_t* conn)
+{
+    bool closing;
+
+    pan_conn_lock();
+    closing = g_pan.closing;
+    pan_conn_unlock();
+
+    if (closing) {
+        bool started;
+        bool released;
+
+        pan_conn_fail(conn, 0);
+        pan_setup_timer_cancel(conn);
+
+        pan_conn_lock();
+        started = conn->l2cap_started;
+        released = conn->released;
+        pan_conn_unlock();
+
+        if (started && !released) {
+            if (conn->chan.chan.conn) {
+                bt_l2cap_chan_disconnect(&conn->chan.chan);
+            }
+        } else {
+            pan_conn_drop_list_ref(conn);
+        }
+    }
+
+    pan_conn_worker_done(conn);
 }
 
 /* -- L2CAP channel callbacks ----------------------------------- */
@@ -843,7 +886,8 @@ static int pan_server_accept(struct bt_conn* acl, struct bt_l2cap_server* server
 
         pan_conn_lock();
         stale = old->released || old->state == PAN_CONN_RELEASED
-            || old->state == PAN_CONN_FAILED || !old->chan.chan.conn;
+            || old->state == PAN_CONN_FAILED
+            || (!old->l2cap_started && !old->chan.chan.conn);
         pan_conn_unlock();
         if (stale) {
             syslog(LOG_WARNING, "[pan] incoming conn: dropping stale entry\n");
@@ -867,7 +911,7 @@ static int pan_server_accept(struct bt_conn* acl, struct bt_l2cap_server* server
         return -ENOMEM;
     }
 
-    conn = pan_conn_new(&addr);
+    conn = pan_conn_alloc(&addr);
     if (!conn) {
         return -ENOMEM;
     }
@@ -878,6 +922,11 @@ static int pan_server_accept(struct bt_conn* acl, struct bt_l2cap_server* server
     conn->dst_role = 1; /* NAP */
     conn->src_role = 2; /* PANU */
     conn->state = PAN_CONN_L2CAP_PENDING; /* setup handshake on recv */
+    conn->l2cap_started = true; /* zblue will add this channel */
+    if (!pan_conn_link(conn)) {
+        pan_conn_put(conn);
+        return -ENOMEM;
+    }
     pan_conn_report(conn, PROFILE_STATE_CONNECTING);
 
     *chan = &conn->chan.chan;
@@ -1015,24 +1064,46 @@ static void pan_l2cap_connect(struct bt_conn* conn)
     bt_addr_set(&addr, info.br.dst->val);
 
     pconn = pan_find_conn(&addr);
-    if (!pconn || pconn->state != PAN_CONN_ACL_PENDING) {
+    if (!pconn) {
+        return;
+    }
+
+    /* CAS: the security callback and the worker can both reach here. Only
+     * one of them may call bt_l2cap_chan_connect(); the loser must not
+     * report a failure for a channel the winner is mounting. */
+    pan_conn_lock();
+    if (pconn->state != PAN_CONN_ACL_PENDING) {
+        pan_conn_unlock();
         pan_conn_put(pconn);
         return;
     }
-    pan_conn_lock();
     pconn->state = PAN_CONN_L2CAP_PENDING;
+    pconn->l2cap_started = true;
     pan_conn_unlock();
+
     syslog(LOG_INFO, "[pan] L2CAP connect (psm 0x%04x)\n", BT_BNEP_PSM);
     int ret = bt_l2cap_chan_connect(conn, &pconn->chan.chan, BT_BNEP_PSM);
     syslog(LOG_INFO, "[pan] L2CAP connect ret=%d\n", ret);
-    if (ret < 0) {
+    if (ret < 0 && ret != -EEXIST && ret != -EISCONN) {
+        bool released;
+
         BT_LOGE("%s l2cap connect failed: %d", __func__, ret);
         pan_conn_fail(pconn, ret);
-        /* -EIO may already have run disconnected/released; only drop the
-         * list ref ourselves when the channel was never mounted. */
-        if (!pconn->chan.chan.conn) {
+
+        pan_conn_lock();
+        released = pconn->released;
+        if (!released && ret != -EIO) {
+            /* Pre-add failure: no channel can appear later. -EIO is
+             * excluded because zblue's synchronous cleanup may still be
+             * delivering .released. */
+            pconn->l2cap_started = false;
+        }
+        pan_conn_unlock();
+        if (!released && ret != -EIO) {
             pan_conn_drop_list_ref(pconn);
         }
+    } else if (ret < 0) {
+        syslog(LOG_WARNING, "[pan] L2CAP connect benign error %d\n", ret);
     }
     pan_conn_put(pconn);
 }
@@ -1084,7 +1155,7 @@ static void* pan_worker_thread(void* arg)
             syslog(LOG_ERR, "[pan] worker: create_br FAILED\n");
             pan_conn_fail(conn, -ENOLINK);
             pan_conn_drop_list_ref(conn);
-            pan_conn_worker_done(conn);
+            pan_conn_worker_finish(conn);
             continue;
         }
 
@@ -1133,7 +1204,7 @@ static void* pan_worker_thread(void* arg)
             bt_conn_unref(acl);
             pan_conn_fail(conn, -ETIMEDOUT);
             pan_conn_drop_list_ref(conn);
-            pan_conn_worker_done(conn);
+            pan_conn_worker_finish(conn);
             continue;
         }
 
@@ -1165,7 +1236,7 @@ static void* pan_worker_thread(void* arg)
             pan_conn_fail(conn, sret);
             pan_conn_drop_list_ref(conn);
             bt_conn_unref(acl);
-            pan_conn_worker_done(conn);
+            pan_conn_worker_finish(conn);
             continue;
         }
 
@@ -1173,7 +1244,7 @@ static void* pan_worker_thread(void* arg)
             pan_conn_fail(conn, -ECANCELED);
             pan_conn_drop_list_ref(conn);
             bt_conn_unref(acl);
-            pan_conn_worker_done(conn);
+            pan_conn_worker_finish(conn);
             continue;
         }
 
@@ -1182,7 +1253,7 @@ static void* pan_worker_thread(void* arg)
         if (bt_conn_get_security(acl) >= BT_SECURITY_L2) {
             pan_l2cap_connect(acl);
             bt_conn_unref(acl);
-            pan_conn_worker_done(conn);
+            pan_conn_worker_finish(conn);
             continue;
         }
 
@@ -1205,16 +1276,16 @@ static void* pan_worker_thread(void* arg)
             }
             usleep(100000); /* 100ms */
         }
-        pthread_mutex_lock(&g_pan_worker_lock);
+        pan_conn_lock();
         still_pending = (conn->state == PAN_CONN_ACL_PENDING);
-        pthread_mutex_unlock(&g_pan_worker_lock);
+        pan_conn_unlock();
 #endif
         if (still_pending && g_pan_worker_run) {
             syslog(LOG_INFO, "[pan] worker: timeout, L2CAP anyway\n");
             pan_l2cap_connect(acl);
         }
         bt_conn_unref(acl);
-        pan_conn_worker_done(conn);
+        pan_conn_worker_finish(conn);
     }
 
     pthread_mutex_lock(&g_pan_worker_lock);
@@ -1254,11 +1325,19 @@ static void pan_br_disconnected(struct bt_conn* conn, uint8_t reason)
     pan_setup_timer_cancel(pconn);
 
     /* Never free the conn here: the L2CAP chan may still be owned by the
-     * stack. For a mounted channel, let disconnected/released do it.
-     * For a channel that was never mounted, drop the list ref now; the
-     * worker (if any) still holds its own reference. */
-    if (pconn->chan.chan.conn) {
-        bt_l2cap_chan_disconnect(&pconn->chan.chan);
+     * stack. If connect() started, only .released may drop the list ref. */
+    bool started;
+    bool released;
+
+    pan_conn_lock();
+    started = pconn->l2cap_started;
+    released = pconn->released;
+    pan_conn_unlock();
+
+    if (started && !released) {
+        if (pconn->chan.chan.conn) {
+            bt_l2cap_chan_disconnect(&pconn->chan.chan);
+        }
     } else {
         pan_conn_drop_list_ref(pconn);
     }
@@ -1307,11 +1386,6 @@ bt_status_t bt_sal_pan_init(uint8_t max_connections, uint8_t role)
     g_pan.tx_oversize = 0;
     g_pan.tx_nobuf = 0;
 
-    g_pan.conn_cb.connected = pan_br_connected;
-    g_pan.conn_cb.disconnected = pan_br_disconnected;
-    g_pan.conn_cb.security_changed = pan_br_security_changed;
-    bt_conn_cb_register(&g_pan.conn_cb);
-
     /* R72: listen on PSM 0x000F so a phone NAP can dial US after bonding
      * (xiaozhi-sf32 flow: phone with "Bluetooth tethering" on connects
      * to the device; the device only accepts). */
@@ -1339,6 +1413,14 @@ bt_status_t bt_sal_pan_init(uint8_t max_connections, uint8_t role)
         }
     }
 
+    if (!g_pan.conn_cb_registered) {
+        g_pan.conn_cb.connected = pan_br_connected;
+        g_pan.conn_cb.disconnected = pan_br_disconnected;
+        g_pan.conn_cb.security_changed = pan_br_security_changed;
+        bt_conn_cb_register(&g_pan.conn_cb);
+        g_pan.conn_cb_registered = true;
+    }
+
     pthread_attr_t wattr;
     pthread_attr_init(&wattr);
     pthread_attr_setstacksize(&wattr, 8192);
@@ -1357,6 +1439,10 @@ bt_status_t bt_sal_pan_init(uint8_t max_connections, uint8_t role)
         g_pan_worker_running = false;
         pthread_mutex_unlock(&g_pan_worker_lock);
         pthread_attr_destroy(&wattr);
+        if (g_pan.conn_cb_registered) {
+            bt_conn_cb_unregister(&g_pan.conn_cb);
+            g_pan.conn_cb_registered = false;
+        }
         return BT_STATUS_NOMEM;
     }
     pthread_attr_destroy(&wattr);
@@ -1406,16 +1492,30 @@ void bt_sal_pan_cleanup(void)
 
     for (int i = 0; i < count; i++) {
         pan_conn_t* conn = snapshot[i];
-        bool mounted;
+        bool in_worker;
+        bool started;
+        bool released;
 
         pan_conn_lock();
-        mounted = (conn->chan.chan.conn != NULL);
+        in_worker = conn->in_worker;
+        started = conn->l2cap_started;
+        released = conn->released;
         pan_conn_unlock();
+
+        if (in_worker) {
+            /* The worker is inside a synchronous HCI/L2CAP call. Do not
+             * touch br_chan concurrently; it will run worker_finish()
+             * after seeing g_pan.closing. */
+            pan_conn_put(conn);
+            continue;
+        }
 
         pan_conn_fail(conn, 0);
         pan_setup_timer_cancel(conn);
-        if (mounted) {
-            bt_l2cap_chan_disconnect(&conn->chan.chan);
+        if (started && !released) {
+            if (conn->chan.chan.conn) {
+                bt_l2cap_chan_disconnect(&conn->chan.chan);
+            }
         } else {
             pan_conn_drop_list_ref(conn);
         }
@@ -1431,7 +1531,10 @@ void bt_sal_pan_cleanup(void)
         bt_sdp_unregister_service(&g_panu_sdp_record);
         g_pan.sdp_registered = false;
     }
-    bt_conn_cb_unregister(&g_pan.conn_cb);
+    if (g_pan.conn_cb_registered) {
+        bt_conn_cb_unregister(&g_pan.conn_cb);
+        g_pan.conn_cb_registered = false;
+    }
 
     /* Keep g_pan.conn_list allocated: disconnected/released callbacks may
      * still arrive. Init reuses it once conn_count reaches zero. */
@@ -1476,11 +1579,10 @@ bt_status_t bt_sal_pan_connect(bt_address_t* addr, uint8_t dst_role,
         return BT_STATUS_BUSY;
     }
 
-    conn = pan_conn_new(addr);
+    conn = pan_conn_alloc(addr);
     if (!conn) {
         return BT_STATUS_NOMEM;
     }
-    pan_conn_get_ptr(conn); /* candidate worker-slot reference */
     conn->chan.chan.ops = &g_pan_chan_ops;
     /* br_chan fields are calloc'd zero: zblue sends CONFIG_REQ with
      * MTU=0 unless rx.mtu is set (l2cap_br_conf checks != 672), which
@@ -1492,6 +1594,12 @@ bt_status_t bt_sal_pan_connect(bt_address_t* addr, uint8_t dst_role,
     conn->dst_role = dst_role;
     conn->src_role = src_role;
     conn->state = PAN_CONN_ACL_PENDING;
+    pan_conn_get_ptr(conn); /* candidate worker-slot reference */
+    if (!pan_conn_link(conn)) {
+        pan_conn_put(conn); /* candidate */
+        pan_conn_put(conn); /* allocation */
+        return BT_STATUS_NOMEM;
+    }
     pan_conn_report(conn, PROFILE_STATE_CONNECTING);
 
     /* Hand the connection sequence to the worker thread: synchronous
@@ -1524,13 +1632,28 @@ bt_status_t bt_sal_pan_disconnect(bt_address_t* addr)
         return BT_STATUS_DEVICE_NOT_FOUND;
     }
 
-    if (!conn->chan.chan.conn) {
-        /* ACL pending (or already released): there is no mounted channel
-         * to disconnect. Cancel the attempt and let the profile recover. */
+    bool started;
+    bool released;
+
+    pan_conn_lock();
+    started = conn->l2cap_started;
+    released = conn->released;
+    pan_conn_unlock();
+
+    if (!started || released) {
+        /* No channel was ever handed to zblue: cancel locally. */
         pan_conn_fail(conn, -ECANCELED);
         pan_conn_drop_list_ref(conn);
         pan_conn_put(conn);
         return BT_STATUS_SUCCESS;
+    }
+
+    if (!conn->chan.chan.conn) {
+        /* connect() has started but zblue has not mounted the channel yet.
+         * Dropping the list ref here would free memory that the stack is
+         * about to own; let the worker/released path finish instead. */
+        pan_conn_put(conn);
+        return BT_STATUS_BUSY;
     }
 
     int ret = bt_l2cap_chan_disconnect(&conn->chan.chan);
@@ -1571,7 +1694,7 @@ bt_status_t bt_sal_pan_write_eth(const bt_address_t* addr,
      * clamped to tx.mtu - 15 at ifup), so count it loudly
      * instead of silently dropping - g_pan.tx_oversize must stay 0. */
     limit = conn->chan.tx.mtu;
-    if ((uint32_t)eth_len + PAN_BNEP_HDR_MAX > (uint32_t)limit) {
+    if ((uint32_t)eth_len + PAN_BNEP_OVERHEAD > (uint32_t)limit) {
         g_pan.tx_oversize++;
         syslog(LOG_ERR, "[pan] tx %u > tx_mtu %u (oversize=%lu)\n",
             eth_len, limit, (unsigned long)g_pan.tx_oversize);

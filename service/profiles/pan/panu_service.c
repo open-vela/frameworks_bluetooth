@@ -409,9 +409,11 @@ static void* pan_dhcp_thread(void* arg)
             break;
         }
         if (dhcpc_request(handle, &ds) == OK) {
+            pthread_mutex_lock(&g_dhcp_lock);
             /* The link may have dropped while dhcpc_request() was blocked;
              * never apply an old lease to a new connection. */
             if (g_dhcp_epoch != my_epoch) {
+                pthread_mutex_unlock(&g_dhcp_lock);
                 asked_to_stop = true;
                 break;
             }
@@ -439,6 +441,7 @@ static void* pan_dhcp_thread(void* arg)
 
             got_lease = true;
             g_auto_state = PAN_AUTO_CONNECTED;
+            pthread_mutex_unlock(&g_dhcp_lock);
             break;
         }
         retries++;
@@ -490,8 +493,10 @@ static void pan_dhcp_give_up_and_reconnect(void)
  * epoch is stale, so a fast reconnect can start a fresh worker immediately. */
 static void pan_stop_dhcp(void)
 {
+    pthread_mutex_lock(&g_dhcp_lock);
     g_dhcp_epoch++;
     g_dhcp_running = false;
+    pthread_mutex_unlock(&g_dhcp_lock);
     /* Do not close/touch g_dhcp_handle here. The worker owns it, and
      * dhcpc_request() may still be blocked in recv() with a local pointer.
      * The receive timeout ends the request; the worker then closes the
@@ -1158,7 +1163,7 @@ static bt_status_t pan_init(void)
 static void pan_cleanup(void)
 {
     if (s_pan_cb_cookie) {
-        adapter_unregister_callback(NULL, &s_pan_cb_cookie);
+        adapter_unregister_callback(NULL, s_pan_cb_cookie);
         s_pan_cb_cookie = NULL;
     }
     bt_callbacks_list_free(g_pan.callbacks);
@@ -1200,7 +1205,7 @@ static bt_status_t pan_startup(profile_on_startup_t cb)
         s_pan_adapter_cbs.on_bond_state_changed = pan_on_bond_state;
         s_pan_adapter_cbs.on_adapter_state_changed = pan_on_adapter_state_changed;
         if (s_pan_cb_cookie) {
-            adapter_unregister_callback(NULL, &s_pan_cb_cookie);
+            adapter_unregister_callback(NULL, s_pan_cb_cookie);
         }
         s_pan_cb_cookie = adapter_register_callback(NULL, &s_pan_adapter_cbs);
         BT_LOGI("Adapter+bond callbacks registered for PAN auto-connect");
@@ -1237,7 +1242,7 @@ static bt_status_t pan_shutdown(profile_on_shutdown_t cb)
     pthread_mutex_unlock(&g_pan.pan_lock);
     bt_sal_pan_cleanup();
     if (s_pan_cb_cookie) {
-        adapter_unregister_callback(NULL, &s_pan_cb_cookie);
+        adapter_unregister_callback(NULL, s_pan_cb_cookie);
         s_pan_cb_cookie = NULL;
     }
     cb(PROFILE_PANU, true);
