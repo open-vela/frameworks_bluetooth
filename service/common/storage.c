@@ -67,12 +67,24 @@ static pthread_mutex_t storage_lock = PTHREAD_MUTEX_INITIALIZER;
 static void key_get_callback(int status, const char* key, uv_buf_t value, void* cookie)
 {
     load_storage_callback_t callback = (load_storage_callback_t)cookie;
-    if (status == 0) {
-        key_header_t* header = (key_header_t*)value.base;
-        assert(value.len == (sizeof(key_header_t) + header->key_length));
-        callback(header->key_value, header->key_length, header->items);
-    } else
+    key_header_t* header;
+
+    (void)key;
+
+    if (status != 0 || !value.base || value.len < sizeof(key_header_t)) {
         callback(NULL, 0, 0);
+        return;
+    }
+
+    header = (key_header_t*)value.base;
+    if (header->key_length > value.len - sizeof(key_header_t)) {
+        /* Corrupt or half-written record: drop this key instead of
+         * aborting bluetoothd on a power-loss artifact. */
+        callback(NULL, 0, 0);
+        return;
+    }
+
+    callback(header->key_value, header->key_length, header->items);
 }
 
 /* The buffer belongs to the caller once this returns, whatever the result. */
@@ -167,12 +179,15 @@ int bt_storage_save_adapter_info(adapter_storage_t* adapter)
 int bt_storage_load_adapter_info(adapter_storage_t* adapter)
 {
     uint16_t len = sizeof(key_header_t) + sizeof(*adapter);
-    key_header_t* key;
+    key_header_t* key = NULL;
 
-    if (storage_get_key(BT_KEY_ADAPTER_INFO, (void**)&key, &len, NULL) == 0) {
+    if (storage_get_key(BT_KEY_ADAPTER_INFO, (void**)&key, &len, NULL) == 0
+        && key && len >= sizeof(key_header_t) + sizeof(*adapter)
+        && key->key_length >= sizeof(*adapter)) {
         memcpy(adapter, key->key_value, sizeof(*adapter));
         free(key);
     } else {
+        free(key);
         adapter_properties_default(adapter);
         bt_storage_save_adapter_info(adapter);
     }

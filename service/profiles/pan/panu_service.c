@@ -98,8 +98,10 @@ static service_timer_t* g_auto_connect_timer;
  * "nobody has asked me to stop, so I am still the live worker". */
 static volatile bool g_dhcp_running;
 static volatile uint32_t g_dhcp_epoch;
-static void* g_dhcp_handle; /* for pan_stop_dhcp to close the socket */
+static void* g_dhcp_handle; /* worker-owned; protected by g_dhcp_lock */
+static pthread_mutex_t g_dhcp_lock = PTHREAD_MUTEX_INITIALIZER;
 static pan_disc_type_t g_last_disc_type;
+static bool g_manual_disconnect; /* suppress auto-reconnect after user API */
 
 #define PAN_MAX_CONNECTIONS 1
 #define PAN_DEV_NAME "bt-pan"
@@ -131,6 +133,10 @@ static pan_disc_type_t g_last_disc_type;
  * SIOCGIFMTU is what broke it - MTU is pktsize minus the 14-byte header,
  * so an MTU-sized buffer is always 14 bytes short. */
 #define PAN_ETH_FRAME_MAX CONFIG_NET_ETH_PKTSIZE
+/* Worst-case BNEP header: type + dst + src + proto = 15 bytes. The
+ * Ethernet header alone is 14; using 14 here lets the IP stack emit a
+ * frame that is one byte too large for the negotiated L2CAP MTU. */
+#define PAN_BNEP_HDR_MAX 15
 
 #define PAN_CALLBACK_FOREACH(_list, _cback, ...) BT_CALLBACK_FOREACH(_list, pan_callbacks_t, _cback, ##__VA_ARGS__)
 
@@ -189,6 +195,8 @@ typedef struct eth_hdr {
 
 static pan_global_t g_pan = { 0 };
 static uint8_t* pan_read_buf = NULL;
+static adapter_callbacks_t s_pan_adapter_cbs;
+static void* s_pan_cb_cookie = NULL;
 
 /* ── PAN auto-connect helpers (ported from xiaozhi-sf32) ──────── */
 
@@ -390,7 +398,9 @@ static void* pan_dhcp_thread(void* arg)
         PAN_STATE_LOG(LOG_ERR, "dhcp_abort reason=dhcpc_open dev=%s", devname);
         goto out;
     }
-    g_dhcp_handle = handle; /* so pan_stop_dhcp can close the socket */
+    pthread_mutex_lock(&g_dhcp_lock);
+    g_dhcp_handle = handle;
+    pthread_mutex_unlock(&g_dhcp_lock);
 
     /* Retry DHCP request (phone NAP may take a moment) */
     while (retries < PAN_DHCP_MAX_ATTEMPTS) {
@@ -399,6 +409,12 @@ static void* pan_dhcp_thread(void* arg)
             break;
         }
         if (dhcpc_request(handle, &ds) == OK) {
+            /* The link may have dropped while dhcpc_request() was blocked;
+             * never apply an old lease to a new connection. */
+            if (g_dhcp_epoch != my_epoch) {
+                asked_to_stop = true;
+                break;
+            }
             /* Apply the lease: set IP, netmask, default router, DNS */
             netlib_set_ipv4addr(devname, &ds.ipaddr);
             netlib_set_dripv4addr(devname, &ds.default_router);
@@ -432,15 +448,25 @@ static void* pan_dhcp_thread(void* arg)
     }
 
 out:
-    if (handle && g_dhcp_epoch == my_epoch) {
-        /* pan_stop_dhcp hasn't closed it yet — do it ourselves */
+    /* This worker owns the handle and always closes it, even when its epoch
+     * was superseded. Never close it from pan_stop_dhcp(): that would free
+     * the object while dhcpc_request() still holds a local pointer. */
+    if (handle) {
         dhcpc_close(handle);
     }
-    g_dhcp_handle = NULL; /* either way, the handle is no longer valid */
+    pthread_mutex_lock(&g_dhcp_lock);
+    if (g_dhcp_handle == handle) {
+        g_dhcp_handle = NULL;
+    }
+    pthread_mutex_unlock(&g_dhcp_lock);
 
     /* Only the still-current worker owns the flag; see g_dhcp_epoch. */
     if (g_dhcp_epoch == my_epoch) {
         g_dhcp_running = false;
+    }
+
+    if (g_dhcp_epoch != my_epoch) {
+        asked_to_stop = true;
     }
 
     /* A stop request means the link went away and the disconnect handler is
@@ -466,22 +492,12 @@ static void pan_stop_dhcp(void)
 {
     g_dhcp_epoch++;
     g_dhcp_running = false;
-    /* Slam the DHCP socket shut to unblock recv() in the DHCP thread.
-     * dhcpc_close() is NOT safe here — it frees the handle while the
-     * thread still holds a local pointer to it.  Instead, reach into
-     * the handle and close just the sockfd; the thread wakes up from
-     * recv() with an error, sees the epoch mismatch, and calls
-     * dhcpc_close() itself (the normal exit path). */
-    if (g_dhcp_handle) {
-        /* struct dhcpc_state_s starts with: interface, sockfd, ...
-         * The sockfd field is at offset sizeof(const char*) = 4 on ARM. */
-        typedef struct { const char *iface; int sockfd; } *dhcp_min_t;
-        dhcp_min_t h = (dhcp_min_t)g_dhcp_handle;
-        if (h->sockfd > 0) {
-            close(h->sockfd);
-            h->sockfd = -1;
-        }
-    }
+    /* Do not close/touch g_dhcp_handle here. The worker owns it, and
+     * dhcpc_request() may still be blocked in recv() with a local pointer.
+     * The receive timeout ends the request; the worker then closes the
+     * handle on its normal path and checks the epoch before applying a
+     * lease. This removes the type-pun and the fd-reuse race at the cost of
+     * a bounded stop latency (CONFIG_NETUTILS_DHCPC_RECV_TIMEOUT_MS). */
 }
 
 static void pan_start_dhcp(const char* devname)
@@ -584,58 +600,6 @@ static void pan_on_adapter_state_changed(void* cookie, bt_adapter_state_t state)
     }
 }
 
-/* Device identity: get bt-pan MAC address for Device-Id/chip_id.
- * Compatible with xiaozhi's get_mac_address() / get_client_id(). */
-int pan_get_bt_mac_address(uint8_t* mac_out, int len)
-{
-    if (!mac_out || len < 6) return -1;
-    bt_address_t addr;
-    adapter_get_address(&addr);
-    /* Convert to standard MAC byte order (big-endian) */
-    for (int i = 0; i < 6; i++) {
-        mac_out[i] = addr.addr[5 - i];
-    }
-    return 0;
-}
-
-/* Device identity: SHA256(MAC)[0:16] formatted as UUID.
- * Matches xiaozhi's get_client_id():
- *   hash = SHA256(ether_addr)[0:16]
- *   format: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
- * Used for Device-Id/chip_id HTTP headers and OTA registration. */
-#include <mbedtls/sha256.h>
-int pan_get_device_id(char* uuid_out, int len)
-{
-    if (!uuid_out || len < 37) return -1;
-
-    bt_address_t addr;
-    adapter_get_address(&addr);
-
-    /* SHA256 hash of the MAC address (6 bytes) */
-    uint8_t hash[32];
-    mbedtls_sha256_context ctx;
-    mbedtls_sha256_init(&ctx);
-    mbedtls_sha256_starts(&ctx, 0);
-    mbedtls_sha256_update(&ctx, addr.addr, 6);
-    mbedtls_sha256_finish(&ctx, hash);
-    mbedtls_sha256_free(&ctx);
-
-    /* Format first 16 bytes as UUID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx */
-    static const char hex[] = "0123456789abcdef";
-    int pos = 0;
-    for (int i = 0; i < 16; i++) {
-        if (i == 4 || i == 6 || i == 8 || i == 10) {
-            uuid_out[pos++] = '-';
-        }
-        uuid_out[pos++] = hex[(hash[i] >> 4) & 0x0f];
-        uuid_out[pos++] = hex[hash[i] & 0x0f];
-    }
-    uuid_out[pos] = '\0';
-
-    BT_LOGI("Device ID: %s", uuid_out);
-    return 0;
-}
-
 static pan_conn_t* pan_find_conn(bt_address_t* addr);
 static void pan_conn_close(pan_conn_t* conn);
 
@@ -657,17 +621,24 @@ static pan_conn_t* pan_new_conn(bt_address_t* addr)
      * occupying the single slot). */
     conn = pan_find_conn(addr);
     if (conn) {
+        if (conn->state == PROFILE_STATE_CONNECTED) {
+            BT_LOGW("%s: already connected", __func__);
+            return NULL;
+        }
         syslog(LOG_WARNING, "[panu] new_conn: dropping stale conn for %02x:%02x:%02x:%02x:%02x:%02x\n",
             addr->addr[5], addr->addr[4], addr->addr[3], addr->addr[2], addr->addr[1], addr->addr[0]);
         pan_free_conn(conn);
     }
 
-    if (pan_conns() == PAN_MAX_CONNECTIONS) {
+    if (pan_conns() >= PAN_MAX_CONNECTIONS) {
         BT_LOGD("%s, PAN_MAX_CONNECTIONS", __func__);
         return NULL;
     }
 
-    conn = malloc(sizeof(pan_conn_t));
+    conn = calloc(1, sizeof(pan_conn_t));
+    if (!conn) {
+        return NULL;
+    }
     memcpy(&conn->addr, addr, sizeof(bt_address_t));
     list_add_tail(&g_pan.conn_list, &conn->node);
 
@@ -798,22 +769,29 @@ static void pan_ifup_and_dhcp(void)
     /* tx.mtu is whatever the peer agreed to in its L2CAP CONFIG_REQ:
      * 1691 from Android/HyperOS NAP, or the 672 fallback if it sent no MTU
      * option (zblue classic/l2cap_br.c:1289,1448). Either is usable - we
-     * just have to tell the IP stack which one it is. 14 bytes is the
-     * worst-case BNEP header (General Ethernet). */
-    if (tx_mtu <= BNEP_ETH_HDR_LEN) {
+     * just have to tell the IP stack which one it is. The worst-case BNEP
+     * header (General Ethernet) is 15 bytes, not 14. */
+    if (tx_mtu <= PAN_BNEP_HDR_MAX) {
         PAN_STATE_LOG(LOG_ERR, "ifup_abort reason=no_negotiated_mtu tx_mtu=%u",
             tx_mtu);
+        bt_sal_pan_disconnect(&g_pan.peer_addr);
         return;
     }
-    if_mtu = (uint16_t)(tx_mtu - BNEP_ETH_HDR_LEN);
+    if_mtu = (uint16_t)(tx_mtu - PAN_BNEP_HDR_MAX);
     if (if_mtu > 1500) {
         if_mtu = 1500;
     }
-    pan_set_tap_mtu(PAN_DEV_NAME, if_mtu);
+    if (pan_set_tap_mtu(PAN_DEV_NAME, if_mtu) < 0) {
+        PAN_STATE_LOG(LOG_ERR, "ifup_abort reason=set_mtu_failed dev=%s",
+            PAN_DEV_NAME);
+        bt_sal_pan_disconnect(&g_pan.peer_addr);
+        return;
+    }
 
     if (netlib_ifup(PAN_DEV_NAME) < 0) {
         PAN_STATE_LOG(LOG_ERR, "ifup_abort reason=ifup_failed dev=%s",
             PAN_DEV_NAME);
+        bt_sal_pan_disconnect(&g_pan.peer_addr);
         return;
     }
     PAN_STATE_LOG(LOG_INFO, "ifup dev=%s tx_mtu=%u if_mtu=%u",
@@ -953,6 +931,12 @@ static void on_pan_connection_state_changed(bt_address_t* addr, pan_conn_evt_t* 
 
     switch (evt->state) {
     case PROFILE_STATE_DISCONNECTED: {
+        bool manual = g_manual_disconnect;
+
+        g_manual_disconnect = false;
+        if (manual) {
+            g_auto_state = PAN_AUTO_IDLE;
+        }
         conn = pan_find_conn(addr);
         pan_conn_close(conn);
         bt_pm_conn_close(PROFILE_PANU, addr);
@@ -966,7 +950,9 @@ static void on_pan_connection_state_changed(bt_address_t* addr, pan_conn_evt_t* 
          * 1. PAN never connected: 3×3s retry, then prompt user
          * 2. Abnormal disconnect: 10s period × 30 retries
          * 3. Phone active disconnect: enter low-power wait */
-        if (g_auto_state == PAN_AUTO_CONNECTED || g_auto_state == PAN_AUTO_CONNECTING) {
+        if (!manual
+            && (g_auto_state == PAN_AUTO_CONNECTED
+                || g_auto_state == PAN_AUTO_CONNECTING)) {
             g_last_disconnect_ms = pan_auto_now_ms();
 
             if (!g_pan_ever_connected) {
@@ -1008,6 +994,7 @@ static void on_pan_connection_state_changed(bt_address_t* addr, pan_conn_evt_t* 
         break;
     }
     case PROFILE_STATE_CONNECTED:
+        g_manual_disconnect = false;
         bt_pm_conn_open(PROFILE_PANU, addr);
         conn = pan_new_conn_open(addr, evt->local_role, evt->remote_role);
         if (conn) {
@@ -1170,6 +1157,10 @@ static bt_status_t pan_init(void)
 
 static void pan_cleanup(void)
 {
+    if (s_pan_cb_cookie) {
+        adapter_unregister_callback(NULL, &s_pan_cb_cookie);
+        s_pan_cb_cookie = NULL;
+    }
     bt_callbacks_list_free(g_pan.callbacks);
     g_pan.callbacks = NULL;
     pthread_mutex_destroy(&g_pan.pan_lock);
@@ -1206,8 +1197,6 @@ static bt_status_t pan_startup(profile_on_startup_t cb)
 
     /* Register adapter + bond state callbacks for auto-connect */
     {
-        static adapter_callbacks_t s_pan_adapter_cbs = { 0 };
-        static void* s_pan_cb_cookie = NULL;
         s_pan_adapter_cbs.on_bond_state_changed = pan_on_bond_state;
         s_pan_adapter_cbs.on_adapter_state_changed = pan_on_adapter_state_changed;
         if (s_pan_cb_cookie) {
@@ -1247,6 +1236,10 @@ static bt_status_t pan_shutdown(profile_on_shutdown_t cb)
     list_delete(&g_pan.conn_list);
     pthread_mutex_unlock(&g_pan.pan_lock);
     bt_sal_pan_cleanup();
+    if (s_pan_cb_cookie) {
+        adapter_unregister_callback(NULL, &s_pan_cb_cookie);
+        s_pan_cb_cookie = NULL;
+    }
     cb(PROFILE_PANU, true);
 
     return BT_STATUS_SUCCESS;
@@ -1317,9 +1310,12 @@ static bt_status_t pan_disconnect(bt_address_t* addr)
         goto exit;
     }
 
+    g_manual_disconnect = true;
     status = bt_sal_pan_disconnect(addr);
-    if (status != BT_STATUS_SUCCESS)
+    if (status != BT_STATUS_SUCCESS) {
+        g_manual_disconnect = false;
         goto exit;
+    }
 
     conn->state = PROFILE_STATE_DISCONNECTING;
 

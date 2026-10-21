@@ -1545,7 +1545,7 @@ bt_status_t bt_sal_pan_write_eth(const bt_address_t* addr,
 
     /* The only real ceiling is the negotiated L2CAP MTU. If we ever exceed
      * it the MTU derivation chain is broken (the TAP MTU should have been
-     * clamped to tx.mtu - 14 at ifup, see Task 7), so count it loudly
+     * clamped to tx.mtu - 15 at ifup), so count it loudly
      * instead of silently dropping - g_pan.tx_oversize must stay 0. */
     limit = conn->chan.tx.mtu;
     if ((uint32_t)eth_len + PAN_BNEP_HDR_MAX > (uint32_t)limit) {

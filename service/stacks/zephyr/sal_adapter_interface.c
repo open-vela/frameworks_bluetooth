@@ -472,13 +472,15 @@ static void zblue_on_pairing_confirm(struct bt_conn* conn)
     bt_address_t addr;
 
     zblue_conn_get_addr(conn, &addr);
-    /* Just-Works pairing: notify framework. The accept is handled by
-     * ssp_auth() which falls through to ssp_confirm_reply() when
-     * pairing_confirm returns without accepting. */
+    /* Just-Works pairing: notify the framework, then accept explicitly.
+     * With CONFIG_HCI_AUTO_REPLY_IN_JUST_WORK=y, ssp_auth() calls this
+     * callback and breaks; it does NOT fall through to ssp_confirm_reply().
+     * Leaving it unaccepted would hang a headless Just-Works pairing. */
     adapter_on_ssp_request(&addr, BT_TRANSPORT_BREDR, 0, PAIR_TYPE_CONSENT, 0, NULL);
     syslog(LOG_INFO, "[SAL] SSP Just-Works pairing request for %02x:%02x:%02x:%02x:%02x:%02x\n",
         addr.addr[5], addr.addr[4], addr.addr[3],
         addr.addr[2], addr.addr[1], addr.addr[0]);
+    bt_conn_auth_pairing_confirm(conn);
 }
 
 static void zblue_on_pincode_entry(struct bt_conn* conn, bool highsec)

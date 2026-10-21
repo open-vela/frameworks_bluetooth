@@ -26,18 +26,6 @@
 #include <syslog.h>
 #include <unistd.h>
 
-/* TEMP-DIAG: probe inode tree health by opening /dev/urandom (the exact
- * path that hardfaults when the inode list is corrupted). */
-static void probe_inode(const char *tag)
-{
-  int fd = open("/dev/urandom", O_RDONLY | O_CLOEXEC);
-  syslog(LOG_INFO, "[probe] %s: open=%d", tag, fd);
-  if (fd >= 0)
-    {
-      close(fd);
-    }
-}
-
 #ifdef CONFIG_BLUETOOTH_HFP_HF
 #include "hfp_hf_service.h"
 #endif
@@ -302,30 +290,20 @@ static void bt_auto_enable_arm(void)
 
 int bt_service_init(void)
 {
-    probe_inode("btsvc-entry");
-
     if (create_bt_folder() != 0)
         return -1;
-
-    probe_inode("btsvc-folder");
 
 #ifdef CONFIG_BLUETOOTH_LOG
     bt_log_server_init();
 #endif
     bt_storage_init();
-    probe_inode("btsvc-storage");
 
     bt_profile_init();
-    probe_inode("btsvc-profile");
 
     adapter_init();
     manager_init();
-    probe_inode("btsvc-adapter-mgr");
-
     if (stack_manager_init() != BT_STATUS_SUCCESS)
         return -1;
-
-    probe_inode("btsvc-stackmgr");
 
 #ifdef CONFIG_BLUETOOTH_AUTO_ENABLE
     bt_auto_enable_arm();
