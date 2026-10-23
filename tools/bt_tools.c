@@ -23,6 +23,7 @@
 #endif
 
 #include "bluetooth.h"
+#include "bt_pan.h"
 #include "bt_adapter.h"
 #include "bt_tools.h"
 #include "utils.h"
@@ -81,6 +82,7 @@ static int start_service_cmd(void* handle, int argc, char** argv);
 static int stop_service_cmd(void* handle, int argc, char** argv);
 static int set_phy_cmd(void* handle, int argc, char** argv);
 static int enhance_mode_cmd(void* handle, int argc, char** argv);
+static int pan_cmd(void* handle, int argc, char** argv);
 static int dump_cmd(void* handle, int argc, char** argv);
 static int quit_cmd(void* handle, int argc, char** argv);
 static void bttool_ins_uninit(bttool_t* bttool);
@@ -173,6 +175,8 @@ static bt_command_t g_cmd_tables[] = {
     { "start", start_service_cmd, 0, "start profile service, Not implemented" },
     { "stop", stop_service_cmd, 0, "stop profile service,  Not implemented" },
     { "setphy", set_phy_cmd, 0, SET_LE_PHY_USAGE },
+    { "pan", pan_cmd, 0,
+      "pan connect <addr> [dst_role src_role] | pan disconnect <addr>", },
     { "enhance", enhance_mode_cmd, 0,
         "enhance <peer-addr> <mode> <enable(0|1)>, mode: le_ll le_ht le_lp br_ll br_ul br_ht br_lp" },
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
@@ -1446,6 +1450,37 @@ static bool parse_mode_string(const char* str, bt_enhanced_mode_t* out_mode)
     return false;
 }
 
+static int pan_cmd(void* handle, int argc, char** argv)
+{
+    bt_address_t addr;
+
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    if (!strncmp(argv[0], "connect", 7)) {
+        uint8_t dst, src;
+
+        if (argc < 2)
+            return CMD_PARAM_NOT_ENOUGH;
+        if (bt_addr_str2ba(argv[1], &addr) < 0)
+            return CMD_INVALID_ADDR;
+        dst = (argc > 2) ? (uint8_t)atoi(argv[2]) : PAN_ROLE_NAP;
+        src = (argc > 3) ? (uint8_t)atoi(argv[3]) : PAN_ROLE_PANU;
+        return bt_pan_connect(handle, &addr, dst, src) == BT_STATUS_SUCCESS ? CMD_OK : CMD_INVALID_PARAM;
+    }
+
+    if (!strncmp(argv[0], "disconnect", 10)) {
+        if (argc < 2)
+            return CMD_PARAM_NOT_ENOUGH;
+        if (bt_addr_str2ba(argv[1], &addr) < 0)
+            return CMD_INVALID_ADDR;
+        return bt_pan_disconnect(handle, &addr) == BT_STATUS_SUCCESS ? CMD_OK : CMD_INVALID_PARAM;
+    }
+
+    PRINT("usage: pan connect <addr> [dst_role src_role] | pan disconnect <addr>");
+    return CMD_INVALID_PARAM;
+}
+
 static int enhance_mode_cmd(void* handle, int argc, char** argv)
 {
     bt_address_t addr;
@@ -2017,6 +2052,32 @@ static void bttool_execute_command_cb(uv_async_queue_t* handle, void* buffer)
     free(buffer);
 }
 
+/* Custom getline with echo + backspace for raw serial */
+static ssize_t bttool_getline(char **buf, size_t *size)
+{
+    if (*buf == NULL || *size == 0) { *size = 256; *buf = malloc(*size); }
+    size_t pos = 0;
+    while (1) {
+        char c;
+        ssize_t n = read(STDIN_FILENO, &c, 1);
+        if (n <= 0) return (pos > 0) ? (ssize_t)pos : -1;
+        if (c == '\r' || c == '\n') {
+            write(STDOUT_FILENO, "\r\n", 2);
+            (*buf)[pos] = 0;
+            return (ssize_t)pos;
+        }
+        if (c == 0x7f || c == 0x08) {  /* backspace */
+            if (pos > 0) { pos--; write(STDOUT_FILENO, "\b \b", 3); }
+            continue;
+        }
+        if (c >= 0x20 && c < 0x7f) {  /* printable */
+            if (pos >= *size - 1) { *size *= 2; *buf = realloc(*buf, *size); }
+            (*buf)[pos++] = c;
+            write(STDOUT_FILENO, &c, 1);  /* echo */
+        }
+    }
+}
+
 static void bttool_command_uvloop_run(bttool_t* bttool)
 {
     int ret;
@@ -2170,7 +2231,7 @@ int main(int argc, char** argv)
         printf("bttool> ");
         fflush(stdout);
 
-        len = getline(&buffer, &size, stdin);
+        len = bttool_getline(&buffer, &size);
         if (-1 == len) {
             bttool_quit(&bttool);
             break;
@@ -2239,7 +2300,7 @@ int main(int argc, char** argv)
         fflush(stdout);
 
         memset(_argv, 0, sizeof(_argv));
-        len = getline(&buffer, &size, stdin);
+        len = bttool_getline(&buffer, &size);
         buffer[len] = '\0';
         if (len < 0)
             goto quit;

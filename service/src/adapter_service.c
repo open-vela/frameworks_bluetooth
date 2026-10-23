@@ -1385,6 +1385,10 @@ void adapter_on_adapter_info_load(void)
 
     bt_storage_load_adapter_info(&storage);
     adapter_properties_copy(&adapter->properties, &storage);
+    /* Force DisplayYesNo regardless of stored value — headless board needs
+     * SSP Numeric Comparison, not legacy PIN (HyperOS rejects PIN) */
+    adapter->properties.io_capability = 1;  /* BT_IO_CAPABILITY_DISPLAYYESNO */
+
 }
 
 void adapter_on_adapter_state_changed(uint8_t stack_state)

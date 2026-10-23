@@ -34,8 +34,23 @@
 #include "service_loop.h"
 #include "service_manager.h"
 #include "utils/log.h"
+#include "bnep_netdev.h"
+#include "pan_engine.h"
 
-#define PAN_MAX_CONNECTIONS 1
+/* ==== injected by bnep_fill.py: BNEP netdev bridge ================= */
+static bt_address_t g_pan_peer;
+
+static void pan_netdev_tx(uint16_t proto, const uint8_t dst[6], const uint8_t src[6],
+                          const uint8_t *payload, size_t len, void *arg)
+{
+    (void)arg;
+    bt_sal_pan_write(&g_pan_peer, proto, (uint8_t *)dst, (uint8_t *)src,
+                     (uint8_t *)payload, (uint16_t)len);
+}
+/* ==== end injected ================================================ */
+
+
+#define PAN_MAX_CONNECTIONS 4
 #define PAN_DEV_NAME "bt-pan"
 
 #define PAN_CALLBACK_FOREACH(_list, _cback, ...) BT_CALLBACK_FOREACH(_list, pan_callbacks_t, _cback, ##__VA_ARGS__)
@@ -104,12 +119,14 @@ static uint8_t pan_conns(void)
     return list_length(&g_pan.conn_list);
 }
 
+static void pan_close_all_conn(void);
 static pan_conn_t* pan_new_conn(bt_address_t* addr)
 {
     pan_conn_t* conn;
 
     if (pan_conns() == PAN_MAX_CONNECTIONS) {
-        BT_LOGD("%s, PAN_MAX_CONNECTIONS", __func__);
+        BT_LOGI("%s, PAN_MAX_CONNECTIONS, force cleanup all", __func__);
+        pan_close_all_conn();
         return NULL;
     }
 

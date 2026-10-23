@@ -444,6 +444,7 @@ if(CONFIG_BLUETOOTH)
 
     if(CONFIG_BLUETOOTH_PAN)
       file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/pan/*.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_pan_interface.c)
       list(APPEND CSRCS ${APPEND_FILES})
     endif()
 

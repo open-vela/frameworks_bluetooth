@@ -124,6 +124,7 @@ static void sal_pending_connect_cleanup(void);
 static void zblue_on_connect_req(struct bt_conn* conn, uint8_t link_type, uint8_t* cod);
 #endif
 static void zblue_on_connected(struct bt_conn* conn, uint8_t err);
+extern void sal_pan_conn_cb(struct bt_conn* conn, uint8_t err);
 static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason);
 static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
     enum bt_security_err err);
@@ -154,7 +155,7 @@ static int zblue_on_link_key_notify(uint8_t dev_id, bt_addr_le_t* addr, const ch
 static int zblue_on_link_key_load(bt_addr_le_t* addr, uint8_t* key_value, uint8_t value_len);
 #endif
 
-static bt_security_t g_security_level = BT_SECURITY_L2;
+static bt_security_t g_security_level = BT_SECURITY_L1;
 
 static struct bt_conn_cb g_conn_cbs = {
 #ifndef CONFIG_BT_CONN_REQ_AUTO_HANDLE
@@ -188,6 +189,9 @@ static struct bt_conn_auth_info_cb g_conn_auth_info_cbs = {
 
 static struct bt_conn_auth_cb g_conn_auth_cbs = {
     .cancel = zblue_on_cancel,
+    .pairing_confirm = zblue_on_pairing_confirm,
+    .passkey_display = zblue_on_passkey_display,
+    .passkey_confirm = zblue_on_passkey_confirm,
     .pincode_entry = zblue_on_pincode_entry
 };
 
@@ -420,6 +424,7 @@ static void zblue_on_passkey_entry(struct bt_conn* conn)
 
 static void zblue_on_passkey_confirm(struct bt_conn* conn, unsigned int passkey)
 {
+    bt_conn_auth_passkey_confirm(conn);  /* auto-accept Numeric Comparison, headless */
     bt_address_t addr;
 
     zblue_conn_get_addr(conn, &addr);
@@ -437,6 +442,7 @@ static void zblue_on_pairing_confirm(struct bt_conn* conn)
     zblue_conn_get_addr(conn, &addr);
     /* it's justworks */
     adapter_on_ssp_request(&addr, BT_TRANSPORT_BREDR, 0, PAIR_TYPE_CONSENT, 0, NULL);
+    bt_conn_auth_pairing_confirm(conn);  /* accept immediately — Just Works */
 }
 
 static void zblue_on_pincode_entry(struct bt_conn* conn, bool highsec)
@@ -444,6 +450,7 @@ static void zblue_on_pincode_entry(struct bt_conn* conn, bool highsec)
     bt_address_t addr;
 
     zblue_conn_get_addr(conn, &addr);
+    BT_LOGW("pincode_entry: unexpected legacy PIN fallback");
     adapter_on_pin_request(&addr, 0, true, NULL);
 }
 
@@ -797,12 +804,22 @@ bool bt_sal_is_enabled(bt_controller_id_t id)
 }
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+extern void bth4_set_eir_name(const char *name);
+
 static void STACK_CALL(set_name)(void* args)
 {
     sal_adapter_req_t* req = args;
 
     BT_LOGD("%s: %s", __func__, req->adpt.name);
-    SAL_CHECK(bt_set_name(req->adpt.name), 0);
+    /* Update EIR broadcast name first (inquiry discovery), then call
+     * bt_set_name for zblue internal state init (SAL_CHECK just logs).
+     * WRITE_LOCAL_NAME is emulated in bth4 — safe to call. */
+    bth4_set_eir_name(req->adpt.name);
+    BT_LOGI("set_name: %s (applied via EIR)", req->adpt.name);
+    /* Do NOT call bt_set_name: it sends WRITE_LOCAL_NAME which triggers
+     * a synth CC → forward_packet → send_eir → nested sf32lb52_bt_send
+     * call, corrupting state. EIR alone is sufficient for discovery. */
+
 }
 #endif
 
@@ -858,21 +875,21 @@ bt_status_t bt_sal_set_io_capability(bt_controller_id_t id, bt_io_capability_t c
     switch (cap) {
     case BT_IO_CAPABILITY_DISPLAYONLY:
         g_conn_auth_cbs.passkey_display = zblue_on_passkey_display;
-        g_conn_auth_cbs.passkey_entry = NULL;
-        g_conn_auth_cbs.passkey_confirm = NULL;
-        g_conn_auth_cbs.pairing_confirm = NULL;
+        g_conn_auth_cbs.passkey_entry = zblue_on_passkey_entry;
+        g_conn_auth_cbs.passkey_confirm = zblue_on_passkey_confirm;
+        g_conn_auth_cbs.pairing_confirm = zblue_on_pairing_confirm;
         break;
     case BT_IO_CAPABILITY_DISPLAYYESNO:
         g_conn_auth_cbs.passkey_display = zblue_on_passkey_display;
-        g_conn_auth_cbs.passkey_entry = NULL;
+        g_conn_auth_cbs.passkey_entry = zblue_on_passkey_entry;
         g_conn_auth_cbs.passkey_confirm = zblue_on_passkey_confirm;
         g_conn_auth_cbs.pairing_confirm = zblue_on_pairing_confirm;
         break;
     case BT_IO_CAPABILITY_KEYBOARDONLY:
-        g_conn_auth_cbs.passkey_display = NULL;
+        g_conn_auth_cbs.passkey_display = zblue_on_passkey_display;
         g_conn_auth_cbs.passkey_entry = zblue_on_passkey_entry;
-        g_conn_auth_cbs.passkey_confirm = NULL;
-        g_conn_auth_cbs.pairing_confirm = NULL;
+        g_conn_auth_cbs.passkey_confirm = zblue_on_passkey_confirm;
+        g_conn_auth_cbs.pairing_confirm = zblue_on_pairing_confirm;
         break;
     case BT_IO_CAPABILITY_KEYBOARDDISPLAY:
         g_conn_auth_cbs.passkey_display = zblue_on_passkey_display;
@@ -882,14 +899,14 @@ bt_status_t bt_sal_set_io_capability(bt_controller_id_t id, bt_io_capability_t c
         break;
     case BT_IO_CAPABILITY_NOINPUTNOOUTPUT:
     default:
-        g_conn_auth_cbs.passkey_display = NULL;
-        g_conn_auth_cbs.passkey_entry = NULL;
+        g_conn_auth_cbs.passkey_display = zblue_on_passkey_display;
+        g_conn_auth_cbs.passkey_entry = zblue_on_passkey_entry;
 #ifdef CONFIG_HCI_AUTO_REPLY_IN_JUST_WORK
-        g_conn_auth_cbs.passkey_confirm = NULL;
+        g_conn_auth_cbs.passkey_confirm = zblue_on_passkey_confirm;
 #else
         g_conn_auth_cbs.passkey_confirm = zblue_on_passkey_confirm;
 #endif
-        g_conn_auth_cbs.pairing_confirm = NULL;
+        g_conn_auth_cbs.pairing_confirm = zblue_on_pairing_confirm;
         break;
     }
 

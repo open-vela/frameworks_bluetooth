@@ -205,3 +205,22 @@ bt_status_t BTSYMBOLS(bt_device_get_le_sc_local_oob_data)(bt_instance_t* ins, bt
 {
     return adapter_le_get_local_oob_data(addr);
 }
+/* Stubs: implemented only in the socket variant upstream (version skew).
+ * Demo build only - revisit before upstreaming. */
+
+bt_status_t bt_device_enable_enhanced_mode(bt_instance_t* ins,
+                                           bt_address_t* addr,
+                                           bt_enhanced_mode_t mode)
+{
+  (void)ins; (void)addr; (void)mode;
+  return BT_STATUS_NOT_SUPPORTED;
+}
+
+bt_status_t bt_device_disable_enhanced_mode(bt_instance_t* ins,
+                                            bt_address_t* addr,
+                                            bt_enhanced_mode_t mode)
+{
+  (void)ins; (void)addr; (void)mode;
+  return BT_STATUS_NOT_SUPPORTED;
+}
+
