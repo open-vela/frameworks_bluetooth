@@ -16,6 +16,7 @@
 #define LOG_TAG "panu"
 
 #include <fcntl.h>
+
 #include <net/if.h>
 #include <nuttx/net/ethernet.h>
 #include <nuttx/net/netdev.h>
@@ -36,6 +37,78 @@
 #include "utils/log.h"
 #include "bnep_netdev.h"
 #include "pan_engine.h"
+
+/* PANU SDP Record - Bluetooth PAN Profile spec (SIG public standard) */
+#include <zephyr/bluetooth/classic/sdp.h>
+/* PANU SDP Record - Bluetooth PAN Profile (SIG public standard data) */
+#include <zephyr/bluetooth/classic/sdp.h>
+#include <syslog.h>
+
+static void pan_tap_poll_data(service_poll_t* poll, int revent, void* userdata);
+
+static struct bt_sdp_attribute panu_attrs[] = {
+    /* attrs[0] MUST be ServiceRecordHandle: zblue writes the handle
+       into attrs[0].val.data at register time (sdp.c). */
+    BT_SDP_LIST(
+        BT_SDP_ATTR_RECORD_HANDLE,
+        BT_SDP_TYPE_SIZE(BT_SDP_UINT32),
+        BT_SDP_ARRAY_32(0)
+    ),
+    BT_SDP_LIST(
+        BT_SDP_ATTR_SVCLASS_ID_LIST,
+        BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 3),
+        BT_SDP_DATA_ELEM_LIST(
+            { BT_SDP_TYPE_SIZE(BT_SDP_UUID16),
+              BT_SDP_ARRAY_16(BT_SDP_PANU_SVCLASS) },
+        )
+    ),
+    BT_SDP_LIST(
+        BT_SDP_ATTR_PROTO_DESC_LIST,
+        BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 16),
+        BT_SDP_DATA_ELEM_LIST(
+            { BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 6),
+              BT_SDP_DATA_ELEM_LIST(
+                  { BT_SDP_TYPE_SIZE(BT_SDP_UUID16),
+                    BT_SDP_ARRAY_16(0x0100) },
+                  { BT_SDP_TYPE_SIZE(BT_SDP_UINT16),
+                    BT_SDP_ARRAY_16(0x000F) },
+              )},
+            { BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 6),
+              BT_SDP_DATA_ELEM_LIST(
+                  { BT_SDP_TYPE_SIZE(BT_SDP_UUID16),
+                    BT_SDP_ARRAY_16(0x000F) },
+                  { BT_SDP_TYPE_SIZE(BT_SDP_UINT16),
+                    BT_SDP_ARRAY_16(0x0100) },
+              )},
+        )
+    ),
+    BT_SDP_LIST(
+        BT_SDP_ATTR_PROFILE_DESC_LIST,
+        BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 8),
+        BT_SDP_DATA_ELEM_LIST(
+            { BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 6),
+              BT_SDP_DATA_ELEM_LIST(
+                  { BT_SDP_TYPE_SIZE(BT_SDP_UUID16),
+                    BT_SDP_ARRAY_16(BT_SDP_PANU_SVCLASS) },  /* PANU per PR#591 */
+                  { BT_SDP_TYPE_SIZE(BT_SDP_UINT16),
+                    BT_SDP_ARRAY_16(0x0100) },
+              )},
+        )
+    ),
+};
+
+static struct bt_sdp_record panu_rec = BT_SDP_RECORD(panu_attrs);
+
+
+
+static void panu_sdp_register(void)
+{
+    int err1 = bt_sdp_register_service(&panu_rec);
+    syslog(LOG_INFO, "[pan] PANU-SDP-V6 register panu=%d\n", err1);
+}
+
+
+
 
 /* ==== injected by bnep_fill.py: BNEP netdev bridge ================= */
 static bt_address_t g_pan_peer;
@@ -207,12 +280,51 @@ static int pan_tap_bridge_open(const char* devname)
     bt_addr_swap(&local_addr, &ethaddr);
     netlib_setmacaddr(ifr.ifr_name, ethaddr.addr);
     netlib_ifup(g_pan.tun_devname);
+    {
+        /* PAN-FIX: set MTU to 1500 for proper Ethernet frames */
+        int s2 = socket(AF_INET, SOCK_DGRAM, 0);
+        if (s2 >= 0) {
+            struct ifreq ifr2 = {0};
+            strlcpy(ifr2.ifr_name, g_pan.tun_devname, IFNAMSIZ);
+            ifr2.ifr_mtu = 1500;
+            ioctl(s2, SIOCSIFMTU, &ifr2);
+            close(s2);
+        }
+    }
 
     bt_addr_ba2str(&ethaddr, addr_str);
     BT_LOGI("Created Tap device: %s, Mac address: %s", ifr.ifr_name, addr_str);
 
+    /* TX-FIX: force poll registration after tap device creation */
+    if (!pan_read_buf) {
+        g_pan.tun_packet_size = 1500;
+        pan_read_buf = (uint8_t*)malloc(1500);
+    }
+    if (pan_read_buf && !g_pan.poll_handle) {
+        g_pan.poll_handle = service_loop_poll_fd(g_pan.tun_fd,
+            POLL_READABLE | POLL_ERROR, pan_tap_poll_data, NULL);
+    }
+    syslog(LOG_INFO, "[pan] TX-FIX: fd=%d buf=%p poll=%p\n",
+           g_pan.tun_fd, pan_read_buf, g_pan.poll_handle);
+
     return 0;
+    /* TX-FIX: ensure read buffer + poll registration after TUN is open */
+    if (!pan_read_buf) {
+        g_pan.tun_packet_size = 1500;
+        pan_read_buf = malloc(g_pan.tun_packet_size);
+        syslog(LOG_INFO, "[pan] TX-FIX: pan_read_buf allocated %p size=%d\n",
+               pan_read_buf, g_pan.tun_packet_size);
+    }
+    if (pan_read_buf && !g_pan.poll_handle) {
+        g_pan.poll_handle = service_loop_poll_fd(g_pan.tun_fd,
+            POLL_READABLE | POLL_ERROR, pan_tap_poll_data, NULL);
+        syslog(LOG_INFO, "[pan] TX-FIX: poll registered fd=%d handle=%p\n",
+               g_pan.tun_fd, g_pan.poll_handle);
+    }
+
 }
+
+static void pan_tap_poll_data(service_poll_t* poll, int revent, void* userdata);
 
 static void pan_tap_bridge_close(void)
 {
@@ -230,13 +342,17 @@ static void pan_tap_poll_data(service_poll_t* poll, int revent, void* userdata)
 
     if (revent & POLL_READABLE) {
         int ret = read(g_pan.tun_fd, pan_read_buf, g_pan.tun_packet_size);
+        syslog(LOG_INFO, "[pan] TX-POLL read=%d buf=%p size=%d\n",
+               ret, pan_read_buf, g_pan.tun_packet_size);
         if (ret > 0) {
             memcpy(&ethhdr, pan_read_buf, sizeof(eth_hdr_t));
             bt_pm_busy(PROFILE_PANU, &g_pan.peer_addr);
-            bt_sal_pan_write(&g_pan.peer_addr, ntohs(ethhdr.h_proto),
+            bt_status_t wrc = bt_sal_pan_write(&g_pan.peer_addr, ntohs(ethhdr.h_proto),
                 ethhdr.h_dest, ethhdr.h_src,
                 pan_read_buf + sizeof(eth_hdr_t),
                 ret - sizeof(eth_hdr_t));
+            syslog(LOG_INFO, "[pan] TX-SEND ret=%d proto=0x%04x len=%d\n",
+                   wrc, ntohs(ethhdr.h_proto), ret - sizeof(eth_hdr_t));
             bt_pm_idle(PROFILE_PANU, &g_pan.peer_addr);
         }
         return;
@@ -303,6 +419,7 @@ static pan_conn_t* pan_new_conn_open(bt_address_t* addr, uint8_t local, uint8_t 
             goto open_fail;
 
         g_pan.tun_packet_size = ret;
+        if (g_pan.tun_packet_size < 1500) g_pan.tun_packet_size = 1500; /* PAN-FIX: ensure full MTU */
         pan_read_buf = malloc(g_pan.tun_packet_size);
         if (pan_read_buf == NULL) {
             BT_LOGE("%s packet malloc failed", __func__);
@@ -392,7 +509,7 @@ static int on_pan_data_incoming(bt_address_t* addr, uint16_t protocol,
         /* Send data to network interface */
         ssize_t ret;
         do {
-            ret = write(g_pan.tun_fd, packet, length);
+            ret = write(g_pan.tun_fd, packet, length); syslog(LOG_INFO, "[pan] TUN-WRITE ret=%d len=%u fd=%d errno=%d(%s) len=%u fd=%d\n", (int)ret, strerror(errno), (unsigned)length, g_pan.tun_fd);
         } while (ret == -1 && errno == EINTR);
 
         return (int)ret;
@@ -476,7 +593,7 @@ void pan_on_data_received(bt_address_t* addr, uint16_t protocol,
     ethhdr.h_proto = htons(protocol);
 
     /* malloc packet with eth header */
-    packet = malloc(g_pan.tun_packet_size + sizeof(ethhdr));
+    packet = malloc(length + sizeof(ethhdr));
     if (packet == NULL) {
         free(pan_msg);
         BT_LOGE("%s packet malloc failed", __func__);
@@ -487,7 +604,7 @@ void pan_on_data_received(bt_address_t* addr, uint16_t protocol,
     memcpy(packet, &ethhdr, sizeof(eth_hdr_t));
 
     /* copy protocol data to packet buffer */
-    if (length > g_pan.tun_packet_size) {
+    if (length > 1691)  /* PAN-FIX: use L2CAP MTU, not TUN MTU */ {
         free(packet);
         free(pan_msg);
         BT_LOGE("send eth packet size:%d is exceeded limit!", length);
@@ -541,6 +658,7 @@ static bt_status_t pan_startup(profile_on_startup_t cb)
         cb(PROFILE_PANU, false);
         return BT_STATUS_FAIL;
     }
+    panu_sdp_register();  /* success path: advertise PANU via SDP */
 
     g_pan.enable = true;
     pthread_mutex_unlock(&g_pan.pan_lock);
@@ -681,3 +799,7 @@ void register_pan_service(void)
 {
     register_service(&pan_service);
 }
+
+#define BT_UUID_PANU 0x1115
+
+int pan_get_tun_fd(void) { return g_pan.tun_fd; }

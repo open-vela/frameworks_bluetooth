@@ -24,15 +24,12 @@ int bnep_decode(const uint8_t *p, size_t len, struct bnep_ctx *ctx, struct bnep_
     out->type = type;
 
     /* ---- control ---- */
-    if (type == 0x01u) { }
-    if (type == BNEP_TYPE_GENERAL && 0) { }
 
-    if (type == 0x01u && 0) { }
 
     if (!bnep_type_is_ethernet(type)) {
         /* must be control: BNEP control type field is 0x01 */
         struct bnep_ctrl *c = &out->u.ctrl;
-        if (type != 0x01u) return BNEP_ERR_BADTYPE;
+        if (type != BNEP_TYPE_CONTROL) return BNEP_ERR_BADTYPE;
         if (len < 2) return BNEP_ERR_SHORT;
         c->type = p[1];
 

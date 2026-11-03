@@ -6,10 +6,11 @@
 #include <stddef.h>
 
 /* BNEP general header type field (bit7 = extension, not supported) */
-#define BNEP_TYPE_GENERAL             0x00
-#define BNEP_TYPE_COMPRESSED          0x01
-#define BNEP_TYPE_COMPRESSED_SRC_ONLY 0x02
-#define BNEP_TYPE_COMPRESSED_DST_ONLY 0x03
+#define BNEP_TYPE_GENERAL             0x00  /* dst+src MAC + ethertype + payload */
+#define BNEP_TYPE_CONTROL             0x01  /* PAN-FIX: was called COMPRESSED! */
+#define BNEP_TYPE_COMPRESSED          0x02  /* PAN-FIX: was 0x01! ethertype + payload, MACs from ctx */
+#define BNEP_TYPE_COMPRESSED_SRC_ONLY 0x03  /* PAN-FIX: was 0x02! src MAC + ethertype + payload */
+#define BNEP_TYPE_COMPRESSED_DST_ONLY 0x04  /* PAN-FIX: was 0x03! dst MAC + ethertype + payload */
 #define BNEP_TYPE_EXTENSION_FLAG      0x80
 
 /* BNEP control message types */

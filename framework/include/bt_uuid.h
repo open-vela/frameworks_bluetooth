@@ -72,6 +72,10 @@ typedef struct {
 } bt_uuid_t;
 
 #ifndef BT_UUID_DECLARE_16
+#ifndef BT_UUID_PANU
+#define BT_UUID_PANU 0x1115
+#endif
+
 #define BT_UUID_DECLARE_16(value) \
     ((bt_uuid_t) { .type = BT_UUID16_TYPE, .val.u16 = (value) })
 #endif

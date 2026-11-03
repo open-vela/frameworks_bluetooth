@@ -43,8 +43,8 @@ static int nap_save(const bt_address_t *a)
     int fd;
 
     snprintf(s, sizeof(s), "%02x:%02x:%02x:%02x:%02x:%02x",
-             a->address[5], a->address[4], a->address[3],
-             a->address[2], a->address[1], a->address[0]);
+             a->addr[5], a->addr[4], a->addr[3],
+             a->addr[2], a->addr[1], a->addr[0]);
     fd = open(LAST_NAP_PATH, O_WRONLY | O_CREAT | O_TRUNC, 0600);
     if (fd < 0) { PAN_ERR("save last_nap failed errno=%d", errno); return -errno; }
     write(fd, s, 18);
@@ -63,7 +63,7 @@ static int nap_load(bt_address_t *out)
     close(fd);
     if (sscanf(s, "%02x:%02x:%02x:%02x:%02x:%02x",
                &b[0], &b[1], &b[2], &b[3], &b[4], &b[5]) != 6) return -EIO;
-    for (int i = 0; i < 6; i++) out->address[5 - i] = (uint8_t)b[i];
+    for (int i = 0; i < 6; i++) out->addr[5 - i] = (uint8_t)b[i];
     PAN_LOG("loaded last_nap=%s", s);
     return 0;
 }

@@ -107,6 +107,16 @@ static struct netdev_statistics_s g_stats;
 
 /* ---------------- lifecycle ---------------- */
 
+/* Old-style NuttX netdev: stack pulls packets via devif_poll() */
+static int bnep_txpoll_cb(struct net_driver_s *dev)
+{
+    if (dev->d_len > 0) {
+        bnep_transmit(dev);
+    }
+    return 0;
+}
+
+
 int bnep_netdev_init(const char *ifname, const uint8_t mac[6])
 {
     if (g_registered) return 0;
@@ -117,7 +127,6 @@ int bnep_netdev_init(const char *ifname, const uint8_t mac[6])
     memset(&g_dev, 0, sizeof(g_dev));
     g_dev.d_ifup     = bnep_ifup;
     g_dev.d_ifdown   = bnep_ifdown;
-    g_dev.d_transmit = bnep_transmit;
     g_dev.d_txavail  = bnep_txavail;
 #ifdef CONFIG_NETDEV_IOCTL
     g_dev.d_ioctl    = bnep_ioctl;
@@ -126,7 +135,6 @@ int bnep_netdev_init(const char *ifname, const uint8_t mac[6])
     g_dev.d_statistics = &g_stats;
 #endif
     g_dev.d_buf      = NULL;                 /* allocated by the stack */
-    g_dev.d_blen     = CONFIG_NET_ETH_PKTSIZE;
 
     if (netdev_register(&g_dev, NET_LL_ETHERNET) < 0) {
         BT_LOGE("[pan] netdev_register failed errno=%d", errno);
@@ -134,7 +142,7 @@ int bnep_netdev_init(const char *ifname, const uint8_t mac[6])
     }
     g_registered = true;
 
-    netlib_set_macaddr(g_ifname, g_mac);
+    netlib_setmacaddr(g_ifname, g_mac);
     BT_LOGI("[pan] netdev registered dev=%s mtu=%d (CONFIG_NET_ETH_PKTSIZE=%d)",
             g_ifname, BTPAN_MTU, CONFIG_NET_ETH_PKTSIZE);
     return 0;
