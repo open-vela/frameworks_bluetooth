@@ -27,6 +27,7 @@
 #include <syslog.h>
 #include <unistd.h>
 #include <time.h>
+#include <poll.h>
 
 #include "adapter_internel.h"
 #include "bt_addr.h"
@@ -1038,6 +1039,31 @@ static int on_pan_data_incoming(bt_address_t* addr, uint16_t protocol,
         do {
             ret = write(g_pan.tun_fd, packet, length);
         } while (ret == -1 && errno == EINTR);
+
+        /* 2026-10-26 蓝牙 PAN 吞吐修复（真机 Cloudflare 实测 2KB/s，15s 内
+         * 16 次 rx_tun_write_fail errno=11）：
+         * tap 模式的 tun 只有一个"反向发送槽"(write_d_len)。上一个反向包
+         * (TCP ACK 等) 还没被 read 走时，新到的下行数据包写 tun 直接 EAGAIN
+         * 被丢弃 -> TCP 重传 -> 下行吞吐塌到 1~5KB/s。
+         * 这里在 EAGAIN 时先把 tun 里挂着的反向包 poll+read 出来、经 BT 发给
+         * 对端(read 会清槽)，再重试写入。本函数与 tun read 同属 service loop
+         * 线程，poll(0) 保证不会阻塞/死锁。 */
+        if (ret != (ssize_t)length && errno == EAGAIN && pan_read_buf) {
+            struct pollfd pfd = { .fd = g_pan.tun_fd, .events = POLLIN };
+
+            if (poll(&pfd, 1, 0) > 0 && (pfd.revents & POLLIN)) {
+                int n = read(g_pan.tun_fd, pan_read_buf, PAN_ETH_FRAME_MAX);
+                if (n >= (int)sizeof(eth_hdr_t)) {
+                    bt_pm_busy(PROFILE_PANU, &g_pan.peer_addr);
+                    bt_sal_pan_write_eth(&g_pan.peer_addr, pan_read_buf, (uint16_t)n);
+                    bt_pm_idle(PROFILE_PANU, &g_pan.peer_addr);
+                }
+            }
+
+            do {
+                ret = write(g_pan.tun_fd, packet, length);
+            } while (ret == -1 && errno == EINTR);
+        }
 
         /* Only DHCP/ARP and failures are logged: everything else on a tethered
          * link is mDNS/ND chatter that would drown the console. */
