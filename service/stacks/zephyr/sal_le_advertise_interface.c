@@ -22,6 +22,8 @@
 #include "service_loop.h"
 #include "utils/log.h"
 
+#include <syslog.h> /* unconditional diagnostics (BT_LOGE is empty without CONFIG_BLUETOOTH_LOG) */
+
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/hci.h>
@@ -366,6 +368,8 @@ static void STACK_CALL(start_adv)(void* args)
     int ret;
     struct bt_data ad[CONFIG_BT_EXT_ADV_MAX_ADV_SEGMENT] = { 0 };
     struct bt_data sd[CONFIG_BT_EXT_ADV_MAX_ADV_SEGMENT] = { 0 };
+
+    syslog(LOG_INFO, "[adv] %s: enter\n", __func__);
     size_t ad_size = 0;
     size_t sd_size = 0;
     bool ext_supported = bt_le_ext_adv_is_supported();
@@ -373,6 +377,7 @@ static void STACK_CALL(start_adv)(void* args)
     ret = parse_bt_adv_data(req->adpt.start_adv.adv_data, req->adpt.start_adv.adv_len,
         ad, ARRAY_SIZE(ad), &ad_size);
     if (ret) {
+        syslog(LOG_ERR, "[adv] %s: parse adv_data fail err=%d\n", __func__, ret);
         BT_LOGE("%s, parse adv_data fail, err:%d", __func__, ret);
         goto done;
     }
@@ -380,13 +385,17 @@ static void STACK_CALL(start_adv)(void* args)
     ret = parse_bt_adv_data(req->adpt.start_adv.scan_rsp_data, req->adpt.start_adv.scan_rsp_len,
         sd, ARRAY_SIZE(sd), &sd_size);
     if (ret) {
+        syslog(LOG_ERR, "[adv] %s: parse scan_rsp fail err=%d\n", __func__, ret);
         BT_LOGE("%s, parse scan_rsp_data fail, ret:%d", __func__, ret);
         goto done;
     }
 
+    syslog(LOG_INFO, "[adv] %s: ext_supported=%d adv_id=%u type=0x%x\n", __func__,
+        (int)ext_supported, req->adv_id, (unsigned)req->adpt.start_adv.param.options);
     if (ext_supported) {
         ret = zblue_le_ext_create(&req->adpt.start_adv.param, &adv, req->adv_id);
         if (ret) {
+            syslog(LOG_ERR, "[adv] %s: ext create fail err=%d\n", __func__, ret);
             BT_LOGE("%s, zblue le ext adv create fail, err:%d", __func__, ret);
             ret = BT_STATUS_FAIL;
             goto done;
@@ -395,6 +404,7 @@ static void STACK_CALL(start_adv)(void* args)
         ret = bt_le_ext_adv_set_data(adv, ad_size > 0 ? ad : NULL, ad_size,
             sd_size > 0 ? sd : NULL, sd_size);
         if (ret) {
+            syslog(LOG_ERR, "[adv] %s: ext set_data fail err=%d\n", __func__, ret);
             BT_LOGE("%s, le ext adv set fail, err:%d", __func__, ret);
             ret = BT_STATUS_FAIL;
             goto done;
@@ -402,6 +412,7 @@ static void STACK_CALL(start_adv)(void* args)
 
         ret = bt_le_ext_adv_start(adv, &req->adpt.start_adv.ext_param);
         if (ret) {
+            syslog(LOG_ERR, "[adv] %s: ext start fail err=%d\n", __func__, ret);
             BT_LOGE("%s, le ext adv start fail, err:%d", __func__, ret);
             ret = BT_STATUS_FAIL;
             goto done;
@@ -410,11 +421,13 @@ static void STACK_CALL(start_adv)(void* args)
         ret = bt_le_adv_start(&req->adpt.start_adv.param, ad_size > 0 ? ad : NULL, ad_size,
             sd_size > 0 ? sd : NULL, sd_size);
         if (ret) {
+            syslog(LOG_ERR, "[adv] %s: legacy start fail err=%d\n", __func__, ret);
             BT_LOGE("%s, legacy adv start fail, err:%d", __func__, ret);
             ret = BT_STATUS_FAIL;
             goto done;
         }
     }
+    syslog(LOG_INFO, "[adv] %s: zblue start OK\n", __func__);
 
     advertising_on_state_changed(req->adv_id, LE_ADVERTISING_STARTED);
     ret = BT_STATUS_SUCCESS;
@@ -512,10 +525,13 @@ static void STACK_CALL(stop_adv)(void* args)
     bool ext_supported;
 
     ext_supported = bt_le_ext_adv_is_supported();
+    syslog(LOG_INFO, "[adv] %s: enter adv_id=%u ext=%d\n", __func__, req->adv_id,
+        (int)ext_supported);
 
     if (!ext_supported) {
         ret = bt_le_adv_stop();
         if (ret) {
+            syslog(LOG_ERR, "[adv] %s: legacy stop fail err=%d\n", __func__, ret);
             BT_LOGE("%s, legacy adv stop fail", __func__);
             return;
         } else {
@@ -525,12 +541,14 @@ static void STACK_CALL(stop_adv)(void* args)
 
     adv_set = zblue_le_ext_find_adv(req->adv_id);
     if (!adv_set) {
+        syslog(LOG_ERR, "[adv] %s: adv_set not found\n", __func__);
         BT_LOGE("%s, le ext adv_set find fail", __func__);
         return;
     }
 
     ret = bt_le_ext_adv_stop(adv_set->adv);
     if (ret) {
+        syslog(LOG_ERR, "[adv] %s: ext stop fail err=%d\n", __func__, ret);
         BT_LOGE("%s, le ext adv stop fail", __func__);
         return;
     }

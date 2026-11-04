@@ -260,8 +260,18 @@ static const bt_pm_spec_table_t g_pm_spec[] = {
             { BT_PM_ACTIVE, 0 } /* busy */
         } },
 
-    /* PAN: 3(BT_PM_SPEC_INDEX_3) */
-    { (BT_PM_SNIFF), /* allow sniff */
+    /* PAN: 3(BT_PM_SPEC_INDEX_3)
+     *
+     * 2026-10-26 吞吐修复: PAN 空闲时**绝不进 sniff**。
+     * 依据(行业文档, 杰理 701 手表 PAN 联网 demo):
+     *   "不允许蓝牙进入 sniff 状态，否则会影响蓝牙网络的通信质量……
+     *    进入 sniff 后无法正常保证数据通信，所以要拦截蓝牙 sniff 状态。"
+     *   手表侧 PAN 正常吞吐 20-40KB/s。
+     * 真机取证: 原 idle={BT_PM_SNIFF,5000} 时，TTS/HTTP 下载呈"突发2-3KB
+     * + 静默4~5秒"节奏，TCP 走 RTO 重传，有效吞吐掉到 1-2KB/s；PAN 侧
+     * ping 手机 RTT 100-200ms(20ms 整数倍, 典型 sniff 节拍)。
+     * 改为 idle 也请求 ACTIVE(无超时)，链路全程保持 active。 */
+    { (BT_PM_SNIFF), /* allow sniff (仅为通过 pm_mode_request 的 permitted 检查) */
         (0), /* the SSR entry */
         {
             { BT_PM_ACTIVE, 0 }, /* conn open */
@@ -270,7 +280,7 @@ static const bt_pm_spec_table_t g_pm_spec[] = {
             { BT_PM_NO_ACTION, 0 }, /* app close */
             { BT_PM_NO_ACTION, 0 }, /* sco open */
             { BT_PM_NO_ACTION, 0 }, /* sco close */
-            { BT_PM_SNIFF, 5000 }, /* idle */
+            { BT_PM_ACTIVE, 0 }, /* idle: was {BT_PM_SNIFF, 5000} */
             { BT_PM_ACTIVE, 0 } /* busy */
         } },
 

@@ -182,6 +182,9 @@ bt_status_t bluetooth_ipc_add_services(void)
 
 void bluetooth_ipc_join_thread_pool(void)
 {
+    /* Keep the daemon alive: block until the service loop thread exits.
+     * (binder mode joins its thread pool; socket mode has only the loop) */
+    service_loop_join();
 }
 
 void bluetooth_ipc_join_service_loop(void)

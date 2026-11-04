@@ -16,6 +16,8 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <signal.h>
+#include <sys/stat.h>
 #include <syslog.h>
 #include <unistd.h>
 
@@ -27,11 +29,28 @@
 
 #include "utils/log.h"
 
+/* 2026-08-17: nsh `kill <pid>` left the daemon stuck forever in
+ * service_loop_join() (the loop thread never exits on signals), which
+ * wedged the whole console - every later IPC call hung, nsh went
+ * unresponsive and only a USB power cycle recovered it. A daemon killed
+ * by signal should just die; skip graceful cleanup in that case. */
+static void bluetoothd_sigterm(int sig)
+{
+    (void)sig;
+    syslog(LOG_WARNING, "bluetoothd killed by signal, exiting\n");
+    _exit(0);
+}
+
 int main(int argc, char** argv)
 {
     int ret;
 
+    signal(SIGTERM, bluetoothd_sigterm);
     syslog(LOG_INFO, "bluetoothd main %d\n", __LINE__);
+
+    /* Unix domain socket IPC lives under /var/run (CONFIG_NET_LOCAL_VFS_PATH) */
+    mkdir("/var", 0755);
+    mkdir("/var/run", 0755);
 
     ret = service_loop_init();
     if (ret != 0)
@@ -59,6 +78,7 @@ int main(int argc, char** argv)
 #endif
 
 out:
+    syslog(LOG_ERR, "bluetoothd exit: ret=%d\n", ret);
     bt_service_cleanup();
     service_loop_exit();
     return ret;

@@ -71,7 +71,10 @@ static void set_ready(void* data)
         list_delete(node);
         free(imsg);
         if (ret != 0) {
-            BT_LOGE("%s init process fail: %d", __func__, ret);
+            /* syslog so the failure survives BLUETOOTH_LOG=n (a failed
+             * init here stops the loop; the loop thread then closes the
+             * async pipe and any later uv_async_send would assert) */
+            syslog(LOG_ERR, "service_loop: init process fail: %d\n", ret);
             set_stop(data);
             return;
         }
@@ -129,14 +132,23 @@ static void service_schedule_loop(void* data)
 
     int ret = uv_async_init(loop->handle, &loop->async, service_message_callback);
     if (ret != 0) {
-        BT_LOGE("%s async error: %d", __func__, ret);
+        /* BT_LOGE is compiled out when BLUETOOTH_LOG is off; use syslog so
+         * the failure is visible on the console (async_wfd stays -1 and any
+         * later uv_async_send would assert in libuv). */
+        syslog(LOG_ERR, "service_schedule_loop: uv_async_init failed: %d\n", ret);
+        loop->async_ready = false;
         return;
     }
+    loop->async_ready = true;
 
     BT_LOGD("%s:%p, async:%p", __func__, loop->handle, &loop->async);
     do_in_service_loop(set_ready, loop);
     uv_run(loop->handle, UV_RUN_DEFAULT);
     loop->is_running = 0;
+    /* The loop thread is about to close the async pipe; mark it unusable
+     * so late do_in_service_loop calls drop events instead of asserting
+     * in libuv (write on the closed fd). */
+    loop->async_ready = false;
     (void)uv_loop_close(loop->handle);
 
     BT_LOGD("%s %s quit", loop->name, __func__);
@@ -264,6 +276,21 @@ int service_loop_run(bool start_thread, char* name)
         service_schedule_loop(loop);
     }
 
+    return 0;
+}
+
+int service_loop_join(void)
+{
+    uv_loop_t* handle = get_service_uv_loop();
+    service_loop_t* loop = handle->data;
+
+    if (loop == NULL || !loop->is_running) {
+        return 0;
+    }
+
+    /* Wait for the service loop thread to exit (posted by
+     * service_schedule_loop after uv_run returns) */
+    uv_sem_wait(&loop->exited);
     return 0;
 }
 
@@ -459,6 +486,16 @@ void do_in_service_loop(service_func_t func, void* data)
 {
     uv_loop_t* handle = get_service_uv_loop();
     service_loop_t* loop = handle->data;
+
+    /* Guard: uv_async_send on a loop whose async handle was never
+     * initialized (uv_async_init failed, async_wfd == -1) hits assert(0)
+     * inside libuv and takes the whole system down. */
+    if (loop == NULL || !loop->async_ready) {
+        syslog(LOG_ERR,
+            "do_in_service_loop: async not ready (loop=%p), dropping event\n",
+            (void*)loop);
+        return;
+    }
 
     internel_msg_t* msg = (internel_msg_t*)malloc(sizeof(internel_msg_t));
     assert(msg);

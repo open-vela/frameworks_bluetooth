@@ -1385,6 +1385,16 @@ void adapter_on_adapter_info_load(void)
 
     bt_storage_load_adapter_info(&storage);
     adapter_properties_copy(&adapter->properties, &storage);
+
+#if defined(CONFIG_BLUETOOTH_BOOT_SCAN_MODE) && CONFIG_BLUETOOTH_BOOT_SCAN_MODE >= 0
+    /* A product that is paired from the phone side has to be discoverable,
+     * and a device with no saved properties comes up connectable-only. The
+     * override goes here rather than into the turn-on path so that the value
+     * travels with the properties (adapter_on_br_enabled() hands it to the
+     * SAL, adapter_save_properties() persists it) and stays overridable at
+     * runtime through bt_adapter_set_scan_mode(). */
+    adapter->properties.scan_mode = CONFIG_BLUETOOTH_BOOT_SCAN_MODE;
+#endif
 }
 
 void adapter_on_adapter_state_changed(uint8_t stack_state)

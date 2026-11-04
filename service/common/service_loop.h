@@ -42,6 +42,7 @@ typedef struct service_loop {
     char name[64];
     uv_loop_t* handle;
     uv_async_t async;
+    bool async_ready;
     uv_thread_t thread;
     uv_mutex_t msg_lock;
     uv_sem_t ready;
@@ -75,6 +76,7 @@ typedef struct service_work {
 
 int service_loop_init(void);
 int service_loop_run(bool start_thread, char* name);
+int service_loop_join(void);
 void service_loop_exit(void);
 service_poll_t* service_loop_poll_fd(int fd, int pevents, service_poll_cb_t cb, void* userdata);
 int service_loop_reset_poll(service_poll_t* poll, int pevents);
