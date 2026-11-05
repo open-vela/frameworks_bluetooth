@@ -25,11 +25,8 @@ void bt_cm_cleanup(void);
 
 bt_status_t bt_cm_enable_enhanced_mode(bt_address_t* peer_addr, uint8_t mode);
 bt_status_t bt_cm_disable_enhanced_mode(bt_address_t* peer_addr, uint8_t mode);
-bt_status_t bt_cm_enable_rssi_statistic(void);
-bt_status_t bt_cm_disable_rssi_statistic(void);
 
-void bt_cm_process_disconnect_event(bt_address_t* addr, uint8_t transport, int8_t rssi,
-    uint8_t hci_reason_code);
+void bt_cm_process_disconnect_event(bt_address_t* addr, uint8_t transport, uint32_t hci_reason_code);
 void bt_cm_disconnected(bt_address_t* addr, uint8_t profile_id);
 void bt_cm_connected(bt_address_t* addr, uint8_t profile_id);
 bt_status_t bt_cm_device_connect(bt_address_t* addr, uint8_t transport);

@@ -756,6 +756,25 @@ if (bt_device_connect(ins, &addr) == BT_STATUS_SUCCESS) {
 bt_status_t BTSYMBOLS(bt_device_connect)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
+ * @brief Connect to peer device with specific Profiles. And open reconnect method.
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - remote device address.if addr is NULL, connect last device in bonded list.
+ * @param transport - transport type (0:BLE, 1:BREDR).
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ *
+ * **Example:**
+ * @code
+if (bt_device_background_connect(ins, &addr, BT_TRANSPORT_BREDR) == BT_STATUS_SUCCESS) {
+    // connection initiated successfully
+} else {
+    // Handle error
+}
+ * @endcode
+ */
+bt_status_t BTSYMBOLS(bt_device_background_connect)(bt_instance_t* ins, bt_address_t* addr, bt_transport_t transport);
+
+/**
  * @brief Disconnect from a remote device.
  *
  * Terminates the ACL connection with a remote device.
@@ -774,6 +793,25 @@ if (bt_device_disconnect(ins, &addr) == BT_STATUS_SUCCESS) {
  * @endcode
  */
 bt_status_t BTSYMBOLS(bt_device_disconnect)(bt_instance_t* ins, bt_address_t* addr);
+
+/**
+ * @brief Disconnect specific prfoiles.
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - remote device address.
+ * @param transport - transport type (0:BLE, 1:BREDR).
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ *
+ * **Example:**
+ * @code
+if (bt_device_background_disconnect(ins, &addr, BT_TRANSPORT_BREDR) == BT_STATUS_SUCCESS) {
+    // Disconnection initiated successfully
+} else {
+    // Handle error
+}
+ * @endcode
+ */
+bt_status_t BTSYMBOLS(bt_device_background_disconnect)(bt_instance_t* ins, bt_address_t* addr, bt_transport_t transport);
 
 /**
  * @brief Connect to a remote LE device.
@@ -847,28 +885,64 @@ void BTSYMBOLS(bt_device_connect_all_profile)(bt_instance_t* ins, bt_address_t* 
 void BTSYMBOLS(bt_device_disconnect_all_profile)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
- * @brief Enable enhanced mode for a connection.
- *
- * Enables an enhanced mode (e.g., eSCO, sniff mode) for a connection with a remote device.
- *
- * @param ins - Bluetooth client instance, see @ref bt_instance_t.
- * @param addr - Address of the remote device.
- * @param mode - Enhanced mode to enable, see @ref bt_enhanced_mode_t.
- * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
+ * @brief Enable connection enhanced mode
+ * @param ins - bluetooth client instance.
+ * @param addr - remote device address.
+ * @param mode - enhanced mode.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
 bt_status_t BTSYMBOLS(bt_device_enable_enhanced_mode)(bt_instance_t* ins, bt_address_t* addr, bt_enhanced_mode_t mode);
 
 /**
- * @brief Disable enhanced mode for a connection.
- *
- * Disables an enhanced mode (e.g., eSCO, sniff mode) for a connection with a remote device.
- *
- * @param ins - Bluetooth client instance, see @ref bt_instance_t.
- * @param addr - Address of the remote device.
- * @param mode - Enhanced mode to disable, see @ref bt_enhanced_mode_t.
- * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
+ * @brief Disable connection enhanced mode
+ * @param ins - bluetooth client instance.
+ * @param addr - remote device address.
+ * @param mode - enhanced mode.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
 bt_status_t BTSYMBOLS(bt_device_disable_enhanced_mode)(bt_instance_t* ins, bt_address_t* addr, bt_enhanced_mode_t mode);
+
+// async
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_ASYNC
+#include "bt_async.h"
+
+typedef void (*bt_device_get_bond_state_cb_t)(bt_instance_t* ins, bt_status_t status, bond_state_t bstate, void* userdata);
+typedef void (*bt_device_get_address_type_cb_t)(bt_instance_t* ins, bt_status_t status, ble_addr_type_t atype, void* userdata);
+
+bt_status_t bt_device_get_identity_address_async(bt_instance_t* ins, bt_address_t* bd_addr, bt_address_cb_t cb, void* userdata);
+bt_status_t bt_device_get_address_type_async(bt_instance_t* ins, bt_address_t* addr, bt_device_get_address_type_cb_t cb, void* userdata);
+bt_status_t bt_device_get_device_type_async(bt_instance_t* ins, bt_address_t* addr, bt_device_type_cb_t cb, void* userdata);
+bt_status_t bt_device_get_name_async(bt_instance_t* ins, bt_address_t* addr, bt_string_cb_t cb, void* userdata);
+bt_status_t bt_device_get_device_class_async(bt_instance_t* ins, bt_address_t* addr, bt_u32_cb_t cb, void* userdata);
+bt_status_t bt_device_get_uuids_async(bt_instance_t* ins, bt_address_t* addr, bt_uuids_cb_t cb, void* userdata);
+bt_status_t bt_device_get_appearance_async(bt_instance_t* ins, bt_address_t* addr, bt_u16_cb_t cb, void* userdata);
+bt_status_t bt_device_get_rssi_async(bt_instance_t* ins, bt_address_t* addr, bt_s8_cb_t cb, void* userdata);
+bt_status_t bt_device_get_alias_async(bt_instance_t* ins, bt_address_t* addr, bt_string_cb_t cb, void* userdata);
+bt_status_t bt_device_set_alias_async(bt_instance_t* ins, bt_address_t* addr, const char* alias, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_device_is_connected_async(bt_instance_t* ins, bt_address_t* addr, bt_transport_t transport, bt_bool_cb_t cb, void* userdata);
+bt_status_t bt_device_is_encrypted_async(bt_instance_t* ins, bt_address_t* addr, bt_transport_t transport, bt_bool_cb_t cb, void* userdata);
+bt_status_t bt_device_is_bond_initiate_local_async(bt_instance_t* ins, bt_address_t* addr, bt_transport_t transport, bt_bool_cb_t cb, void* userdata);
+bt_status_t bt_device_get_bond_state_async(bt_instance_t* ins, bt_address_t* addr, bt_transport_t transport, bt_device_get_bond_state_cb_t cb, void* userdata);
+bt_status_t bt_device_is_bonded_async(bt_instance_t* ins, bt_address_t* addr, bt_transport_t transport, bt_bool_cb_t cb, void* userdata);
+bt_status_t bt_device_connect_async(bt_instance_t* ins, bt_address_t* addr, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_device_disconnect_async(bt_instance_t* ins, bt_address_t* addr, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_device_connect_le_async(bt_instance_t* ins, bt_address_t* addr, ble_addr_type_t type, ble_connect_params_t* param, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_device_disconnect_le_async(bt_instance_t* ins, bt_address_t* addr, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_device_connect_request_reply_async(bt_instance_t* ins, bt_address_t* addr, bool accept, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_device_connect_all_profile_async(bt_instance_t* ins, bt_address_t* addr, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_device_disconnect_all_profile_async(bt_instance_t* ins, bt_address_t* addr, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_device_set_le_phy_async(bt_instance_t* ins, bt_address_t* addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_device_create_bond_async(bt_instance_t* ins, bt_address_t* addr, bt_transport_t transport, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_device_remove_bond_async(bt_instance_t* ins, bt_address_t* addr, uint8_t transport, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_device_cancel_bond_async(bt_instance_t* ins, bt_address_t* addr, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_device_pair_request_reply_async(bt_instance_t* ins, bt_address_t* addr, bool accept, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_device_set_pairing_confirmation_async(bt_instance_t* ins, bt_address_t* addr, uint8_t transport, bool accept, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_device_set_pin_code_async(bt_instance_t* ins, bt_address_t* addr, bool accept, char* pincode, int len, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_device_set_pass_key_async(bt_instance_t* ins, bt_address_t* addr, uint8_t transport, bool accept, uint32_t passkey, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_device_set_le_legacy_tk_async(bt_instance_t* ins, bt_address_t* addr, bt_128key_t tk_val, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_device_set_le_sc_remote_oob_data_async(bt_instance_t* ins, bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_device_get_le_sc_local_oob_data_async(bt_instance_t* ins, bt_address_t* addr, bt_status_cb_t cb, void* userdata);
+#endif
 
 #ifdef __cplusplus
 }

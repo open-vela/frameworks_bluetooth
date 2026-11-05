@@ -13,12 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
+#include <ctype.h>
+#include <errno.h>
 #include <getopt.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "advertiser_data.h"
 #include "bluetooth.h"
+#include "bt_adapter.h"
 #include "bt_le_advertiser.h"
 #include "bt_tools.h"
 
@@ -40,6 +45,7 @@ static struct option adv_options[] = {
     { "filter", required_argument, 0, 'f' },
     { "duration", required_argument, 0, 'd' },
     { "default", no_argument, 0, 'D' },
+    { "raw_data", required_argument, 0, 'r' },
     { 0, 0, 0, 0 }
 };
 
@@ -64,7 +70,9 @@ static bt_command_t g_adv_tables[] = {
                                  "\t  -c or --channel, advertising channel map opt (37/38/39, 0 means default)\n"
                                  "\t  -f or --filter, advertising white list filter policy(none/scan/conn/all)\n"
                                  "\t  -d or --duration, advertising duration, only extended adv valid, range 0x0~0xFFFF\n"
-                                 "\t  -D or --default, use default advertising data and scan response data\n" },
+                                 "\t  -D or --default, use default advertising data and scan response data\n"
+                                 "\t  -r or --raw_data, advertising data by design <adv_data>\n"
+                                 "\t\t\t  e.g., 02010803FF8F03\n" },
     { "stop", stop_adv_cmd, 1, "stop  advertising  \n"
                                "\t  -i or --advid, advertising ID, advertising_start_cb notify \n"
                                "\t  -h or --handle, advertising handle, bt_le_start_advertising return \n" },
@@ -100,17 +108,94 @@ static advertiser_callback_t adv_callback = {
     on_advertising_stopped_cb
 };
 
+static int ensure_adapter_ble_on(void* handle)
+{
+    bt_adapter_state_t state;
+    int retry;
+
+    state = bt_adapter_get_state(handle);
+    if (state == BT_ADAPTER_STATE_ON || state == BT_ADAPTER_STATE_BLE_ON)
+        return CMD_OK;
+
+    PRINT("Adapter not enabled, enable BLE before advertising state:%d", state);
+#if defined(CONFIG_BLUETOOTH_BLE_SUPPORT) && !defined(CONFIG_BLUETOOTH_BREDR_SUPPORT)
+    bt_adapter_enable_le(handle);
+#else
+    bt_adapter_enable(handle);
+#endif
+
+    for (retry = 0; retry < 50; retry++) {
+        usleep(100 * 1000);
+        state = bt_adapter_get_state(handle);
+        if (state == BT_ADAPTER_STATE_ON || state == BT_ADAPTER_STATE_BLE_ON) {
+            PRINT("Adapter BLE ready state:%d", state);
+            return CMD_OK;
+        }
+    }
+
+    PRINT("Adapter BLE enable timeout state:%d", state);
+    return CMD_ERROR;
+}
+
+static int data_check(const char* str)
+{
+    while (*str) {
+        if (!isxdigit(*str++))
+            return -1;
+    }
+
+    return 0;
+}
+
+static uint8_t* str_to_array(const char* str, uint16_t* adv_len)
+{
+    int len, i;
+    char tmp_byte[3] = { 0 };
+    uint8_t* array_data;
+
+    if ((strlen(str) & 1)) {
+        PRINT("error hex string length, should be even.");
+        return NULL;
+    }
+
+    if (data_check(str) < 0) {
+        PRINT("error hex string length.");
+        return NULL;
+    }
+
+    len = strlen(str) / 2;
+    array_data = (uint8_t*)malloc(len);
+    if (!array_data) {
+        PRINT("No memory");
+        return NULL;
+    }
+
+    for (i = 0; i < len; i++) {
+        tmp_byte[0] = str[i * 2];
+        tmp_byte[1] = str[i * 2 + 1];
+        tmp_byte[2] = '\0';
+        array_data[i] = (uint8_t)(strtol(tmp_byte, NULL, 16) & 0xFF);
+    }
+
+    *adv_len = len;
+
+    return array_data;
+}
+
 static int start_adv_cmd(void* handle, int argc, char* argv[])
 {
     uint8_t adv_mode = 0;
     ble_adv_params_t params = { 0 };
     advertiser_data_t *adv = NULL, *scan_rsp = NULL;
-    uint8_t *p_adv_data = NULL, *p_scan_rsp_data = NULL;
-    uint16_t adv_len, scan_rsp_len;
+    uint8_t *p_adv_data = NULL, *p_scan_rsp_data = NULL, *p_raw_adv_data = NULL;
+    uint16_t adv_len = 0, scan_rsp_len = 0;
     bt_advertiser_t* adv_handle;
     char* name = "VELA_BT";
     uint16_t appearance = 0;
     int opt;
+
+    if (ensure_adapter_ble_on(handle) != CMD_OK)
+        return CMD_ERROR;
 
     params.adv_type = BT_LE_ADV_IND;
     bt_addr_set_empty(&params.peer_addr);
@@ -124,7 +209,7 @@ static int start_adv_cmd(void* handle, int argc, char* argv[])
     params.duration = 0;
 
     optind = 0;
-    while ((opt = getopt_long(argc, argv, "+t:m:i:n:a:p:c:f:d:P:T:O:R:D", adv_options,
+    while ((opt = getopt_long(argc, argv, "+t:m:i:n:a:p:c:f:d:P:T:O:R:Dr:", adv_options,
                 NULL))
         != -1) {
         switch (opt) {
@@ -231,6 +316,7 @@ static int start_adv_cmd(void* handle, int argc, char* argv[])
                 return CMD_INVALID_PARAM;
             }
             PRINT("duration: %" PRId32 " ms", duration * 10);
+            params.duration = duration;
         } break;
         case 'P': {
             bt_address_t peeraddr;
@@ -278,6 +364,14 @@ static int start_adv_cmd(void* handle, int argc, char* argv[])
             p_scan_rsp_data = s_rsp_data;
             scan_rsp_len = sizeof(s_rsp_data);
         } break;
+        case 'r': {
+            PRINT("adv_data: %s", optarg);
+            p_raw_adv_data = str_to_array(optarg, &adv_len);
+            if (!p_raw_adv_data) {
+                PRINT("error raw adv data");
+                return CMD_INVALID_PARAM;
+            }
+        } break;
         default:
             PRINT("%s, default opt:%c, arg:%s", __func__, opt, optarg);
             break;
@@ -286,13 +380,24 @@ static int start_adv_cmd(void* handle, int argc, char* argv[])
 
     if (params.own_addr_type == BT_LE_ADDR_TYPE_RANDOM && bt_addr_is_empty(&params.own_addr)) {
         PRINT("should set own address using \"-O\" option");
+        if (p_raw_adv_data)
+            free(p_raw_adv_data);
         return CMD_INVALID_ADDR;
+    }
+
+    if (p_adv_data && p_raw_adv_data) {
+        PRINT("should not set both \"-D\" and \"-r\" option");
+        free(p_raw_adv_data);
+        return CMD_INVALID_PARAM;
     }
 
     if (adv_mode == 1)
         params.adv_type += BT_LE_LEGACY_ADV_IND;
     else if (adv_mode == 2)
         params.adv_type += BT_LE_EXT_ADV_IND;
+
+    if (p_raw_adv_data)
+        p_adv_data = p_raw_adv_data;
 
     if (!p_adv_data) {
         bt_uuid_t uuid;
@@ -338,15 +443,19 @@ static int start_adv_cmd(void* handle, int argc, char* argv[])
         &adv_callback);
 
     PRINT("Advertising handle:%p", adv_handle);
+
     /* free advertiser data */
     if (adv)
         advertiser_data_free(adv);
+
+    if (p_raw_adv_data)
+        free(p_raw_adv_data);
 
     /* free scan response data */
     if (scan_rsp)
         advertiser_data_free(scan_rsp);
 
-    return CMD_OK;
+    return adv_handle ? CMD_OK : CMD_ERROR;
 }
 
 static int stop_adv_cmd(void* handle, int argc, char* argv[])
@@ -359,13 +468,18 @@ static int stop_adv_cmd(void* handle, int argc, char* argv[])
         != -1) {
         switch (opt) {
         case 'i': {
-            int id = atoi(optarg);
-            if (id < 0) {
-                PRINT("Invalid ID:%d", id);
+            char* endptr;
+            long id;
+
+            errno = 0;
+            id = strtol(optarg, &endptr, 10);
+            if (errno != 0 || *optarg == '\0' || *endptr != '\0'
+                || id < 0 || id > UINT8_MAX) {
+                PRINT("Invalid ID:%s", optarg);
                 return CMD_INVALID_PARAM;
             }
-            PRINT("Stop adv ID:%d", id);
-            bt_le_stop_advertising_id(handle, id);
+            PRINT("Stop adv ID:%ld", id);
+            bt_le_stop_advertising_id(handle, (uint8_t)id);
             return CMD_OK;
         } break;
         case 'h': {

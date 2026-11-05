@@ -35,8 +35,8 @@
 
 #include <sys/types.h>
 
+#include "bt_lea_common.h"
 #include "bt_vendor.h"
-#include "lea_audio_common.h"
 
 enum {
     LEA_CODEC_SINK,

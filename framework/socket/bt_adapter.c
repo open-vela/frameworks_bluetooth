@@ -117,6 +117,21 @@ bt_status_t bt_adapter_disable(bt_instance_t* ins)
     return packet.adpt_r.status;
 }
 
+bt_status_t bt_adapter_disable_safe(bt_instance_t* ins)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_DISABLE_SAFE);
+    if (status != BT_STATUS_SUCCESS) {
+        return status;
+    }
+
+    return packet.adpt_r.status;
+}
+
 bt_status_t bt_adapter_enable_le(bt_instance_t* ins)
 {
     bt_message_packet_t packet;
@@ -216,6 +231,22 @@ bt_status_t bt_adapter_start_discovery(bt_instance_t* ins, uint32_t timeout)
 
     packet.adpt_pl._bt_adapter_start_discovery.v32 = timeout;
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_START_DISCOVERY);
+    if (status != BT_STATUS_SUCCESS) {
+        return status;
+    }
+
+    return packet.adpt_r.status;
+}
+
+bt_status_t bt_adapter_start_limited_discovery(bt_instance_t* ins, uint32_t timeout)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    packet.adpt_pl._bt_adapter_start_limited_discovery.v32 = timeout;
+    status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_START_LIMITED_DISCOVERY);
     if (status != BT_STATUS_SUCCESS) {
         return status;
     }
@@ -544,7 +575,7 @@ bt_status_t bt_adapter_set_le_address(bt_instance_t* ins, bt_address_t* addr)
     return packet.adpt_r.status;
 }
 
-bt_status_t bt_adapter_set_le_identity_address(bt_instance_t* ins, bt_address_t* addr, bool public)
+bt_status_t bt_adapter_set_le_identity_address(bt_instance_t* ins, bt_address_t* addr, bool is_public)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -552,7 +583,7 @@ bt_status_t bt_adapter_set_le_identity_address(bt_instance_t* ins, bt_address_t*
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     memcpy(&packet.adpt_pl._bt_adapter_set_le_identity_address.addr, addr, sizeof(*addr));
-    packet.adpt_pl._bt_adapter_set_le_identity_address.pub = public;
+    packet.adpt_pl._bt_adapter_set_le_identity_address.pub = is_public;
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_SET_LE_IDENTITY_ADDRESS);
     if (status != BT_STATUS_SUCCESS) {
         return status;
@@ -613,12 +644,18 @@ bt_status_t bt_adapter_le_enable_key_derivation(bt_instance_t* ins,
 
 bt_status_t bt_adapter_le_add_whitelist(bt_instance_t* ins, bt_address_t* addr)
 {
+    return bt_adapter_le_add_whitelist_with_type(ins, addr, BT_LE_ADDR_TYPE_UNKNOWN);
+}
+
+bt_status_t bt_adapter_le_add_whitelist_with_type(bt_instance_t* ins, bt_address_t* addr, ble_addr_type_t type)
+{
     bt_message_packet_t packet;
     bt_status_t status;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     memcpy(&packet.adpt_pl._bt_adapter_le_add_whitelist.addr, addr, sizeof(*addr));
+    packet.adpt_pl._bt_adapter_le_add_whitelist.type = (uint8_t)type;
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_LE_ADD_WHITELIST);
     if (status != BT_STATUS_SUCCESS) {
         return status;
@@ -770,25 +807,4 @@ bool bt_adapter_is_support_leaudio(bt_instance_t* ins)
     }
 
     return packet.adpt_r.bbool;
-}
-
-bt_status_t bt_adapter_start_limited_discovery(bt_instance_t* ins, uint32_t timeout)
-{
-    bt_message_packet_t packet;
-    bt_status_t status;
-
-    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
-
-    packet.adpt_pl._bt_adapter_start_limited_discovery.v32 = timeout;
-    status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_START_LIMITED_DISCOVERY);
-    if (status != BT_STATUS_SUCCESS) {
-        return status;
-    }
-
-    return packet.adpt_r.status;
-}
-
-bt_status_t bt_adapter_disable_safe(bt_instance_t* ins)
-{
-    return bt_adapter_disable(ins);
 }

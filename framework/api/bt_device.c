@@ -21,6 +21,7 @@
 #include "bt_addr.h"
 #include "bt_device.h"
 #include "bt_internal.h"
+#include "connection_manager.h"
 #include "device.h"
 
 bt_status_t BTSYMBOLS(bt_device_get_identity_address)(bt_instance_t* ins, bt_address_t* bd_addr, bt_address_t* id_addr)
@@ -30,11 +31,7 @@ bt_status_t BTSYMBOLS(bt_device_get_identity_address)(bt_instance_t* ins, bt_add
 
 ble_addr_type_t BTSYMBOLS(bt_device_get_address_type)(bt_instance_t* ins, bt_address_t* addr)
 {
-#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
-    return adapter_get_le_remote_address_type(addr);
-#else
     return 0;
-#endif
 }
 
 bt_device_type_t BTSYMBOLS(bt_device_get_device_type)(bt_instance_t* ins, bt_address_t* addr)
@@ -110,6 +107,24 @@ bt_status_t BTSYMBOLS(bt_device_connect)(bt_instance_t* ins, bt_address_t* addr)
 bt_status_t BTSYMBOLS(bt_device_disconnect)(bt_instance_t* ins, bt_address_t* addr)
 {
     return adapter_disconnect(addr);
+}
+
+bt_status_t BTSYMBOLS(bt_device_background_connect)(bt_instance_t* ins, bt_address_t* addr, bt_transport_t transport)
+{
+#ifdef CONFIG_BLUETOOTH_CONNECTION_MANAGER
+    return bt_cm_device_connect(addr, transport);
+#else
+    return BT_STATUS_UNSUPPORTED;
+#endif
+}
+
+bt_status_t BTSYMBOLS(bt_device_background_disconnect)(bt_instance_t* ins, bt_address_t* addr, bt_transport_t transport)
+{
+#ifdef CONFIG_BLUETOOTH_CONNECTION_MANAGER
+    return bt_cm_device_disconnect(addr, transport);
+#else
+    return BT_STATUS_UNSUPPORTED;
+#endif
 }
 
 bt_status_t BTSYMBOLS(bt_device_connect_le)(bt_instance_t* ins,
@@ -204,4 +219,22 @@ bt_status_t BTSYMBOLS(bt_device_set_le_sc_remote_oob_data)(bt_instance_t* ins, b
 bt_status_t BTSYMBOLS(bt_device_get_le_sc_local_oob_data)(bt_instance_t* ins, bt_address_t* addr)
 {
     return adapter_le_get_local_oob_data(addr);
+}
+
+bt_status_t BTSYMBOLS(bt_device_enable_enhanced_mode)(bt_instance_t* ins, bt_address_t* addr, bt_enhanced_mode_t mode)
+{
+#ifdef CONFIG_BLUETOOTH_CONNECTION_MANAGER
+    return bt_cm_enable_enhanced_mode(addr, mode);
+#else
+    return BT_STATUS_UNSUPPORTED;
+#endif
+}
+
+bt_status_t BTSYMBOLS(bt_device_disable_enhanced_mode)(bt_instance_t* ins, bt_address_t* addr, bt_enhanced_mode_t mode)
+{
+#ifdef CONFIG_BLUETOOTH_CONNECTION_MANAGER
+    return bt_cm_disable_enhanced_mode(addr, mode);
+#else
+    return BT_STATUS_UNSUPPORTED;
+#endif
 }

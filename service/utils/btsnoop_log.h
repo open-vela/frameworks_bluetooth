@@ -23,8 +23,11 @@
 
 #include <stdint.h>
 
+#define CONFIG_BLUETOOTH_SNOOP_LOG_DEFAULT_PATH "/data/misc/bt/snoop"
+#define SNOOP_PATH_MAX_LEN 255
+
 void btsnoop_log_capture(uint8_t is_recieve, uint8_t* hci_pkt, uint32_t hci_pkt_size);
-int btsnoop_log_init(void);
+int btsnoop_log_init(char* path);
 void btsnoop_log_uninit(void);
 int btsnoop_log_enable(void);
 void btsnoop_log_disable(void);

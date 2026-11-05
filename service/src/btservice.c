@@ -15,12 +15,11 @@
  ***************************************************************************/
 
 #include "adapter_internel.h"
-#include "cs_service.h"
+#include "bt_storage.h"
 #include "manager_service.h"
 #include "service_loop.h"
 #include "stack_manager.h"
 #include "state_machine.h"
-#include "storage.h"
 
 #ifdef CONFIG_BLUETOOTH_HFP_HF
 #include "hfp_hf_service.h"
@@ -181,9 +180,6 @@ void bt_profile_init(void)
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
     register_lea_vmicp_service();
 #endif
-#ifdef CONFIG_BLUETOOTH_LE_CS
-    register_cs_service();
-#endif /* CONFIG_BLUETOOTH_LE_CS */
 }
 
 static int create_bt_folder(void)

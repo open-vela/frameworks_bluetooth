@@ -25,8 +25,8 @@
 #endif
 
 #include "bluetooth_define.h"
+#include "bt_storage.h"
 #include "service_loop.h"
-#include "storage.h"
 #include "utils/log.h"
 #include "uv_ext.h"
 
@@ -68,6 +68,7 @@ static int storage_set_key(const char* key, void* data, size_t length)
     ret = property_set_binary(key, data, length, true);
     if (ret < 0) {
         BT_LOGE("key %s set error!", key);
+        syslog(LOG_ERR, "BT storage set key failed: %s ret:%d", key, ret);
         return ret;
     }
     service_loop_work(NULL, storage_commit, NULL);
@@ -672,6 +673,11 @@ int bt_storage_properties_destory(void)
     property_list(callback_whitelist_count, &items);
     bt_storage_delete(BT_KVDB_BLEWHITELIST, items, prop_name);
 
+    /* remove all GATT cache device property */
+    items = 0;
+    property_list(callback_gatthash_count, &items);
+    bt_storage_delete(BT_KVDB_BLEGATTDBHASH, items, prop_name);
+
     /* remove all BREDR bond device property */
     items = 0;
     property_list(callback_bt_count, &items);
@@ -685,6 +691,7 @@ int bt_storage_properties_destory(void)
     ret |= property_delete(BT_KVDB_ADAPTERINFO_IOCAP);
     ret |= property_delete(BT_KVDB_ADAPTERINFO_SCAN);
     ret |= property_delete(BT_KVDB_ADAPTERINFO_BOND);
+    ret |= property_delete(BT_KVDB_ADAPTERINFO_IRK);
     if (ret) {
         BT_LOGE("property_delete failed!");
         return ret;

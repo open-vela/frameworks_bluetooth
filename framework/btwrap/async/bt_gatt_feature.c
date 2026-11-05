@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
+#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -53,7 +54,6 @@ typedef struct {
 
 struct gatt_client {
     gattc_handle_t conn;
-    bt_address_t addr;
     bt_gattc_feature_callbacks_t callbacks;
     bool connected;
     bool services_discovering;
@@ -156,25 +156,6 @@ void discovery_database_destroy(gatt_client_t* client)
         bt_list_free(client->temp_attrs);
         client->temp_attrs = NULL;
     }
-}
-
-static bool match_client_by_addr(void* element, void* context)
-{
-    bt_address_t* target_addr;
-    gatt_client_t* client;
-
-    target_addr = (bt_address_t*)context;
-    client = (gatt_client_t*)element;
-
-    return memcmp(&client->addr, target_addr, sizeof(bt_address_t)) == 0;
-}
-
-static gatt_client_t* find_client_by_addr(bt_address_t* addr)
-{
-    if (!g_gatt_client_list || !addr)
-        return NULL;
-
-    return (gatt_client_t*)bt_list_find(g_gatt_client_list, match_client_by_addr, (void*)addr);
 }
 
 static gatt_client_t* find_client_by_conn(gattc_handle_t conn)
@@ -327,6 +308,18 @@ static gatt_descriptor_t* find_desc_by_attr_handle(gatt_client_t* client, uint16
     return NULL;
 }
 
+static void gatt_service_list_to_array(bt_list_t* list,
+    const gatt_service_t* out_array[])
+{
+    bt_list_node_t* node;
+    size_t i = 0;
+
+    for (node = bt_list_head(list); node != NULL;
+         node = bt_list_next(list, node)) {
+        out_array[i++] = (gatt_service_t*)bt_list_node(node);
+    }
+}
+
 static gatt_service_t* build_service_from_attr_list(bt_list_t* attr_list)
 {
     gatt_service_t* service;
@@ -439,11 +432,10 @@ static void feature_on_connected(void* conn_handle, bt_address_t* addr)
         return;
 
     client->connected = true;
-    memcpy(&client->addr, addr, sizeof(bt_address_t));
 
     BT_FEATURE_LOG("connected: conn=%p", conn_handle);
 
-    BT_GATTC_FEATURE_INVOKE_CB(client, on_connected, client->ins, BT_STATUS_SUCCESS, client->conn);
+    BT_GATTC_FEATURE_INVOKE_CB(client, on_connected, client->ins, GATT_STATUS_SUCCESS, client->conn);
 }
 
 static void feature_on_disconnected(void* conn_handle, bt_address_t* addr)
@@ -463,7 +455,7 @@ static void feature_on_disconnected(void* conn_handle, bt_address_t* addr)
     client->services_discovering = false;
     discovery_database_clear(client);
 
-    BT_GATTC_FEATURE_INVOKE_CB(client, on_disconnected, client->ins, BT_STATUS_SUCCESS,
+    BT_GATTC_FEATURE_INVOKE_CB(client, on_disconnected, client->ins, GATT_STATUS_SUCCESS,
         client->conn);
 }
 
@@ -474,6 +466,8 @@ static void feature_get_attribute_cb(bt_instance_t* ins, bt_status_t status,
     gatt_client_t* client;
     gatt_attr_desc_t* attr_node;
     gatt_service_t* service;
+    size_t service_count;
+    const gatt_service_t** service_array;
 
     (void)ins;
 
@@ -504,10 +498,23 @@ static void feature_get_attribute_cb(bt_instance_t* ins, bt_status_t status,
         free(user_data);
 
         client->services_discovering = false;
+
+        service_count = bt_list_length(client->services_db);
+        service_array = calloc(service_count, sizeof(gatt_service_t*));
+
+        if (!service_array) {
+            BT_GATTC_FEATURE_INVOKE_CB(client, on_discovered,
+                client->ins, GATT_STATUS_FAILURE,
+                client->conn, NULL, 0);
+            return;
+        }
+
+        gatt_service_list_to_array(client->services_db, service_array);
         BT_GATTC_FEATURE_INVOKE_CB(client, on_discovered,
             client->ins, GATT_STATUS_SUCCESS,
-            client->conn, NULL);
+            client->conn, service_array, service_count);
 
+        free(service_array);
         return;
     }
 
@@ -530,9 +537,6 @@ static void feature_get_attribute_cb(bt_instance_t* ins, bt_status_t status,
         if (service) {
             bt_list_add_tail(client->services_db, service);
         }
-
-        BT_GATTC_FEATURE_INVOKE_CB(client, on_discovered, client->ins, BT_STATUS_SUCCESS,
-            client->conn, service);
     }
 
     free(user_data);
@@ -553,7 +557,7 @@ static void feature_on_discovered(void* conn_handle, gatt_status_t status,
     if (status != GATT_STATUS_SUCCESS) {
         client->services_discovering = false;
         BT_GATTC_FEATURE_INVOKE_CB(client, on_discovered, client->ins, status,
-            client->conn, NULL);
+            client->conn, NULL, 0);
         return;
     }
 
@@ -584,7 +588,7 @@ static void feature_on_discovered(void* conn_handle, gatt_status_t status,
         client->services_discovering = false;
         BT_GATTC_FEATURE_INVOKE_CB(client, on_discovered,
             client->ins, GATT_STATUS_FAILURE,
-            client->conn, NULL);
+            client->conn, NULL, 0);
 
         return;
     }
@@ -787,7 +791,6 @@ bt_status_t bt_gattc_feature_create_client_async(bt_instance_t* ins, bt_address_
         goto fail;
     }
 
-    memcpy(&client->addr, addr, sizeof(bt_address_t));
     client->ins = ins;
 
     memcpy(&client->callbacks, callbacks, callbacks->size);
@@ -838,7 +841,7 @@ static void delete_client_cb(bt_instance_t* ins, bt_status_t status, void* userd
     user_ud = client->delete_client_ctx.delete_userdata;
     conn_handle = client->conn;
 
-    if (status == BT_STATUS_SUCCESS && g_gatt_client_list) {
+    if (g_gatt_client_list) {
         bt_list_remove(g_gatt_client_list, client);
 
         if (!bt_list_length(g_gatt_client_list)) {
@@ -851,15 +854,15 @@ static void delete_client_cb(bt_instance_t* ins, bt_status_t status, void* userd
         user_cb(ins, status, conn_handle, user_ud);
 }
 
-bt_status_t bt_gattc_feature_delete_client_async(bt_instance_t* ins, bt_address_t* addr,
+bt_status_t bt_gattc_feature_delete_client_async(bt_instance_t* ins, gattc_handle_t conn_handle,
     bt_gattc_feature_delete_client_cb_t cb, void* userdata)
 {
     gatt_client_t* client;
 
-    if (!ins || !addr || !cb)
+    if (!ins || !conn_handle)
         return BT_STATUS_PARM_INVALID;
 
-    client = find_client_by_addr(addr);
+    client = find_client_by_conn(conn_handle);
     if (!client)
         return BT_STATUS_PARM_INVALID;
 

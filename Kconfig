@@ -19,7 +19,6 @@ menuconfig BLUETOOTH
 	bool "Bluetooth"
 	default n
 	depends on LIBUV
-	depends on LIBUV_EXTENSION
 
 if BLUETOOTH
 menuconfig BLUETOOTH_FRAMEWORK
@@ -66,15 +65,15 @@ config BLUETOOTH_FRAMEWORK_ASYNC
 		Enable Bluetooth Framework async API
 
 choice
-	prompt "Select feature API"
+	prompt "select feature api"
 	default BLUETOOTH_FEATURE_NONE
 	config BLUETOOTH_FEATURE_NONE
-		bool "Not supporting Bluetooth feature API."
+		bool "not supporting Bluetooth feature API."
 	config BLUETOOTH_FEATURE
-		bool "Support Bluetooth synchronization API."
+		bool "support Bluetooth synchronization API."
 		depends on FEATURE_FRAMEWORK
 	config BLUETOOTH_FEATURE_ASYNC
-		bool "Support Bluetooth asynchronous API."
+		bool "support Bluetooth asynchronous API."
 		depends on FEATURE_FRAMEWORK
 		depends on BLUETOOTH_FRAMEWORK_ASYNC
 endchoice
@@ -93,15 +92,23 @@ config BLUETOOTH_BLE_SUPPORT
 config BLUETOOTH_BLE_ADV
 	bool "LE Advertising support"
 	default n
+	depends on BLUETOOTH_BLE_SUPPORT
 
 config BLUETOOTH_BLE_SCAN
 	bool "LE Scan support"
 	default n
+	depends on BLUETOOTH_BLE_SUPPORT
 
 config BLUETOOTH_BLE_SCAN_FILTER
 	bool "LE Scan Filter support"
 	default n
 	depends on BLUETOOTH_BLE_SCAN
+
+config BLUETOOTH_HCI_FILTER
+       bool "Enable Bluetooth HCI filter"
+       default y
+       help
+               Enable Bluetooth HCI filter
 
 config BLUETOOTH_L2CAP
 	bool "L2CAP dynamic channel support"
@@ -157,7 +164,7 @@ config BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN
 
 config BLUETOOTH_MAX_REGISTER_NUM
 	int "Max register callback nums"
-	default 4
+	default 6
 
 endmenu #Core
 
@@ -206,6 +213,7 @@ choice
 		select LIB_BLUELET
 	config BLUETOOTH_STACK_BREDR_ZBLUE
 		bool "Classic BT stack use zblue"
+		select BT_CLASSIC
 	config BLUETOOTH_STACK_NOT_SUPPORT_CLASSIC_BT
 		bool "Not support classic BT stack"
 endchoice
@@ -227,11 +235,6 @@ choice
 		bool "Not support BLE Stack"
 endchoice
 
-config BLUETOOTH_LE_CS
-	bool "Bluetooth LE Channel Sounding supported"
-	depends on BLUETOOTH_STACK_LE_ZBLUE
-	default n
-
 config BLUETOOTH_LE_SCANNER_MAX_NUM
 	int "LE Scanner max register number"
 	default 2
@@ -244,15 +247,20 @@ config BLUETOOTH_LE_ADVERTISER_MAX_NUM
 	help
 		LE Advertiser max register number
 
+config BLUETOOTH_CONNECTION_MANAGER
+       bool "Bluetooth connection manager support"
+       default y
+
 config LE_DLF_SUPPORT
 	bool "Enable LE DLF support"
+	depends on BLUETOOTH_CONNECTION_MANAGER
 	default n
 
 endmenu #Bluetooth LE Config
 endif #BLUETOOTH_BLE_SUPPORT
 
 choice
-	prompt "Select Bluetooth Storage Method(Unqlite, KVDB)"
+	prompt "select Bluetooth Storage Method(Unqlite, KVDB)"
 	default BLUETOOTH_STORAGE_PROPERTY_SUPPORT
 	config BLUETOOTH_STORAGE_PROPERTY_SUPPORT
 		bool "Bluetooth Storage KVDB Property support"
@@ -295,12 +303,26 @@ config BLUETOOTH_A2DP_SOURCE
 	default n
 	select BLUETOOTH_AVRCP_TARGET
 
+config ZBLUE_A2DP_SBC_MAX_BIT_POOL
+	int "A2DP sbc codec max bit pool"
+	default 32
+	depends on BLUETOOTH_STACK_BREDR_ZBLUE
+	help
+		A2DP sbc codec max bit pool 1~53
+
 if BLUETOOTH_A2DP_SOURCE
 config BLUETOOTH_A2DP_PEER_PARTIAL_RECONN
 	bool "Bluetooth A2DP peer partial reconnect support"
 	default y
 	help
 		Bluetooth A2DP peer partial reconnect support
+
+config ZBLUE_A2DP_SOURCE_BUF_SIZE
+	int "A2DP source buffer size"
+	default 660
+	depends on BLUETOOTH_STACK_BREDR_ZBLUE
+	help
+		Buffer size is related to L2CAP TX MTU
 
 endif #BLUETOOTH_A2DP_SOURCE
 
@@ -364,6 +386,15 @@ config HFP_AG_MAX_CONNECTIONS
 config BLUETOOTH_HFP_AG_PRIMARY_SLOT
 	int "HFP select primary modem slot"
 	default 0
+
+config BLUETOOTH_HFP_AG_LOCAL_TELEPHONY
+	bool "Handle telephony AT commands locally instead of notifying upper layer"
+	default y
+	help
+		If enabled, the HFP AG service handles telephony-related AT commands
+		(AT+CIND, AT+CLCC, AT+COPS, ATA, AT+CHUP, ATD, AT+CHLD) locally by
+		calling telephony service directly. If disabled, these requests are
+		forwarded to the upper layer (e.g. AP core) via callback.
 
 endif # BLUETOOTH_HFP_AG
 
@@ -621,6 +652,16 @@ config BLUETOOTH_AUDIO_TRANS_ID_HFP_CTRL
 	int "Bluetooth Audio Transport SCO Ctrl Channel ID"
 	default 4
 
+config BLUETOOTH_A2DP_SINK_DEVICE
+	string "Bluetooth A2DP Audio Transport Sink Device"
+	default "/dev/audio/a2dpsnkp" if MEDIA_SERVER
+	default "/dev/audio/a2dpsnk"
+
+config BLUETOOTH_A2DP_SOURCE_DEVICE
+	string "Bluetooth A2DP Audio Transport Source Device"
+	default "/dev/audio/a2dpsrcc" if MEDIA_SERVER
+	default "/dev/audio/a2dpsrc"
+
 config BLUETOOTH_LEA_SINK_CTRL_PATH
 	string "Bluetooth LE Audio Transport Sink Ctrl Path"
 	default "lea_sink_ctrl"
@@ -637,25 +678,9 @@ config BLUETOOTH_LEA_SOURCE_DATA_PATH
 	string "Bluetooth LE Audio Transport Source Data Path"
 	default "lea_source_data"
 
-config BLUETOOTH_A2DP_SINK_CTRL_PATH
-	string "Bluetooth A2DP Audio Transport Sink Ctrl Path"
-	default "a2dp_sink_ctrl"
-
-config BLUETOOTH_A2DP_SINK_DATA_PATH
-	string "Bluetooth A2DP Audio Transport Sink Data Path"
-	default "a2dp_sink_data"
-
-config BLUETOOTH_A2DP_SOURCE_CTRL_PATH
-	string "Bluetooth A2DP Audio Transport Source Ctrl Path"
-	default "a2dp_source_ctrl"
-
-config BLUETOOTH_A2DP_SOURCE_DATA_PATH
-	string "Bluetooth A2DP Audio Transport Source Data Path"
-	default "a2dp_source_data"
-
 endmenu #Bluetooth Audio Transport config
 
-config BLUETOOTH_GATT
+menuconfig BLUETOOTH_GATT
 	bool "Generic ATT Profile Support(deprecated)"
 	default y
 
@@ -693,14 +718,6 @@ config GATT_CLIENT_CHAR_PER_SERVICE_MAX
 	help
 		The maximum number of characteristics that can be discovered and stored
 		under a single GATT service when using the ZBLUE stack.
-
-config BLUETOOTH_GATT_CLIENT_DEBUG
-	bool "Enable GATT Client debug"
-	default y
-	help
-		Enable debug logging for GATT Client service discovery and dump.
-		Disabling this option reduces code size by removing log strings.
-
 endif # BLUETOOTH_GATT_CLIENT
 
 menuconfig BLUETOOTH_GATT_SERVER
@@ -716,31 +733,38 @@ config BLUETOOTH_GATTS_MAX_CONNECTIONS
 config BLUETOOTH_GATTS_MAX_ATTRIBUTE_NUM
 	int "GATT Server max number of attributes contained in a table"
 	default 10
+
+config BLUETOOTH_GATTS_CACHE_SUPPORT
+	bool "Enable GATT Server Cache Support"
+	default y
+	depends on BLUETOOTH_BLE_SUPPORT
+	help
+		Enable internal GATT attribute table hash comparison.
+		On reconnect, trusted devices may receive Service Changed indications
+		if attribute changes are detected.
 endif # BLUETOOTH_GATT_SERVER
 
 menuconfig BLUETOOTH_SPP
 	bool "Serial Port Profile (SPP)"
 	default n
+	depends on SERIAL_TERMIOS
+	depends on PSEUDOTERM
 
 if BLUETOOTH_SPP
 config BLUETOOTH_SPP_MAX_CONNECTIONS
 	int "SPP max connections"
-	default 8
+	default 1
 
 config BLUETOOTH_SPP_SERVER_MAX_CONNECTIONS
 	int "SPP Server max connections"
 	default 8
-
-config BLUETOOTH_SPP_RPMSG_NET
-	bool "SPP RPMsg net support"
-	default n
-	depends on NET_RPMSG
 
 endif #BLUETOOTH_SPP
 	
 config BLUETOOTH_HID_DEVICE
 	bool "Human Interface Device Profile (HID)"
 	default n
+	select BT_HID_DEVICE if BLUETOOTH_STACK_BREDR_ZBLUE
 
 config BLUETOOTH_PAN
 	bool "Personal Area Network Profile (PAN)"
@@ -800,7 +824,7 @@ config BLUETOOTH_DUMPBUFFER
 config BLUETOOTH_DFX
 	bool "Enable Bluetooth DFX"
 	default y
-	depends on DFX_EVENT
+	depends on DFX
 	help
 		Enable Bluetooth DFX
 
@@ -825,6 +849,13 @@ config BLUETOOTH_TOOLS
 	bool "Bluetooth profile test tools (BT_TOOLS)"
 	default n
 	select BLUETOOTH_FRAMEWORK
+
+config BLUETOOTH_SERVICE_TEST
+	bool "Bluetooth service adapter test"
+	default n
+	depends on BLUETOOTH_TOOLS
+	---help---
+		Build the Bluetooth service adapter test application.
 
 menuconfig APP_BT_SAMPLE_CODE
 	bool "Sample Code"

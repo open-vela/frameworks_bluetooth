@@ -29,6 +29,9 @@
 #include "power_manager.h"
 #include "service_loop.h"
 
+
+#undef BT_LE_SCAN_TYPE_PASSIVE
+#undef BT_LE_SCAN_TYPE_ACTIVE
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/classic/hfp_hf.h>
 #include <zephyr/bluetooth/conn.h>
@@ -40,7 +43,6 @@
 #include "sal_adapter_le_interface.h"
 #include "sal_connection_manager.h"
 #include "sal_interface.h"
-#include "sal_zblue.h"
 #include "sal_zephyr_interface.h"
 
 #include <settings_zblue.h>
@@ -51,8 +53,6 @@
 #include "utils/log.h"
 
 #define STACK_CALL(func) zblue_##func
-
-static void STACK_CALL(pending_connect_complete)(void* args);
 
 typedef void (*sal_func_t)(void* args);
 
@@ -90,7 +90,6 @@ typedef union {
         bt_transport_t transport;
         bt_addr_type_t type;
     } bond;
-    bt_transport_t transport;
     bt_pm_mode_t mode;
     bt_link_role_t role;
     bt_link_policy_t policy;
@@ -118,8 +117,6 @@ struct device_context {
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 extern int zblue_main(void);
-static void sal_pending_connect_init(void);
-static void sal_pending_connect_cleanup(void);
 #ifndef CONFIG_BT_CONN_REQ_AUTO_HANDLE
 static void zblue_on_connect_req(struct bt_conn* conn, uint8_t link_type, uint8_t* cod);
 #endif
@@ -145,8 +142,6 @@ static void zblue_on_br_pairing_complete_ctkd(struct bt_conn* conn, bool is_link
 static void zblue_on_br_pairing_complete(struct bt_conn* conn, bool bonding_flag);
 static void zblue_on_br_pairing_failed(struct bt_conn* conn, enum bt_security_err reason);
 static void zblue_on_br_bond_deleted(uint8_t id, const bt_addr_le_t* peer);
-bt_status_t bt_sal_disconnect_internal(bt_controller_id_t id, bt_address_t* addr, uint8_t reason);
-bt_status_t bt_sal_remove_bond_internal(bt_controller_id_t id, bt_address_t* addr);
 static void zblue_register_callback(void);
 static void zblue_unregister_callback(void);
 #if defined(CONFIG_SETTINGS_ZBLUE)
@@ -261,7 +256,6 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
         return;
     }
 
-    bt_conn_info_t* slot;
     acl_state_param_t state = {
         .transport = BT_TRANSPORT_BREDR,
         .connection_state = CONNECTION_STATE_CONNECTED
@@ -271,10 +265,6 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
     if (err) {
         state.connection_state = CONNECTION_STATE_DISCONNECTED;
         state.status = err;
-        slot = bt_conn_find(&state.addr, BT_TRANSPORT_BREDR);
-        if (slot) {
-            bt_conn_remove(&state.addr, BT_TRANSPORT_BREDR);
-        }
         bt_sal_cm_acl_disconnected_callback(cm_data_new(&state.addr, PROFILE_UNKOWN, CONN_ID_DEFAULT));
         goto error;
     }
@@ -284,10 +274,6 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
 
 error:
     adapter_on_connection_state_changed(&state);
-
-    /* Dispatch to worker thread to safely operate on pending connect list */
-    sal_send_req(sal_adapter_req(PRIMARY_ADAPTER, &state.addr,
-        STACK_CALL(pending_connect_complete)));
 }
 
 static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
@@ -296,7 +282,6 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
         return;
     }
 
-    bt_conn_info_t* slot;
     acl_state_param_t state = {
         .transport = BT_TRANSPORT_BREDR,
         .connection_state = CONNECTION_STATE_DISCONNECTED,
@@ -305,11 +290,6 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
 
     zblue_conn_get_addr(conn, &state.addr);
     adapter_on_connection_state_changed(&state);
-    slot = bt_conn_find(&state.addr, BT_TRANSPORT_BREDR);
-    if (slot) {
-        bt_conn_remove(&state.addr, BT_TRANSPORT_BREDR);
-    }
-
     bt_sal_cm_acl_disconnected_callback(cm_data_new(&state.addr, PROFILE_UNKOWN, CONN_ID_DEFAULT));
 }
 
@@ -318,7 +298,7 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
 {
     bt_address_t addr;
     struct bt_conn_info info;
-    bt_status_t ret;
+    int ret;
     bool encrypted = false;
 
     if (bt_conn_get_info(conn, &info) < 0) {
@@ -331,8 +311,7 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
 
     bt_addr_set(&addr, info.br.dst->val);
 
-    BT_LOGD("%s, state: %d, level: %d, required level: %d, err: %d",
-        __func__, info.state, level, g_security_level, err);
+    BT_LOGD("%s, level: %d, required level: %d, err: %d", __func__, level, g_security_level, err);
 
     if (level >= g_security_level && err == BT_SECURITY_ERR_SUCCESS) {
         encrypted = true;
@@ -340,23 +319,14 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
         return;
     }
 
-    if ((level < g_security_level) && (err == BT_SECURITY_ERR_AUTH_FAIL || err == BT_SECURITY_ERR_PIN_OR_KEY_MISSING)) {
-        adapter_on_bond_state_changed(&addr, BOND_STATE_NONE, BT_TRANSPORT_BREDR, BT_STATUS_FAIL, false);
-        BT_LOGD("%s, err: %d, remove old key async", __func__, err);
-        ret = bt_sal_remove_bond_internal(PRIMARY_ADAPTER, &addr);
-        if (ret != BT_STATUS_SUCCESS) {
-            BT_LOGE("%s, Failed to remove old BR key async: %d", __func__, ret);
-        }
-    } else if (err != BT_SECURITY_ERR_SUCCESS) {
-        BT_LOGW("%s, preserve bond on BR security failure, state: %d, level: %d, required: %d, err: %d",
-            __func__, info.state, level, g_security_level, err);
+    adapter_on_bond_state_changed(&addr, BOND_STATE_NONE, BT_TRANSPORT_BREDR, BT_STATUS_FAIL, false);
+    ret = bt_br_unpair((bt_addr_t*)info.br.dst);
+    if (ret < 0) {
+        BT_LOGE("%s, Failed to remove old BR key: %d", __func__, ret);
     }
 
-    if (err == BT_SECURITY_ERR_AUTH_FAIL || err == BT_SECURITY_ERR_PIN_OR_KEY_MISSING || (err == BT_SECURITY_ERR_SUCCESS && level < g_security_level)) {
-        ret = bt_sal_disconnect_internal(PRIMARY_ADAPTER, &addr, BT_HCI_ERR_AUTH_FAIL);
-        if (ret != BT_STATUS_SUCCESS) {
-            BT_LOGE("%s, disconnect async failed: %d", __func__, ret);
-        }
+    if (err == BT_SECURITY_ERR_AUTH_FAIL || (err == BT_SECURITY_ERR_SUCCESS && level < g_security_level)) {
+        bt_conn_disconnect(conn, BT_HCI_ERR_AUTH_FAIL);
         return;
     }
 
@@ -491,7 +461,7 @@ static int zblue_on_link_key_notify(uint8_t dev_id, bt_addr_le_t* addr, const ch
     key_type = link_key->key_type;
     free(link_key);
 
-    adapter_on_link_key_update(&br_addr, key, key_type, false);
+    adapter_on_link_key_update(&br_addr, key, key_type);
     return 0;
 }
 
@@ -707,7 +677,6 @@ bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
     extern void z_sys_init(void);
     z_sys_init();
     bt_sal_cm_conn_init();
-    sal_pending_connect_init();
 
     return BT_STATUS_SUCCESS;
 #else
@@ -718,7 +687,6 @@ bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
 void bt_sal_cleanup(void)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    sal_pending_connect_cleanup();
     bt_sal_cm_conn_cleanup();
 #endif
 
@@ -753,7 +721,6 @@ static void STACK_CALL(brder_disable)(void* args)
     zblue_unregister_callback();
     bt_br_set_visibility(false, false);
 #ifndef CONFIG_BLUETOOTH_BLE_SUPPORT
-    bt_br_set_visibility(false, false);
     bt_disable();
 #endif
 }
@@ -808,8 +775,8 @@ static void STACK_CALL(set_name)(void* args)
 
 bt_status_t bt_sal_set_name(bt_controller_id_t id, char* name)
 {
-#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     sal_adapter_req_t* req;
 
     req = sal_adapter_req(id, NULL, STACK_CALL(set_name));
@@ -819,6 +786,8 @@ bt_status_t bt_sal_set_name(bt_controller_id_t id, char* name)
     strlcpy(req->adpt.name, name, BT_LOC_NAME_MAX_LEN);
 
     return sal_send_req(req);
+#elif defined(CONFIG_BLUETOOTH_BLE_SUPPORT)
+    return bt_set_name(name) == 0 ? BT_STATUS_SUCCESS : BT_STATUS_FAIL;
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif
@@ -884,22 +853,13 @@ bt_status_t bt_sal_set_io_capability(bt_controller_id_t id, bt_io_capability_t c
     default:
         g_conn_auth_cbs.passkey_display = NULL;
         g_conn_auth_cbs.passkey_entry = NULL;
-#ifdef CONFIG_HCI_AUTO_REPLY_IN_JUST_WORK
         g_conn_auth_cbs.passkey_confirm = NULL;
-#else
-        g_conn_auth_cbs.passkey_confirm = zblue_on_passkey_confirm;
-#endif
         g_conn_auth_cbs.pairing_confirm = NULL;
         break;
     }
 
     bt_conn_auth_cb_register(NULL);
     bt_conn_auth_cb_register(&g_conn_auth_cbs);
-
-#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
-    /* Keep consistency with legacy stack: sync LE IO capability with BR/EDR IO capability */
-    bt_sal_le_set_io_capability(id, cap);
-#endif
 
     return BT_STATUS_SUCCESS;
 #else
@@ -1196,11 +1156,6 @@ static void STACK_CALL(acl_connection_reply)(void* args)
     sal_adapter_req_t* req = args;
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)&req->addr);
 
-    if (!conn) {
-        BT_LOGE("%s, conn null", __func__);
-        return;
-    }
-
     if (req->adpt.accept) {
         SAL_CHECK(bt_conn_accept_acl_conn(conn), 0);
     } else {
@@ -1240,11 +1195,6 @@ static void STACK_CALL(ssp_reply)(void* args)
 {
     sal_adapter_req_t* req = args;
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)&req->addr);
-
-    if (!conn) {
-        BT_LOGE("%s, conn null", __func__);
-        return;
-    }
 
     if (req->adpt.ssp.accept) {
         switch (req->adpt.ssp.type) {
@@ -1293,11 +1243,6 @@ static void STACK_CALL(pin_reply)(void* args)
     sal_adapter_req_t* req = args;
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)&req->addr);
 
-    if (!conn) {
-        BT_LOGE("%s, conn null", __func__);
-        return;
-    }
-
     if (req->adpt.pin.accept) {
         SAL_CHECK(bt_conn_auth_pincode_entry(conn, req->adpt.pin.pincode), 0);
     } else {
@@ -1338,11 +1283,6 @@ connection_state_t bt_sal_get_connection_state(bt_controller_id_t id, bt_address
     struct bt_conn_info info;
     connection_state_t state = CONNECTION_STATE_DISCONNECTED;
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
-
-    if (!conn) {
-        BT_LOGE("%s, conn null", __func__);
-        return CONNECTION_STATE_DISCONNECTED;
-    }
 
     bt_conn_get_info(conn, &info);
     switch (info.state) {
@@ -1422,125 +1362,18 @@ uint16_t bt_sal_get_sco_connection_handle(bt_controller_id_t id, bt_address_t* a
 }
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-static bt_list_t* g_pending_connect_list = NULL;
-
-static void sal_pending_connect_init(void)
-{
-    if (!g_pending_connect_list)
-        g_pending_connect_list = bt_list_new(free);
-}
-
-static void sal_pending_connect_cleanup(void)
-{
-    if (g_pending_connect_list) {
-        bt_list_free(g_pending_connect_list);
-        g_pending_connect_list = NULL;
-    }
-}
-
-static void sal_pending_connect_done(bt_address_t* addr)
-{
-    bt_list_node_t* node;
-    sal_adapter_req_t* pending;
-
-    if (!g_pending_connect_list)
-        return;
-
-    for (node = bt_list_head(g_pending_connect_list); node;
-         node = bt_list_next(g_pending_connect_list, node)) {
-        pending = (sal_adapter_req_t*)bt_list_node(node);
-        if (pending && !memcmp(&pending->addr, addr, sizeof(bt_address_t))) {
-            bt_list_remove(g_pending_connect_list, pending);
-            return;
-        }
-    }
-}
-
-static bool sal_start_connect(void)
-{
-    bt_list_node_t* node;
-    sal_adapter_req_t* pending;
-    struct bt_conn* conn;
-    acl_state_param_t state;
-
-    if (!g_pending_connect_list)
-        return false;
-
-    node = bt_list_head(g_pending_connect_list);
-    if (!node)
-        return false;
-
-    pending = (sal_adapter_req_t*)bt_list_node(node);
-    if (!pending)
-        return false;
-
-    conn = bt_conn_create_br((const bt_addr_t*)&pending->addr, BT_BR_CONN_PARAM_DEFAULT);
-    if (!conn) {
-        bt_list_remove(g_pending_connect_list, pending);
-        BT_LOGW("bt_conn_create_br failed");
-        return false;
-    }
-
-    memset(&state, 0, sizeof(state));
-    state.transport = BT_TRANSPORT_BREDR;
-    state.connection_state = CONNECTION_STATE_CONNECTING;
-    memcpy(&state.addr, &pending->addr, sizeof(bt_address_t));
-    adapter_on_connection_state_changed(&state);
-
-    bt_conn_unref(conn);
-    return true;
-}
-
-static void STACK_CALL(pending_connect_complete)(void* args)
-{
-    sal_adapter_req_t* req = args;
-
-    sal_pending_connect_done(&req->addr);
-    sal_start_connect();
-}
-
-static bool sal_pending_connect_exists(bt_address_t* addr)
-{
-    bt_list_node_t* node;
-    sal_adapter_req_t* pending;
-
-    if (!g_pending_connect_list)
-        return false;
-
-    for (node = bt_list_head(g_pending_connect_list); node;
-         node = bt_list_next(g_pending_connect_list, node)) {
-        pending = (sal_adapter_req_t*)bt_list_node(node);
-        if (pending && !memcmp(&pending->addr, addr, sizeof(bt_address_t)))
-            return true;
-    }
-
-    return false;
-}
-
 static void STACK_CALL(connect)(void* args)
 {
     sal_adapter_req_t* req = args;
-    sal_adapter_req_t* pending;
+    struct bt_conn* conn;
 
-    if (sal_pending_connect_exists(&req->addr)) {
-        BT_LOGD("bt_sal_connect: already connecting or queued");
+    conn = bt_conn_create_br((const bt_addr_t*)&req->addr, BT_BR_CONN_PARAM_DEFAULT);
+    if (!conn) {
+        BT_LOGW("bt_conn_create_br Connection failed");
         return;
     }
 
-    pending = zalloc(sizeof(sal_adapter_req_t));
-    if (!pending)
-        return;
-
-    memcpy(&pending->addr, &req->addr, sizeof(bt_address_t));
-    bt_list_add_tail(g_pending_connect_list, pending);
-
-    if (bt_list_length(g_pending_connect_list) > 1) {
-        BT_LOGD("bt_sal_connect: queued pending connect");
-        return;
-    }
-
-    if (!sal_start_connect())
-        BT_LOGW("bt_sal_connect: first connection failed");
+    bt_conn_unref(conn);
 }
 #endif
 
@@ -1682,11 +1515,6 @@ static void STACK_CALL(cancel_bond)(void* args)
 {
     sal_adapter_req_t* req = args;
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)&req->addr);
-
-    if (!conn) {
-        BT_LOGE("%s, conn null", __func__);
-        return;
-    }
 
     SAL_CHECK(bt_conn_auth_cancel(conn), 0);
     SAL_CHECK(bt_br_unpair((bt_addr_t*)&req->addr), 0);
@@ -1935,11 +1763,6 @@ static void STACK_CALL(set_power_mode)(void* args)
     bt_pm_mode_t* pm = &req->adpt.mode;
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)&req->addr);
 
-    if (!conn) {
-        BT_LOGE("%s, conn null", __func__);
-        return;
-    }
-
     if (pm->mode == BT_LINK_MODE_ACTIVE) {
         SAL_CHECK(bt_conn_exit_sniff_mode(conn), 0);
     } else {
@@ -1984,11 +1807,6 @@ static void STACK_CALL(set_link_role)(void* args)
     sal_adapter_req_t* req = args;
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)&req->addr);
 
-    if (!conn) {
-        BT_LOGE("%s, conn null", __func__);
-        return;
-    }
-
     SAL_CHECK(bt_conn_switch_role(conn, req->adpt.role), 0);
     bt_conn_unref(conn);
 }
@@ -2017,12 +1835,6 @@ static void STACK_CALL(set_link_policy)(void* args)
 {
     sal_adapter_req_t* req = args;
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)&req->addr);
-
-    if (!conn) {
-        BT_LOGE("%s, conn null", __func__);
-        return;
-    }
-
     uint16_t policy = 0;
 
     switch (req->adpt.policy) {
@@ -2116,60 +1928,6 @@ bt_status_t bt_sal_set_afh_channel_classification_1(bt_controller_id_t id, uint8
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif
-}
-
-static void STACK_CALL(read_rssi)(void* args)
-{
-    int err;
-    int8_t rssi;
-    struct bt_conn* conn = NULL;
-    sal_adapter_req_t* req = args;
-
-    switch (req->adpt.transport) {
-#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    case BT_TRANSPORT_BREDR:
-        conn = bt_conn_lookup_addr_br((bt_addr_t*)&req->addr);
-        break;
-#endif
-#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
-    case BT_TRANSPORT_BLE:
-        conn = get_le_conn_from_addr(&req->addr);
-        if (conn)
-            bt_conn_ref(conn);
-
-        break;
-#endif
-    default:
-        BT_LOGW("%s, unsupported transport: %d", __func__, req->adpt.transport);
-        return;
-    }
-
-    if (!conn) {
-        BT_LOGE("%s, conn null", __func__);
-        return;
-    }
-
-    err = bt_conn_read_rssi(conn, &rssi);
-    bt_conn_unref(conn);
-    if (err) {
-        BT_LOGE("%s, failed to read rssi, err = %d", __func__, err);
-        return;
-    }
-
-    adapter_on_rssi_read(&req->addr, rssi, req->adpt.transport);
-}
-
-bt_status_t bt_sal_read_rssi(bt_controller_id_t id, bt_address_t* addr, bt_transport_t transport)
-{
-    UNUSED(id);
-    sal_adapter_req_t* req;
-
-    req = sal_adapter_req(id, addr, STACK_CALL(read_rssi));
-    if (!req)
-        return BT_STATUS_NOMEM;
-
-    req->adpt.transport = transport;
-    return sal_send_req(req);
 }
 
 /* VSC */

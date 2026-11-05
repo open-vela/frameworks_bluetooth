@@ -221,12 +221,18 @@ int a2dp_source_aac_interval_ms(void)
     return a2dp_aac_encoder_interval_ms;
 }
 
+int a2dp_source_aac_get_min_frame_size(void)
+{
+    return 1; // AAC does not have a minimum frame size.
+}
+
 static const a2dp_source_stream_interface_t a2dp_source_stream_aac = {
     a2dp_source_aac_stream_init,
     a2dp_source_aac_stream_reset,
     NULL,
     a2dp_source_aac_send_frames,
     a2dp_source_aac_interval_ms,
+    a2dp_source_aac_get_min_frame_size,
 };
 
 const a2dp_source_stream_interface_t* get_a2dp_source_aac_stream_interface(void)

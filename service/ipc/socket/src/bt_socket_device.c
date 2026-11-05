@@ -79,8 +79,7 @@ void bt_socket_server_device_process(service_poll_t* poll,
         break;
     }
     case BT_DEVICE_GET_ADDRESS_TYPE: {
-        packet->devs_r.atype = BTSYMBOLS(bt_device_get_address_type)(ins,
-            &packet->devs_pl._bt_device_addr.addr);
+        packet->devs_r.atype = BT_LE_ADDR_TYPE_PUBLIC;
         break;
     }
     case BT_DEVICE_GET_DEVICE_TYPE: {
@@ -247,6 +246,18 @@ void bt_socket_server_device_process(service_poll_t* poll,
             &packet->devs_pl._bt_device_addr.addr);
         break;
     }
+    case BT_DEVICE_BACKGROUND_CONNECT: {
+        packet->devs_r.status = BTSYMBOLS(bt_device_background_connect)(ins,
+            &packet->devs_pl._bt_device_background_connect.addr,
+            packet->devs_pl._bt_device_background_connect.transport);
+        break;
+    }
+    case BT_DEVICE_BACKGROUND_DISCONNECT: {
+        packet->devs_r.status = BTSYMBOLS(bt_device_background_disconnect)(ins,
+            &packet->devs_pl._bt_device_background_disconnect.addr,
+            packet->devs_pl._bt_device_background_disconnect.transport);
+        break;
+    }
     case BT_DEVICE_CONNECT_LE: {
         packet->devs_r.status = BTSYMBOLS(bt_device_connect_le)(ins,
             &packet->devs_pl._bt_device_connect_le.addr,
@@ -270,6 +281,18 @@ void bt_socket_server_device_process(service_poll_t* poll,
             &packet->devs_pl._bt_device_set_le_phy.addr,
             packet->devs_pl._bt_device_set_le_phy.tx_phy,
             packet->devs_pl._bt_device_set_le_phy.rx_phy);
+        break;
+    }
+    case BT_DEVICE_ENABLE_ENHANCED_MODE: {
+        packet->devs_r.status = BTSYMBOLS(bt_device_enable_enhanced_mode)(ins,
+            &packet->devs_pl._bt_device_enable_enhanced_mode.addr,
+            packet->devs_pl._bt_device_enable_enhanced_mode.mode);
+        break;
+    }
+    case BT_DEVICE_DISABLE_ENHANCED_MODE: {
+        packet->devs_r.status = BTSYMBOLS(bt_device_disable_enhanced_mode)(ins,
+            &packet->devs_pl._bt_device_disable_enhanced_mode.addr,
+            packet->devs_pl._bt_device_enable_enhanced_mode.mode);
         break;
     }
     case BT_DEVICE_CONNECT_ALL_PROFILE:

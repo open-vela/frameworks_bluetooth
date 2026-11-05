@@ -42,6 +42,9 @@
 #define LOG_TAG "a2dp_codec_sbc"
 #include "utils/log.h"
 
+#define A2DP_CODEC_SBC_BIT_PER_SAMPLE 16
+#define A2DP_CODEC_SBC_ENCODER_INTERVAL_MS 20
+
 typedef struct {
     uint8_t samp_freq; /* Sampling frequency */
     uint8_t ch_mode; /* Channel mode */
@@ -191,6 +194,26 @@ uint16_t a2dp_sbc_sample_frequency(uint16_t sample_frequency)
         sampling_freq = 48000;
 
     return sampling_freq;
+}
+
+uint32_t a2dp_sbc_frames(sbc_param_t* param)
+{
+    uint32_t pcm_bytes_per_frame;
+    uint32_t bytes_per_tick;
+
+    if (param == NULL) {
+        BT_LOGE("%s, error param", __func__);
+        return 0;
+    }
+
+    if (param->s16ChannelMode == SBC_MONO) {
+        BT_LOGE("%s, not support mono mode", __func__);
+        return 0;
+    }
+
+    pcm_bytes_per_frame = param->s16NumOfSubBands * param->s16NumOfBlocks * param->s16NumOfChannels * A2DP_CODEC_SBC_BIT_PER_SAMPLE / 8;
+    bytes_per_tick = (a2dp_sbc_sample_frequency(param->s16SamplingFreq) * A2DP_CODEC_SBC_BIT_PER_SAMPLE / 8 * param->s16NumOfChannels * A2DP_CODEC_SBC_ENCODER_INTERVAL_MS) / 1000;
+    return bytes_per_tick / pcm_bytes_per_frame + (bytes_per_tick % pcm_bytes_per_frame ? 1 : 0);
 }
 
 uint32_t a2dp_sbc_bit_rate(sbc_param_t* param)

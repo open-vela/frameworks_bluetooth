@@ -15,6 +15,10 @@
  ***************************************************************************/
 
 #include <string.h>
+#include <stdio.h>
+
+#undef BT_LE_SCAN_TYPE_PASSIVE
+#undef BT_LE_SCAN_TYPE_ACTIVE
 #include <zephyr/bluetooth/addr.h>
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/conn.h>
@@ -22,20 +26,22 @@
 #include <zephyr/bluetooth/l2cap.h>
 #include <zephyr/bluetooth/uuid.h>
 
-#ifdef CONFIG_BLUETOOTH_BLE_SCAN
 #include "sal_interface.h"
 #include "sal_le_scan_interface.h"
 #include "service_loop.h"
 
 #include "utils/log.h"
 
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
 #define STACK_CALL(func) zblue_##func
 
-typedef void (*sal_func_t)(void* args);
+typedef bt_status_t (*sal_func_t)(void* args);
 
 typedef struct {
     bt_controller_id_t id;
     sal_func_t func;
+    bt_status_t status;
+    uv_sem_t done;
 } sal_scan_req_t;
 
 typedef struct {
@@ -65,24 +71,40 @@ static void sal_invoke_async(service_work_t* work, void* userdata)
     sal_scan_req_t* req = userdata;
 
     SAL_ASSERT(req);
-    req->func(req);
-    free(userdata);
+    req->status = req->func(req);
+    uv_sem_post(&req->done);
 }
 
 static bt_status_t sal_send_req(sal_scan_req_t* req)
 {
+    bt_status_t status;
+    int ret;
+
     if (!req) {
         BT_LOGE("%s, req null", __func__);
         return BT_STATUS_PARM_INVALID;
     }
 
-    if (!service_loop_work((void*)req, sal_invoke_async, NULL)) {
-        BT_LOGE("%s, service_loop_work fail", __func__);
+    ret = uv_sem_init(&req->done, 0);
+    if (ret != 0) {
+        BT_LOGE("%s, sem init fail:%d", __func__, ret);
         free(req);
         return BT_STATUS_FAIL;
     }
 
-    return BT_STATUS_SUCCESS;
+    if (!service_loop_work((void*)req, sal_invoke_async, NULL)) {
+        BT_LOGE("%s, service_loop_work fail", __func__);
+        uv_sem_destroy(&req->done);
+        free(req);
+        return BT_STATUS_FAIL;
+    }
+
+    uv_sem_wait(&req->done);
+    status = req->status;
+    uv_sem_destroy(&req->done);
+    free(req);
+
+    return status;
 }
 
 static bool zblue_on_eir_found(struct bt_data* data, void* user_data)
@@ -113,25 +135,28 @@ static void zblue_on_device_found(const bt_addr_le_t* addr, int8_t rssi, uint8_t
     scan_on_result_data_update(&result_info, eir.value);
 }
 
-static void STACK_CALL(start_scan)(void* args)
+static bt_status_t STACK_CALL(start_scan)(void* args)
 {
-    SAL_CHECK(bt_le_scan_start(&scan_param, zblue_on_device_found), 0);
+    int ret = bt_le_scan_start(&scan_param, zblue_on_device_found);
+
+    return ret == 0 ? BT_STATUS_SUCCESS : BT_STATUS_FAIL;
 }
 
-static void STACK_CALL(stop_scan)(void* args)
+static bt_status_t STACK_CALL(stop_scan)(void* args)
 {
-    SAL_CHECK(bt_le_scan_stop(), 0);
+    int ret = bt_le_scan_stop();
+
+    return ret == 0 ? BT_STATUS_SUCCESS : BT_STATUS_FAIL;
 }
 
 bt_status_t bt_sal_le_set_scan_parameters(bt_controller_id_t id, ble_scan_params_t* params)
 {
     memset(&scan_param, 0, sizeof(scan_param));
-    scan_param.type = (uint8_t)params->scan_type;
+    scan_param.type = params->scan_type;
     scan_param.interval = params->scan_interval;
     scan_param.window = params->scan_window;
-
-    if (params->filter_type == BT_LE_SCAN_POLICY_ONLY_WHITE_LIST ||
-        params->filter_type == BT_LE_SCAN_POLICY_ONLY_WHITE_LIST_AND_RPA) {
+    scan_param.options = BT_LE_SCAN_OPT_FILTER_DUPLICATE;
+    if (params->filter_type == BT_LE_SCAN_POLICY_ONLY_WHITE_LIST) {
         scan_param.options |= BT_LE_SCAN_OPT_FILTER_ACCEPT_LIST;
     }
 

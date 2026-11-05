@@ -17,7 +17,7 @@
 #define _BT_DFX_EVENT_H_
 
 // vela bluetooth event id
-#define BT_DFX_BASE_VELA_BLUETOOTH (923020000)
+#define BT_DFX_BASE_VELA_BLUETOOTH (961020000)
 
 // event group
 #define BT_DFXG_BR_GAP (0)
@@ -47,16 +47,40 @@
 #define BT_DFXC_LE_GAP_DISCONN (110)
 #define BT_DFXC_LE_GAP_PAIR (200)
 
+// group: BT_DFXG_RFCOMM
+#define BT_DFXC_SPP_CONN (0)
+#define BT_DFXC_SPP_DISCONN (10)
+
 // group: BT_DFXG_A2DP
 #define BT_DFXC_A2DP_CONN (0)
-#define BT_DFXC_A2DP_OFFLOAD (100)
+#define BT_DFXC_A2DP_MEDIA (10)
+#define BT_DFXC_A2DP_OFFLOAD (20)
+
+// group: BT_DFXG_AVRCP
+#define BT_DFXC_AVRCP_CONN (0)
+#define BT_DFXC_AVRCP_CTRL (10)
+#define BT_DFXC_AVRCP_VOL (20)
 
 // group: BT_DFXG_HFP
 #define BT_DFXC_HFP_CONN (0)
-#define BT_DFXC_HFP_OFFLOAD (100)
+#define BT_DFXC_HFP_SCO_CONN (10)
+#define BT_DFXC_HFP_VOL (20)
+#define BT_DFXC_HFP_MEDIA (30)
+#define BT_DFXC_HFP_OFFLOAD (40)
+
+// group: BT_DFXG_HID
+#define BT_DFXC_HID_CONN (0)
+
+// group: BT_DFXG_MESH
+
+// group: BT_DFXG_CHANNEL_SOUNDING
 
 // group: BT_DFXG_OTHERS
-#define BT_DFXC_OPEN (0)
+#define BT_DFXC_SOCKET (0)
+#define BT_DFXC_IPC_CONN (10)
+#define BT_DFXC_IPC_ALLOC (20)
+#define BT_DFXC_DRIVER (100)
+#define BT_DFXC_OPEN (200)
 
 #define BT_DFX_BUILD_CODE(group, subcode) ((BT_DFX_BASE_VELA_BLUETOOTH) + (group) + (subcode))
 

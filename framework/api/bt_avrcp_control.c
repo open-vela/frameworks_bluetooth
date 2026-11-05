@@ -75,10 +75,10 @@ bt_status_t BTSYMBOLS(bt_avrcp_control_get_playback_state)(bt_instance_t* ins, b
 {
     avrcp_control_interface_t* profile = get_profile_service();
 
-    return profile->get_playback_state(addr);
+    return profile->avrcp_control_get_playback_state(addr);
 }
 
-bt_status_t BTSYMBOLS(bt_avrcp_control_register_notification)(bt_instance_t* ins, bt_address_t* addr, avrcp_notification_event_t event, uint32_t interval)
+bt_status_t BTSYMBOLS(bt_avrcp_control_register_notification)(bt_instance_t* ins, bt_address_t* addr, uint8_t event, uint32_t interval)
 {
     avrcp_control_interface_t* profile = get_profile_service();
 

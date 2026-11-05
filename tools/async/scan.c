@@ -119,7 +119,7 @@ static int start_scan_cmd(void* handle, int argc, char* argv[])
 {
     int opt;
     ble_scan_filter_t filter = {};
-    ble_scan_settings_t settings = { BT_SCAN_MODE_LOW_POWER, 0, BT_LE_SCAN_TYPE_PASSIVE, BT_LE_1M_PHY, { 0 } };
+    ble_scan_settings_t settings = { BT_SCAN_MODE_LOW_POWER, 0, BT_LE_SCAN_TYPE_ACTIVE, BT_LE_1M_PHY, { 0 } };
 
     if (g_scanner)
         return CMD_ERROR;

@@ -103,3 +103,27 @@ bool acl_bandwidth_deconfig_builder(acl_bandwitdh_config_t* config,
     return false;
 #endif
 }
+
+bool le_dlf_enable_builder(le_dlf_config_t* config,
+    uint8_t* data, size_t* size)
+{
+#if defined(CONFIG_BLUETOOTH_VENDOR_BES)
+    return bes_dlf_enable_command_builder(config, data, size);
+#elif defined(CONFIG_BLUETOOTH_VENDOR_ACTIONS)
+    return actions_dlf_enable_command_builder(config, data, size);
+#else
+    return false;
+#endif
+}
+
+bool le_dlf_disable_builder(le_dlf_config_t* config,
+    uint8_t* data, size_t* size)
+{
+#if defined(CONFIG_BLUETOOTH_VENDOR_BES)
+    return bes_dlf_disable_command_builder(config, data, size);
+#elif defined(CONFIG_BLUETOOTH_VENDOR_ACTIONS)
+    return actions_dlf_disable_command_builder(config, data, size);
+#else
+    return false;
+#endif
+}

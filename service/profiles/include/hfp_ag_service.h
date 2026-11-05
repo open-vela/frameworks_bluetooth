@@ -19,7 +19,6 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
-#include "audio_transport.h"
 #include "bt_device.h"
 #include "bt_hfp_ag.h"
 #include "hfp_define.h"
@@ -60,7 +59,7 @@ void hfp_ag_on_remote_battery_level_update(bt_address_t* addr, uint8_t value);
 void hfp_ag_on_answer_call(bt_address_t* addr);
 void hfp_ag_on_reject_call(bt_address_t* addr);
 void hfp_ag_on_hangup_call(bt_address_t* addr);
-void hfp_ag_on_received_at_cmd(bt_address_t* addr, const char* at_string, uint16_t at_length);
+void hfp_ag_on_received_at_cmd(bt_address_t* addr, char* at_string, uint16_t at_length);
 void hfp_ag_on_audio_connect_request(bt_address_t* addr);
 void hfp_ag_on_dial_number(bt_address_t* addr, char* number, uint32_t length);
 void hfp_ag_on_dial_memory(bt_address_t* addr, uint32_t location);
@@ -69,7 +68,6 @@ void hfp_ag_on_received_dtmf(bt_address_t* addr, char tone);
 void hfp_ag_on_received_manufacture_request(bt_address_t* addr);
 void hfp_ag_on_received_model_id_request(bt_address_t* addr);
 void hfp_ag_on_received_nrec_request(bt_address_t* addr, uint8_t nrec);
-void hfp_ag_on_call_sync(bt_address_t* addr);
 
 /*
  *  statemachine callbacks
@@ -84,8 +82,8 @@ void ag_service_notify_call_rejected(bt_address_t* addr);
 void ag_service_notify_call_hangup(bt_address_t* addr);
 void ag_service_notify_call_dial(bt_address_t* addr, const char* number);
 void ag_service_notify_cmd_received(bt_address_t* addr, const char* at_cmd);
-void ag_service_notify_vendor_specific_cmd(bt_address_t* addr, const char* command, uint16_t company_id, const char* value);
 void ag_service_notify_clcc_cmd(bt_address_t* addr);
+void ag_service_notify_vendor_specific_cmd(bt_address_t* addr, const char* command, uint16_t company_id, const char* value);
 void ag_service_notify_cind_cmd(bt_address_t* addr);
 
 /*
@@ -128,10 +126,10 @@ typedef struct ag_interface {
     bt_status_t (*volume_control)(bt_address_t* addr, hfp_volume_type_t type, uint8_t volume);
     bt_status_t (*dial_response)(uint8_t result);
     bt_status_t (*send_at_command)(bt_address_t* addr, const char* at_command);
-    bt_status_t (*send_vendor_specific_at_command)(bt_address_t* addr, const char* command, const char* value);
     bt_status_t (*send_clcc_response)(bt_address_t* addr, uint32_t index, hfp_call_direction_t dir,
         hfp_ag_call_state_t state, hfp_call_mode_t mode, hfp_call_mpty_type_t mpty,
         hfp_call_addrtype_t type, const char* number);
+    bt_status_t (*send_vendor_specific_at_command)(bt_address_t* addr, const char* command, const char* value);
     bt_status_t (*send_cind_response)(bt_address_t* addr, hfp_network_state_t network, hfp_call_t call,
         hfp_callheld_t call_held, hfp_callsetup_t call_setup, uint8_t signal,
         hfp_roaming_state_t roam, uint8_t battery);

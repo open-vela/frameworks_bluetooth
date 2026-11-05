@@ -24,10 +24,10 @@
 #include <string.h>
 #include <sys/types.h>
 
+#include "bt_lea_common.h"
 #include "bt_lea_tbs.h"
 #include "bt_profile.h"
 #include "callbacks_list.h"
-#include "lea_audio_common.h"
 #include "lea_tbs_event.h"
 #include "lea_tbs_service.h"
 #include "lea_tbs_tele_service.h"

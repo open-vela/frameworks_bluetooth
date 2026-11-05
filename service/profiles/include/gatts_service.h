@@ -39,6 +39,9 @@ void if_gatts_on_phy_read(bt_address_t* addr, ble_phy_type_t tx_phy, ble_phy_typ
 void if_gatts_on_phy_updated(bt_address_t* addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy, gatt_status_t status);
 void if_gatts_on_connection_parameter_changed(bt_address_t* addr, uint16_t connection_interval, uint16_t peripheral_latency,
     uint16_t supervision_timeout);
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+void if_gatts_on_database_hash(bt_address_t* addr, ble_addr_type_t addr_type, const uint8_t* hash, bool force_update);
+#endif
 
 /*
  * gatts remote

@@ -35,13 +35,26 @@
 
 #include "bluetooth_define.h"
 
+typedef enum {
+    // Received from audio
+    A2DP_AUDIO_EVENT_START,
+    A2DP_AUDIO_EVENT_STOP,
+    // Received from bluetooth
+    A2DP_AUDIO_EVENT_STOPPED,
+    A2DP_AUDIO_EVENT_START_FAIL,
+} a2dp_audio_event_type_t;
+
+typedef struct {
+    a2dp_audio_event_type_t type;
+} a2dp_audio_event_t;
+
 bool a2dp_audio_on_connection_changed(uint8_t peer_sep, bool connected);
 void a2dp_audio_on_started(uint8_t peer_sep, bool started);
 void a2dp_audio_on_stopped(uint8_t peer_sep);
 void a2dp_audio_prepare_suspend(uint8_t peer_sep);
 void a2dp_audio_setup_codec(uint8_t peer_sep, bt_address_t* bd_addr);
-
-void a2dp_audio_init(uint8_t svr_class, bool offloading);
 void a2dp_audio_cleanup(uint8_t svr_class);
+void a2dp_audio_init(uint8_t svr_class, bool offloading);
+void a2dp_audio_open(uint8_t svr_class, bool offloading, bt_address_t* bd_addr);
 
 #endif
